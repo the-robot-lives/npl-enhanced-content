@@ -2,7 +2,8 @@
 
 Status: **design (approved direction, not implemented)** · Owner: terminal lane ·
 Drafted 2026-10-14 · Amended 2026-10-14 (canvas-everywhere renderer; 256 KB shell
-budget — see Decisions) · Companion to `src/terminal/PLUGINS.md` (the v1 plugin
+budget; DOM view via `renderer` attribute + context menu — see Decisions) ·
+Companion to `src/terminal/PLUGINS.md` (the v1 plugin
 contract, which this design freezes) and `ROADMAP.md` (invariants, budgets).
 
 This document specifies the Epoch 2 rebuild of the `sem-shell` /
@@ -27,6 +28,16 @@ Epoch 2 implementation is written against.
 > 2. **Shell bundle budget = 256 KB raw** (the user's number; absorbs the canvas
 >    driver). §13.1 and the `ROADMAP.md` size-budget table updated; every other
 >    budget unchanged.
+> 3. **The DOM view is reachable by attribute and context menu** (2026-10-14;
+>    closes §17 Q4). Canvas stays the one default paint, but the DOM rendering
+>    becomes the visible view three ways: (a) automatically — forced-colors /
+>    2d-context failure, as already designed; (b) a documented
+>    `renderer="dom"` attribute for authors and debugging; (c) a terminal
+>    context menu (right-click, Shift+F10 / ContextMenu key, long-press) with
+>    Copy / Select all / Paste / Find… / Switch to text view or canvas view
+>    (per element, persisted per session in `sessionStorage`) / Open plain
+>    transcript; the native browser menu stays reachable. §8.5 is the design;
+>    §§1, 3, 7.3, 8, 9, 11.1, 14, 15, 16 amended.
 
 ## 1. Scope and invariants
 
@@ -46,10 +57,13 @@ shape this design hard enough to restate:
    bundle (§8.4), so there is no runtime fetch, no dynamic import, and file://
    works unchanged. No v2 capability ships as a separate opt-in chunk.
 2. **Light DOM for content, shadow DOM for chrome only.** A canvas viewport
-   is chrome; the *text* stays content. Canvas paints the pixels; the DOM
-   survives solely as the hidden, synchronised accessibility + find-in-page +
-   copy mirror (§8.1, §9) — nothing a user could select or copy may exist
-   only inside a canvas, so the mirror is load-bearing, not a fallback.
+   is chrome; the *text* stays content. Canvas paints the pixels by default;
+   the DOM is the synchronised accessibility + find-in-page + copy mirror
+   (§8.1, §9) — and the visible text view whenever it is promoted:
+   automatically (forced-colors / 2d-context failure), via the documented
+   `renderer="dom"` attribute, or via the terminal context menu (§8.5).
+   Nothing a user could select or copy may exist only inside a canvas, so
+   the mirror is load-bearing, not a fallback.
 3. **JS-off documents stay readable; the zero-JS contract is untouched.** The
    authored static transcript (a `role="log"` div with past lines, no input
    element — see `web/demo/shell.html`) is replaced on first connect exactly
@@ -154,10 +168,11 @@ New modules (all under `src/terminal/` unless noted):
 | `screen/palette.ts` | 16/256/truecolor resolution, theme mapping |
 | `discipline/*.ts` | cooked editor, raw passthrough, transitions |
 | `input/keys.ts` | key normalization, chord grammar, `sendKeys` parser |
-| `input/mouse.ts` | selection state, click/wheel routing, SGR-style reports |
+| `input/mouse.ts` | selection state, click/wheel routing, `contextmenu` interception (opens the terminal menu, §8.5), SGR-style reports |
 | `apps/api.ts` | `TerminalApp` contract, runner, alt-screen lifecycle |
 | `render/canvas.ts` | the renderer — glyph atlas, damage paint, DPR, selection overlay (in-bundle; the one visible path) |
-| `render/mirror.ts` | the v1 DOM renderer, demoted: hidden synchronised mirror (a11y tree, find-in-page, copy; promoted to the visible paint under forced-colors / 2d-context failure) |
+| `render/mirror.ts` | the v1 DOM renderer, demoted: hidden synchronised mirror (a11y tree, find-in-page, copy; promoted to the visible paint by forced-colors / 2d-context failure, `renderer="dom"`, or the context menu — §8.5) |
+| `chrome/context-menu.ts` | the terminal context menu (§8.5): renders the window-chrome actions registry on the canvas surface; per-element view-switch state in `sessionStorage` |
 | `chrome/sem-scroll.ts` | Lit scrollbar component |
 | `chrome/tabs.ts` | tab model (per-tab session, shared VFS) |
 | `env/direnv.ts` | `.envrc` subset evaluation on `cd` |
@@ -471,6 +486,13 @@ window chrome) stays as v1 plus the chrome standard.
   never synthesize legacy encodings.
 - Selection semantics on mobile: long-press select, drag handles are native
   to the mirror layer (§9) — canvas does not fight the platform.
+- **Context menu**: `contextmenu` (right-click), `Shift+F10` and the
+  ContextMenu key, and long-press (touch — press held without dragging; a
+  long-press-drag keeps selecting) open the terminal's own context menu
+  (§8.5) on the canvas surface. `Shift`+right-click passes through to the
+  native browser menu. The interception is host-level: these keys never
+  reach apps as `KeyEvent`s, and the menu wins even while app
+  mouse-reporting is active — it is chrome, not app surface.
 
 ### 7.4 Paste and clipboard
 
@@ -500,9 +522,10 @@ playback).
 
 ## 8. Renderers
 
-One contract, two implementations — the canvas driver paints, the DOM
-implementation mirrors (2026-10-14 decision: canvas is the only visible path;
-§8.2):
+One contract, two implementations — the canvas driver paints by default, the
+DOM implementation mirrors and, when promoted, becomes the visible view
+(2026-10-14 decision: canvas is the one default path; the DOM view is reached
+by failure fallback, attribute, or context menu — §8.2, §8.5):
 
 ```ts
 interface ScreenRenderer {
@@ -527,7 +550,9 @@ available through copy and app-level search (the pager's `/`). Cost is
 O(rows) regardless of scrollback depth. Under `forced-colors: active` — or
 if the canvas 2d context cannot be created — the mirror is promoted to the
 *visible* renderer for the session (same code path, unclipped): the
-automatic fallback strategy, with no opt-out attribute.
+automatic failure fallback. Promotion is no longer automatic-only: the
+documented `renderer="dom"` attribute and the context menu's view switch
+promote this same paint on demand (§8.5).
 
 ### 8.2 Why canvas is the one path (2026-10-14 decision)
 
@@ -540,6 +565,14 @@ same pixels, and the DOM code that remains is repurposed, not deleted: the
 mirror (§8.1) already produces the exact light-DOM shape v1 rendered, so
 a11y, find-in-page, copy, and the forced-colors paint all fall out of code
 that had to exist anyway.
+
+Amended the same day (user decision): *reachable* beats *minimal*. The
+one-default-path ruling stands — no second default paint, no second chunk —
+but the DOM paint gains two opt-in triggers: the documented `renderer="dom"`
+attribute and a terminal context menu (§8.5). The original objection ("a
+per-page opt-in no landing page would exercise") is answered by moving the
+switch inside the element and its menu: users reach the DOM paint in the
+wild, on one bundle, with nothing for the author to wire.
 
 ### 8.3 Canvas driver (in `semtext-js-shell.js` — the one renderer)
 
@@ -568,23 +601,74 @@ that had to exist anyway.
 - **Forced-colors / high-contrast**: the element detects
   `forced-colors: active` (and any `getContext('2d')` failure) and promotes
   the DOM mirror to the visible renderer for the session (§8.1) — canvas
-  cannot honor forced-color semantics honestly. Automatic only; no public
-  attribute switches renderers.
+  cannot honor forced-color semantics honestly. Automatic — and no longer
+  the only route: `renderer="dom"` and the context menu promote the same
+  paint on demand (§8.5).
 
 ### 8.4 Loading — one bundle, no fetch (invariant 1 by construction)
 
 `semtext-js-shell.js` (IIFE, file://-safe) ships everything: §3–§7, the
-canvas driver, and the DOM mirror. There is no `semtext-shell-canvas.js`
-chunk and no `renderer="canvas"` opt-in (2026-10-14 decision): one classic
-script, evaluated in one pass — nothing is fetched, imported, or
-lazy-loaded at runtime, on any origin. Invariant 1 holds by construction
-rather than by discipline. The document-side lazy loader
-(`semtext-lazy.js`) is untouched and stays out of the shell's business.
+canvas driver, and the DOM mirror — including both opt-in view switches
+(§8.5). There is no `semtext-shell-canvas.js` chunk and no second script
+for either paint (2026-10-14 decision): one classic script, evaluated in
+one pass — nothing is fetched, imported, or lazy-loaded at runtime, on any
+origin. Invariant 1 holds by construction rather than by discipline. The
+document-side lazy loader (`semtext-lazy.js`) is untouched and stays out of
+the shell's business.
+
+### 8.5 Reaching the DOM view — `renderer="dom"` and the context menu (2026-10-14 decision)
+
+Canvas stays the one default paint (§8.2); the DOM rendering becomes the
+*visible* view three ways — one automatic, two opt-in:
+
+- **(a) Automatic** — as designed since the canvas decision: `forced-colors:
+  active` or a failed `getContext('2d')` promotes the mirror for the session
+  (§8.1). No attribute, no menu — the browser has already chosen.
+- **(b) `renderer="dom"`** — a public, documented attribute on the element
+  (`"canvas"` default · `"dom"`). It pins the element to the DOM paint (the
+  mirror's code path, unclipped) for authors and debugging — a printable
+  docs page, a bug report that must show the DOM paint. Changes are observed
+  live (property and attribute). It is still bounded by (a): if canvas could
+  not init, the DOM view shows regardless.
+- **(c) The context menu** — a custom menu on the canvas surface, per
+  element (event sourcing: §7.3):
+  - **Opening:** right-click (`contextmenu`, intercepted) · `Shift+F10` or
+    the ContextMenu key · long-press on touch. `Shift`+right-click passes
+    through to the native browser menu.
+  - **Items:** *Copy* · *Select all* · *Paste* (off unless the platform
+    grants clipboard read; §7.4's fallbacks apply) · *Find…* (activates the
+    running app's find verb — the pager's `/`; disabled with a hint when the
+    app declares none) · *Switch to text view* / *Switch to canvas view*
+    (label per current view; per element, persisted for the browsing session
+    as `semtext-view:<element-id>` in `sessionStorage` — no cookie, no
+    cross-session persistence) · *Open plain transcript* (serialises
+    `ring + primary` through the one `extractText` into a `text/plain` Blob
+    URL opened in a new browsing context — works on file://, no fetch) ·
+    *Browser menu…* (the keyboard/touch equivalent of Shift+right-click:
+    synthetic events cannot summon the native menu, so the item closes the
+    custom menu and arms a one-shot pass-through — the user's next
+    `contextmenu` reaches the browser unmodified).
+  - **A11y:** `role="menu"` + `role="menuitem"`; ↑/↓ navigation (Home/End);
+    Enter/Space activate; Escape closes and returns focus to the terminal;
+    the terminal surface declares `aria-haspopup="menu"`. Opening animation
+    respects `prefers-reduced-motion`; the menu clamps to the viewport.
+  - **Chrome reuse:** every item is the same action object the shared
+    window-chrome actions registry exposes (`src/shared/window-chrome.ts`
+    actions slot, §11.1) — `sem-browser`'s toolbar and the terminal's menu
+    render one action list, so Copy/Paste/Find and the view switch behave
+    identically across `sem-shell`, `sem-browser`, and the ExampleViewer.
+    The switch state lives with the element, not the chrome.
+
+Both opt-ins reuse the mirror paint the automatic fallback already requires —
+no second code path, no second bundle (§8.4's one-script rule is untouched;
+`renderer="dom"` is a view switch inside the same script). What changes from
+the original "no opt-out" stance: the DOM paint is now exercised in the wild
+by user choice, not only by browser failure and e2e.
 
 ## 9. Accessibility
 
 - **The DOM mirror is the accessibility tree — always.** With canvas the
-  only visible path, the mirror (§8.1) is unconditionally mounted:
+  default visible path, the mirror (§8.1) is unconditionally mounted:
   visually-hidden (`aria-hidden="false"`, clipped to zero size), derived
   from the same damage sets, throttled to ≥ 100ms / on-idle. Screen
   readers, browser find-in-page, and platform text services all read it;
@@ -593,12 +677,18 @@ rather than by discipline. The document-side lazy loader
   structure to screen ranges and are painted on canvas as selection-overlay
   rects — the browser highlights nothing visible by itself (the mirror is
   clipped); the canvas does.
+- **The mirror doubles as the user-facing text view.** The context menu's
+  *Switch to text view* and the `renderer="dom"` attribute promote this
+  same surface to visible (§8.5): a low-vision user gets a real, platform-
+  selectable DOM rendering of the running screen on demand — without
+  waiting for a browser failure to trigger it. One content source, two
+  visibilities.
 - **Selection and clipboard run through the screen.** Drag-select paints
   canvas overlays; assistive/platform selection on the mirror addresses the
-  same `(absoluteLine, col)` ranges. Copy — keyboard, context menu, or
-  `navigator.clipboard` (execCommand from the hidden input on file://,
-  §7.4) — feeds from one `extractText`, so canvas selection and mirror
-  selection copy identical text.
+  same `(absoluteLine, col)` ranges. Copy — keyboard, the context menu
+  (§8.5), or `navigator.clipboard` (execCommand from the hidden input on
+  file://, §7.4) — feeds from one `extractText`, so canvas selection and
+  mirror selection copy identical text.
 - **Live regions**: the transcript keeps `role="log" aria-live="polite"` (v1
   semantics). App screens announce a compact summary line on change ("pager:
   lines 1–24 of 214") rather than diffing 2,000 cells into speech — the
@@ -613,6 +703,13 @@ rather than by discipline. The document-side lazy loader
 - **Keyboard**: everything is keyboard-first by construction (it is a
   terminal); focus visible via the window-chrome focus ring; Tab/Shift+Tab
   leave the terminal when the cooked line is empty (v1 behavior kept).
+- **The context menu is keyboard-first too** (§8.5): it opens without a
+  pointer (`Shift+F10` / the ContextMenu key, long-press on touch), is a
+  `role="menu"` with arrow navigation, Escape closes it and focus returns
+  to the terminal, and every item is the window-chrome actions registry
+  (§11.1) — so assistive tech reaches Copy/Paste/Find and the text-view
+  switch without the pointer gesture. The text view itself is the mirror:
+  the content screen readers already track, made visible and selectable.
 - **Motion**: cursor blink, playback typing, and scroll animation all gate
   on `prefers-reduced-motion` (playback already does — `playback.ts`
   `reducedMotion` — and stays).
@@ -659,6 +756,12 @@ Subscribers: the window chrome (title bar text + status dot — this is the
 `src/shared/window-chrome.ts` consumes the same feed for `sem-browser`,
 `sem-shell`, `sem-code`, and the reference ExampleViewer), the tab strip
 (§11.2), and tests. OSC never writes to the screen.
+
+The chrome's **actions slot doubles as the shared action registry**: the
+terminal context menu (§8.5) renders the same action objects on the canvas
+surface, so Copy / Paste / Find and the text-view switch exist once and
+show up identically in `sem-browser`'s toolbar and the terminal's menu.
+View-switch state belongs to the terminal element, not the chrome.
 
 ### 11.2 Tabs
 
@@ -750,15 +853,18 @@ every phase — that is the migration's definition of success.
 |---|---|---|
 | **M1 — parser lands** (Epoch 1, ansi lane) | ANSI/VT parser behind one output hook | existing tests green; SGR codes beyond the whitelist parsed, still rendered via span classes |
 | **M2 — screen beneath** | `Screen` introduced as the write sink; the DOM paint reads cells (interim visible path); `lines` becomes a derived view over writes | all v1 transcript tests green against the derived `lines`; double-render of prompt row removed |
-| **M3 — canvas paints, DOM mirrors** | the canvas driver (from the one bundle) becomes the visible renderer; the DOM renderer demoted to the hidden mirror; forced-colors / 2d-context promotion logic | canvas e2e + pixel-diff via the snap harness; mirror text assertions (never only pixels); forced-colors mirror-promotion e2e; file:// smoke — same bundle, no fetch |
+| **M3 — canvas paints, DOM mirrors** | the canvas driver (from the one bundle) becomes the visible renderer; the DOM renderer demoted to the hidden mirror; forced-colors / 2d-context promotion logic; the `renderer="dom"` attribute (§8.5b) | canvas e2e + pixel-diff via the snap harness; mirror text assertions (never only pixels); forced-colors mirror-promotion e2e; `renderer="dom"` view-switch e2e (both paints asserted); file:// smoke — same bundle, no fetch |
 | **M4 — discipline swap** | cooked editor on the grid (hidden input, drawn cursor); v1 `#onKeydown`/`#navigate`/`#complete` logic deleted | typing/history/completion e2e parity checklist; IME composition e2e; `nojs.html` proof unchanged |
 | **M5 — apps + alt screen** | `TerminalApp` API, runner, bat pager, semtext-tui grid version alongside the DOM overlay | pager interactions (§ product intent: ↑/↓/PgUp/PgDn, `/` find, n/N, q/:q/Esc) e2e; tui keyboard+mouse e2e; interrupt ladder e2e |
-| **M6 — chrome + env** | `sem-scroll`, OSC title/status feeds into window chrome, direnv subset, `sendKeys` public | scrollbar e2e; direnv unit + e2e; sendKeys drives the landing demo scripts |
+| **M6 — chrome + env** | `sem-scroll`, OSC title/status feeds into window chrome, direnv subset, `sendKeys` public, the terminal context menu (§8.5c: Copy / Select all / Paste / Find… / view switch / plain transcript — from the window-chrome actions registry) | scrollbar e2e; direnv unit + e2e; sendKeys drives the landing demo scripts; context-menu e2e (right-click / Shift+F10 / long-press open; `role="menu"`, arrow nav, Escape + focus return; view switch persists in `sessionStorage`; *Open plain transcript* round-trips text; *Browser menu…* pass-through latch) |
 
 Rollback story: M1–M6 keep the external surface constant, so a revert is a
 revert. M3 flips the visible path, but the DOM paint code stays in the bundle
 as the mirror/fallback — reverting M3 promotes it visible again, with no
-artifact boundary involved. The v1 TUI overlay is only deleted after the
+artifact boundary involved. The `renderer="dom"` attribute (M3) and the
+context menu (M6) keep the DOM paint exercised in the wild, not only under
+e2e — a latent rot in the mirror path is a bug users can hit and report, not
+a silent one. The v1 TUI overlay is only deleted after the
 grid tui passes the overlay's own e2e suite (`semtext-tui.test.ts` +
 cypress) — parity, then retire.
 
@@ -779,7 +885,10 @@ cypress) — parity, then retire.
   driving the four landing scripts; scrollback + scrollbar; reduced-motion
   (instant playback, steady cursor); `nojs.html` still proves the JS-off
   transcript; canvas paint (screenshot diff via the snap harness + mirror
-  text assertions — never only pixels); forced-colors mirror-promotion; a11y
+  text assertions — never only pixels); forced-colors mirror-promotion; the
+  DOM view switches (`renderer="dom"` attribute, context-menu *Switch to
+  text/canvas view* with `sessionStorage` persistence, Escape + focus
+  return, *Open plain transcript* round-trip); a11y
   mirror (axe on the mirror, live-region announcements); a file:// smoke of
   the single bundle.
 - **Perf:** §13.2 benches, reported in CI.
@@ -794,6 +903,7 @@ cypress) — parity, then retire.
 | IME regressions from losing the visible input | hidden-input surface is specified (§7.2) and e2e'd in M2 before the v1 input is deleted |
 | Canvas grid vs screen width disagreement (font metrics drift) | one metrics module, measured after `document.fonts.ready`; disagreement impossible by construction |
 | A11y mirror drift / double source of truth | one source (the screen); the mirror is derived from the same damage sets; mirror assertions in e2e |
+| The DOM paint rots behind the default canvas | `renderer="dom"` and the context menu's view switch (2026-10-14 decision, §8.5) keep the DOM paint reachable — and chosen — in the wild; both paints asserted in e2e every phase |
 | Scrollback memory on long sessions | ring capacity attr + hard cap; lines immutable once in the ring |
 | Safari/file:// clipboard limits | execCommand fallback specified; copy degrades to selection + Ctrl+C on the mirror (native path still works — text is real DOM) |
 | Bundle growth pressure | the 256 KB raw shell budget absorbs the in-bundle canvas driver (2026-10-14 decision); per-phase budget checks; core bundle forbidden to grow (standing rule) |
@@ -814,6 +924,15 @@ cypress) — parity, then retire.
    (forced-colors, 2d-context failure): should any user- or author-facing
    escape hatch to the mirror paint exist (e.g. a debug attribute), or
    none at all? (Recommend none — one code path exercised in the wild.)
+   **Answered (user, 2026-10-14): yes — twice.** (a) stays automatic;
+   (b) a documented `renderer="dom"` attribute serves authors and
+   debugging; (c) a terminal context menu (right-click / `Shift+F10` /
+   ContextMenu key / long-press) offers Copy, Select all, Paste (where
+   allowed), Find…, *Switch to text view / canvas view* (per element,
+   persisted per session in `sessionStorage`), *Open plain transcript*,
+   and *Browser menu…* (the native menu stays reachable — also directly
+   via Shift+right-click). The recommendation above is overturned; the
+   design is §8.5.
 5. `semtext tui` grid version: replace the flashcard DOM overlay at M5 or
    keep hybrid-semantic mode permanently for screen-reader quality?
    (Recommend permanent hybrid — it is the better a11y answer.)
