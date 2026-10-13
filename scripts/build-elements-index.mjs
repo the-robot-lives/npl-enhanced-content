@@ -23,8 +23,8 @@
  * the schema file and re-run.
  */
 
-import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { realpathSync, readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -34,6 +34,12 @@ const OUT = join(root, 'elements.json');
 
 const GLOBAL_ATTR_NAMES = ['id', 'kind', 'tags'];
 const TAG_SHAPE = /^[a-z][a-z0-9-]*$/;
+const TYPE_WORD = /^(string|boolean|integer|number)$/i;
+
+/** A backticked token is a stated VALUE only if it is not the attribute's
+ *  type word and not a `data-*` alias mirror (the alias spelling, not a
+ *  value: `data-kind` names the mirror, `kind` the value it carries). */
+const isValueToken = (t) => !/^data-/i.test(t) && !TYPE_WORD.test(t);
 
 // ---------- helpers ----------
 
@@ -197,17 +203,20 @@ function parseSchemaFile(file) {
     if (attr.allowedValues.length) {
       // `view-as="margin"` — the single stated mode.
     } else if (/\(default\)\s*\|/.test(rest) || /^\s*`[^`]+`\s*\(/.test(rest)) {
-      attr.allowedValues = [...new Set((rest.match(/`([^`]+)`/g) || []).map((t) => t.slice(1, -1)).filter((t) => t !== 'default'))];
+      attr.allowedValues = [...new Set((rest.match(/`([^`]+)`/g) || []).map((t) => t.slice(1, -1)).filter((t) => t !== 'default' && isValueToken(t)))];
     } else if (/\bone of\b/i.test(rest)) {
-      attr.allowedValues = [...new Set(tagTokens(rest))];
+      attr.allowedValues = [...new Set(tagTokens(rest).filter(isValueToken))];
     }
 
     // The description keeps the bullet's prose; drop the fragments already
-    // captured as type/default.
+    // captured as type/default. The type word may be backticked
+    // (`\`string\` — required`); a default clause may be followed by a
+    // separator (`; `, `. `, `, `) or an em-dash lead-in.
     attr.description = rest
-      .replace(/^\s*(string|boolean|integer|number)\s*[—-]\s*/i, '')
-      .replace(/\bdefault `[^`]*`[.:]?\s*/i, '')
-      .replace(/\bdefault none[.:]?\s*/i, '')
+      .replace(/^\s*`?(string|boolean|integer|number)`?\s*[—-]\s*/i, '')
+      .replace(/\bdefault `[^`]*`[.:;,]?\s*(?:[—-]\s*)?/gi, '')
+      .replace(/\bdefault none[.:;,]?\s*(?:[—-]\s*)?/gi, '')
+      .replace(/^[;,.:\s]+/, '')
       .trim();
 
     attributes.push(attr);
@@ -248,8 +257,9 @@ function parseSchemaFile(file) {
     }
     const b = item.text;
 
-    // Global catalog line: `- `id`, `kind`, `tags` per the global (attribute) catalog`.
-    const gm = b.match(/^((?:`[a-z][a-z0-9-]*`[,\s]*)+)per (the )?global (attribute )?catalog/i);
+    // Global catalog line: `- `id`, `kind`, `tags` per the global (attribute)
+    // catalog` — or the short form `- `id`, `kind`, `tags` global.`
+    const gm = b.match(/^((?:`[a-z][a-z0-9-]*`[,\s]*)+)(?:per (?:the )?global (?:attribute )?catalog|global\s*[.;])/i);
     if (gm) {
       for (const n of tagTokens(gm[1])) {
         attributes.push({
@@ -301,11 +311,18 @@ function parseSchemaFile(file) {
   // after the bullets so attribute names are known. An explicit enumeration
   // ("Parts mirror the NPL `vos` child tags: `id`, `ego` …") may name parts
   // that collide with global attribute names — those are forced through.
+  // When the paragraph OPENS with the declaration sentence, mine that
+  // sentence only: follow-on sentences describe rendered chrome (CSS
+  // classes, warning channels) that must not become children.
   for (const p of [...paragraphsOf(sections._intro.join('\n')), ...paragraphsOf(authoring)]) {
     if (!/\bchild(?:ren)?\b/i.test(p)) continue;
     if (/^Class-form alias/i.test(p)) continue;
-    const force = /child tags|parts? mirror/i.test(p);
-    for (const t of childTokens(p)) {
+    const first = p.search(/(?<=\.)\s/);
+    const open = first >= 0 ? p.slice(0, first + 1) : p;
+    const declareFirst = /\bchild(?:ren)?\b|\bparts? mirror\b/i.test(open);
+    const mine = declareFirst ? open : p;
+    const force = /child tags|parts? mirror/i.test(mine);
+    for (const t of childTokens(mine)) {
       if (force) {
         if (!t || childSeen.has(t)) continue;
         childSeen.add(t);
@@ -331,6 +348,10 @@ function parseSchemaFile(file) {
 }
 
 // ---------- main ----------
+
+export { parseSchemaFile };
+
+async function main() {
 
 const files = [];
 for (const f of readdirSync(SCHEMA_DIR).filter((f) => f.endsWith('.md')).sort()) {
@@ -411,3 +432,11 @@ const out = {
 
 writeFileSync(OUT, JSON.stringify(out, null, 2) + '\n');
 console.log(`elements.json: ${tags.length} tags from ${files.length} schema files, ${gaps.length} gap entries`);
+}
+
+// Run only when invoked as the entry script — importing the module
+// (tests) parses schemas on demand without writing anything. Both sides
+// are realpathed: on macOS /tmp is a symlink to /private/tmp.
+const entryArg = process.argv[1] ? resolve(process.argv[1]) : '';
+const entry = entryArg && pathToFileURL(realpathSync(entryArg)).href;
+if (entry && entry === pathToFileURL(realpathSync(fileURLToPath(import.meta.url))).href) main();
