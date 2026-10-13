@@ -53,18 +53,18 @@
 
   <!-- ── Element buckets ─────────────────────────────────────────────── -->
   <h2 id="element-buckets">Element buckets</h2>
-  <p>The SemText vocabulary groups into eight conceptual buckets. Each element appears in its primary bucket below; every element is also listed with its full entry in <a href="#5-element-entries">&sect;5</a>.</p>
+  <p>The SemText vocabulary groups into seven conceptual buckets; NPL elements are not bucketed and form a single display family of their own. Each element appears in its primary bucket below; every element is also listed with its full entry in <a href="#5-element-entries">&sect;5</a>.</p>
 
   <sem-md id="md-buckets" kind="bucket-overview" label="Element buckets" controls="toggle,copy">
     | Bucket | Elements | What it covers |
     | :-- | :-- | :-- |
-    | **Document** | `sem-enhanced-document`, `sem-reader` | Document skeleton, reading chrome, outline, theme and font controls |
-    | **Knowledge** | `sem-fact` / `sem-facts`, `sem-detail` / `sem-details`, `sem-reveal`, `sem-question` / `sem-option` | Facts, flashcards, quizzes, cloze deletions, Q&amp;A disclosure |
-    | **Data** | `sem-properties` / `sem-property`, `sem-table`, `sem-md`, `sem-data-source` / `sem-data-query` / `sem-data-join` / `sem-data-visualizer` | Definition lists, sortable tables, Markdown blocks, data connectors |
-    | **Navigation** | `sem-views` / `sem-view`, `sem-source`, `sem-note` | Tabbed perspectives, render/source toggles, callouts and asides |
-    | **Process** | `sem-procedure` / `sem-step`, `sem-chronology` / `sem-event`, `sem-progress` | Ordered procedures, timelines, completion meters |
-    | **Code &amp; Citations** | `sem-code`, `sem-references` / `sem-reference` | Verbatim code listings, numbered bibliographic citations |
-    | **Metadata** | `sem-audiences` / `sem-profile`, `agent` | Reader profile definitions, document-level agent metadata |
+    | **Document &amp; structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent`, `sem-embed` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
+    | **Prose &amp; code** | `sem-md`, `sem-note`, `sem-code` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
+    | **Disclosure &amp; views** | `sem-details` / `sem-detail`, `highlight`, `sem-reveal`, `sem-source`, `sem-views` / `sem-view` | The same content under different reading interactions -- occluded detail, Q-A reveal, markup flip, perspective tabs |
+    | **Facts &amp; recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `sem-distractor`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
+    | **Data &amp; tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
+    | **Sequences &amp; progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
+    | **Definitions &amp; citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference` | Closed key/value assertions and the numbered works the prose cites |
     | **NPL** | `npl-agent`, `npl-directive`, `npl-section`, `npl-rubric`, `npl-critique`, `npl-declaration`, `npl-example`, `npl-flag` / `npl-flags`, `npl-hormones`, `npl-mindread`, `npl-mode`, `npl-mood`, `npl-poa`, `npl-ref`, `npl-thought`, `npl-vos`, `npl-artifact`, `npl-cot`, `npl-intent` | NPL prompt-engineering elements; loaded by `npl.js` / `npl-lazy.js` on top of the SemText core |
   </sem-md>
 
@@ -203,9 +203,9 @@
   <p>Each entry shows the canonical markup in a listing, then runs a live example wrapped in <code>sem-source</code>. The example is the spec executing itself; its <em>Source</em> view is the markup of this page, not a second copy. Entries are grouped by conceptual bucket (see the <a href="#element-buckets">Element buckets</a> table above). Elements marked <strong>Zero-JS</strong> render entirely from CSS and markup with no script dependency. The class-form alias for every element is one row of <a href="#appendix-a--class-form-alias-v04-compatibility">Appendix A</a>.</p>
 
   <!-- ═══════════════════════════════════════════════════════════════════
-       DOCUMENT
+       DOCUMENT & STRUCTURE
        ═══════════════════════════════════════════════════════════════════ -->
-  <h3 id="bucket-document">Document</h3>
+  <h3 id="bucket-document">Document &amp; structure</h3>
 
   <!-- sem-reader --------------------------------------------------------- -->
   <h4 id="e-reader">sem-reader -- reading chrome: outline, progress, focus, type, colour, print, audience</h4>
@@ -215,45 +215,82 @@
 &lt;/sem-reader&gt;</code></pre></sem-code>
   <p>One per document, first child of the wrapper. Reading bundle inserts <code>.sem-reader-chrome</code> (<code>role="region"</code>), generates the outline from <code>h2&hellip;h&lt;depth&gt;</code> when no nav is authored (<code>aria-current="location"</code> tracks the heading in view), and writes <code>data-sem-mode|type|font</code> and <code>data-color-mode</code> on <code>&lt;html&gt;</code> -- persisted via <code>localStorage</code>, fail-open. Audience writes the <code>sem-audience</code> hash parameter. No global key shortcuts. <strong>Mints nothing</strong>; extraction skips it whole (extraction &sect;3 rule 7). The <code>theme</code> control is R/W3. The live example is the bar at the top of this page.</p>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       KNOWLEDGE
-       ═══════════════════════════════════════════════════════════════════ -->
-  <h3 id="bucket-knowledge">Knowledge</h3>
-
-  <!-- sem-fact ----------------------------------------------------------- -->
-  <h4 id="e-fact">sem-fact -- the atomic unit; assertable Q/A pair</h4>
-  <sem-code id="c-fact" lang="html"><pre><code>&lt;sem-fact id="f-jwt" kind="concept"&gt;
-  &lt;statement&gt;JWTs rotate per session&lt;/statement&gt;
-  &lt;conclusion&gt;Short-lived access; refresh grants a new pair.&lt;/conclusion&gt;
-&lt;/sem-fact&gt;</code></pre></sem-code>
-  <p>Compact form: <code>&lt;sem-fact&gt;JWT rotation :: short-lived access&lt;/sem-fact&gt;</code>. Machine view: statement+conclusion = structured assertion.</p>
-
-  <!-- sem-facts ---------------------------------------------------------- -->
-  <h4 id="e-facts">sem-facts -- collection; the flagship surface</h4>
-  <p><strong>Normative: <a href="#r-sem-facts">spec/schema/sem-facts.md</a>.</strong></p>
-  <sem-code id="c-facts" lang="html"><pre><code>&lt;sem-facts view-as="quiz" controls="shuffle,filter"&gt;
-  &lt;sem-fact&gt;&hellip;&lt;/sem-fact&gt;
-  &lt;sem-fact&gt;&hellip;&lt;sem-distractor&gt;decoy conclusion&lt;/sem-distractor&gt;&lt;/sem-fact&gt;
-&lt;/sem-facts&gt;</code></pre></sem-code>
-  <ul>
-    <li><code>view-as="list"</code> (default): filter box, tag chips.</li>
-    <li><code>view-as="flashcards"</code>: front = statement (+<code>&lt;highlight&gt;</code> prompt), back = conclusion; flip click/Space; &larr;/&rarr;/swipe; progress <code>3/12</code>; <code>shuffle</code>.</li>
-    <li><code>view-as="quiz"</code>: statement shown; candidates = sibling conclusions, <code>&lt;sem-distractor&gt;</code> children win when present; accuracy on <code>sem-complete</code>.</li>
-    <li>Events: <code>sem-navigate {index}</code>, <code>sem-flip {face}</code>, <code>sem-complete {correct,total,ms}</code>.</li>
-  </ul>
-  <sem-source id="s-facts" label="Live: sem-facts, flashcards">
-    <sem-facts id="x-facts" view-as="flashcards" kind="spec">
-      <sem-fact id="x-f1" kind="rule">
-        <statement>Semantic identity, parameterized presentation</statement>
-        <conclusion><code>sem-fact</code> is a fact in list, flashcard and quiz views -- <code>view-as</code> only changes rendering.</conclusion>
-      </sem-fact>
-      <sem-fact id="x-f2" kind="rule">
-        <statement>What guarantees interactivity?</statement>
-        <conclusion>The one <code>semtext.js</code> script.</conclusion>
-        <sem-distractor>The Tailwind CDN script.</sem-distractor>
-      </sem-fact>
-    </sem-facts>
+  <!-- sem-audiences ------------------------------------------------------ -->
+  <h4 id="e-audiences">sem-audiences / sem-profile -- reader profiles</h4>
+  <p>Metadata, mints nothing. <strong>Normative: <a href="#r-sem-audiences">spec/schema/sem-audiences.md</a>.</strong> Active profile = hash <code>sem-audience</code> param, else <code>audience</code> on the root wrapper / <code>data-audience</code> on <code>&lt;html&gt;</code>. The script sets native <code>hidden</code> on non-matching elements; JS-off everything shows; fail-open on unknown tokens.</p>
+  <sem-code id="c-audiences" lang="html"><pre><code>&lt;sem-audiences&gt;
+  &lt;sem-profile id="reader" label="Reader"&gt;&lt;/sem-profile&gt;
+  &lt;sem-profile id="operator" label="Operator" implies="reader"&gt;&lt;/sem-profile&gt;
+&lt;/sem-audiences&gt;
+&lt;sem-note audience="operator"&gt;&hellip;&lt;/sem-note&gt;</code></pre></sem-code>
+  <sem-source id="s-audiences" label="Live: sem-audiences">
+    <sem-audiences id="x-audiences">
+      <sem-profile id="reader" label="Reader"></sem-profile>
+      <sem-profile id="operator" label="Operator" implies="reader"></sem-profile>
+    </sem-audiences>
+    <sem-note id="x-audience-note" audience="operator" variant="info">Operators only: an operator implies reader. Pick a profile from the reading bar's <em>Audience</em> select, or open <a href="#sem-audience=operator">#sem-audience=operator</a>.</sem-note>
   </sem-source>
+
+  <!-- agent -------------------------------------------------------------- -->
+  <h4 id="e-agent">agent -- document-level metadata (bare semantic tag)</h4>
+  <p>Documented in <a href="#1-document-skeleton">&sect;1 Document skeleton</a> above. Children: <code>&lt;name&gt;</code>, <code>&lt;bio&gt;</code>, <code>&lt;instructions&gt;</code>. Machine-facing, unstyled -- no <code>sem-</code> prefix. Future metadata children (<code>org</code>, <code>context</code>, <code>audience</code>) will follow the same bare-tag pattern.</p>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       PROSE & CODE
+       ═══════════════════════════════════════════════════════════════════ -->
+  <h3 id="bucket-prose">Prose &amp; code</h3>
+
+  <!-- sem-md ------------------------------------------------------------- -->
+  <h4 id="e-md">sem-md -- a Markdown block, rendered in the browser</h4>
+  <p><strong>Normative: <a href="#r-sem-md">spec/schema/sem-md.md</a>.</strong></p>
+  <sem-code id="c-md" lang="html"><pre><code>&lt;sem-md id="m-lifetimes" label="Token lifetimes" controls="toggle,copy"&gt;
+  | Token   | Lifetime | Rotates |
+  | :------ | -------: | :-----: |
+  | access  | 15 min   | no      |
+  | refresh | 30 days  | yes     |
+&lt;/sem-md&gt;</code></pre></sem-code>
+  <p>The element's text is Markdown (GFM tables, headings, lists, emphasis, links, code, quotes, rules; raw HTML renders as text). The script adds <code>.sem-md-chrome</code> (label, <code>Markdown</code> toggle with <code>aria-pressed</code>, copy, status region), renders into <code>.sem-md-body</code> (real <code>&lt;table&gt;</code> with <code>th[scope="col"]</code>, alignment row honoured) and keeps the normalised source in a <code>sem-code</code> fence (<code>.sem-md-raw</code>); <code>view-as="rendered|raw"</code> picks the initial mode and the toggle rewrites <code>data-view-as</code>. JS-off: the source reads as pre-wrapped text. Extraction keeps <code>source</code> <strong>normalised</strong> (dedented), never the rendering. Every table on this page -- <a href="#2-attribute-catalog">&sect;2</a>, <a href="#3-npl-notation-inside-tags">&sect;3</a>, <a href="#element-buckets">Element buckets</a>, <a href="#10-open-questions">&sect;10</a>, <a href="#appendix-a--class-form-alias-v04-compatibility">Appendix A</a> -- is this element, with rows identical to the Markdown source.</p>
+  <sem-source id="s-md" label="Live: sem-md">
+    <sem-md id="x-md" kind="lifetimes" label="Token lifetimes" controls="toggle,copy">
+      | Token   | Lifetime | Rotates |
+      | :------ | -------: | :-----: |
+      | access  | 15 min   | no      |
+      | refresh | 30 days  | yes     |
+    </sem-md>
+  </sem-source>
+
+  <!-- sem-note ----------------------------------------------------------- -->
+  <h4 id="e-note">sem-note -- callout</h4>
+  <p><strong>Normative: <a href="#r-sem-note">spec/schema/sem-note.md</a>.</strong></p>
+  <sem-code id="c-note" lang="html"><pre><code>&lt;sem-note variant="warning"&gt;Rotation is &lt;strong&gt;per session&lt;/strong&gt;.&lt;/sem-note&gt;
+&lt;sem-note variant="tip" collapsed&gt;Shuffle flashcards before each review session.&lt;/sem-note&gt;</code></pre></sem-code>
+  <p><code>variant="info|warning|tip|danger"</code>; the body is the element's content; <code>collapsed</code> &rArr; ten-word teaser, click to expand (the component wraps the body in <code>.sem-note-body</code> to hide it); <code>view-as="margin"</code> &rArr; CSS-only right-gutter aside on wide viewports, inline otherwise. Light DOM, <code>role="note"</code>.</p>
+  <sem-source id="s-note" label="Live: sem-note">
+    <sem-note id="x-note" variant="warning">Rotation is <strong>per session</strong>.</sem-note>
+    <sem-note id="x-note-collapsed" variant="tip" collapsed>Shuffle flashcards before each review session for better recall; the deck remembers nothing between sessions.</sem-note>
+  </sem-source>
+
+  <!-- sem-code ----------------------------------------------------------- -->
+  <h4 id="e-code">sem-code -- verbatim listing with provenance and copy / wrap</h4>
+  <p><strong>Normative: <a href="#r-sem-code">spec/schema/sem-code.md</a>.</strong></p>
+  <sem-code id="c-code" lang="html"><pre><code>&lt;sem-code lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap"&gt;
+&lt;pre&gt;&lt;code&gt;&hellip;&lt;/code&gt;&lt;/pre&gt;
+&lt;/sem-code&gt;</code></pre></sem-code>
+  <p>Reading bundle adds <code>.sem-code-chrome</code> (filename, lang, buttons, status region), wraps lines (<code>span|mark.sem-code-line</code>, text byte-identical), <code>tabindex="0"</code> on an overflowing <code>&lt;pre&gt;</code>. JS-off: plain <code>&lt;pre&gt;</code> with a CSS caption. Extraction keeps <code>source</code> <strong>verbatim</strong>.</p>
+  <sem-source id="s-code" label="Live: sem-code">
+    <sem-code id="x-code" lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap">
+<pre><code>export function rotate(pair: Pair): Pair {
+  const next = mint();
+  retire(pair.refresh);
+  return next;
+}</code></pre>
+    </sem-code>
+  </sem-source>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       DISCLOSURE & VIEWS
+       ═══════════════════════════════════════════════════════════════════ -->
+  <h3 id="bucket-disclosure">Disclosure &amp; views</h3>
 
   <!-- sem-details -------------------------------------------------------- -->
   <h4 id="e-details">sem-detail / sem-details -- prose with occludable content</h4>
@@ -283,6 +320,70 @@
     </sem-reveal>
   </sem-source>
 
+  <!-- sem-source --------------------------------------------------------- -->
+  <h4 id="e-source">sem-source -- a section that flips between rendered and authored markup</h4>
+  <p><strong>Normative: <a href="#r-sem-source">spec/schema/sem-source.md</a>.</strong></p>
+  <sem-code id="c-source" lang="html"><pre><code>&lt;sem-source label="Facts -- flashcards"&gt;
+  &lt;h2&gt;Facts -- flashcards&lt;/h2&gt;
+  &lt;sem-facts view-as="flashcards"&gt;&hellip;&lt;/sem-facts&gt;
+&lt;/sem-source&gt;</code></pre></sem-code>
+  <p>Chrome <code>Rendered | Source</code> (<code>aria-pressed</code>); <code>view-as="source"</code> starts in source mode, showing the literal markup in a <code>sem-code</code> (copy, wrap) built from the core's pre-enhancement snapshot; the toggle rewrites <code>data-view-as</code>. Transparent to extraction; JS-off: the rendered children, nothing else. Every live example on this page is one; a <code>sem-source</code> never nests inside another, so this entry has no example of its own.</p>
+
+  <!-- sem-views ---------------------------------------------------------- -->
+  <h4 id="e-views">sem-views / sem-view -- same content, switchable perspectives</h4>
+  <p><strong>Normative: <a href="#r-sem-views">spec/schema/sem-views.md</a>.</strong></p>
+  <sem-code id="c-views" lang="html"><pre><code>&lt;sem-views id="deploy"&gt;
+  &lt;sem-view name="Helm" active role="tabpanel"&gt;content&hellip;&lt;/sem-view&gt;
+  &lt;sem-view name="ArgoCD" role="tabpanel"&gt;content&hellip;&lt;/sem-view&gt;
+&lt;/sem-views&gt;</code></pre></sem-code>
+  <p><code>name</code> unique per container; <code>active</code> marks initial view (first wins if absent; the component keeps the shown view in <code>data-active</code>); it builds the tab bar (<code>.sem-views-tabs</code>, <code>role="tab"</code> buttons), arrow-key roving focus; deep-link <code>#deploy/argocd</code>; fires <code>sem-navigate {id, name, index}</code>. JS-off: all views stacked, <code>name</code>-headed. <strong>Q3 resolved v1: <code>sem-views</code>.</strong></p>
+  <sem-source id="s-views" label="Live: sem-views">
+    <sem-views id="x-deploy">
+      <sem-view id="x-helm" name="Helm" active role="tabpanel">Helm renders the chart; the image tag is bumped by CI.</sem-view>
+      <sem-view id="x-argocd" name="ArgoCD" role="tabpanel">ArgoCD auto-syncs from the chart repo's <code>main</code>. Deep link: <a href="#x-deploy/argocd">#x-deploy/argocd</a>.</sem-view>
+    </sem-views>
+  </sem-source>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       FACTS & RECALL
+       ═══════════════════════════════════════════════════════════════════ -->
+  <h3 id="bucket-recall">Facts &amp; recall</h3>
+
+  <!-- sem-facts ---------------------------------------------------------- -->
+  <h4 id="e-facts">sem-facts -- collection; the flagship surface</h4>
+  <p><strong>Normative: <a href="#r-sem-facts">spec/schema/sem-facts.md</a>.</strong></p>
+  <sem-code id="c-facts" lang="html"><pre><code>&lt;sem-facts view-as="quiz" controls="shuffle,filter"&gt;
+  &lt;sem-fact&gt;&hellip;&lt;/sem-fact&gt;
+  &lt;sem-fact&gt;&hellip;&lt;sem-distractor&gt;decoy conclusion&lt;/sem-distractor&gt;&lt;/sem-fact&gt;
+&lt;/sem-facts&gt;</code></pre></sem-code>
+  <ul>
+    <li><code>view-as="list"</code> (default): filter box, tag chips.</li>
+    <li><code>view-as="flashcards"</code>: front = statement (+<code>&lt;highlight&gt;</code> prompt), back = conclusion; flip click/Space; &larr;/&rarr;/swipe; progress <code>3/12</code>; <code>shuffle</code>.</li>
+    <li><code>view-as="quiz"</code>: statement shown; candidates = sibling conclusions, <code>&lt;sem-distractor&gt;</code> children win when present; accuracy on <code>sem-complete</code>.</li>
+    <li>Events: <code>sem-navigate {index}</code>, <code>sem-flip {face}</code>, <code>sem-complete {correct,total,ms}</code>.</li>
+  </ul>
+  <sem-source id="s-facts" label="Live: sem-facts, flashcards">
+    <sem-facts id="x-facts" view-as="flashcards" kind="spec">
+      <sem-fact id="x-f1" kind="rule">
+        <statement>Semantic identity, parameterized presentation</statement>
+        <conclusion><code>sem-fact</code> is a fact in list, flashcard and quiz views -- <code>view-as</code> only changes rendering.</conclusion>
+      </sem-fact>
+      <sem-fact id="x-f2" kind="rule">
+        <statement>What guarantees interactivity?</statement>
+        <conclusion>The one <code>semtext.js</code> script.</conclusion>
+        <sem-distractor>The Tailwind CDN script.</sem-distractor>
+      </sem-fact>
+    </sem-facts>
+  </sem-source>
+
+  <!-- sem-fact ----------------------------------------------------------- -->
+  <h4 id="e-fact">sem-fact -- the atomic unit; assertable Q/A pair</h4>
+  <sem-code id="c-fact" lang="html"><pre><code>&lt;sem-fact id="f-jwt" kind="concept"&gt;
+  &lt;statement&gt;JWTs rotate per session&lt;/statement&gt;
+  &lt;conclusion&gt;Short-lived access; refresh grants a new pair.&lt;/conclusion&gt;
+&lt;/sem-fact&gt;</code></pre></sem-code>
+  <p>Compact form: <code>&lt;sem-fact&gt;JWT rotation :: short-lived access&lt;/sem-fact&gt;</code>. Machine view: statement+conclusion = structured assertion.</p>
+
   <!-- sem-question / sem-option (Tier 1) --------------------------------- -->
   <h4 id="e-question">sem-question / sem-option -- quiz question types (Tier 1 -- flagship buildout)</h4>
   <sem-code id="c-question" lang="html">
@@ -295,23 +396,9 @@
   <p>Types <code>mc|multi|blank|match|order|tf|short</code>; <code>correct</code> attr canonical, <code>&check;</code> sugar; <code>retry</code> control; results block; machine view = assertable Q/A.</p>
 
   <!-- ═══════════════════════════════════════════════════════════════════
-       DATA
+       DATA & TABLES
        ═══════════════════════════════════════════════════════════════════ -->
-  <h3 id="bucket-data">Data</h3>
-
-  <!-- sem-properties ----------------------------------------------------- -->
-  <h4 id="e-properties">sem-properties / sem-property -- definition/properties block</h4>
-  <p><strong>Normative: <a href="#r-sem-properties">spec/schema/sem-properties.md</a>.</strong></p>
-  <sem-code id="c-properties" lang="html"><pre><code>&lt;sem-properties kind="config"&gt;
-  &lt;sem-property key="token ttl" role="definition" aria-label="token ttl"&gt;15m&lt;/sem-property&gt;
-&lt;/sem-properties&gt;</code></pre></sem-code>
-  <p><code>key</code> = the term, property text = the value. Zero-JS: key column renders via CSS <code>attr(key)</code>; AT gets the pair via <code>role="definition"</code> + <code>aria-label</code> = key. Compact <code>term :: value</code> sugar (<a href="#3-npl-notation-inside-tags">&sect;3</a>) is display-only -- <code>key</code> canonical. Renders <code>&lt;dl&gt;</code>-equivalent grid; <strong>Q2 resolved v1: pure definition list, no copy/search chrome.</strong></p>
-  <sem-source id="s-properties" label="Live: sem-properties">
-    <sem-properties id="x-properties" kind="config">
-      <sem-property id="x-p-ttl" key="token ttl" role="definition" aria-label="token ttl">15m</sem-property>
-      <sem-property id="x-p-store" key="storage" role="definition" aria-label="storage">httpOnly cookie</sem-property>
-    </sem-properties>
-  </sem-source>
+  <h3 id="bucket-data">Data &amp; tables</h3>
 
   <!-- sem-table ---------------------------------------------------------- -->
   <h4 id="e-table">sem-table -- sortable, filterable authored table</h4>
@@ -335,73 +422,29 @@
     </sem-table>
   </sem-source>
 
-  <!-- sem-md ------------------------------------------------------------- -->
-  <h4 id="e-md">sem-md -- a Markdown block, rendered in the browser</h4>
-  <p><strong>Normative: <a href="#r-sem-md">spec/schema/sem-md.md</a>.</strong></p>
-  <sem-code id="c-md" lang="html"><pre><code>&lt;sem-md id="m-lifetimes" label="Token lifetimes" controls="toggle,copy"&gt;
-  | Token   | Lifetime | Rotates |
-  | :------ | -------: | :-----: |
-  | access  | 15 min   | no      |
-  | refresh | 30 days  | yes     |
-&lt;/sem-md&gt;</code></pre></sem-code>
-  <p>The element's text is Markdown (GFM tables, headings, lists, emphasis, links, code, quotes, rules; raw HTML renders as text). The script adds <code>.sem-md-chrome</code> (label, <code>Markdown</code> toggle with <code>aria-pressed</code>, copy, status region), renders into <code>.sem-md-body</code> (real <code>&lt;table&gt;</code> with <code>th[scope="col"]</code>, alignment row honoured) and keeps the normalised source in a <code>sem-code</code> fence (<code>.sem-md-raw</code>); <code>view-as="rendered|raw"</code> picks the initial mode and the toggle rewrites <code>data-view-as</code>. JS-off: the source reads as pre-wrapped text. Extraction keeps <code>source</code> <strong>normalised</strong> (dedented), never the rendering. Every table on this page -- <a href="#2-attribute-catalog">&sect;2</a>, <a href="#3-npl-notation-inside-tags">&sect;3</a>, <a href="#element-buckets">Element buckets</a>, <a href="#10-open-questions">&sect;10</a>, <a href="#appendix-a--class-form-alias-v04-compatibility">Appendix A</a> -- is this element, with rows identical to the Markdown source.</p>
-  <sem-source id="s-md" label="Live: sem-md">
-    <sem-md id="x-md" kind="lifetimes" label="Token lifetimes" controls="toggle,copy">
-      | Token   | Lifetime | Rotates |
-      | :------ | -------: | :-----: |
-      | access  | 15 min   | no      |
-      | refresh | 30 days  | yes     |
-    </sem-md>
-  </sem-source>
-
   <!-- sem-data-* (schemas defined, implementation pending) --------------- -->
   <h4 id="e-data">sem-data-source, sem-data-query, sem-data-join, sem-data-visualizer -- data connectors</h4>
   <p>Schema files defined: <code>spec/schema/sem-data-source.md</code>, <code>spec/schema/sem-data-query.md</code>, <code>spec/schema/sem-data-join.md</code>, <code>spec/schema/sem-data-visualizer.md</code>. Implementation pending.</p>
 
   <!-- ═══════════════════════════════════════════════════════════════════
-       NAVIGATION
+       SEQUENCES & PROGRESS
        ═══════════════════════════════════════════════════════════════════ -->
-  <h3 id="bucket-navigation">Navigation</h3>
+  <h3 id="bucket-sequence">Sequences &amp; progress</h3>
 
-  <!-- sem-views ---------------------------------------------------------- -->
-  <h4 id="e-views">sem-views / sem-view -- same content, switchable perspectives</h4>
-  <p><strong>Normative: <a href="#r-sem-views">spec/schema/sem-views.md</a>.</strong></p>
-  <sem-code id="c-views" lang="html"><pre><code>&lt;sem-views id="deploy"&gt;
-  &lt;sem-view name="Helm" active role="tabpanel"&gt;content&hellip;&lt;/sem-view&gt;
-  &lt;sem-view name="ArgoCD" role="tabpanel"&gt;content&hellip;&lt;/sem-view&gt;
-&lt;/sem-views&gt;</code></pre></sem-code>
-  <p><code>name</code> unique per container; <code>active</code> marks initial view (first wins if absent; the component keeps the shown view in <code>data-active</code>); it builds the tab bar (<code>.sem-views-tabs</code>, <code>role="tab"</code> buttons), arrow-key roving focus; deep-link <code>#deploy/argocd</code>; fires <code>sem-navigate {id, name, index}</code>. JS-off: all views stacked, <code>name</code>-headed. <strong>Q3 resolved v1: <code>sem-views</code>.</strong></p>
-  <sem-source id="s-views" label="Live: sem-views">
-    <sem-views id="x-deploy">
-      <sem-view id="x-helm" name="Helm" active role="tabpanel">Helm renders the chart; the image tag is bumped by CI.</sem-view>
-      <sem-view id="x-argocd" name="ArgoCD" role="tabpanel">ArgoCD auto-syncs from the chart repo's <code>main</code>. Deep link: <a href="#x-deploy/argocd">#x-deploy/argocd</a>.</sem-view>
-    </sem-views>
+  <!-- sem-chronology ----------------------------------------------------- -->
+  <h4 id="e-chronology">sem-chronology / sem-event -- dated, ordered events; CSS-only timeline</h4>
+  <p><strong>Normative: <a href="#r-sem-chronology">spec/schema/sem-chronology.md</a>.</strong></p>
+  <sem-code id="c-chronology" lang="html"><pre><code>&lt;sem-chronology kind="release-history" role="list"&gt;
+  &lt;sem-event role="listitem" when="2026-03-02" status="done"&gt;
+    &lt;time datetime="2026-03-02"&gt;2 Mar 2026&lt;/time&gt; v0.1 tagged.&lt;/sem-event&gt;
+&lt;/sem-chronology&gt;</code></pre></sem-code>
+  <p><code>when</code>/<code>until</code> canonical; <code>&lt;time&gt;</code> child is the visible label (else CSS renders <code>when</code>); <code>status</code> optional, same vocabulary as <code>sem-step</code>; <code>view-as="timeline|list"</code>. DOM order = chronological order; ordinals positional. <strong>Zero-JS element.</strong></p>
+  <sem-source id="s-chronology" label="Live: sem-chronology">
+    <sem-chronology id="x-chronology" kind="release-history" view-as="timeline" role="list">
+      <sem-event id="x-e1" role="listitem" when="2026-03-02" status="done"><time datetime="2026-03-02">2 Mar 2026</time> v0.1 tagged -- Lit bundle ships.</sem-event>
+      <sem-event id="x-e2" role="listitem" when="2026-09" status="current"><time datetime="2026-09">Sep 2026</time> Reading-experience waves land one PR at a time; the tag form becomes canonical.</sem-event>
+    </sem-chronology>
   </sem-source>
-
-  <!-- sem-source --------------------------------------------------------- -->
-  <h4 id="e-source">sem-source -- a section that flips between rendered and authored markup</h4>
-  <p><strong>Normative: <a href="#r-sem-source">spec/schema/sem-source.md</a>.</strong></p>
-  <sem-code id="c-source" lang="html"><pre><code>&lt;sem-source label="Facts -- flashcards"&gt;
-  &lt;h2&gt;Facts -- flashcards&lt;/h2&gt;
-  &lt;sem-facts view-as="flashcards"&gt;&hellip;&lt;/sem-facts&gt;
-&lt;/sem-source&gt;</code></pre></sem-code>
-  <p>Chrome <code>Rendered | Source</code> (<code>aria-pressed</code>); <code>view-as="source"</code> starts in source mode, showing the literal markup in a <code>sem-code</code> (copy, wrap) built from the core's pre-enhancement snapshot; the toggle rewrites <code>data-view-as</code>. Transparent to extraction; JS-off: the rendered children, nothing else. Every live example on this page is one; a <code>sem-source</code> never nests inside another, so this entry has no example of its own.</p>
-
-  <!-- sem-note ----------------------------------------------------------- -->
-  <h4 id="e-note">sem-note -- callout</h4>
-  <p><strong>Normative: <a href="#r-sem-note">spec/schema/sem-note.md</a>.</strong></p>
-  <sem-code id="c-note" lang="html"><pre><code>&lt;sem-note variant="warning"&gt;Rotation is &lt;strong&gt;per session&lt;/strong&gt;.&lt;/sem-note&gt;
-&lt;sem-note variant="tip" collapsed&gt;Shuffle flashcards before each review session.&lt;/sem-note&gt;</code></pre></sem-code>
-  <p><code>variant="info|warning|tip|danger"</code>; the body is the element's content; <code>collapsed</code> &rArr; ten-word teaser, click to expand (the component wraps the body in <code>.sem-note-body</code> to hide it); <code>view-as="margin"</code> &rArr; CSS-only right-gutter aside on wide viewports, inline otherwise. Light DOM, <code>role="note"</code>.</p>
-  <sem-source id="s-note" label="Live: sem-note">
-    <sem-note id="x-note" variant="warning">Rotation is <strong>per session</strong>.</sem-note>
-    <sem-note id="x-note-collapsed" variant="tip" collapsed>Shuffle flashcards before each review session for better recall; the deck remembers nothing between sessions.</sem-note>
-  </sem-source>
-
-  <!-- ═══════════════════════════════════════════════════════════════════
-       PROCESS
-       ═══════════════════════════════════════════════════════════════════ -->
-  <h3 id="bucket-process">Process</h3>
 
   <!-- sem-procedure ------------------------------------------------------ -->
   <h4 id="e-procedure">sem-procedure / sem-step -- ordered, status-annotated procedure</h4>
@@ -422,21 +465,6 @@
     </sem-procedure>
   </sem-source>
 
-  <!-- sem-chronology ----------------------------------------------------- -->
-  <h4 id="e-chronology">sem-chronology / sem-event -- dated, ordered events; CSS-only timeline</h4>
-  <p><strong>Normative: <a href="#r-sem-chronology">spec/schema/sem-chronology.md</a>.</strong></p>
-  <sem-code id="c-chronology" lang="html"><pre><code>&lt;sem-chronology kind="release-history" role="list"&gt;
-  &lt;sem-event role="listitem" when="2026-03-02" status="done"&gt;
-    &lt;time datetime="2026-03-02"&gt;2 Mar 2026&lt;/time&gt; v0.1 tagged.&lt;/sem-event&gt;
-&lt;/sem-chronology&gt;</code></pre></sem-code>
-  <p><code>when</code>/<code>until</code> canonical; <code>&lt;time&gt;</code> child is the visible label (else CSS renders <code>when</code>); <code>status</code> optional, same vocabulary as <code>sem-step</code>; <code>view-as="timeline|list"</code>. DOM order = chronological order; ordinals positional. <strong>Zero-JS element.</strong></p>
-  <sem-source id="s-chronology" label="Live: sem-chronology">
-    <sem-chronology id="x-chronology" kind="release-history" view-as="timeline" role="list">
-      <sem-event id="x-e1" role="listitem" when="2026-03-02" status="done"><time datetime="2026-03-02">2 Mar 2026</time> v0.1 tagged -- Lit bundle ships.</sem-event>
-      <sem-event id="x-e2" role="listitem" when="2026-09" status="current"><time datetime="2026-09">Sep 2026</time> Reading-experience waves land one PR at a time; the tag form becomes canonical.</sem-event>
-    </sem-chronology>
-  </sem-source>
-
   <!-- sem-progress ------------------------------------------------------- -->
   <h4 id="e-progress">sem-progress -- completion meter</h4>
   <p><strong>Normative: <a href="#r-sem-progress">spec/schema/sem-progress.md</a>.</strong></p>
@@ -448,25 +476,22 @@
   </sem-source>
 
   <!-- ═══════════════════════════════════════════════════════════════════
-       CODE & CITATIONS
+       DEFINITIONS & CITATIONS
        ═══════════════════════════════════════════════════════════════════ -->
-  <h3 id="bucket-code">Code &amp; Citations</h3>
+  <h3 id="bucket-definitions">Definitions &amp; citations</h3>
 
-  <!-- sem-code ----------------------------------------------------------- -->
-  <h4 id="e-code">sem-code -- verbatim listing with provenance and copy / wrap</h4>
-  <p><strong>Normative: <a href="#r-sem-code">spec/schema/sem-code.md</a>.</strong></p>
-  <sem-code id="c-code" lang="html"><pre><code>&lt;sem-code lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap"&gt;
-&lt;pre&gt;&lt;code&gt;&hellip;&lt;/code&gt;&lt;/pre&gt;
-&lt;/sem-code&gt;</code></pre></sem-code>
-  <p>Reading bundle adds <code>.sem-code-chrome</code> (filename, lang, buttons, status region), wraps lines (<code>span|mark.sem-code-line</code>, text byte-identical), <code>tabindex="0"</code> on an overflowing <code>&lt;pre&gt;</code>. JS-off: plain <code>&lt;pre&gt;</code> with a CSS caption. Extraction keeps <code>source</code> <strong>verbatim</strong>.</p>
-  <sem-source id="s-code" label="Live: sem-code">
-    <sem-code id="x-code" lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap">
-<pre><code>export function rotate(pair: Pair): Pair {
-  const next = mint();
-  retire(pair.refresh);
-  return next;
-}</code></pre>
-    </sem-code>
+  <!-- sem-properties ----------------------------------------------------- -->
+  <h4 id="e-properties">sem-properties / sem-property -- definition/properties block</h4>
+  <p><strong>Normative: <a href="#r-sem-properties">spec/schema/sem-properties.md</a>.</strong></p>
+  <sem-code id="c-properties" lang="html"><pre><code>&lt;sem-properties kind="config"&gt;
+  &lt;sem-property key="token ttl" role="definition" aria-label="token ttl"&gt;15m&lt;/sem-property&gt;
+&lt;/sem-properties&gt;</code></pre></sem-code>
+  <p><code>key</code> = the term, property text = the value. Zero-JS: key column renders via CSS <code>attr(key)</code>; AT gets the pair via <code>role="definition"</code> + <code>aria-label</code> = key. Compact <code>term :: value</code> sugar (<a href="#3-npl-notation-inside-tags">&sect;3</a>) is display-only -- <code>key</code> canonical. Renders <code>&lt;dl&gt;</code>-equivalent grid; <strong>Q2 resolved v1: pure definition list, no copy/search chrome.</strong></p>
+  <sem-source id="s-properties" label="Live: sem-properties">
+    <sem-properties id="x-properties" kind="config">
+      <sem-property id="x-p-ttl" key="token ttl" role="definition" aria-label="token ttl">15m</sem-property>
+      <sem-property id="x-p-store" key="storage" role="definition" aria-label="storage">httpOnly cookie</sem-property>
+    </sem-properties>
   </sem-source>
 
   <!-- sem-references ----------------------------------------------------- -->
@@ -477,31 +502,6 @@
   &lt;sem-reference id="r-rfc" role="listitem" href="https://&hellip;" cite="RFC 6749"&gt;&hellip;&lt;/sem-reference&gt;
 &lt;/sem-references&gt;</code></pre></sem-code>
   <p>CSS-counter numbering in every tier; the script adds hover / focus previews on citing anchors (<code>.sem-references-ref</code>, popover <code>role="tooltip"</code>, <code>Esc</code> closes), backlinks (<code>aria-label="Back to citation N"</code>) and an external link. Citations mint nothing; print shows <code>(href)</code> inside the block only. The live example is this page's own reference list in <a href="#references">References</a>.</p>
-
-  <!-- ═══════════════════════════════════════════════════════════════════
-       METADATA
-       ═══════════════════════════════════════════════════════════════════ -->
-  <h3 id="bucket-metadata">Metadata</h3>
-
-  <!-- sem-audiences ------------------------------------------------------ -->
-  <h4 id="e-audiences">sem-audiences / sem-profile -- reader profiles</h4>
-  <p>Metadata, mints nothing. <strong>Normative: <a href="#r-sem-audiences">spec/schema/sem-audiences.md</a>.</strong> Active profile = hash <code>sem-audience</code> param, else <code>audience</code> on the root wrapper / <code>data-audience</code> on <code>&lt;html&gt;</code>. The script sets native <code>hidden</code> on non-matching elements; JS-off everything shows; fail-open on unknown tokens.</p>
-  <sem-code id="c-audiences" lang="html"><pre><code>&lt;sem-audiences&gt;
-  &lt;sem-profile id="reader" label="Reader"&gt;&lt;/sem-profile&gt;
-  &lt;sem-profile id="operator" label="Operator" implies="reader"&gt;&lt;/sem-profile&gt;
-&lt;/sem-audiences&gt;
-&lt;sem-note audience="operator"&gt;&hellip;&lt;/sem-note&gt;</code></pre></sem-code>
-  <sem-source id="s-audiences" label="Live: sem-audiences">
-    <sem-audiences id="x-audiences">
-      <sem-profile id="reader" label="Reader"></sem-profile>
-      <sem-profile id="operator" label="Operator" implies="reader"></sem-profile>
-    </sem-audiences>
-    <sem-note id="x-audience-note" audience="operator" variant="info">Operators only: an operator implies reader. Pick a profile from the reading bar's <em>Audience</em> select, or open <a href="#sem-audience=operator">#sem-audience=operator</a>.</sem-note>
-  </sem-source>
-
-  <!-- agent -------------------------------------------------------------- -->
-  <h4 id="e-agent">agent -- document-level metadata (bare semantic tag)</h4>
-  <p>Documented in <a href="#1-document-skeleton">&sect;1 Document skeleton</a> above. Children: <code>&lt;name&gt;</code>, <code>&lt;bio&gt;</code>, <code>&lt;instructions&gt;</code>. Machine-facing, unstyled -- no <code>sem-</code> prefix. Future metadata children (<code>org</code>, <code>context</code>, <code>audience</code>) will follow the same bare-tag pattern.</p>
 
   <!-- ═══════════════════════════════════════════════════════════════════
        NPL

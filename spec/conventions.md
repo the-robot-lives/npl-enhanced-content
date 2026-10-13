@@ -32,19 +32,20 @@ layout layer. `?` = open questions (SS10).
 
 ## Element buckets
 
-The SemText vocabulary groups into eight conceptual buckets. Each element
-appears in its primary bucket below; every element is also listed with its
-full entry in [SS5](#5-element-entries).
+The SemText vocabulary groups into seven conceptual buckets; NPL
+elements are not bucketed and form a single display family of their own.
+Each element appears in its primary bucket below; every element is also
+listed with its full entry in [SS5](#5-element-entries).
 
 | Bucket | Elements | What it covers |
 | :-- | :-- | :-- |
-| **Document** | `sem-enhanced-document`, `sem-reader` | Document skeleton, reading chrome, outline, theme and font controls |
-| **Knowledge** | `sem-fact` / `sem-facts`, `sem-detail` / `sem-details`, `sem-reveal`, `sem-question` / `sem-option` | Facts, flashcards, quizzes, cloze deletions, Q&A disclosure |
-| **Data** | `sem-properties` / `sem-property`, `sem-table`, `sem-md`, `sem-data-source` / `sem-data-query` / `sem-data-join` / `sem-data-visualizer` | Definition lists, sortable tables, Markdown blocks, data connectors |
-| **Navigation** | `sem-views` / `sem-view`, `sem-source`, `sem-note` | Tabbed perspectives, render/source toggles, callouts and asides |
-| **Process** | `sem-procedure` / `sem-step`, `sem-chronology` / `sem-event`, `sem-progress` | Ordered procedures, timelines, completion meters |
-| **Code & Citations** | `sem-code`, `sem-references` / `sem-reference` | Verbatim code listings, numbered bibliographic citations |
-| **Metadata** | `sem-audiences` / `sem-profile`, `agent` | Reader profile definitions, document-level agent metadata |
+| **Document & structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent`, `sem-embed` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
+| **Prose & code** | `sem-md`, `sem-note`, `sem-code` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
+| **Disclosure & views** | `sem-details` / `sem-detail`, `highlight`, `sem-reveal`, `sem-source`, `sem-views` / `sem-view` | The same content under different reading interactions -- occluded detail, Q-A reveal, markup flip, perspective tabs |
+| **Facts & recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `sem-distractor`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
+| **Data & tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
+| **Sequences & progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
+| **Definitions & citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference` | Closed key/value assertions and the numbered works the prose cites |
 | **NPL** | `npl-agent`, `npl-directive`, `npl-section`, `npl-rubric`, `npl-critique`, `npl-declaration`, `npl-example`, `npl-flag` / `npl-flags`, `npl-hormones`, `npl-mindread`, `npl-mode`, `npl-mood`, `npl-poa`, `npl-ref`, `npl-thought`, `npl-vos`, `npl-artifact`, `npl-cot`, `npl-intent` | NPL prompt-engineering elements; loaded by `npl.js` / `npl-lazy.js` on top of the SemText core |
 
 Every element's normative schema lives under `spec/schema/<element>.md`
@@ -318,7 +319,7 @@ element is one row of Appendix A. Entries are grouped by conceptual bucket
 (see the [Element buckets](#element-buckets) table above). Elements marked
 **Zero-JS** render entirely from CSS and markup with no script dependency.
 
-### Document
+### Document & structure
 
 **sem-reader** -- reading chrome: outline, progress, focus, type, colour,
 print, audience. **Normative: `spec/schema/sem-reader.md`.**
@@ -336,32 +337,68 @@ Audience writes the `sem-audience` hash parameter. No global key
 shortcuts. **Mints nothing**; extraction skips it whole (extraction SS3
 rule 7). The `theme` control is R/W3.
 
-### Knowledge
-
-**sem-fact** -- the atomic unit; assertable Q/A pair.
+**sem-audiences / sem-profile** -- reader profiles; metadata, mints nothing.
+**Normative: `spec/schema/sem-audiences.md`.**
 ```html
-<sem-fact id="f-jwt" kind="concept">
-  <statement>JWTs rotate per session</statement>
-  <conclusion>Short-lived access; refresh grants a new pair.</conclusion>
-</sem-fact>
+<sem-audiences>
+  <sem-profile id="reader" label="Reader"></sem-profile>
+  <sem-profile id="operator" label="Operator" implies="reader"></sem-profile>
+</sem-audiences>
+<sem-note audience="operator">...</sem-note>
 ```
-Compact form: `<sem-fact>JWT rotation :: short-lived access</sem-fact>`.
-Machine view: statement+conclusion = structured assertion.
+Active profile = hash `sem-audience` param, else `audience` on the root
+wrapper / `data-audience` on `<html>`. The bundle sets native `hidden` on
+non-matching elements; JS-off everything shows; fail-open on unknown tokens.
 
-**sem-facts** -- collection; the flagship surface.
-**Normative: `spec/schema/sem-facts.md`.**
+**agent** -- document-level metadata (bare semantic tag, no `sem-` prefix).
+Documented in [SS1 Document skeleton](#1-document-skeleton) above. Children:
+`<name>`, `<bio>`, `<instructions>`. Machine-facing, unstyled. Future metadata
+children (`org`, `context`, `audience`) will follow the same bare-tag pattern.
+
+### Prose & code
+
+**sem-md** -- a Markdown block, rendered in the browser.
+**Normative: `spec/schema/sem-md.md`.**
 ```html
-<sem-facts view-as="quiz" controls="shuffle,filter">
-  <sem-fact>...</sem-fact>
-  <sem-fact>...<sem-distractor>decoy conclusion</sem-distractor></sem-fact>
-</sem-facts>
+<sem-md label="Token lifetimes">
+  | Token   | Lifetime | Rotates |
+  | :------ | -------: | :-----: |
+  | access  | 15 min   | no      |
+</sem-md>
 ```
-- `view-as="list"` (default): filter box, tag chips.
-- `view-as="flashcards"`: front = statement (+`<highlight>` prompt), back =
-  conclusion; flip click/Space; -/-/swipe; progress `3/12`; `shuffle`.
-- `view-as="quiz"`: statement shown; candidates = sibling conclusions,
-  `<sem-distractor>` children win when present; accuracy on `sem-complete`.
-- Events: `sem-navigate {index}`, `sem-flip {face}`, `sem-complete {correct,total,ms}`.
+The element's text is Markdown (GFM tables, headings, lists, emphasis,
+links, code, quotes, rules; raw HTML renders as text). The script adds `.sem-md-chrome` (label, `Markdown` toggle with `aria-pressed`, copy,
+status region), renders into `.sem-md-body` (real `<table>` with
+`th[scope="col"]`, alignment row honoured) and keeps the normalised source
+in a `sem-code` fence (`.sem-md-raw`); `view-as="rendered|raw"` picks the
+initial mode and the toggle rewrites `data-view-as`. JS-off: the source
+reads as pre-wrapped text. Extraction keeps `source` **normalised**
+(dedented), never the rendering.
+
+**sem-note** -- callout.
+**Normative: `spec/schema/sem-note.md`.**
+```html
+<sem-note variant="warning">Rotation is <strong>per session</strong>.</sem-note>
+<sem-note variant="tip" collapsed>Shuffle flashcards before each review session.</sem-note>
+```
+`variant="info|warning|tip|danger"`; the body is the element's content;
+`collapsed` => ten-word teaser, click to expand (the tier wraps the body in
+`.sem-note-body` to hide it); `view-as="margin"` => CSS-only right-gutter
+aside on wide viewports, inline otherwise. Light DOM, `role="note"`.
+
+**sem-code** -- verbatim listing with provenance and copy / wrap.
+**Normative: `spec/schema/sem-code.md`.**
+```html
+<sem-code lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap">
+<pre><code>...</code></pre>
+</sem-code>
+```
+The script adds `.sem-code-chrome` (filename, lang, buttons, status
+region), wraps lines (`span|mark.sem-code-line`, text byte-identical),
+`tabindex="0"` on an overflowing `<pre>`. JS-off: plain `<pre>` with a
+CSS caption. Extraction keeps `source` **verbatim**.
+
+### Disclosure & views
 
 **sem-detail / sem-details** -- prose with occludable content.
 **Normative: `spec/schema/sem-details.md`.**
@@ -388,6 +425,61 @@ one rule in `src/shared/summary.ts` that render and extraction share;
 `<details>/<summary>`; JS-off: fully visible (summary as small-caps
 heading). Non-assertive counterpart to `sem-fact` Q/A shape.
 
+**sem-source** -- a section that flips between rendered and authored markup.
+**Normative: `spec/schema/sem-source.md`.**
+```html
+<sem-source label="Facts -- flashcards">
+  <h2>Facts -- flashcards</h2>
+  <sem-facts view-as="flashcards">...</sem-facts>
+</sem-source>
+```
+Chrome `Rendered | Source` (`aria-pressed`); `view-as="source"` starts in
+source mode, showing the literal markup in a `sem-code` (copy, wrap) built
+from the core's pre-enhancement snapshot; the toggle rewrites
+`data-view-as`. Transparent to extraction; JS-off: the rendered children,
+nothing else.
+
+**sem-views / sem-view** -- same content, switchable perspectives.
+**Normative: `spec/schema/sem-views.md`.**
+```html
+<sem-views id="deploy">
+  <sem-view name="Helm" active role="tabpanel">content...</sem-view>
+  <sem-view name="ArgoCD" role="tabpanel">content...</sem-view>
+</sem-views>
+```
+`name` unique per container; `active` marks initial view (first wins if
+absent; the bundle keeps the shown view in `data-active`); it builds
+the tab bar (`.sem-views-tabs`, `role="tab"` buttons), arrow-key roving
+focus; deep-link `#deploy/argocd`; fires `sem-navigate {id, name, index}`.
+JS-off: all views stacked, `name`-headed. **Q3 resolved v1: `sem-views`.**
+
+### Facts & recall
+
+**sem-facts** -- collection; the flagship surface.
+**Normative: `spec/schema/sem-facts.md`.**
+```html
+<sem-facts view-as="quiz" controls="shuffle,filter">
+  <sem-fact>...</sem-fact>
+  <sem-fact>...<sem-distractor>decoy conclusion</sem-distractor></sem-fact>
+</sem-facts>
+```
+- `view-as="list"` (default): filter box, tag chips.
+- `view-as="flashcards"`: front = statement (+`<highlight>` prompt), back =
+  conclusion; flip click/Space; -/-/swipe; progress `3/12`; `shuffle`.
+- `view-as="quiz"`: statement shown; candidates = sibling conclusions,
+  `<sem-distractor>` children win when present; accuracy on `sem-complete`.
+- Events: `sem-navigate {index}`, `sem-flip {face}`, `sem-complete {correct,total,ms}`.
+
+**sem-fact** -- the atomic unit; assertable Q/A pair.
+```html
+<sem-fact id="f-jwt" kind="concept">
+  <statement>JWTs rotate per session</statement>
+  <conclusion>Short-lived access; refresh grants a new pair.</conclusion>
+</sem-fact>
+```
+Compact form: `<sem-fact>JWT rotation :: short-lived access</sem-fact>`.
+Machine view: statement+conclusion = structured assertion.
+
 **sem-question / sem-option** -- quiz question types (Tier 1 -- flagship buildout).
 ```html
 <sem-question type="mc">
@@ -399,21 +491,7 @@ heading). Non-assertive counterpart to `sem-fact` Q/A shape.
 Types `mc|multi|blank|match|order|tf|short`; `correct` attr canonical,
 `?` sugar; `retry` control; results block; machine view = assertable Q/A.
 
-### Data
-
-**sem-properties / sem-property** -- definition/properties block.
-**Normative: `spec/schema/sem-properties.md`.**
-```html
-<sem-properties kind="config">
-  <sem-property key="token ttl" role="definition" aria-label="token ttl">15m</sem-property>
-</sem-properties>
-```
-`key` = the term, property text = the value. Zero-JS: key column
-renders via CSS `attr(key)`; AT gets the pair via
-`role="definition"` + `aria-label` = key. Compact `term :: value` sugar
-(conventions SS3) is display-only -- `key` canonical. Renders
-`<dl>`-equivalent grid; **Q2 resolved v1: pure definition list, no
-copy/search chrome.**
+### Data & tables
 
 **sem-table** -- sortable, filterable authored table.
 **Normative: `spec/schema/sem-table.md`.**
@@ -432,71 +510,25 @@ the recorded SS5 exception. `sticky` header and `kind="comparison"`
 first column are CSS in every tier. (`td[data-value]` is a sort key on a
 plain HTML cell, not a vocabulary parameter -- it stays `data-*`.)
 
-**sem-md** -- a Markdown block, rendered in the browser.
-**Normative: `spec/schema/sem-md.md`.**
-```html
-<sem-md label="Token lifetimes">
-  | Token   | Lifetime | Rotates |
-  | :------ | -------: | :-----: |
-  | access  | 15 min   | no      |
-</sem-md>
-```
-The element's text is Markdown (GFM tables, headings, lists, emphasis,
-links, code, quotes, rules; raw HTML renders as text). The script adds `.sem-md-chrome` (label, `Markdown` toggle with `aria-pressed`, copy,
-status region), renders into `.sem-md-body` (real `<table>` with
-`th[scope="col"]`, alignment row honoured) and keeps the normalised source
-in a `sem-code` fence (`.sem-md-raw`); `view-as="rendered|raw"` picks the
-initial mode and the toggle rewrites `data-view-as`. JS-off: the source
-reads as pre-wrapped text. Extraction keeps `source` **normalised**
-(dedented), never the rendering.
-
 **sem-data-source, sem-data-query, sem-data-join, sem-data-visualizer** --
 data connector elements (schemas defined, implementation pending).
 Schema files: `spec/schema/sem-data-source.md`, `spec/schema/sem-data-query.md`,
 `spec/schema/sem-data-join.md`, `spec/schema/sem-data-visualizer.md`.
 
-### Navigation
+### Sequences & progress
 
-**sem-views / sem-view** -- same content, switchable perspectives.
-**Normative: `spec/schema/sem-views.md`.**
+**sem-chronology / sem-event** -- dated, ordered events; CSS-only timeline.
+**Normative: `spec/schema/sem-chronology.md`.**
 ```html
-<sem-views id="deploy">
-  <sem-view name="Helm" active role="tabpanel">content...</sem-view>
-  <sem-view name="ArgoCD" role="tabpanel">content...</sem-view>
-</sem-views>
+<sem-chronology kind="release-history" role="list">
+  <sem-event role="listitem" when="2026-03-02" status="done">
+    <time datetime="2026-03-02">2 Mar 2026</time> v0.1 tagged.</sem-event>
+</sem-chronology>
 ```
-`name` unique per container; `active` marks initial view (first wins if
-absent; the bundle keeps the shown view in `data-active`); it builds
-the tab bar (`.sem-views-tabs`, `role="tab"` buttons), arrow-key roving
-focus; deep-link `#deploy/argocd`; fires `sem-navigate {id, name, index}`.
-JS-off: all views stacked, `name`-headed. **Q3 resolved v1: `sem-views`.**
-
-**sem-source** -- a section that flips between rendered and authored markup.
-**Normative: `spec/schema/sem-source.md`.**
-```html
-<sem-source label="Facts -- flashcards">
-  <h2>Facts -- flashcards</h2>
-  <sem-facts view-as="flashcards">...</sem-facts>
-</sem-source>
-```
-Chrome `Rendered | Source` (`aria-pressed`); `view-as="source"` starts in
-source mode, showing the literal markup in a `sem-code` (copy, wrap) built
-from the core's pre-enhancement snapshot; the toggle rewrites
-`data-view-as`. Transparent to extraction; JS-off: the rendered children,
-nothing else.
-
-**sem-note** -- callout.
-**Normative: `spec/schema/sem-note.md`.**
-```html
-<sem-note variant="warning">Rotation is <strong>per session</strong>.</sem-note>
-<sem-note variant="tip" collapsed>Shuffle flashcards before each review session.</sem-note>
-```
-`variant="info|warning|tip|danger"`; the body is the element's content;
-`collapsed` => ten-word teaser, click to expand (the tier wraps the body in
-`.sem-note-body` to hide it); `view-as="margin"` => CSS-only right-gutter
-aside on wide viewports, inline otherwise. Light DOM, `role="note"`.
-
-### Process
+`when`/`until` canonical; `<time>` child is the visible label
+(else CSS renders `when`); `status` optional, same vocabulary as
+`sem-step`; `view-as="timeline|list"`. DOM order = chronological order;
+ordinals positional. **Zero-JS element.**
 
 **sem-procedure / sem-step** -- ordered, status-annotated procedure.
 **Normative: `spec/schema/sem-procedure.md`.**
@@ -512,19 +544,6 @@ aside on wide viewports, inline otherwise. Light DOM, `role="note"`.
 execution order (ordinals positional, CSS counters); status sugar
 (`?/-/?`) is display-only -- `status` canonical. **Zero-JS element.**
 
-**sem-chronology / sem-event** -- dated, ordered events; CSS-only timeline.
-**Normative: `spec/schema/sem-chronology.md`.**
-```html
-<sem-chronology kind="release-history" role="list">
-  <sem-event role="listitem" when="2026-03-02" status="done">
-    <time datetime="2026-03-02">2 Mar 2026</time> v0.1 tagged.</sem-event>
-</sem-chronology>
-```
-`when`/`until` canonical; `<time>` child is the visible label
-(else CSS renders `when`); `status` optional, same vocabulary as
-`sem-step`; `view-as="timeline|list"`. DOM order = chronological order;
-ordinals positional. **Zero-JS element.**
-
 **sem-progress** -- completion meter.
 **Normative: `spec/schema/sem-progress.md`.**
 ```html
@@ -538,19 +557,21 @@ text-only via CSS `attr()` -- no fake bar; the caption is gated on the
 so it never duplicates the script-free text. `status="done"` ? 1 by
 convention.
 
-### Code & Citations
+### Definitions & citations
 
-**sem-code** -- verbatim listing with provenance and copy / wrap.
-**Normative: `spec/schema/sem-code.md`.**
+**sem-properties / sem-property** -- definition/properties block.
+**Normative: `spec/schema/sem-properties.md`.**
 ```html
-<sem-code lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap">
-<pre><code>...</code></pre>
-</sem-code>
+<sem-properties kind="config">
+  <sem-property key="token ttl" role="definition" aria-label="token ttl">15m</sem-property>
+</sem-properties>
 ```
-The script adds `.sem-code-chrome` (filename, lang, buttons, status
-region), wraps lines (`span|mark.sem-code-line`, text byte-identical),
-`tabindex="0"` on an overflowing `<pre>`. JS-off: plain `<pre>` with a
-CSS caption. Extraction keeps `source` **verbatim**.
+`key` = the term, property text = the value. Zero-JS: key column
+renders via CSS `attr(key)`; AT gets the pair via
+`role="definition"` + `aria-label` = key. Compact `term :: value` sugar
+(conventions SS3) is display-only -- `key` canonical. Renders
+`<dl>`-equivalent grid; **Q2 resolved v1: pure definition list, no
+copy/search chrome.**
 
 **sem-references / sem-reference** -- numbered citable entries.
 **Normative: `spec/schema/sem-references.md`.**
@@ -567,27 +588,8 @@ previews on citing anchors (`.sem-references-ref`, popover
 N"`) and an external link. Citations mint nothing; print shows `(href)`
 inside the block only.
 
-### Metadata
-
-**sem-audiences / sem-profile** -- reader profiles; metadata, mints nothing.
-**Normative: `spec/schema/sem-audiences.md`.**
-```html
-<sem-audiences>
-  <sem-profile id="reader" label="Reader"></sem-profile>
-  <sem-profile id="operator" label="Operator" implies="reader"></sem-profile>
-</sem-audiences>
-<sem-note audience="operator">...</sem-note>
-```
-Active profile = hash `sem-audience` param, else `audience` on the root
-wrapper / `data-audience` on `<html>`. The bundle sets native `hidden` on
-non-matching elements; JS-off everything shows; fail-open on unknown tokens.
-
-**agent** -- document-level metadata (bare semantic tag, no `sem-` prefix).
-Documented in [SS1 Document skeleton](#1-document-skeleton) above. Children:
-`<name>`, `<bio>`, `<instructions>`. Machine-facing, unstyled. Future metadata
-children (`org`, `context`, `audience`) will follow the same bare-tag pattern.
-
 ### NPL
+
 
 NPL elements are loaded by `npl.js` / `npl-lazy.js` on top of the SemText
 core. Each has a normative schema under `spec/schema/npl/`. The core bundle
