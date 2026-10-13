@@ -30,7 +30,10 @@ export function warn(message: string): void {
 }
 
 function attr(el: Element, name: string): string | null {
-  return el.getAttribute(name) ?? el.getAttribute('data-' + name);
+  // conventions.md §2: `data-<name>` wins when both spellings are present —
+  // read it first. (fallback/attrs mirrors bare→data-* only when absent, so
+  // a both-spelled element must not resolve to the bare value here.)
+  return el.getAttribute('data-' + name) ?? el.getAttribute(name);
 }
 
 type ProfileRoot = Document | DocumentFragment | Element;

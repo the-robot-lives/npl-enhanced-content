@@ -2,12 +2,12 @@
 
 Contract per conventions.md v0.6 §2 (global attribute catalog). BDD source
 of truth for `test/e2e/sem-audiences.cy.js`. Changes here precede spec
-changes precede code. Closes the forward declaration in
+changes precede code and close the forward declaration in
 `spec/extraction.md` §7.
 
-Two halves, one contract: a **declaration block** names the profiles a
-document knows about, and an **`audience` qualifier** on any content element
-says which of those profiles the element is for. The reader picks a profile;
+Two halves, one contract: a declaration block (`sem-audiences`) names
+the profiles a document knows about, and an `audience` qualifier says who
+each element is for. The reader picks a profile;
 the script hides what is not for them. Nothing is ever removed from the
 document, and extraction never looks at the result.
 
@@ -83,9 +83,17 @@ never a restriction** — neither element is hidden by it.
 - Handler (`src/fallback/audience.ts`): every element carrying
   `data-audience` / `audience` gets the `hidden` attribute when its spec does
   not match, and loses it when it does. Native `hidden` — no class, no
-  inline style — so a theme needs no rule and AT sees ordinary hidden
-  content. The profile block itself renders as a muted metadata strip, one
-  chip per profile.
+  inline style — so AT sees ordinary hidden content and no vocabulary rule
+  is needed for standard HTML. Custom element forms default to
+  `display: inline` and the vocabulary's block rule can override the UA
+  `[hidden]` rule, so `themes/_vocabulary.css` carries one global
+  `[hidden] { display: none !important; }` guard covering both spellings
+  in any scope (full document, host-embedded pane). The handler also reads
+  a pane-scoped call from the pane's own `sem-audiences` block when it
+  declares one, falling back to the document's when it declares none —
+  two panes carrying the same profile ids must not double-count. The
+  profile block itself renders as a muted metadata strip, one chip per
+  profile.
 - Lit: `SemElement.audienceMatches()` reads the same attributes and the
   same `<html data-audience>` and returns the same answer. An element that
   renders audience-dependent chrome asks it; the handler's `hidden` is
