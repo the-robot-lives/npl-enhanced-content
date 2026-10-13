@@ -47,8 +47,8 @@ Parameters are read as `data-<name>` first, then bare `<name>`.
 
 - **Zero-JS element.** Pure CSS, pattern `sem-procedure`: a vertical rail
   with one marker per event, the date label above the body, status tint on
-  the marker (`done` correct-colour, `current` accent, `blocked` wrong-
-  colour, unannotated border-colour).
+  the marker (`done` correct-colour, `current` accent, `todo` muted-colour,
+  `blocked` wrong-colour, unannotated border-colour).
 - `view-as="list"`: no rail; events render as a plain stacked list with the
   date label inline.
 - The `<time>` child is the label when present; otherwise `::before`
