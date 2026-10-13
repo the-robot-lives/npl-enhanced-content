@@ -5,7 +5,9 @@
  *
  *   1. Defines every custom element (src/lit/*): sem-note, sem-facts,
  *      sem-details, sem-code, sem-references, sem-properties, sem-reader,
- *      sem-table, sem-source, sem-md, sem-chat.
+ *      sem-table, sem-source, sem-md, sem-data-visualizer, sem-browser,
+ *      and the interaction stubs (sem-artifact-card, sem-provider-picker,
+ *      sem-quota-meter).
  *   2. Re-exports the extraction contract (src/extract/*) and the shared
  *      foundation the npm surface documents — the former
  *      `SemTextExtract` / `SemTextMd` / `SemTextReading` /
@@ -76,6 +78,11 @@ import './lit/sem-source.js';
 /* R/W2.2 Markdown block — thin wrapper over src/md/* */
 export { SemMd } from './lit/sem-md.js';
 import './lit/sem-md.js';
+/* sem-browser — chrome-like document window (lazy-first: the same
+ * element ships as chunks/sem-browser.js for semtext-lazy.js pages;
+ * src/lit/sem-browser.ts is the registration the lazy scanner keys on). */
+export { SemBrowser, SEM_BROWSER_TAG } from './lit/sem-browser.js';
+import './lit/sem-browser.js';
 /* Data visualizer — inline data sources (spec/data-visualizer.md) */
 export { SemDataVisualizer } from './lit/sem-data-visualizer.js';
 import './lit/sem-data-visualizer.js';

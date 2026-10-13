@@ -7,9 +7,11 @@
  * the same lazy surface as the vocabulary elements: the element
  * implementation lives in src/browser/sem-browser.ts (window-chrome + the
  * address bar are browser-lane code, not document vocabulary), and this shim
- * is only the registration the scanner keys on. The full bundle (src/index.ts)
- * gains the same two lines when the lead promotes it — sem-browser ships
- * lazy-first and the core bundle must not grow for it.
+ * is only the registration the scanner keys on. The full bundle
+ * (src/index.ts) registers the same element through this same module
+ * (promoted with the docs-overhaul landing, 2026-10); the lazy chunk
+ * remains the surface semtext-lazy.js serves when only this tag is on
+ * the page, so pages that never use it never download it.
  */
 import { SemElement } from './base.js';
 import { SemBrowser } from '../browser/sem-browser.js';
