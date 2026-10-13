@@ -52,7 +52,7 @@ export class SemSource extends SemElement {
    */
   #snapshot(): void {
     snapshotSourceElement(this);
-    const tpl = this.querySelector(':scope > template.sem-source-raw');
+    const tpl = this.querySelector<HTMLTemplateElement>(':scope > template.sem-source-raw');
     if (!tpl) return;
     const strip = (parent: Node): void => {
       for (const n of [...parent.childNodes]) {
