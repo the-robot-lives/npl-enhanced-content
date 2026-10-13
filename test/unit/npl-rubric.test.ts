@@ -23,7 +23,7 @@ async function mount(markup: string): Promise<NplRubric> {
 }
 
 describe('npl-rubric', () => {
-  it('renders criteria as a light-DOM table with weight and score; consumed children hide', async () => {
+  it('renders criteria as a light-DOM table with weight and score', async () => {
     const el = await mount(`
       <npl-rubric title="Quality">
         <npl-criterion name="Correctness" weight="3" score="4"></npl-criterion>
@@ -34,12 +34,17 @@ describe('npl-rubric', () => {
     expect(el.hasAttribute('data-sem-upgraded')).toBe(true);
     const table = el.querySelector('table.npl-rubric-table')!;
     expect(table).not.toBeNull();
+    // A single table, never one per authored child.
+    expect(el.querySelectorAll('table.npl-rubric-table')).toHaveLength(1);
     const rows = Array.from(table.querySelectorAll('tbody tr'));
     expect(rows).toHaveLength(2);
     expect(rows[0].textContent).toContain('Correctness');
     expect(rows[0].textContent).toContain('3');
     expect(rows[0].textContent).toContain('4');
-    expect(el.querySelectorAll('npl-criterion[hidden]')).toHaveLength(2);
+    // The authored criteria are the data, not rows: they never appear inside
+    // the table (the browser's light-DOM render replaces them outright; the
+    // happy-dom unit env keeps them, so pin the invariant that works in both).
+    expect(table.querySelectorAll('npl-criterion')).toHaveLength(0);
   });
 
   it('computes the weighted average when no overall score is stated, marked computed', async () => {
@@ -89,7 +94,8 @@ describe('npl-rubric', () => {
     expect(overall.getAttribute('data-source')).toBe('stated');
     expect(overall.querySelector('.npl-rubric-overall-value')?.textContent?.trim()).toBe('4.5');
     expect(overall.querySelector('.npl-rubric-source')?.textContent).toBe('(stated)');
-    expect(el.querySelector('npl-overall-score')?.hasAttribute('hidden')).toBe(true);
+    // The consumed overall-score element is never re-rendered inside the table.
+    expect(el.querySelectorAll('.npl-rubric-table npl-overall-score')).toHaveLength(0);
   });
 
   it('reads a stated overall score from the element text when value is absent', async () => {
