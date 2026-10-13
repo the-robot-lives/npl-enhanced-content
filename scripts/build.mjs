@@ -48,12 +48,17 @@
  * it and fails only if `--strict-budget` is passed, so a budget overrun is
  * always visible but never silently blocks local work. The budget history is
  * recorded in ROADMAP.md ("R — Reading experience"); change both together.
+ *
+ * `--out <dir>` writes every artifact into <dir> instead of dist/ and never
+ * touches dist/ (parallel/private builds, snap previews). Relative paths
+ * resolve against the repo root; the filesystem root, the repo root and
+ * anything above the repo are refused, since the build wipes its target.
  */
 
 import { existsSync, rmSync, statSync, readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve, basename } from 'node:path';
+import { dirname, resolve, basename, relative } from 'node:path';
 
 // Pin NODE_ENV before vite is even imported: ambient NODE_ENV=test (a vitest
 // run that self-builds via dockerfile.test.mjs) otherwise selects Lit's
@@ -64,6 +69,34 @@ const { build } = await import('vite');
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const strict = process.argv.includes('--strict-budget');
+
+/* --out <dir> builds into <dir> instead of dist/ — a private output that
+ * never touches the shared default (parallel builds, snap previews).
+ * Relative paths resolve against the repo root. Refused: the filesystem
+ * root, the repo root itself, and any directory ABOVE the repo — the
+ * clean step rm's the target, so an --out containing root would be
+ * destroyed. Anything strictly inside the repo that isn't root is
+ * allowed (the caller owns that path). */
+const outIndex = process.argv.indexOf('--out');
+let distDir = resolve(root, 'dist');
+let distLabel = 'dist';
+if (outIndex !== -1) {
+  const value = process.argv[outIndex + 1];
+  if (!value || value.startsWith('-')) {
+    console.error('✗ --out requires a directory argument (e.g. --out /tmp/semtext-build)');
+    process.exit(1);
+  }
+  const outDir = resolve(root, value);
+  if (outDir === '/' || outDir === root || root.startsWith(outDir + '/')) {
+    console.error(`✗ refusing --out ${value}: it would wipe the repo or above it`);
+    process.exit(1);
+  }
+  distDir = outDir;
+  // Prefer a root-relative label for readability, but never a long ../
+  // chain — outside-the-repo targets print as absolute paths.
+  const rel = relative(root, outDir);
+  distLabel = rel && !rel.startsWith('..') ? rel : outDir;
+}
 
 const targets = [
   {
@@ -115,7 +148,7 @@ const targets = [
   },
 ];
 
-rmSync(resolve(root, 'dist'), { recursive: true, force: true });
+rmSync(distDir, { recursive: true, force: true });
 
 const results = [];
 let overBudget = false;
@@ -137,13 +170,13 @@ for (const target of targets) {
     logLevel: 'warn',
     build: {
       target: 'es2022',
-      outDir: 'dist',
+      outDir: distDir,
       emptyOutDir: false,
       lib: { entry, formats: ['iife'], name: target.global, fileName: () => target.name },
     },
   });
 
-  const file = resolve(root, 'dist', target.name);
+  const file = resolve(distDir, target.name);
   const bytes = statSync(file).size;
   const gzip = gzipSync(readFileSync(file)).length;
   const budget = target.budgetKb * 1024;
@@ -156,7 +189,7 @@ for (const target of targets) {
  * are no runtime fetches and no chunks). Emitted next to the other
  * manifests so a consumer can resolve either tag without hardcoding. */
 writeFileSync(
-  resolve(root, 'dist', 'semtext-js-shell-manifest.json'),
+  resolve(distDir, 'semtext-js-shell-manifest.json'),
   JSON.stringify({ 'sem-terminal': 'semtext-js-shell.js', 'sem-shell': 'semtext-js-shell.js' }, null, 2) + '\n',
 );
 
@@ -254,7 +287,7 @@ for (const lazy of LAZY_TARGETS) {
     plugins: [manifestPlugin],
     build: {
       target: 'es2022',
-      outDir: 'dist',
+      outDir: distDir,
       emptyOutDir: false,
       // No preload helper: the loader's dynamic imports are @vite-ignore'd
       // (they resolve at runtime, next to the built script) and the entry
@@ -289,10 +322,10 @@ for (const lazy of LAZY_TARGETS) {
  * the full bundle, which has no runtime imports.
  */
 `;
-  const lazyPath = resolve(root, 'dist', `${lazy.id}.js`);
+  const lazyPath = resolve(distDir, `${lazy.id}.js`);
   writeFileSync(lazyPath, banner + readFileSync(lazyPath, 'utf8'));
   writeFileSync(
-    resolve(root, 'dist', `${lazy.id.replace(/-lazy$/, '')}-manifest.json`),
+    resolve(distDir, `${lazy.id.replace(/-lazy$/, '')}-manifest.json`),
     JSON.stringify(lazyManifest, null, 2) + '\n',
   );
 
@@ -301,7 +334,7 @@ for (const lazy of LAZY_TARGETS) {
   const budget = lazy.budgetKb * 1024;
   if (bytes > budget) overBudget = true;
   results.push({ name: `${lazy.id}.js`, bytes, gzip, budget, ok: bytes <= budget });
-  const shared = readdirSync(resolve(root, 'dist', lazy.chunkDir)).filter(
+  const shared = readdirSync(resolve(distDir, lazy.chunkDir)).filter(
     (f) => !Object.values(lazyManifest).includes(`${lazy.chunkDir}/${f}`),
   );
   console.log(
@@ -315,16 +348,22 @@ for (const lazy of LAZY_TARGETS) {
  * their `semtext-theme-` prefix so a consumer's `./themes/*` import and a
  * CDN path name the same file. */
 const themesDir = resolve(root, 'themes');
-const distThemesDir = resolve(root, 'dist', 'themes');
+const distThemesDir = resolve(distDir, 'themes');
 mkdirSync(distThemesDir, { recursive: true });
 const cssCopies = [];
 for (const css of readdirSync(themesDir).filter((f) => f.endsWith('.css')).sort()) {
   if (css === '_vocabulary.css') {
-    copyFileSync(resolve(themesDir, css), resolve(root, 'dist', 'semtext.css'));
-    cssCopies.push({ from: `themes/${css}`, to: 'dist/semtext.css' });
+    copyFileSync(resolve(themesDir, css), resolve(distDir, 'semtext.css'));
+    cssCopies.push({ from: `themes/${css}`, to: `${distLabel}/semtext.css` });
+    /* Verbatim twin under themes/: the site's example viewer fetches
+     * /semtext/themes/_vocabulary.css — without this copy the request
+     * falls through to whatever stale file the site ships. Both copies
+     * come from the same source read, so they can never drift. */
+    copyFileSync(resolve(themesDir, css), resolve(distThemesDir, css));
+    cssCopies.push({ from: `themes/${css}`, to: `${distLabel}/themes/${css}` });
   } else {
     copyFileSync(resolve(themesDir, css), resolve(distThemesDir, `semtext-theme-${css}`));
-    cssCopies.push({ from: `themes/${css}`, to: `dist/themes/semtext-theme-${css}` });
+    cssCopies.push({ from: `themes/${css}`, to: `${distLabel}/themes/semtext-theme-${css}` });
   }
 }
 
