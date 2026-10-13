@@ -35,7 +35,7 @@ Parameters are read as `data-<name>` first, then bare `<name>`.
 - `status` (optional): `done | current | todo | blocked` — same
   vocabulary as `sem-step`. Absent means unannotated, **not** `todo`: an
   event is a record of something that happened, not a task.
-- **Recommended first child `<time datetime>`**: the human-readable date.
+- Recommended first child `<time datetime>`: the human-readable date.
   When present it is the date the reader sees; when absent the CSS renders
   `when` verbatim as the date label (`:not(:has(time))`).
 - `view-as`: `timeline` (default) | `list`. Unknown values render as
