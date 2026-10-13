@@ -33,8 +33,10 @@ selector reads `:is(sem-data-visualizer, .sem-data-visualizer)`.
 - Children: one or more `<sem-data-source>` (each a named data bucket);
   optional `<sem-data-join>` and `<sem-data-query>` declaration children
   (phase 5).
-- `id`: required for the modal deep link (`#dv=<visualizer-id>`); a
-  container with no id and no single named source mints no copy-link
+- `id`: optional — names the container for the modal deep link
+  (`#dv=<visualizer-id>`). The copy-link chrome prefers the container's
+  id; with none it falls back to the container's sole named source
+  (`#bucket=<name>`), and a container with neither mints no copy-link
   button.
 - `kind`, `tags` per the global attribute catalog.
 
@@ -47,6 +49,10 @@ selector reads `:is(sem-data-visualizer, .sem-data-visualizer)`.
   `sem-data-join` and `sem-data-query` children are wired, per-source
   tables render with typed sort and views, and the query chrome renders
   when a `sem-data-query` child is present.
+- The container renders one tools row (`.sem-data-tools`) above its
+  children: a `.sem-data-expand` button that opens the modal viewer and,
+  when the container is linkable, a `.sem-data-copy` button that mints
+  the current container/view/query state onto the document URL.
 - Clicking the container's expand control (`.sem-data-expand`) opens the
   full-page modal viewer (phase 6): the container's own children teleport
   into a `role="dialog"` / `aria-modal` panel — same enhance output, still
