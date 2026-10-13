@@ -9,7 +9,7 @@ precede code.
 A completion meter — one scalar completion assertion. `value` is
 required, canonical unit 0..1: out-of-range values clamp for rendering
 while the raw attribute stays untouched; `label` is optional (default
-`progress`). The Lit component builds a meter (track + fill +
+`progress`). The runtime builds a meter (track + fill +
 `label :: N%`); JS-off the value reads as text via CSS `attr()` — no
 fake bar. `status="done"` ⇔ value 1 by convention.
 
@@ -22,17 +22,17 @@ fake bar. `status="done"` ⇔ value 1 by convention.
 
 Class-form alias (conventions Appendix A): `div.sem-progress[data-value][data-label]`.
 
-- `value`: **required, canonical unit 0..1.** Out-of-range values
+- `value`: number — required, canonical unit 0..1. Out-of-range values
   clamp for rendering; the raw attr stays untouched (machine readers
   see the author's value, the render shows the clamp).
-- `label`: optional; default `progress`.
+- `label`: optional meter caption; default `progress`.
+- `status="done"`: optional completion state — pairs with value 1 and
+  renders the full/accent state (same catalog as `sem-step`).
 - `id`, `kind`, `tags` global.
-- Status semantics pair naturally: `status="done"` renders the
-  full/accent state (same catalog as `sem-step`).
 
 ## Rendered form
 
-- The Lit component (`SemProgress`) builds a meter: track bar + fill width
+- The runtime builds a meter: track bar + fill width
   `value*100%` + text `label :: 62%` (percentage, rounded).
 - JS-off: **text-only via CSS** — `content: attr(label) " :: "
   attr(value)` (either spelling) rendered in the element (no fake bar,
@@ -52,6 +52,6 @@ None.
 
 ## Machine contract
 
-- One scalar completion assertion: `label ∈ [0,1]`. Embedded docs use
+- One scalar completion assertion: `value ∈ [0,1]`. Embedded docs use
   it for checklist/pipeline state (pairs with `sem-procedure`
   statuses); `status="done"` ⇔ value 1 by convention.
