@@ -81,4 +81,23 @@ describe('npl-mood', () => {
     await el.updateComplete;
     expect(el.getAttribute('data-mood')).toBe('😄 bright');
   });
+
+  it('preserves an authored data-mood (class-form) through the mirror', async () => {
+    document.body.innerHTML = '<npl-mood id="m" data-mood="🙂 wistful"></npl-mood>';
+    const el = document.getElementById('m') as NplMood;
+    await el.updateComplete;
+    expect(chipText(el)).toBe('🙂 wistful');
+    expect(el.getAttribute('data-mood')).toBe('🙂 wistful');
+  });
+
+  it('renders the chip before the generated detail panel', async () => {
+    document.body.innerHTML =
+      '<npl-mood id="m" mood="😐 flat">' +
+      '<div class="npl-mood-tone">restrained</div>' +
+      '</npl-mood>';
+    const el = document.getElementById('m') as NplMood;
+    await el.updateComplete;
+    expect(el.firstElementChild?.classList.contains('npl-mood-chip')).toBe(true);
+    expect(el.lastElementChild?.classList.contains('npl-mood-detail')).toBe(true);
+  });
 });
