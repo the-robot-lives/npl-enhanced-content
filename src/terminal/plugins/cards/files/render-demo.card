@@ -7,5 +7,5 @@ description: |
 
   The card is a small YAML header plus prose — `render-card` frames it
   and wraps the body to the frame. Recolor it with
-  `render-card --theme double demos/render-demo.card`, or narrow the
+  `render-card --theme double demo/render-demo.card`, or narrow the
   frame with `--width 40`.

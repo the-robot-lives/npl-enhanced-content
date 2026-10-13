@@ -72,7 +72,7 @@ describe('.card parser', () => {
   });
 
   it('warns on unknown keys and a missing name, falling back to the file name', () => {
-    const card = parseCardFile('foo: bar\ntitle: T\n', { label: 'demos/render-demo.card' });
+    const card = parseCardFile('foo: bar\ntitle: T\n', { label: 'demo/render-demo.card' });
     expect(card.name).toBe('render-demo');
     expect(card.warnings.some((w) => w.includes('foo'))).toBe(true);
     expect(card.warnings.some((w) => w.includes('name'))).toBe(true);
@@ -162,7 +162,7 @@ describe('render-card command', () => {
   });
 
   it('renders a mounted demo card through its header theme', () => {
-    const lines = out(core.execLine('render-card demos/render-subsection.card'));
+    const lines = out(core.execLine('render-card demo/render-subsection.card'));
     expect(lines[0]!.startsWith('╔')).toBe(true); // the card's theme: double
     expect(lines.join('\n')).toContain('One section at a time');
     const widths = new Set(lines.map((line) => displayWidth(line)));
@@ -170,9 +170,9 @@ describe('render-card command', () => {
   });
 
   it('--theme and --width override the card header', () => {
-    const lines = out(core.execLine('render-card demos/render-subsection.card --theme ascii'));
+    const lines = out(core.execLine('render-card demo/render-subsection.card --theme ascii'));
     expect(lines[0]!.startsWith('+-')).toBe(true);
-    expect(displayWidth(out(core.execLine('render-card demos/render-demo.card --width 30'))[0]!)).toBe(30);
+    expect(displayWidth(out(core.execLine('render-card demo/render-demo.card --width 30'))[0]!)).toBe(30);
   });
 
   it('--list-themes lists every theme id', () => {
@@ -181,15 +181,15 @@ describe('render-card command', () => {
   });
 
   it('errors for a missing file, an unknown theme, and `-` without a pipe', () => {
-    expect(errs(core.execLine('render-card demos/nope.card')).join(' ')).toMatch(/no such file/);
-    expect(errs(core.execLine('render-card demos/render-demo.card --theme plaid')).join(' ')).toMatch(/unknown theme/);
+    expect(errs(core.execLine('render-card demo/nope.card')).join(' ')).toMatch(/no such file/);
+    expect(errs(core.execLine('render-card demo/render-demo.card --theme plaid')).join(' ')).toMatch(/unknown theme/);
     expect(errs(core.execLine('render-card -')).join(' ')).toMatch(/piped/);
-    expect(out(core.execLine('render-card demos/render-demo.card')).length).toBeGreaterThan(2);
+    expect(out(core.execLine('render-card demo/render-demo.card')).length).toBeGreaterThan(2);
   });
 
   it('reports the failing line of a bad card', () => {
-    core.vfs.mountFile('/demos/broken.card', 'name: ok\nno colon on this line\n');
-    expect(errs(core.execLine('render-card demos/broken.card')).join(' ')).toMatch(/line 2/);
+    core.vfs.mountFile('/demo/broken.card', 'name: ok\nno colon on this line\n');
+    expect(errs(core.execLine('render-card demo/broken.card')).join(' ')).toMatch(/line 2/);
   });
 });
 

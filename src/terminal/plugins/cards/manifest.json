@@ -8,9 +8,9 @@
     "integrity": null
   },
   "files": [
-    { "path": "/demos/README.md", "src": "files/README.md" },
-    { "path": "/demos/render-demo.card", "src": "files/render-demo.card" },
-    { "path": "/demos/render-subsection.card", "src": "files/render-subsection.card" },
-    { "path": "/demos/render-toc.card", "src": "files/render-toc.card" }
+    { "path": "/demo/README.md", "src": "files/README.md" },
+    { "path": "/demo/render-demo.card", "src": "files/render-demo.card" },
+    { "path": "/demo/render-subsection.card", "src": "files/render-subsection.card" },
+    { "path": "/demo/render-toc.card", "src": "files/render-toc.card" }
   ]
 }

@@ -32,10 +32,10 @@ export const cardsPlugin: PluginManifest = {
   },
   commands: cardCommands,
   files: [
-    { path: '/demos/README.md', content: readme },
-    { path: '/demos/render-demo.card', content: renderDemo },
-    { path: '/demos/render-subsection.card', content: renderSubsection },
-    { path: '/demos/render-toc.card', content: renderToc },
+    { path: '/demo/README.md', content: readme },
+    { path: '/demo/render-demo.card', content: renderDemo },
+    { path: '/demo/render-subsection.card', content: renderSubsection },
+    { path: '/demo/render-toc.card', content: renderToc },
   ],
 };
 

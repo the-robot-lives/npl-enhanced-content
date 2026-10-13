@@ -19,7 +19,7 @@
  * plain Node.
  */
 
-import { Vfs, type VfsNode } from './vfs.js';
+import { Vfs, type VfsBackend, type VfsNode } from './vfs.js';
 import { parseCommandLine } from './sh-parse.js';
 import {
   checkSourceAllowed,
@@ -65,6 +65,39 @@ export interface WindowAction {
 
 export type ShellAction = WindowAction | TuiAction;
 
+/**
+ * Page-supplied S3 request signer (`core.setS3Signer`): given one
+ * operation and object key, returns (or resolves to) the URL to fetch —
+ * presigned, short-lived, and issued by the page's own backend. The
+ * browser bundle NEVER holds static AWS credentials.
+ */
+export type S3Signer = (op: 'get' | 'put' | 'delete', key: string) => string | Promise<string>;
+
+/** One mountable backend kind, registered by an optional bundle (s3). */
+export interface MountKindSpec {
+  /** Kind word in `mount <kind> …`, e.g. `s3`. */
+  id: string;
+  /** One-line help shown by `mount` with no args. */
+  help: string;
+  /** Parse the arguments; return a ready backend or an error message. */
+  create(args: string[]): VfsBackend | string;
+}
+
+/** The word a completer is asked about, with the stage's parsed args. */
+export interface CompletionContext {
+  /** The stage's argument words, with the word under the cursor removed. */
+  args: string[];
+  /** The text being completed (may be ''). */
+  word: string;
+  /** All registered command names + aliases, sorted. */
+  commands: readonly string[];
+  /** The vfs + cwd, for path-aware completers (e.g. cd's dirs only). */
+  vfs: Vfs;
+  cwd: string;
+  /** The expanded home dir (`$HOME`), for `~`-led completions. */
+  home: string;
+}
+
 /** What a command run receives. `state` is shared across pipeline stages. */
 export interface CommandContext {
   args: string[];
@@ -94,6 +127,12 @@ export interface CommandSpec {
   /** Full usage string, shown by `help`, e.g. `ls [-l] [path]`. */
   usage: string;
   run(ctx: CommandContext): void;
+  /**
+   * Tab-completion candidates for the word at this stage's cursor.
+   * Given the args so far (word removed) and the word itself; the shell
+   * common-prefix-extends, and lists on a second Tab.
+   */
+  complete?(ctx: CompletionContext): string[];
 }
 
 /** One virtual file-system entry a plugin contributes. */
@@ -164,6 +203,12 @@ export class TerminalCore {
   readonly commands = new Map<string, CommandSpec>();
   readonly plugins: MountedPlugin[] = [];
   readonly loadErrors: LoadError[] = [];
+  /** Page-supplied S3 signer (setS3Signer); used by s3 mounts for writes. */
+  s3Signer: S3Signer | null = null;
+  /** Mountable backend kinds, registered by optional modules (the s3 backend). */
+  readonly mountKinds = new Map<string, MountKindSpec>();
+  /** Async line subscribers (onLine) — backend hydration reports here. */
+  #lineHandlers = new Set<(line: ShellLine) => void>();
 
   constructor() {
     this.#register(
@@ -187,6 +232,119 @@ export class TerminalCore {
       },
       '(builtin)',
     );
+    this.#register(
+      {
+        name: 'mount',
+        usage: 'mount [kind …] — list storage backends, or mount one (`mount s3 <url> <mountpoint>`)',
+        run: (ctx) => {
+          const kind = ctx.args[0];
+          if (!kind) {
+            ctx.out('storage backends:');
+            if (ctx.vfs.mounts.size === 0) ctx.out('  (none)');
+            for (const [mountpoint, backend] of ctx.vfs.mounts) {
+              ctx.out(`  ${mountpoint}  ${backend.id}${backend.writable ? '' : ' (read-only)'}`);
+            }
+            const kinds = [...this.mountKinds.keys()];
+            ctx.out(`mountable kinds: ${kinds.length > 0 ? kinds.join(', ') : '(none loaded)'}`);
+            return;
+          }
+          const factory = this.mountKinds.get(kind);
+          if (!factory) {
+            ctx.err(`mount: unknown backend kind "${kind}"`);
+            const kinds = [...this.mountKinds.keys()];
+            if (kinds.length > 0) ctx.err(`mount: available kinds: ${kinds.join(', ')}`);
+            return;
+          }
+          const made = factory.create(ctx.args.slice(1));
+          if (typeof made === 'string') {
+            ctx.err(`mount: ${made}`);
+            return;
+          }
+          try {
+            ctx.vfs.attachBackend(made);
+          } catch (cause) {
+            ctx.err(`mount: ${cause instanceof Error ? cause.message : String(cause)}`);
+            return;
+          }
+          ctx.out(`${kind}: mounted at ${made.mountpoint}${made.writable ? '' : ' (read-only)'}`);
+          if (typeof (made as { hydrate?: unknown }).hydrate === 'function') {
+            ctx.out(`${kind}: hydrating ${made.mountpoint} …`);
+            const hydrate = (
+              made as {
+                hydrate?: (
+                  put: (path: string, content: string) => void,
+                  report: (line: ShellLine) => void,
+                ) => Promise<void>;
+              }
+            ).hydrate!;
+            const put = (path: string, content: string): void => {
+              try {
+                this.vfs.mountFile(made.mountpoint + (path.startsWith('/') ? path : `/${path}`), content);
+              } catch {
+                // Paths crossing the mount edge stay unseeded; hydration keeps going.
+              }
+            };
+            hydrate
+              .call(made, put, (line) => this.emitLine(line))
+              .catch((cause: unknown) => {
+                this.emitLine({
+                  kind: 'stderr',
+                  text: `${kind}: ${made.mountpoint}: ${cause instanceof Error ? cause.message : String(cause)}`,
+                });
+              });
+          }
+        },
+      },
+      '(builtin)',
+    );
+    this.#register(
+      {
+        name: 'umount',
+        usage: 'umount <mountpoint> — detach a storage backend',
+        run: (ctx) => {
+          const target = ctx.args[0];
+          if (!target) {
+            ctx.err('umount: missing mountpoint');
+            return;
+          }
+          const mountpoint = ctx.vfs.resolve(ctx.state.cwd, target);
+          if (!ctx.vfs.detachBackend(mountpoint)) {
+            ctx.err(`umount: nothing mounted at ${mountpoint}`);
+            return;
+          }
+          ctx.out(`umounted ${mountpoint}`);
+        },
+      },
+      '(builtin)',
+    );
+    this.#register(
+      {
+        name: 'storage',
+        usage: 'storage [status|reset] — storage status, or reset persisted state',
+        run: (ctx) => {
+          const sub = ctx.args[0] ?? 'status';
+          if (sub === 'status') {
+            ctx.out(`storage errors recorded: ${ctx.vfs.storageErrors.length}`);
+            for (const error of ctx.vfs.storageErrors.slice(-5)) {
+              ctx.out(`  ${error.op} ${error.path} (${error.backend}): ${error.message}`);
+            }
+            return;
+          }
+          if (sub === 'reset') {
+            const backend = ctx.vfs.backendFor('/');
+            const reset = (backend as { reset?: unknown } | null)?.reset;
+            if (typeof reset !== 'function') {
+              ctx.err('storage reset: no resettable backend mounted at /');
+              return;
+            }
+            ctx.out((reset as (vfs: Vfs) => string).call(backend, ctx.vfs));
+            return;
+          }
+          ctx.err(`storage: unknown subcommand "${sub}" (want status|reset)`);
+        },
+      },
+      '(builtin)',
+    );
   }
 
   /** Register one command; refuses duplicates and malformed names. */
@@ -205,6 +363,36 @@ export class TerminalCore {
 
   hasCommand(name: string): boolean {
     return this.commands.has(name);
+  }
+
+  /** Supply the S3 request signer used by `mount s3` (page-side API). */
+  setS3Signer(signer: S3Signer): void {
+    this.s3Signer = signer;
+  }
+
+  /** Subscribe to async lines (hydration, storage warnings) → unsubscribe. */
+  onLine(handler: (line: ShellLine) => void): () => void {
+    this.#lineHandlers.add(handler);
+    return () => this.#lineHandlers.delete(handler);
+  }
+
+  /** Emit one async line — storage backends report progress through this. */
+  emitLine(line: ShellLine): void {
+    for (const handler of [...this.#lineHandlers]) handler(line);
+  }
+
+  /** Every registered command name + alias name, sorted, unique. */
+  commandNames(): string[] {
+    const names = new Set<string>([...this.commands.keys(), ...Object.keys(this.state.aliases)]);
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }
+
+  /** Spec for one command word (aliases resolve first), for completion. */
+  commandSpec(name: string): CommandSpec | undefined {
+    const direct = this.commands.get(name);
+    if (direct) return direct;
+    const expanded = this.#expandAliases([name])[0] ?? name;
+    return this.commands.get(expanded);
   }
 
   /**

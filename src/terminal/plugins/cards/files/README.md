@@ -3,9 +3,9 @@
 Framed-card demos for the `render-card` shell command (the semtext-cards
 plugin). Mount paths here mirror the landing page's typed session:
 
-    render-card demos/render-demo.card
-    render-card demos/render-subsection.card
-    render-card demos/render-toc.card
+    render-card demo/render-demo.card
+    render-card demo/render-subsection.card
+    render-card demo/render-toc.card
 
 ## The .card format
 
