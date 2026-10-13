@@ -2,6 +2,10 @@
 
 Dated work log — newest first, one line per landed change.
 
+## 2026-10-14
+
+- spec!: rename `sem-distractor` to `incorrect-statement` (breaking, no backward-compatible alias) — v0.7 conventions note; child tag of `sem-fact` is now unprefixed like `statement`/`conclusion`, class alias `.sem-incorrect-statement` (Appendix A rule: bare child parts map to `.sem-<part>`, per the `<highlight>` precedent), extraction field `distractors` → `incorrectStatements` on the `sem-fact` record, schema `semtext.schema.json` element key + `sem-fact.children` updated, no-JS label content `"distractor · "` → `"incorrect statement · "`, selector helper call sites move `sel('distractor')` → `part('incorrect-statement')`; demos, site page, viewer sample, terminal plugin demo, e2e/unit tests, fixtures, PROJ-SCHEMA, PRD, ROADMAP updated; elements.json regenerated. Quiz-decoy prose keeps the concept word "distractor" where it names the quiz role, not the element.
+
 ## 2026-10-13
 
 - fix(data): harden src/data/table.ts against CodeQL js/polynomial-redos (#53 release gate) — the delimiter-row check now splits cells instead of the nested-`\s*` DELIM regex (super-linear backtracking on uncontrolled page tables), and trailing-whitespace strip uses `trimEnd()`; behaviour verified identical on GFM edge cases, suite 692/692.

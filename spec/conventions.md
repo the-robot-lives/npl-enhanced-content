@@ -1,6 +1,8 @@
 # SemText -- Format Spec & Conventions
 
-**DRAFT v0.6 -- Lit-only surface, tag form canonical.** SemText is an XHTML vocabulary of
+**DRAFT v0.7 -- Lit-only surface, tag form canonical.** v0.7 renames the fact child
+`<sem-distractor>` to `<incorrect-statement>` (breaking; no backward-compatible alias).
+SemText is an XHTML vocabulary of
 **custom elements**: `<sem-enhanced-document>`, `<sem-note variant="tip">`,
 `<sem-facts view-as="quiz">`, `<sem-fact>` with `<statement>` and
 `<conclusion>`, `<sem-step status="done">`, `<sem-property key="...">`. Element
@@ -42,7 +44,7 @@ listed with its full entry in [SS5](#5-element-entries).
 | **Document & structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
 | **Prose & code** | `sem-md`, `sem-note`, `sem-code` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
 | **Disclosure & views** | `sem-details` / `sem-detail`, `highlight`, `sem-reveal`, `sem-source`, `sem-views` / `sem-view` | The same content under different reading interactions -- occluded detail, Q-A reveal, markup flip, perspective tabs |
-| **Facts & recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `sem-distractor`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
+| **Facts & recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `incorrect-statement`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
 | **Data & tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
 | **Sequences & progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
 | **Definitions & citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference` | Closed key/value assertions and the numbered works the prose cites |
@@ -148,7 +150,7 @@ plain handlers (SS4).
   **bare semantic tags** -- machine-facing, unstyled. ? **Q1** keep bare vs
   `sem-`-prefix them?
 - Record **parts** are bare semantic children too: `<statement>`,
-  `<conclusion>`, `<sem-distractor>` inside `sem-fact`; `<highlight>` inside
+  `<conclusion>`, `<incorrect-statement>` inside `sem-fact`; `<highlight>` inside
   any prose element; `<name>`, `<bio>`, `<instructions>` inside `agent`.
 - Ordinary semantic HTML is always valid content; `sem-*` enhances where
   interactivity pays. Plain HTML carrying `data-kind` or `data-tags` is a
@@ -300,7 +302,7 @@ both present; authors pick one per fact.
    document is therefore presentable before and without any script, with
    no layout shift on upgrade where feasible.
 4. **Every hide rule is gated** on `[data-sem-upgraded]` (D12). With no
-   script in the page nothing is hidden: distractors render labelled, views
+   script in the page nothing is hidden: incorrect statements render labelled, views
    stack under their names, collapsed bodies and every conclusion show,
    audience-qualified content is all visible. A document without
    JavaScript shows its authored text and is not styled or interactive.
@@ -471,14 +473,14 @@ JS-off: all views stacked, `name`-headed. **Q3 resolved v1: `sem-views`.**
 ```html
 <sem-facts view-as="quiz" controls="shuffle,filter">
   <sem-fact>...</sem-fact>
-  <sem-fact>...<sem-distractor>decoy conclusion</sem-distractor></sem-fact>
+  <sem-fact>...<incorrect-statement>decoy conclusion</incorrect-statement></sem-fact>
 </sem-facts>
 ```
 - `view-as="list"` (default): filter box, tag chips.
 - `view-as="flashcards"`: front = statement (+`<highlight>` prompt), back =
   conclusion; flip click/Space; -/-/swipe; progress `3/12`; `shuffle`.
 - `view-as="quiz"`: statement shown; candidates = sibling conclusions,
-  `<sem-distractor>` children win when present; accuracy on `sem-complete`.
+  `<incorrect-statement>` children win when present; accuracy on `sem-complete`.
 - Events: `sem-navigate {index}`, `sem-flip {face}`, `sem-complete {correct,total,ms}`.
 
 **sem-fact** -- the atomic unit; assertable Q/A pair.
@@ -771,7 +773,7 @@ every bare child part = a `div`/`span` classed `.sem-<part>`.
 | `<sem-audiences>` / `<sem-profile id label implies>` | `div.sem-audiences` > `div.sem-profile[id][data-label][data-implies]`; `audience="..."` - `data-audience` |
 | `<sem-facts view-as="quiz">` | `div.sem-facts[data-view-as="quiz"]` |
 | `<sem-fact>` > `<statement>` / `<conclusion>` | `div.sem-fact` > `.sem-statement`, `.sem-conclusion` |
-| `<sem-distractor>` | `div.sem-distractor` |
+| `<incorrect-statement>` | `div.sem-incorrect-statement` |
 | `<sem-details>` / `<sem-detail>` | `div.sem-details` > `div.sem-detail` |
 | `<highlight>` | `span.sem-highlight` (occluded form: `.sem-occluded`) |
 | `<sem-procedure>` / `<sem-step status>` | `div.sem-procedure` > `div.sem-step[data-status]` |

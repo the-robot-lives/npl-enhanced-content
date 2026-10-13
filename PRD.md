@@ -122,7 +122,7 @@ Schema + BDD spec land together, before code (§8). Tier order simplest first.
 ### Tier 1 — flagship buildout
 
 - `sem-facts` full: filter/tag chips (list), flip+swipe+shuffle (flashcards),
-  quiz candidates from explicit `<sem-distractor>` children else sibling
+  quiz candidates from explicit `<incorrect-statement>` children else sibling
   statements; `hui-complete`-style events → `sem-complete {correct,total,ms}`.
 - `sem-details` full: `<highlight>` occlusion in quiz view; sequencing.
 - `<sem-question type="mc|multi|blank|match|order|tf|short">` — the 7 TRP

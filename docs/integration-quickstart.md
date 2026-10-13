@@ -104,7 +104,7 @@ re-theme; override `--sem-*` tokens or add a theme file.
 With only the CSS and no script at all, a SemText document is complete
 and readable: **every hide rule in the vocabulary is gated on the
 `data-sem-upgraded` marker**, which only a script sets. No script ⇒
-nothing is hidden — distractors render labelled, tab views stack under
+nothing is hidden — incorrect statements render labelled, tab views stack under
 their names, collapsed bodies show, all audience-qualified content is
 visible. Zero-JS elements (`sem-procedure`, `sem-chronology`,
 `sem-audiences`, `sem-properties`, `sem-progress`, `sem-table` markup,

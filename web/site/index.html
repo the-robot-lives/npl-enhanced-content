@@ -397,8 +397,8 @@ section { padding-block: var(--pg-space) 0; }
     <p class="pg-lede">
       SemText is a semantic text format: a single XHTML file that a language
       model reads and writes the way it reads and writes Markdown today. The
-      difference is what the text can say. A fact, a step, a caveat, a
-      distractor, a term and its definition are each written as what they
+      difference is what the text can say. A fact, a step, a caveat, an
+      incorrect statement, a term and its definition are each written as what they
       <em>are</em> — a class and a few attributes on a plain element — so the
       structure is in the text itself, not inferred from it.
     </p>
@@ -461,7 +461,7 @@ section { padding-block: var(--pg-space) 0; }
             The same file read as XHTML. Attributes qualify every datum:
             <code>data-kind</code> says what a thing is,
             <code>data-status</code> says where it stands,
-            <code>.sem-conclusion</code> and <code>.sem-distractor</code>
+            <code>.sem-conclusion</code> and <code>.sem-incorrect-statement</code>
             distinguish an answer from a decoy. A model does not have to infer
             the structure, because the structure is written down.
           </p>
@@ -511,22 +511,22 @@ section { padding-block: var(--pg-space) 0; }
             <div class="sem-fact" id="f-view-as" data-kind="rule">
               <div class="sem-statement"><code>view-as</code> is a parameter, not an identity</div>
               <div class="sem-conclusion">A fact is a fact in every view; the attribute only selects a rendering.</div>
-              <div class="sem-distractor">Each view is a different element type.</div>
+              <div class="sem-incorrect-statement">Each view is a different element type.</div>
             </div>
             <div class="sem-fact" id="f-light-dom" data-kind="rule">
               <div class="sem-statement">Components render into light DOM</div>
               <div class="sem-conclusion">Content stays in the page, so find-in-page, copy and plain CSS all still reach it.</div>
-              <div class="sem-distractor">Content moves into a shadow root for encapsulation.</div>
+              <div class="sem-incorrect-statement">Content moves into a shadow root for encapsulation.</div>
             </div>
             <div class="sem-fact" id="f-invariant" data-kind="rule">
               <div class="sem-statement">Extraction reads the authored document</div>
               <div class="sem-conclusion">Generated chrome is skipped, so records do not depend on the view on screen.</div>
-              <div class="sem-distractor">Extraction reads whatever is currently rendered.</div>
+              <div class="sem-incorrect-statement">Extraction reads whatever is currently rendered.</div>
             </div>
             <div class="sem-fact" id="f-no-build" data-kind="rule">
               <div class="sem-statement">Authoring needs no build step</div>
               <div class="sem-conclusion">Two stylesheets and one script tag in a plain HTML file.</div>
-              <div class="sem-distractor">A bundler compiles the vocabulary down to HTML.</div>
+              <div class="sem-incorrect-statement">A bundler compiles the vocabulary down to HTML.</div>
             </div>
           </div>
         </div>
@@ -536,13 +536,13 @@ section { padding-block: var(--pg-space) 0; }
           <pre class="pg-records" id="try-records" tabindex="0" role="region"
                aria-label="Records extracted from the facts deck">sem-facts (#try-deck kind=capability)
   sem-fact (#f-view-as kind=rule): view-as is a parameter, not an identity :: A fact is a fact in every view; the attribute only selects a rendering.
-    distractors: Each view is a different element type.
+    incorrectStatements: Each view is a different element type.
   sem-fact (#f-light-dom kind=rule): Components render into light DOM :: Content stays in the page, so find-in-page, copy and plain CSS all still reach it.
-    distractors: Content moves into a shadow root for encapsulation.
+    incorrectStatements: Content moves into a shadow root for encapsulation.
   sem-fact (#f-invariant kind=rule): Extraction reads the authored document :: Generated chrome is skipped, so records do not depend on the view on screen.
-    distractors: Extraction reads whatever is currently rendered.
+    incorrectStatements: Extraction reads whatever is currently rendered.
   sem-fact (#f-no-build kind=rule): Authoring needs no build step :: Two stylesheets and one script tag in a plain HTML file.
-    distractors: A bundler compiles the vocabulary down to HTML.</pre>
+    incorrectStatements: A bundler compiles the vocabulary down to HTML.</pre>
           <p class="pg-status" id="try-invariance" aria-live="polite">
             Output of <code>SemText.extractText()</code> over the deck
             above, authored into the page so it is here with scripts off too.
@@ -843,7 +843,7 @@ section { padding-block: var(--pg-space) 0; }
     &lt;sem-fact id="f-jwt" kind="concept"&gt;
       &lt;statement&gt;JWTs rotate per session&lt;/statement&gt;
       &lt;conclusion&gt;Short-lived access tokens; the refresh grant issues a new pair.&lt;/conclusion&gt;
-      &lt;sem-distractor&gt;Store the token in localStorage for durability.&lt;/sem-distractor&gt;
+      &lt;incorrect-statement&gt;Store the token in localStorage for durability.&lt;/incorrect-statement&gt;
     &lt;/sem-fact&gt;
   &lt;/sem-facts&gt;
 

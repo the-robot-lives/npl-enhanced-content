@@ -82,7 +82,7 @@ interface SemRecord {
    `sem-reader` is chrome and mints nothing (rule 7); `sem-source` is a
    transparent wrapper and mints nothing (rule 8).
 2. **Parts are not records.** `.sem-statement`, `.sem-conclusion`,
-   `.sem-distractor`, `.sem-highlight`, `.sem-note-body`, and the
+   `.sem-incorrect-statement`, `.sem-highlight`, `.sem-note-body`, and the
    `.sem-agent-*` children are fields of their owning record, never entries
    of their own.
 3. **The root wrapper is scope, not content.** `.sem-enhanced-document`
@@ -154,7 +154,7 @@ component removes the attribute when the reader opens the note (see §5).
 `tags` for citation and grouping.
 
 `sem-fact` yields
-`fields: { statement, conclusion, distractors: string[], highlights: string[] }`.
+`fields: { statement, conclusion, incorrectStatements: string[], highlights: string[] }`.
 
 - `statement` / `conclusion` from `.sem-statement` / `<statement>` and
   `.sem-conclusion` / `<conclusion>`.
@@ -162,7 +162,7 @@ component removes the attribute when the reader opens the note (see §5).
   text is split on the first `::`, left → `statement`, right → `conclusion`.
   With no `::`, the whole text is the `statement` and `conclusion` is `""`.
   Children always win over the compact form (conventions §3).
-- `distractors` are extracted **as distractors and never as claims**, which
+- `incorrectStatements` are extracted **as distractors and never as claims**, which
   is exactly what `spec/schema/sem-facts.md` requires: they appear in their
   own array, never in `text`, never as a `conclusion`.
 - `highlights` are the fact's recall prompts, in either the authored
@@ -170,7 +170,7 @@ component removes the attribute when the reader opens the note (see §5).
 - `text` = `statement :: conclusion` when both exist, otherwise `statement`.
 
 Implicit distractors — the sibling conclusions the quiz view borrows when a
-fact has no `.sem-distractor` child — are a **rendering** decision and are not
+fact has no `<incorrect-statement>` child — are a **rendering** decision and are not
 extracted. They are already in the output as other facts' conclusions.
 
 ### `sem-details` / `sem-detail`
@@ -457,7 +457,7 @@ Line form, indented by containment depth:
 ```
 
 Array-valued fields join with ` | `. Only fields that carry meaning a reader
-would lose otherwise are emitted (a fact's distractors, a detail's
+would lose otherwise are emitted (a fact's incorrect statements, a detail's
 highlights, a step's status, a progress element's raw value, a reveal's
 summary, a note's variant, an agent's bio and instructions, a view's name,
 an event's `when` / `until` / `status`, a code listing's `lang` and
@@ -507,7 +507,7 @@ Input:
     <sem-fact id="f-jwt" kind="concept">
       <statement>JWTs rotate per session</statement>
       <conclusion>Short-lived access; refresh issues a new pair.</conclusion>
-      <sem-distractor>Store them in localStorage.</sem-distractor>
+      <incorrect-statement>Store them in localStorage.</incorrect-statement>
     </sem-fact>
   </sem-facts>
   <sem-progress id="p-cov" value="1.4" label="coverage"></sem-progress>
@@ -534,7 +534,7 @@ Output:
     "fields": {
       "statement": "JWTs rotate per session",
       "conclusion": "Short-lived access; refresh issues a new pair.",
-      "distractors": ["Store them in localStorage."],
+      "incorrectStatements": ["Store them in localStorage."],
       "highlights": []
     },
     "text": "JWTs rotate per session :: Short-lived access; refresh issues a new pair.",
@@ -553,7 +553,7 @@ Rendered as annotated plain text:
 h2 (kind=section tags=auth|tokens): Token handling
 sem-facts (#auth-facts)
   sem-fact (#f-jwt kind=concept): JWTs rotate per session :: Short-lived access; refresh issues a new pair.
-    distractors: Store them in localStorage.
+    incorrectStatements: Store them in localStorage.
 sem-progress (#p-cov): coverage :: 100%
   rawValue: 1.4
 ```

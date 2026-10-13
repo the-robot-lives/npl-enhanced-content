@@ -1,6 +1,6 @@
 # Schema — `sem-facts` / `sem-fact`
 
-Contract per conventions.md v0.6. BDD source of truth for
+Contract per conventions.md v0.7. BDD source of truth for
 `test/e2e/sem-facts.cy.js`. Changes here precede spec changes
 precede code.
 
@@ -21,19 +21,19 @@ self-test, quiz = scored recall).
     <statement>JWTs rotate per session</statement>
     <conclusion>Short-lived access tokens; the refresh
       grant issues a new pair.</conclusion>
-    <sem-distractor>Store tokens in localStorage.</sem-distractor>
+    <incorrect-statement>Store tokens in localStorage.</incorrect-statement>
   </sem-fact>
 </sem-facts>
 ```
 
 Class-form alias (conventions Appendix A): `div.sem-facts[data-view-as]` › `div.sem-fact` › `.sem-statement`,
-`.sem-conclusion`, `.sem-distractor`.
+`.sem-conclusion`, `.sem-incorrect-statement`.
 
 - `view-as`: `list` (default) | `flashcards` | `quiz`. Canonical
   attribute; display-only sugar — machines extract the same pairs
   regardless of view.
 - `<statement>` + `<conclusion>`: required per fact.
-- `<sem-distractor>`: optional, quiz view only — explicit wrong candidate.
+- `<incorrect-statement>`: optional, quiz view only — explicit wrong candidate.
   Without one, sibling conclusions serve as distractors.
 - `id` on the container and on facts: required for citation
   (`#auth-facts/f-jwt`); `kind`, `tags` global.
@@ -61,7 +61,7 @@ Class-form alias (conventions Appendix A): `div.sem-facts[data-view-as]` › `di
 
 - Conclusions hidden until revealed by a correct selection.
 - Current fact (`.sem-current`) renders `.sem-quiz-options`: shuffled
-  buttons, one per candidate — explicit `sem-distractor` children (up to
+  buttons, one per candidate — explicit `incorrect-statement` children (up to
   3) + the `conclusion` as correct (`data-correct="true"`).
 - One answer per question (`data-answered` on the option box): correct
   pick → `.sem-answered` on the button; wrong pick → `.sem-wrong-pick`;

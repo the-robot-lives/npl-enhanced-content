@@ -386,20 +386,20 @@ function buildNote(el: Element): Payload {
 function buildFact(el: Element): Payload {
   let statement = partText(el, 'sem-statement', 'statement');
   let conclusion = partText(el, 'sem-conclusion', 'conclusion');
-  const distractors: string[] = [];
-  const ds = parts(el, 'sem-distractor', 'sem-distractor');
+  const incorrectStatements: string[] = [];
+  const ds = parts(el, 'sem-incorrect-statement', 'incorrect-statement');
   for (let i = 0; i < ds.length; i++) {
-    distractors.push(norm(collectText(ds[i], isChrome)));
+    incorrectStatements.push(norm(collectText(ds[i], isChrome)));
   }
 
   if (statement === null && conclusion === null) {
-    // Compact form: `statement :: conclusion`, distractors excluded.
+    // Compact form: `statement :: conclusion`, incorrect statements excluded.
     const raw = norm(
       collectText(el, function (child) {
         return (
           isChrome(child) ||
-          hasClass(child, 'sem-distractor') ||
-          tagOf(child) === 'sem-distractor'
+          hasClass(child, 'sem-incorrect-statement') ||
+          tagOf(child) === 'incorrect-statement'
         );
       })
     );
@@ -415,7 +415,7 @@ function buildFact(el: Element): Payload {
   const fields: Record<string, unknown> = {
     statement: statement || '',
     conclusion: conclusion || '',
-    distractors: distractors,
+    incorrectStatements: incorrectStatements,
     highlights: highlightsIn(el)
   };
   const text = conclusion ? statement + ' :: ' + conclusion : statement || '';
@@ -741,7 +741,7 @@ function annotate(record: SemRecord): string {
 const TEXTUAL_FIELDS: Record<string, string[]> = {
   'sem-agent': ['bio', 'instructions'],
   'sem-note': ['variant'],
-  'sem-fact': ['distractors'],
+  'sem-fact': ['incorrectStatements'],
   'sem-detail': ['highlights'],
   'sem-step': ['status'],
   'sem-progress': ['rawValue'],

@@ -33,7 +33,7 @@ write (`data-active`, `data-view-as` after a toggle, tier markers) is always
 | `<sem-note variant="warning">` | `div.sem-note[data-variant="warning"]` › `.sem-note-body` |
 | `<sem-facts view-as="quiz">` | `div.sem-facts[data-view-as="quiz"]` |
 | `<sem-fact>` statement/conclusion | `div.sem-fact` › `.sem-statement` / `.sem-conclusion` |
-| `<sem-distractor>` | `div.sem-distractor` |
+| `<incorrect-statement>` | `div.sem-incorrect-statement` |
 | `<sem-details>` / `<sem-detail>` | `div.sem-details` › `div.sem-detail` |
 | `<highlight>` | `span.sem-highlight` (occluded form `.sem-occluded`) |
 | `<sem-chronology view-as>` › `<sem-event when until status>` | `div.sem-chronology[data-view-as]` › `div.sem-event[data-when][data-until][data-status]` |

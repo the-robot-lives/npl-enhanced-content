@@ -217,11 +217,11 @@ PAGES.forEach((page) => {
         cy.request(page.nojs).its('body').should('not.match', /<script/i);
       });
 
-      it('hides nothing — no upgrade marker, every body, conclusion, distractor, view and highlight visible', () => {
+      it('hides nothing — no upgrade marker, every body, conclusion, incorrect statement, view and highlight visible', () => {
         cy.visit(page.nojs);
         cy.get('[data-sem-upgraded]').should('not.exist');
         cy.get('.sem-reader-chrome, .sem-source-chrome, .sem-source-fence, .sem-facts-chrome, .sem-views-tabs, .sem-code-chrome, .sem-table-chrome, .sem-occluded').should('not.exist');
-        ['sem-note[collapsed]', 'sem-fact conclusion', 'sem-distractor', 'sem-view', 'sem-reveal', 'highlight', 'sem-step', 'sem-property', 'sem-event', 'sem-code pre', 'sem-table table', 'sem-reference', '[audience]', 'sem-md']
+        ['sem-note[collapsed]', 'sem-fact conclusion', 'incorrect-statement', 'sem-view', 'sem-reveal', 'highlight', 'sem-step', 'sem-property', 'sem-event', 'sem-code pre', 'sem-table table', 'sem-reference', '[audience]', 'sem-md']
           .forEach((sel) => cy.get(sel).should('have.length.greaterThan', 0).each(($el) => cy.wrap($el).should('be.visible')));
         // the source wrapper is transparent: its rendered children are in flow
         cy.get('sem-source > :not(.sem-source-chrome, .sem-source-fence, script)').each(($el) => cy.wrap($el).should('be.visible'));

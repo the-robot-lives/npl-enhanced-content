@@ -51,7 +51,7 @@ export class SemFacts extends SemElement {
 
     const optionsFor = (item: Element) => {
       const correct = item.querySelector(CONCLUSION);
-      const distractors = Array.from(item.querySelectorAll(sel('distractor')));
+      const distractors = Array.from(item.querySelectorAll(part('incorrect-statement')));
       const others = items
         .filter((f) => f !== item)
         .map((f) => f.querySelector(CONCLUSION))

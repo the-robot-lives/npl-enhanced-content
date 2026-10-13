@@ -1637,11 +1637,11 @@
           "note": "`<statement>` + `<conclusion>`: required per fact."
         },
         {
-          "name": "sem-distractor",
-          "note": "`<sem-distractor>`: optional, quiz view only — explicit wrong candidate. Without one, sibling conclusions serve as distractors."
+          "name": "incorrect-statement",
+          "note": "`<incorrect-statement>`: optional, quiz view only — explicit wrong candidate. Without one, sibling conclusions serve as distractors."
         }
       ],
-      "example": "<sem-facts id=\"auth-facts\" view-as=\"flashcards\">\n  <sem-fact id=\"f-jwt\">\n    <statement>JWTs rotate per session</statement>\n    <conclusion>Short-lived access tokens; the refresh\n      grant issues a new pair.</conclusion>\n    <sem-distractor>Store tokens in localStorage.</sem-distractor>\n  </sem-fact>\n</sem-facts>",
+      "example": "<sem-facts id=\"auth-facts\" view-as=\"flashcards\">\n  <sem-fact id=\"f-jwt\">\n    <statement>JWTs rotate per session</statement>\n    <conclusion>Short-lived access tokens; the refresh\n      grant issues a new pair.</conclusion>\n    <incorrect-statement>Store tokens in localStorage.</incorrect-statement>\n  </sem-fact>\n</sem-facts>",
       "optionsIn": "sem-facts"
     },
     {
@@ -1673,7 +1673,7 @@
         }
       ],
       "children": [],
-      "example": "<sem-facts id=\"auth-facts\" view-as=\"flashcards\">\n  <sem-fact id=\"f-jwt\">\n    <statement>JWTs rotate per session</statement>\n    <conclusion>Short-lived access tokens; the refresh\n      grant issues a new pair.</conclusion>\n    <sem-distractor>Store tokens in localStorage.</sem-distractor>\n  </sem-fact>\n</sem-facts>"
+      "example": "<sem-facts id=\"auth-facts\" view-as=\"flashcards\">\n  <sem-fact id=\"f-jwt\">\n    <statement>JWTs rotate per session</statement>\n    <conclusion>Short-lived access tokens; the refresh\n      grant issues a new pair.</conclusion>\n    <incorrect-statement>Store tokens in localStorage.</incorrect-statement>\n  </sem-fact>\n</sem-facts>"
     },
     {
       "name": "sem-md",

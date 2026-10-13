@@ -44,7 +44,7 @@ export function enhanceFacts(scope: ParentNode): void {
 
     function optionsFor(item: Element): { text: string; correct: boolean }[] {
       const correct = item.querySelector(CONCLUSION);
-      const distractors = Array.from(item.querySelectorAll(sel('distractor')));
+      const distractors = Array.from(item.querySelectorAll(part('incorrect-statement')));
       const others = items
         .filter((f) => f !== item)
         .map((f) => f.querySelector(CONCLUSION))
