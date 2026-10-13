@@ -73,12 +73,12 @@ guardrail discipline they document.
 
 | Artifact | Budget | Measured (2026-10-13) |
 |---|---|---|
-| `semtext.js` (one bundle) | **126 KB** | 124.1 raw / 39.4 gzipped |
-| `npl.js` | **52 KB** | 46.2 raw / 14.5 gzipped |
-| `semtext-agent.js` | **24 KB** | 20.3 raw / 7.3 gzipped |
-| `semtext-js-shell.js` | **256 KB** | 74.8 raw / 26.2 gzipped |
-| `semtext-lazy.js` (loader) | **8 KB** | 3.0 raw / 1.4 gzipped |
-| `npl-lazy.js` (loader) | **8 KB** | 3.0 raw / 1.4 gzipped |
+| `semtext.js` (one bundle) | **126 KB** | 132.3 raw / 41.9 gzipped — over budget pending the sem-browser promotion call (docs-overhaul phase 2) |
+| `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
+| `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
+| `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
+| `semtext-lazy.js` (loader) | **8 KB** | 3.3 raw / 1.6 gzipped (2026-10-14) |
+| `npl-lazy.js` (loader) | **8 KB** | 4.0 raw / 1.8 gzipped (2026-10-14) |
 
 Retired artifacts (spec v0.5, tag-form canonical, PR #30) — their handlers now
 share the single bundle budget:
