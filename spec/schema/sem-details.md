@@ -66,6 +66,9 @@ the `<highlight>` emphasized and fully legible, nothing occluded:
   prose is identical; quiz view additionally occludes highlights.
 - `sem-detail`: one prose passage; any inline content, `<highlight>`
   marks a recall target. `[[cloze]]` sugar maps to `<highlight>`.
+- `highlight` — the recall targets of the passage, zero or more;
+  emphasized and fully legible in the `plain` view, occluded and revealed
+  per item in the `quiz` view.
 - `id` on the container; `kind`, `tags` global. Facts may also carry
   `<highlight>` prompts (schema sem-facts), but occlusion wiring for
   prose lives here.
