@@ -15,8 +15,21 @@ text (it *is* the document's record of the default query).
 
 ## Authoring form
 
+A direct member of a `sem-data-visualizer`, addressing one of the
+visualizer's named buckets — the smallest valid example therefore carries
+the bucket it queries.
+
 ```html
-<sem-data-query>SELECT name, port FROM services WHERE ready = true ORDER BY port LIMIT 5</sem-data-query>
+<sem-data-visualizer id="dv-services">
+  <sem-data-source data-name="services" data-format="table">
+    | name    | port | ready |
+    | :------ | ---: | :---- |
+    | api     | 8443 | true  |
+    | web     | 8080 | true  |
+    | metrics | 9090 | false |
+  </sem-data-source>
+  <sem-data-query>SELECT name, port FROM services WHERE ready = true ORDER BY port LIMIT 5</sem-data-query>
+</sem-data-visualizer>
 ```
 
 Class-form alias (conventions Appendix A): `.sem-data-query`.
