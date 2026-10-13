@@ -704,6 +704,72 @@ npl-mood, .npl-mood { display: block; }
 npl-thought, .npl-thought { display: block; }
 npl-vos, .npl-vos { display: block; }
 
+/* npl-critique — structured critique card (component: src/lit/npl/npl-critique.ts).
+   The component adds the `.npl-critique-*` part classes as theme hooks; every
+   rule below names BOTH authoring forms (bare part tag / `.npl-` alias), so
+   the JS-off box reads identically. Display-only: no focus chrome, no motion.
+   Small-caps part labels identify the lists without relying on colour alone;
+   label colours mix toward the foreground for AA at label size. */
+:is(npl-critique, .npl-critique) { border: 1px solid var(--sem-border); border-radius: 12px;
+  padding: 1rem; margin: 1rem 0; background: var(--sem-surface); }
+:is(npl-critique, .npl-critique) > :is(subject, .npl-subject) { display: block; font-weight: 600; }
+:is(npl-critique, .npl-critique) > :is(subject, .npl-subject)::before { content: "subject · ";
+  font-weight: 400; font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
+:is(npl-critique, .npl-critique) > :is(perspective, .npl-perspective) { display: block;
+  margin-top: .25rem; color: var(--sem-muted); }
+:is(npl-critique, .npl-critique) > :is(perspective, .npl-perspective)::before { content: "perspective · ";
+  font-variant-caps: all-small-caps; letter-spacing: .05em; }
+:is(npl-critique, .npl-critique) > :is(strengths, .npl-strengths),
+:is(npl-critique, .npl-critique) > :is(weaknesses, .npl-weaknesses) { display: block; margin-top: .75rem; }
+:is(npl-critique, .npl-critique) > :is(strengths, .npl-strengths)::before { content: "strengths · ";
+  font-variant-caps: all-small-caps; letter-spacing: .05em;
+  color: color-mix(in srgb, var(--sem-correct) 75%, var(--sem-fg)); }
+:is(npl-critique, .npl-critique) > :is(weaknesses, .npl-weaknesses)::before { content: "weaknesses · ";
+  font-variant-caps: all-small-caps; letter-spacing: .05em;
+  color: color-mix(in srgb, var(--sem-wrong) 75%, var(--sem-fg)); }
+/* pre-rewrite item children read as a list before the script runs; after the
+   rewrite the generated ul (below) carries the list, so this stops matching —
+   :not(.npl-critique-item) keeps the in-place native-ul upgrade from stacking
+   item margin on top of the list padding */
+:is(npl-critique, .npl-critique) > :is(strengths, .npl-strengths) > :is(item, li, .npl-item):not(.npl-critique-item),
+:is(npl-critique, .npl-critique) > :is(weaknesses, .npl-weaknesses) > :is(item, li, .npl-item):not(.npl-critique-item) {
+  display: list-item; margin-left: 1.25rem; }
+:is(npl-critique, .npl-critique) .npl-critique-list { margin: .25rem 0 0; padding-left: 1.25rem; }
+/* when the part IS the list (native ul/ol upgraded in place), its label sits
+   inside the list padding — pull it back to the card edge so both authoring
+   forms put the label in the same place */
+:is(npl-critique, .npl-critique) > .npl-critique-strengths.npl-critique-list::before,
+:is(npl-critique, .npl-critique) > .npl-critique-weaknesses.npl-critique-list::before { margin-left: -1.25rem; }
+/* marker colour only — item text stays the foreground colour */
+:is(npl-critique, .npl-critique) > :is(strengths, .npl-strengths) ::marker { color: color-mix(in srgb, var(--sem-correct) 75%, var(--sem-fg)); }
+:is(npl-critique, .npl-critique) > :is(weaknesses, .npl-weaknesses) ::marker { color: color-mix(in srgb, var(--sem-wrong) 75%, var(--sem-fg)); }
+/* the closing judgement: the highlighted line (accent bar + tint, never opaque) */
+:is(npl-critique, .npl-critique) > :is(verdict, .npl-verdict) { display: block; margin-top: .75rem;
+  padding: .5rem .75rem; border-left: 3px solid var(--sem-accent); border-radius: 6px;
+  background: color-mix(in srgb, var(--sem-accent) 12%, transparent); font-weight: 500; }
+:is(npl-critique, .npl-critique) > :is(verdict, .npl-verdict)::before { content: "verdict · ";
+  font-weight: 400; font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-accent); }
+
+/* npl-directive — inline directive chip (component: src/lit/npl/npl-directive.ts).
+   The component wraps authored children into `.npl-directive-body` and mints
+   `.npl-directive-glyph` / `.npl-directive-qualifier` chrome around it; the
+   rules below key on those part classes so the authored text is never
+   restyled out from under the JS-off box, which reads as the same accented
+   block without the chrome. A directive is an instruction the agent must
+   follow: it is accented, never occluded — the text stays fully readable
+   (occlusion belongs to the quiz tier). The glyph gets its own margin so a
+   tight authoring (`>be terse<`) cannot collide with the instruction, and
+   the qualifier reads as a trailing label, never as part of the sentence.
+   Display-only: no focus chrome, no motion. */
+:is(npl-directive, .npl-directive) { display: block; margin: 1rem 0;
+  padding: .625rem .75rem; border-left: 3px solid var(--sem-accent);
+  border-radius: 6px; background: color-mix(in srgb, var(--sem-accent) 10%, transparent); }
+:is(npl-directive, .npl-directive) > .npl-directive-glyph { margin-right: .4em; }
+:is(npl-directive, .npl-directive) > .npl-directive-body { font-weight: 500; }
+:is(npl-directive, .npl-directive) > .npl-directive-qualifier { margin-left: .6em;
+  font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
+:is(npl-directive, .npl-directive) > .npl-directive-qualifier::before { content: "· "; }
+
 
 /* sem-shell / sem-terminal — the interactive shell (light DOM: this
    stylesheet is the only style channel; every rule scopes to both the
