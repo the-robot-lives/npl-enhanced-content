@@ -183,3 +183,88 @@ Bundled JS-object manifests carry inline `content` files and real `run`
 functions — nothing is fetched. A mount is all-or-nothing: a duplicate
 command name or a bad file path fails the whole plugin with no partial
 state.
+
+## Tab completion (src/terminal/complete.ts)
+
+Tab is driven by a pure function over the current line, the command
+registry and the VFS — no DOM in the engine, so it unit-tests in plain
+Node and survives the Epoch-2 input swap (the canvas/raw-mode terminal
+reuses it verbatim).
+
+- `completeLine(input, core)` returns one of
+  `{ kind: 'none' }` · `{ kind: 'extend', line }` (replace the input) ·
+  `{ kind: 'list', line, candidates }` (extend AND show).
+- **Command position** — the first word of a stage (after an unquoted
+  `|`) completes against command names and aliases. After an unquoted
+  `>` the word completes paths, never commands.
+- **Paths** — every other word completes VFS entries: relative,
+  absolute or `~`-led (`~` expands against `$HOME`). Directories gain a
+  trailing `/`; a completed file ends with a space. Candidates that
+  need quoting (spaces, quotes, globs, shell metacharacters) are
+  single-quoted when the typed word was unquoted; a completed quoted
+  word closes its quote.
+- **Hooks** — a `CommandSpec` may carry `complete(ctx)`; it runs first
+  for the first-argument position (e.g. `cd` offers directories only,
+  `which`/`man` offer command names, `semtext` offers subcommands, then
+  paths for the file operand). `completePaths(ctx)` from the engine
+  gives plugins the same relative/absolute/`~` listing for later args.
+- A trailing space reaches the hook as word `''` — `cd ` and
+  `semtext render ` complete their FIRST argument position.
+- Keyboard: the element handles Tab — one candidate extends quietly;
+  several candidates extend to the common prefix and show the list
+  (display-capped at 8 with an `… +N more` note) as a comment line;
+  no match leaves the line untouched.
+
+## Storage backends (src/terminal/backends/)
+
+A backend implements `VfsBackend` and is attached to a mountpoint:
+`attachBackend(vfs, backend)` / `detachBackend(vfs, mountpoint)`. Every
+mutating op (`write`, `mkdirp`, `rm`, `rename`) flushes through
+`#flush(backend, op, path, run)` — write-through, last write wins.
+
+- **Flush failure ≠ lost data.** The in-memory tree is authoritative;
+  a failed flush records exactly one `VfsStorageError`
+  (`{backend, mountpoint, op, path, message}`) on `core.storageErrors`,
+  emits one stderr warning via `core.onError`, and execution continues.
+  Non-writable backends skip write flushes entirely (reads and cache
+  mutations still work).
+- **local-storage** — `attachLocalStorage(vfs, { key, store?, mountpoint='/' })`
+  persists the tree as JSON under `semtext:shell:v1:<key>`
+  (`localStorage`; a `KeyValueStore` can be injected for tests).
+  - `<sem-shell local-storage>` (or `local-storage="key"`) enables it;
+    an empty key warns and stays off — give the element an `id`.
+  - **Boot order matters:** the element peeks the stored payload
+    (`peekStored()`) BEFORE any plugin mounts, then passes it to
+    `restore(preRead)` in a microtask — boot mounts re-seed storage
+    with the fresh tree, and a naive restore-after-mount would read the
+    just-clobbered payload instead of the user's tree on every reload.
+  - `restore()` → `'seeded' | 'restored' | 'corrupt'`; corrupt or
+    wrong-version payloads warn on stderr and re-seed. `storage reset`
+    restores the factory tree and rewrites the store.
+  - The payload is plain JSON (no eval anywhere), versioned by the key
+    prefix; quota errors surface as the one flush warning. Two elements
+    sharing a key clobber each other — give each its own key.
+- **s3** — `createS3Backend(args, signer?)` / `attachBackend` mounts an
+  object store under a mountpoint:
+  `mount s3 <https://host/bucket/prefix/> <mountpoint>`.
+  - `https://` only; URLs carrying credentials (`user:pass@`) are
+    refused outright — credentials never ride markup or URLs.
+  - **public** mode is read-only (plain GETs); **presign** mints writes
+    through `presignEndpoint` (`?op=put&key=…` → a PUT to the returned
+    URL); **signer** takes a callback that returns the same shape.
+  - Listing is a `?list-type=2` GET parsed from S3 XML (dir markers
+    skipped; keys are base-relative, so a key `docs/a.txt` under
+    `https://host/bucket/prefix/` serves `/mount/docs/a.txt`).
+  - **The browser needs CORS** on the bucket for GET/PUT — a failed
+    request surfaces as the one flush warning (`request failed
+    (network/CORS)`), never a partial mount.
+  - Hydration is capped (`maxObjects` 64, `maxBytes` 1 MiB defaults)
+    and reports `ready — N objects hydrated (capped at …)` on stdout;
+    unreadable objects are skipped, a failed list lands on stderr and
+    the mount stays empty rather than half-read.
+
+The element wires ANSI output through `AnsiStateMachine` +
+`ansiSpans` (see src/terminal/ansi/) — one machine per terminal so
+SGR state persists across lines, reset on clear/Ctrl+L; raw escape
+bytes never reach the DOM.
+

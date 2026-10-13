@@ -17,8 +17,12 @@ describe('start-script (the demo that waits)', () => {
     // It plays into the terminal itself: the outline of the deck's notes.
     cy.contains('.sem-shell-line', 'Auth notes', { timeout: 20000 }).should('exist');
 
-    // Escape hands the terminal back mid-demo (or after it).
-    cy.get('.sem-shell-input').type('{esc}');
+    // Escape hands the terminal back mid-demo (or after it). Dispatch the
+    // keydown directly: cy.type() refuses readonly inputs, and the escape
+    // must bubble to the shell frame exactly like a real keypress would.
+    cy.get('.sem-shell-input').then(($input) => {
+      $input[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
     cy.get('.sem-shell-input').should('have.prop', 'readOnly', false);
   });
 

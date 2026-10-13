@@ -53,14 +53,10 @@ describe('sem-shell', () => {
     });
 
     it('Escape hands the terminal back from a scripted demo', () => {
-      // slow the page's own demo down so the takeover happens mid-flight
-      cy.window().then((win) => {
-        const el = win.document.querySelector('sem-shell');
-        const steps = JSON.parse(el.getAttribute('script'));
-        for (const step of steps) if (step.delayMs !== undefined) step.delayMs = 150;
-        el.playback = steps;
-      });
-      cy.get(prompt).should('have.attr', 'readonly'); // the demo owns the keyboard
+      // beforeEach's takeOver already stopped the boot demo: restart it,
+      // wait for it to own the keyboard mid-flight, then Escape out
+      cy.get('sem-shell').find('.sem-shell-replay').click();
+      cy.get(prompt, { timeout: 15000 }).should('have.attr', 'readonly');
       cy.get(prompt).then(($input) => {
         $input[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       });
@@ -158,8 +154,8 @@ describe('sem-shell', () => {
 
       run('storage reset');
       cy.get(log).should('contain.text', 'factory content restored');
-      run('ls /');
-      cy.get(log).should('not.contain.text', 'reload.txt'); // the factory tree is back
+      run('cat /reload.txt');
+      cy.get(log).should('contain.text', 'No such file'); // the factory tree is back
     });
   });
 
@@ -179,7 +175,7 @@ describe('sem-shell', () => {
     });
 
     it('a public mount hydrates over an intercepted endpoint', () => {
-      cy.intercept('GET', 'https://s3.test.invalid/bucket/docs/?list-type=*', {
+      cy.intercept('GET', 'https://s3.test.invalid/bucket/?list-type=*', {
         statusCode: 200,
         body:
           '<?xml version="1.0"?><ListBucketResult><Contents><Key>docs/readme.txt</Key><Size>21</Size></Contents></ListBucketResult>',
@@ -191,7 +187,7 @@ describe('sem-shell', () => {
 
       run('mount s3 https://s3.test.invalid/bucket/ /s3');
       cy.get(log).should('contain.text', 'hydrated');
-      run('cat /s3/readme.txt');
+      run('cat /s3/docs/readme.txt'); // list keys are base-relative
       cy.get(log).should('contain.text', 'served from the intercept');
     });
   });
