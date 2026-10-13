@@ -67,15 +67,28 @@ export function buildClosure(profiles: readonly Profile[]): AudienceClosure {
   const closure: AudienceClosure = new Map();
   for (const p of profiles) {
     const reached = new Set<string>([p.id]);
-    const stack = [...p.implies];
-    while (stack.length) {
-      const next = stack.pop()!;
-      if (reached.has(next)) continue;
-      reached.add(next);
-      const q = by.get(next);
-      if (q) stack.push(...q.implies);
-      else warn('sem-audiences: "' + p.id + '" implies unknown profile "' + next + '"');
-    }
+    // Depth-first, carrying the current path: a `reached` hit alone also
+    // fires on diamonds (two roads to one profile), which is not a cycle —
+    // only a target already on the path is. A cycle breaks the walk and is
+    // warned once per occurrence along it.
+    const walk = (id: string, path: readonly string[]): void => {
+      const q = by.get(id);
+      if (!q) {
+        reached.add(id);
+        warn('sem-audiences: "' + p.id + '" implies unknown profile "' + id + '"');
+        return;
+      }
+      for (const t of q.implies) {
+        if (path.indexOf(t) >= 0) {
+          warn('sem-audiences: "' + p.id + '" implies a cycle through "' + t + '"');
+          continue;
+        }
+        if (reached.has(t)) continue;
+        reached.add(t);
+        walk(t, [...path, t]);
+      }
+    };
+    walk(p.id, [p.id]);
     closure.set(p.id, reached);
   }
   return closure;

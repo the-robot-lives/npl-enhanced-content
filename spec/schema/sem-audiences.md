@@ -36,6 +36,10 @@ bare `<name>`.
   Closure is transitive; a cycle is an authoring error, warned once and
   broken.
 
+The declaration unit is empty: content authored inside a `sem-profile`
+has no effect, and a stray `sem-profile` outside a `sem-audiences` block
+is not read.
+
 Qualifier — on any `sem-*` element or plain semantic HTML:
 
 ```html
@@ -101,6 +105,10 @@ never a restriction** — neither element is hidden by it.
 - JS-off: **everything is visible.** The qualifier is invisible to CSS by
   design — a document is a readable artifact first. A printed page shows
   what the screen showed.
+
+The chips are the strip's entire render: a chip carries the profile's
+`label` when present, else its `id`. An `implies` edge is closure
+metadata — it widens what a profile sees and adds nothing to the strip.
 
 ## Events
 
