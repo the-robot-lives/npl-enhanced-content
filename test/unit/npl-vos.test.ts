@@ -27,6 +27,9 @@ describe('npl-vos', () => {
       <npl-vos id="bare" >
         <span vos="ego">bare-spelling part</span>
       </npl-vos>
+      <npl-vos id="data" data-phase="exit">
+        <p data-vos="id">data-spelling phase</p>
+      </npl-vos>
       <npl-vos id="late"></npl-vos>`;
   });
 
@@ -102,5 +105,46 @@ describe('npl-vos', () => {
     });
     const rows = el.querySelectorAll(':scope > .npl-vos-row');
     expect(rows[0].querySelector('.npl-vos-row-body')?.textContent).toBe('late impulse');
+  });
+
+  it('carries no data-phase when no phase is authored — the class-form alias must not false-match', async () => {
+    const el = document.getElementById('bare') as NplVos;
+    await el.updateComplete;
+    // the old mirror wrote data-phase="" for every phase-less vos, which
+    // matched `.npl-vos[data-phase]`; absent means absent now
+    expect(el.hasAttribute('data-phase')).toBe(false);
+    expect(el.querySelector(':scope > .npl-vos-phase')).toBeNull();
+  });
+
+  it('reads the authored data-phase spelling and never clobbers it', async () => {
+    const el = document.getElementById('data') as NplVos;
+    await el.updateComplete;
+    expect(el.getAttribute('data-phase')).toBe('exit');
+    expect(el.querySelector(':scope > .npl-vos-phase')?.textContent).toBe('exit');
+  });
+
+  it('keeps the phase label and mirror live after assembly', async () => {
+    const el = document.getElementById('vos') as NplVos;
+    await el.updateComplete;
+    expect(el.querySelector(':scope > .npl-vos-phase')?.textContent).toBe('entry');
+    el.setAttribute('phase', 'exit');
+    await el.updateComplete;
+    // assembly never re-runs once parts are wrapped; the label sync does
+    expect(el.querySelector(':scope > .npl-vos-phase')?.textContent).toBe('exit');
+    expect(el.getAttribute('data-phase')).toBe('exit');
+    // the data- spelling still wins (dual-form contract), so dropping the
+    // losing spelling alone cannot clear the phase
+    el.removeAttribute('phase');
+    await el.updateComplete;
+    expect(el.getAttribute('data-phase')).toBe('exit');
+    expect(el.querySelector(':scope > .npl-vos-phase')?.textContent).toBe('exit');
+    // the observed path: an empty authored phase clears label and mirror
+    // together — never an empty phase mark. (A hand-removed data-phase is
+    // picked up on the element's next update; it observes `phase` only,
+    // like the npl-section mirror.)
+    el.setAttribute('phase', '');
+    await el.updateComplete;
+    expect(el.querySelector(':scope > .npl-vos-phase')).toBeNull();
+    expect(el.hasAttribute('data-phase')).toBe(false);
   });
 });
