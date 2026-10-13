@@ -387,7 +387,7 @@ function buildFact(el: Element): Payload {
   let statement = partText(el, 'sem-statement', 'statement');
   let conclusion = partText(el, 'sem-conclusion', 'conclusion');
   const incorrectStatements: string[] = [];
-  const ds = parts(el, 'sem-incorrect-statement', 'incorrect-statement');
+  const ds = parts(el, 'incorrect-statement', 'incorrect-statement');
   for (let i = 0; i < ds.length; i++) {
     incorrectStatements.push(norm(collectText(ds[i], isChrome)));
   }
@@ -398,7 +398,7 @@ function buildFact(el: Element): Payload {
       collectText(el, function (child) {
         return (
           isChrome(child) ||
-          hasClass(child, 'sem-incorrect-statement') ||
+          hasClass(child, 'incorrect-statement') ||
           tagOf(child) === 'incorrect-statement'
         );
       })

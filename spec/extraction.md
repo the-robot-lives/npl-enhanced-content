@@ -82,7 +82,7 @@ interface SemRecord {
    `sem-reader` is chrome and mints nothing (rule 7); `sem-source` is a
    transparent wrapper and mints nothing (rule 8).
 2. **Parts are not records.** `.sem-statement`, `.sem-conclusion`,
-   `.sem-incorrect-statement`, `.sem-highlight`, `.sem-note-body`, and the
+   `.incorrect-statement`, `.sem-highlight`, `.sem-note-body`, and the
    `.sem-agent-*` children are fields of their owning record, never entries
    of their own.
 3. **The root wrapper is scope, not content.** `.sem-enhanced-document`

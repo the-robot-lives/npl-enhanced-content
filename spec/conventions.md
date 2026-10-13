@@ -220,7 +220,9 @@ bare `id` / `container/child` deep links, and `name=value` parameters
 `.sem-<element>` and `.sem-<element>-*`: the alias form's identity class
 (Appendix A) and the element's generated chrome (`.sem-facts-chrome`,
 `.sem-note-summary`, `.sem-code-line`). No other element may reuse that
-bare class name for its own chrome. `.sem-progress` names only the progress
+bare class name for its own chrome. One exception: `<incorrect-statement>`'s
+class form is the unprefixed `.incorrect-statement`, matching its tag name
+exactly (user decision, v0.7). `.sem-progress` names only the progress
 element -- a facts-chrome label needing similar styling is `.sem-facts-meter`,
 never `.sem-progress` borrowed from another element. The `npl-*` namespace mirrors the rule: each NPL element owns exactly
 `.npl-<element>` and `.npl-<element>-*` -- its class-form identity class
@@ -763,7 +765,9 @@ with `data-*` parameters. Every tier still accepts that spelling and a
 document may mix forms; it is an alias, not a second vocabulary. The
 mapping is mechanical: identity = `class="sem-<element>"` on a `div`
 (or `span` for inline parts), every bare parameter = `data-<parameter>`,
-every bare child part = a `div`/`span` classed `.sem-<part>`.
+every bare child part = a `div`/`span` classed `.sem-<part>`. One
+exception: `<incorrect-statement>`'s class form is the unprefixed
+`.incorrect-statement`, matching its tag name exactly (user decision, v0.7).
 
 | Canonical tag form | Class-form alias |
 | :-- | :-- |
@@ -773,7 +777,7 @@ every bare child part = a `div`/`span` classed `.sem-<part>`.
 | `<sem-audiences>` / `<sem-profile id label implies>` | `div.sem-audiences` > `div.sem-profile[id][data-label][data-implies]`; `audience="..."` - `data-audience` |
 | `<sem-facts view-as="quiz">` | `div.sem-facts[data-view-as="quiz"]` |
 | `<sem-fact>` > `<statement>` / `<conclusion>` | `div.sem-fact` > `.sem-statement`, `.sem-conclusion` |
-| `<incorrect-statement>` | `div.sem-incorrect-statement` |
+| `<incorrect-statement>` | `div.incorrect-statement` |
 | `<sem-details>` / `<sem-detail>` | `div.sem-details` > `div.sem-detail` |
 | `<highlight>` | `span.sem-highlight` (occluded form: `.sem-occluded`) |
 | `<sem-procedure>` / `<sem-step status>` | `div.sem-procedure` > `div.sem-step[data-status]` |

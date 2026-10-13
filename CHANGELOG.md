@@ -4,6 +4,8 @@ Dated work log — newest first, one line per landed change.
 
 ## 2026-10-14
 
+- spec!: the class form of `<incorrect-statement>` is the unprefixed `.incorrect-statement` (user decision, v0.7) — it matches the tag name exactly, superseding the `.sem-incorrect-statement` alias noted in the entry below; conventions Appendix A gains the explicit exception (and §2 names it), schema `classAliases`, extraction, vocabulary CSS selectors, demos, site page, viewer sample, unit fixture and e2e expectations updated; sem-facts schema example alias line updated in place (file carries concurrent edits, not committed here); elements.json sem-facts objects regenerated.
+
 - spec!: rename `sem-distractor` to `incorrect-statement` (breaking, no backward-compatible alias) — v0.7 conventions note; child tag of `sem-fact` is now unprefixed like `statement`/`conclusion`, class alias `.sem-incorrect-statement` (Appendix A rule: bare child parts map to `.sem-<part>`, per the `<highlight>` precedent), extraction field `distractors` → `incorrectStatements` on the `sem-fact` record, schema `semtext.schema.json` element key + `sem-fact.children` updated, no-JS label content `"distractor · "` → `"incorrect statement · "`, selector helper call sites move `sel('distractor')` → `part('incorrect-statement')`; demos, site page, viewer sample, terminal plugin demo, e2e/unit tests, fixtures, PROJ-SCHEMA, PRD, ROADMAP updated; elements.json regenerated. Quiz-decoy prose keeps the concept word "distractor" where it names the quiz role, not the element.
 
 ## 2026-10-13

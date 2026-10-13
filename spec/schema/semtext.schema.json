@@ -358,8 +358,8 @@
         "sem-fact"
       ],
       "classAliases": [
-        "div.sem-incorrect-statement",
-        "span.sem-incorrect-statement"
+        "div.incorrect-statement",
+        "span.incorrect-statement"
       ]
     },
     "highlight": {

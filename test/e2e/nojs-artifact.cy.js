@@ -7,7 +7,7 @@
  * `dist/demo/<name>.nojs.html` with every <script> element removed, and this
  * spec asserts against that file.
  *
- * D12 (repaid): the `.sem-incorrect-statement` and inactive `.sem-view` hide rules in
+ * D12 (repaid): the `.incorrect-statement` and inactive `.sem-view` hide rules in
  * the vocabulary are gated on the one upgrade marker, so with no script in
  * the page both render — incorrect statements labelled, views stacked under their
  * names.
@@ -57,7 +57,7 @@ describe('no-JS artifact (dist/demo/*.nojs.html)', () => {
     });
 
     it('D12 — incorrect statements render, labelled, and every view is stacked under its name', () => {
-      cy.get('.sem-incorrect-statement').should('have.length', 4).each(($d) => {
+      cy.get('.incorrect-statement').should('have.length', 4).each(($d) => {
         cy.wrap($d).should('be.visible');
         const before = $d[0].ownerDocument.defaultView.getComputedStyle($d[0], '::before');
         expect(before.content).to.contain('incorrect statement');

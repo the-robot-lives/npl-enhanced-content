@@ -461,7 +461,7 @@ section { padding-block: var(--pg-space) 0; }
             The same file read as XHTML. Attributes qualify every datum:
             <code>data-kind</code> says what a thing is,
             <code>data-status</code> says where it stands,
-            <code>.sem-conclusion</code> and <code>.sem-incorrect-statement</code>
+            <code>.sem-conclusion</code> and <code>.incorrect-statement</code>
             distinguish an answer from a decoy. A model does not have to infer
             the structure, because the structure is written down.
           </p>
@@ -511,22 +511,22 @@ section { padding-block: var(--pg-space) 0; }
             <div class="sem-fact" id="f-view-as" data-kind="rule">
               <div class="sem-statement"><code>view-as</code> is a parameter, not an identity</div>
               <div class="sem-conclusion">A fact is a fact in every view; the attribute only selects a rendering.</div>
-              <div class="sem-incorrect-statement">Each view is a different element type.</div>
+              <div class="incorrect-statement">Each view is a different element type.</div>
             </div>
             <div class="sem-fact" id="f-light-dom" data-kind="rule">
               <div class="sem-statement">Components render into light DOM</div>
               <div class="sem-conclusion">Content stays in the page, so find-in-page, copy and plain CSS all still reach it.</div>
-              <div class="sem-incorrect-statement">Content moves into a shadow root for encapsulation.</div>
+              <div class="incorrect-statement">Content moves into a shadow root for encapsulation.</div>
             </div>
             <div class="sem-fact" id="f-invariant" data-kind="rule">
               <div class="sem-statement">Extraction reads the authored document</div>
               <div class="sem-conclusion">Generated chrome is skipped, so records do not depend on the view on screen.</div>
-              <div class="sem-incorrect-statement">Extraction reads whatever is currently rendered.</div>
+              <div class="incorrect-statement">Extraction reads whatever is currently rendered.</div>
             </div>
             <div class="sem-fact" id="f-no-build" data-kind="rule">
               <div class="sem-statement">Authoring needs no build step</div>
               <div class="sem-conclusion">Two stylesheets and one script tag in a plain HTML file.</div>
-              <div class="sem-incorrect-statement">A bundler compiles the vocabulary down to HTML.</div>
+              <div class="incorrect-statement">A bundler compiles the vocabulary down to HTML.</div>
             </div>
           </div>
         </div>
