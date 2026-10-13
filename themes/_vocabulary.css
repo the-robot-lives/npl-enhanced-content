@@ -770,6 +770,25 @@ npl-vos, .npl-vos { display: block; }
   font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
 :is(npl-directive, .npl-directive) > .npl-directive-qualifier::before { content: "· "; }
 
+/* npl-directive — inline directive chip (component: src/lit/npl/npl-directive.ts).
+   The component wraps authored children into `.npl-directive-body` and mints
+   `.npl-directive-glyph` / `.npl-directive-qualifier` chrome around it; the
+   rules below key on those part classes so the authored text is never
+   restyled out from under the JS-off box, which reads as the same accented
+   block without the chrome. A directive is an instruction the agent must
+   follow: it is accented, never occluded — the text stays fully readable
+   (occlusion belongs to the quiz tier). The glyph gets its own margin so a
+   tight authoring (`>be terse<`) cannot collide with the instruction, and
+   the qualifier reads as a trailing label, never as part of the sentence.
+   Display-only: no focus chrome, no motion. */
+:is(npl-directive, .npl-directive) { display: block; margin: 1rem 0;
+  padding: .625rem .75rem; border-left: 3px solid var(--sem-accent);
+  border-radius: 6px; background: color-mix(in srgb, var(--sem-accent) 10%, transparent); }
+:is(npl-directive, .npl-directive) > .npl-directive-glyph { margin-right: .4em; }
+:is(npl-directive, .npl-directive) > .npl-directive-body { font-weight: 500; }
+:is(npl-directive, .npl-directive) > .npl-directive-qualifier { margin-left: .6em;
+  font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
+:is(npl-directive, .npl-directive) > .npl-directive-qualifier::before { content: "· "; }
 
 /* sem-shell / sem-terminal — the interactive shell (light DOM: this
    stylesheet is the only style channel; every rule scopes to both the
