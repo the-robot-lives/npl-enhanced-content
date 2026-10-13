@@ -1,0 +1,14 @@
+# render-card demo — the table-of-contents card.
+name: render-toc
+title: What the document holds
+theme: rounded
+description: |
+  `semtext toc demo/auth-notes.sem.html` numbers every section and
+  subsection, then lists diagrams, charts and tables with their
+  captions:
+
+    Diagram flow: The auth flow
+    Table apple: GDP By Region
+
+  A listing's reference is the element id when the document sets one,
+  else the per-kind ordinal (Diagram 1, Diagram 2, ...).

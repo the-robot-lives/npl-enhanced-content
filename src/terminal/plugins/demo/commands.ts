@@ -6,6 +6,8 @@
  * commands over the demo documents:
  *
  *   semtext render <file>   text render: embeds, record summaries, skeleton
+ *   semtext --render <file> [--section <id>]   one section instead of all
+ *   semtext toc <file>      sections, subsections, figures and tables
  *   semtext tui <file>      flashcard view — emits a DATA-only TuiAction
  *                           the element performs (boxed panels, q closes)
  *   semtext outline|filter|format|expand  — the CLI-parity operations
@@ -16,6 +18,7 @@
  */
 
 import type { CommandContext, CommandSpec } from '../../terminal-core.js';
+import { completePaths } from '../../complete.js';
 import { filterDoc, formatDoc, outlineDoc, parseHtml } from '../../../shell/semtext-cli.js';
 import { extractRecords, type SemRecord } from '../../../extract/records.js';
 import { deriveSummary } from '../../../shared/summary.js';
@@ -89,13 +92,26 @@ const HELP: Record<string, string[]> = {
     'each field. A numeric order (1-based) prints just that record.',
   ],
   render: [
-    'usage: semtext render <file>',
+    'usage: semtext render <file> [--section <id|number|heading>]',
     '',
     'The text render of a document — what a machine reads: the embeds it',
     'loaded, each element with its record summary (the extractText shape the',
-    'landing page shows), then the skeleton tree.',
+    'landing page shows), then the skeleton tree. --section narrows the',
+    'render to one section: its id, its computed number (see `semtext toc`),',
+    'or its heading text.',
     '',
     '  semtext render demo/token-rotation.html',
+  ],
+  toc: [
+    'usage: semtext toc <file>',
+    '',
+    'The table of contents: every section and subsection, numbered in',
+    'reading order, then the figures, charts and tables under the section',
+    'that holds them, with their captions (e.g. "Diagram flow: The auth',
+    'flow", "Table apple: GDP By Region"). A listing uses the element id',
+    'when the document sets one, else its per-kind ordinal.',
+    '',
+    '  semtext toc demo/token-rotation.html',
   ],
   tui: [
     'usage: semtext tui <file>',
@@ -112,18 +128,22 @@ const HELP: Record<string, string[]> = {
 };
 
 const GENERAL_USAGE = [
-  'usage: semtext <sub> [file] — render | tui | outline | filter | format | expand',
+  'usage: semtext <sub> [file] — render | toc | tui | outline | filter | format | expand',
   '',
   'Document operations; `semtext <sub> --help` explains one.',
 ].join('\n');
 
 const semtext: CommandSpec = {
   name: 'semtext',
-  usage: 'semtext <sub> [file] — render | tui | outline | filter | format | expand',
+  usage: 'semtext <sub> [file] — render | toc | tui | outline | filter | format | expand',
+  complete: (ctx) => (ctx.args.length === 0 ? ['render', 'tui', 'outline', 'filter', 'format', 'expand'] : completePaths(ctx)),
   run(ctx) {
-    const [sub, ...rest] = ctx.args;
+    const [subArg, ...rest] = ctx.args;
+    // Flag spellings (CLI parity): `semtext --render f` == `semtext render f`,
+    // `semtext --toc f` == `semtext toc f`.
+    const sub = subArg === '--render' ? 'render' : subArg === '--toc' ? 'toc' : subArg;
     if (!sub) {
-      ctx.err('semtext: missing subcommand — use render, tui, outline, filter, format or expand');
+      ctx.err('semtext: missing subcommand — use render, toc, tui, outline, filter, format or expand');
       ctx.exit(2);
       return;
     }
@@ -133,7 +153,7 @@ const semtext: CommandSpec = {
     }
     const help = HELP[sub];
     if (!help) {
-      ctx.err(`semtext: unknown subcommand "${sub}" — use render, tui, outline, filter, format or expand`);
+      ctx.err(`semtext: unknown subcommand "${sub}" — use render, toc, tui, outline, filter, format or expand`);
       ctx.exit(2);
       return;
     }
@@ -146,11 +166,13 @@ const semtext: CommandSpec = {
     let type: string | null = null;
     let text: string | null = null;
     let json = false;
+    let section: string | null = null;
     for (let i = 0; i < rest.length; i++) {
       const a = rest[i]!;
       if (a === '--type') type = rest[++i] ?? null;
       else if (a === '--text') text = rest[++i] ?? null;
       else if (a === '--json') json = true;
+      else if (a === '--section') section = rest[++i] ?? null;
       else fileArgs.push(a);
     }
     const doc = readDoc(ctx, fileArgs);
@@ -181,7 +203,12 @@ const semtext: CommandSpec = {
         return;
       }
       if (sub === 'render') {
-        renderDoc(ctx, doc.html, doc.label);
+        if (section !== null) renderSectionDoc(ctx, doc.html, doc.label, section);
+        else renderDoc(ctx, doc.html, doc.label);
+        return;
+      }
+      if (sub === 'toc') {
+        tocDoc(ctx, doc.html, doc.label);
         return;
       }
       if (sub === 'tui') {
@@ -252,6 +279,132 @@ function renderDoc(ctx: CommandContext, html: string, label: string): void {
   if (text !== '') for (const line of text.split('\n')) ctx.out(line);
   ctx.out('# skeleton:');
   for (const entry of outlineDoc(html)) ctx.out(OUTLINE_INDENT(entry.depth) + entry.tag + ' ' + entry.label);
+}
+
+/* ------------------------------------------------------------------ *
+ * semtext render --section / toc — section projections
+ * ------------------------------------------------------------------ */
+
+const SECTION_HEADINGS = 'h1, h2, h3, h4, h5, h6';
+
+function headingLevelOf(el: Element): number {
+  return Number.parseInt(el.tagName.slice(1), 10);
+}
+
+function headingTextOf(el: Element): string {
+  return (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function sectionNumberString(counters: number[], level: number): string {
+  const parts = counters.slice(0, level);
+  while (parts.length > 1 && parts[0] === 0) parts.shift(); // a doc may start at h2
+  return parts.join('.');
+}
+
+function bumpSectionCounters(counters: number[], level: number): void {
+  counters[level - 1]! += 1;
+  for (let i = level; i < counters.length; i++) counters[i] = 0;
+}
+
+/** Number every heading once; returns heading → "2.1" (leading zeros trimmed). */
+function numberHeadings(doc: Document): Map<Element, string> {
+  const counters = [0, 0, 0, 0, 0, 0];
+  const numbers = new Map<Element, string>();
+  for (const heading of Array.from(doc.querySelectorAll(SECTION_HEADINGS))) {
+    const level = headingLevelOf(heading);
+    bumpSectionCounters(counters, level);
+    numbers.set(heading, sectionNumberString(counters, level));
+  }
+  return numbers;
+}
+
+/**
+ * Resolve a --section target: element id, then computed section number,
+ * then normalized heading text. A heading hit spans the heading plus
+ * following siblings up to the next heading of level <= its own; an
+ * id on a non-heading element spans just that element.
+ */
+function findSection(doc: Document, target: string): { span: Element[]; label: string } | null {
+  const headings = Array.from(doc.querySelectorAll(SECTION_HEADINGS));
+  const numbers = numberHeadings(doc);
+  const wanted = target.trim().toLowerCase();
+  for (const heading of headings) {
+    const id = heading.getAttribute('id');
+    const text = headingTextOf(heading);
+    if (
+      (id !== null && id.toLowerCase() === wanted) ||
+      numbers.get(heading) === wanted ||
+      text.toLowerCase() === wanted
+    ) {
+      const label = `${numbers.get(heading)} ${text}`;
+      const span: Element[] = [heading];
+      const level = headingLevelOf(heading);
+      let next: Element | null = heading.nextElementSibling;
+      while (next) {
+        if (next.matches(SECTION_HEADINGS) && headingLevelOf(next) <= level) break;
+        span.push(next);
+        next = next.nextElementSibling;
+      }
+      return { span, label };
+    }
+  }
+  for (const el of Array.from(doc.querySelectorAll('[id]'))) {
+    if ((el.getAttribute('id') ?? '').toLowerCase() === wanted && !el.matches(SECTION_HEADINGS)) {
+      return { span: [el], label: `#${el.getAttribute('id')}` };
+    }
+  }
+  return null;
+}
+
+/** The `render --section` projection: one section's records, then its skeleton. */
+function renderSectionDoc(ctx: CommandContext, html: string, label: string, target: string): void {
+  const doc = parseHtml(html);
+  const hit = findSection(doc, target);
+  if (!hit) {
+    ctx.err(`semtext render: no section "${target}" in ${label} — \`semtext toc ${label}\` lists the sections`);
+    ctx.exit(1);
+    return;
+  }
+  ctx.out(`# semtext render — ${label} [section ${target}]`);
+  const spanHtml = hit.span.map((el) => el.outerHTML).join('\n');
+  const text = formatDoc(spanHtml, 'text');
+  ctx.out('# records:');
+  if (text !== '') for (const line of text.split('\n')) ctx.out(line);
+  ctx.out('# skeleton:');
+  for (const entry of outlineDoc(spanHtml)) ctx.out(OUTLINE_INDENT(entry.depth) + entry.tag + ' ' + entry.label);
+}
+
+/** The `toc` projection: numbered sections, then figures/tables with captions. */
+function tocDoc(ctx: CommandContext, html: string, label: string): void {
+  const doc = parseHtml(html);
+  const counters = [0, 0, 0, 0, 0, 0];
+  const ordinals: Record<'diagram' | 'chart' | 'table', number> = { diagram: 0, chart: 0, table: 0 };
+  let listed = 0;
+  for (const el of Array.from(doc.body.querySelectorAll('*'))) {
+    const tag = el.tagName.toLowerCase();
+    if (/^h[1-6]$/.test(tag)) {
+      const level = headingLevelOf(el);
+      bumpSectionCounters(counters, level);
+      ctx.out(`${OUTLINE_INDENT(level)}${sectionNumberString(counters, level)} ${tag} ${headingTextOf(el)}`);
+      listed += 1;
+      continue;
+    }
+    if (tag === 'figure' || tag === 'table') {
+      const isFigure = tag === 'figure';
+      const kindAttr = (el.getAttribute('kind') ?? (isFigure ? 'diagram' : 'table')).toLowerCase();
+      const kind = isFigure ? (kindAttr === 'chart' ? 'Chart' : 'Diagram') : 'Table';
+      const key = kind.toLowerCase() as 'diagram' | 'chart' | 'table';
+      const id = el.getAttribute('id');
+      const ref = id !== null && id !== '' ? id : String((ordinals[key]! += 1));
+      const caption = (el.querySelector(isFigure ? 'figcaption' : 'caption')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+      ctx.out(`${OUTLINE_INDENT(3)}${kind} ${ref}: ${caption === '' ? '(no caption)' : caption}`);
+      listed += 1;
+    }
+  }
+  if (listed === 0) {
+    ctx.err(`semtext toc: ${label}: no sections or listings`);
+    ctx.exit(1);
+  }
 }
 
 const open: CommandSpec = {

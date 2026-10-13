@@ -1,0 +1,11 @@
+# render-card demo — the default theme (zigzag).
+name: render-demo
+title: SemText in one file
+description: |
+  One SemText document reads three ways: a styled page in the browser,
+  a structural record for an agent, and plain text in a terminal.
+
+  The card is a small YAML header plus prose — `render-card` frames it
+  and wraps the body to the frame. Recolor it with
+  `render-card --theme double demos/render-demo.card`, or narrow the
+  frame with `--width 40`.
