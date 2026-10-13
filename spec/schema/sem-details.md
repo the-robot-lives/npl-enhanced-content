@@ -39,17 +39,6 @@ same prose, different interaction model per view.
 
 ## Authoring form
 
-```html
-<sem-details id="oidc-details" view-as="quiz">
-  <sem-detail>
-    The OIDC token travels in the
-    <highlight>Authorization</highlight> header.
-  </sem-detail>
-</sem-details>
-```
-
-Class-form alias (conventions Appendix A): `div.sem-details[data-view-as]` › `div.sem-detail` › `span.sem-highlight`.
-
 Default authoring (`view-as` omitted — plain reading): the same prose with
 the `<highlight>` emphasized and fully legible, nothing occluded:
 
@@ -61,6 +50,20 @@ the `<highlight>` emphasized and fully legible, nothing occluded:
   </sem-detail>
 </sem-details>
 ```
+
+Quiz (`view-as="quiz"`): the prose is identical — each `<highlight>` is
+occluded and revealed per item (click or Enter/Space):
+
+```html
+<sem-details id="oidc-details" view-as="quiz">
+  <sem-detail>
+    The OIDC token travels in the
+    <highlight>Authorization</highlight> header.
+  </sem-detail>
+</sem-details>
+```
+
+Class-form alias (conventions Appendix A): `div.sem-details[data-view-as]` › `div.sem-detail` › `span.sem-highlight`.
 
 - `view-as`: `plain` (default) | `quiz`. Display-only sugar — the
   prose is identical; quiz view additionally occludes highlights.
