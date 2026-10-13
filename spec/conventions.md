@@ -42,7 +42,7 @@ listed with its full entry in [SS5](#5-element-entries).
 | Bucket | Elements | What it covers |
 | :-- | :-- | :-- |
 | **Document & structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
-| **Prose & code** | `sem-md`, `sem-note`, `sem-code` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
+| **Prose & code** | `sem-md`, `sem-note`, `sem-code`, `sem-browser` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
 | **Disclosure & views** | `sem-details` / `sem-detail`, `highlight`, `sem-reveal`, `sem-source`, `sem-views` / `sem-view` | The same content under different reading interactions -- occluded detail, Q-A reveal, markup flip, perspective tabs |
 | **Facts & recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `incorrect-statement`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
 | **Data & tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
@@ -412,6 +412,30 @@ The script adds `.sem-code-chrome` (filename, lang, buttons, status
 region), wraps lines (`span|mark.sem-code-line`, text byte-identical),
 `tabindex="0"` on an overflowing `<pre>`. JS-off: plain `<pre>` with a
 CSS caption. Extraction keeps `source` **verbatim**.
+
+**sem-browser** -- chrome-like document window; renders another SemText
+document live (the window-frame sibling of `sem-code`).
+**Normative: `spec/schema/sem-browser.md`.**
+```html
+<sem-browser src="/demo/example-deck.sem.html" label="the deck">
+  <figure class="code-window">
+    <div aria-hidden="true">← → ⟳</div>
+    <div>demo/example-deck.sem.html</div>
+    <iframe src="/demo/example-deck.sem.html" title="the deck" loading="lazy"></iframe>
+  </figure>
+</sem-browser>
+```
+With a `src` the element fetches the document (DOMParser-parsed,
+`<script>` and `on*` stripped before adoption) into a focusable
+`.sem-window-viewport` (`role="region"`); the authored children are the
+zero-JS fallback and are hidden once wired. An address bar
+(`.sem-browser-address`) shows inert nav glyphs and the declared src as
+text; the tab title resolves `label` → document `<title>` → src basename.
+Adopted elements are offered to `window.SemTextLazy.hydrate`, so a
+lazy-built host renders the deck live. Failures render one
+`role="alert"` line; `sem-browser-load` / `sem-browser-error` report the
+outcome. Ships lazy-first (`chunks/sem-browser.js`) and rides the full
+bundle after promotion. JS-off: the authored children are the document.
 
 ### Disclosure & views
 
@@ -793,6 +817,7 @@ exception: `<incorrect-statement>`'s class form is the unprefixed
 | `<sem-reader controls outline-depth>` > optional `<nav aria-label="Contents">` | `div.sem-reader[data-controls][data-outline-depth]` > same optional nav; chrome, mints nothing |
 | `<sem-md label view-as="rendered\|raw" controls>` > Markdown text | `div.sem-md[data-label][data-view-as][data-controls]` > Markdown text |
 | `<sem-table controls sticky>` > `<table>` | `div.sem-table[data-controls][data-sticky]` > authored `<table>` (`<th scope="col">`, `td[data-value]` sort keys) |
+| `<sem-browser src label>` > fallback figure | `div.sem-browser[data-src]` > the fallback children — with no script the div IS the framed document |
 
 Rules the alias inherits unchanged: a `data-*` parameter wins over a bare
 one on the same element (SS2); the hide rules, tier markers and events are

@@ -59,7 +59,7 @@
     | Bucket | Elements | What it covers |
     | :-- | :-- | :-- |
     | **Document &amp; structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
-    | **Prose &amp; code** | `sem-md`, `sem-note`, `sem-code` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
+    | **Prose &amp; code** | `sem-md`, `sem-note`, `sem-code`, `sem-browser` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
     | **Disclosure &amp; views** | `sem-details` / `sem-detail`, `highlight`, `sem-reveal`, `sem-source`, `sem-views` / `sem-view` | The same content under different reading interactions -- occluded detail, Q-A reveal, markup flip, perspective tabs |
     | **Facts &amp; recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `incorrect-statement`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
     | **Data &amp; tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
@@ -289,6 +289,18 @@
 }</code></pre>
     </sem-code>
   </sem-source>
+
+  <!-- sem-browser -------------------------------------------------------- -->
+  <h4 id="e-browser">sem-browser -- chrome-like document window</h4>
+  <p><strong>Normative: <a href="#r-sem-browser">spec/schema/sem-browser.md</a>.</strong></p>
+  <sem-code id="c-browser" lang="html"><pre><code>&lt;sem-browser src="/demo/example-deck.sem.html" label="the deck"&gt;
+  &lt;figure class="code-window"&gt;
+    &lt;div aria-hidden="true"&gt;&larr; &rarr; &#10227;&lt;/div&gt;
+    &lt;div&gt;demo/example-deck.sem.html&lt;/div&gt;
+    &lt;iframe src="/demo/example-deck.sem.html" title="the deck" loading="lazy"&gt;&lt;/iframe&gt;
+  &lt;/figure&gt;
+&lt;/sem-browser&gt;</code></pre></sem-code>
+  <p>With a <code>src</code> the element fetches the document (parsed with <code>DOMParser</code>, <code>&lt;script&gt;</code> and <code>on*</code> stripped before adoption) into a focusable <code>.sem-window-viewport</code> (<code>role="region"</code>); the authored children are the zero-JS fallback and are hidden once wired. An address bar (<code>.sem-browser-address</code>) shows inert nav glyphs and the declared <code>src</code> as text; the tab title resolves <code>label</code> &rarr; the document's <code>&lt;title&gt;</code> &rarr; the <code>src</code> basename. Adopted elements are offered to <code>window.SemTextLazy.hydrate</code>, so a lazy-built host renders the deck live. Failures render one <code>role="alert"</code> line; <code>sem-browser-load</code> / <code>sem-browser-error</code> report the outcome. Ships lazy-first (<code>chunks/sem-browser.js</code>) and rides the full bundle after promotion. JS-off: the authored children are the document. No live example here: the element fetches a second document, which a standalone spec page cannot promise.</p>
 
   <!-- ═══════════════════════════════════════════════════════════════════
        DISCLOSURE & VIEWS
@@ -643,6 +655,7 @@
     | `&lt;sem-reader controls outline-depth&gt;` &rsaquo; optional `&lt;nav aria-label="Contents"&gt;` | `div.sem-reader[data-controls][data-outline-depth]` &rsaquo; same optional nav; chrome, mints nothing |
     | `&lt;sem-md label view-as="rendered\|raw" controls&gt;` &rsaquo; Markdown text | `div.sem-md[data-label][data-view-as][data-controls]` &rsaquo; Markdown text |
     | `&lt;sem-table controls sticky&gt;` &rsaquo; `&lt;table&gt;` | `div.sem-table[data-controls][data-sticky]` &rsaquo; authored `&lt;table&gt;` (`&lt;th scope="col"&gt;`, `td[data-value]` sort keys) |
+    | `&lt;sem-browser src label&gt;` &rsaquo; fallback figure | `div.sem-browser[data-src]` &rsaquo; the fallback children -- with no script the div IS the framed document |
   </sem-md>
 
   <p>Rules the alias inherits unchanged: a <code>data-*</code> parameter wins over a bare one on the same element (<a href="#2-attribute-catalog">&sect;2</a>); the hide rules, the marker and events are identical (<a href="#4-the-script--degradation-rules">&sect;4</a>); extraction yields the <strong>same records</strong> from either form (<a href="#r-extraction">spec/extraction.md</a>, the cross-form equality test in <code>test/e2e/sem-source.cy.js</code>). Reference class-form documents: <code>web/demo/index.html</code>, <code>web/demo/reading.html</code>.</p>
@@ -692,6 +705,7 @@
     <sem-reference id="r-sem-reveal" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-reveal.md" cite="spec/schema/sem-reveal.md">Schema -- sem-reveal.</sem-reference>
     <sem-reference id="r-sem-chronology" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-chronology.md" cite="spec/schema/sem-chronology.md">Schema -- sem-chronology / sem-event.</sem-reference>
     <sem-reference id="r-sem-code" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-code.md" cite="spec/schema/sem-code.md">Schema -- sem-code.</sem-reference>
+    <sem-reference id="r-sem-browser" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-browser.md" cite="spec/schema/sem-browser.md">Schema -- sem-browser.</sem-reference>
     <sem-reference id="r-sem-source" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-source.md" cite="spec/schema/sem-source.md">Schema -- sem-source.</sem-reference>
     <sem-reference id="r-sem-md" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-md.md" cite="spec/schema/sem-md.md">Schema -- sem-md.</sem-reference>
     <sem-reference id="r-sem-references" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-references.md" cite="spec/schema/sem-references.md">Schema -- sem-references / sem-reference.</sem-reference>
