@@ -771,6 +771,32 @@ npl-vos, .npl-vos { display: block; }
 :is(npl-directive, .npl-directive) > .npl-directive-qualifier::before { content: "· "; }
 
 
+/* npl-declaration — version/extension banner for a rules document
+   (component: src/lit/npl/npl-declaration.ts). The component hoists a
+   `.npl-declaration-banner` header (`.npl-declaration-mark`, plus a
+   `.npl-declaration-target` when an extend-target is authored) above the
+   authored rules content; the rules below key on those part classes, so
+   the JS-off box stays the plain authored prose the schema promises —
+   nothing hidden, nothing generated. Enhanced, the banner is display-only
+   chrome in the family accent: the mark reads as a version stamp (mono,
+   accent), the target as a trailing small-caps label, and the rules below
+   stay fully readable — a declaration never occludes its body (no focus
+   chrome, no motion). */
+:is(npl-declaration, .npl-declaration) { display: block; margin: 1rem 0; }
+:is(npl-declaration, .npl-declaration) .npl-declaration-banner {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .6em;
+  padding: .5rem .75rem; margin-bottom: .75rem;
+  border: 1px solid var(--sem-border); border-left: 3px solid var(--sem-accent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--sem-accent) 8%, transparent); }
+:is(npl-declaration, .npl-declaration) .npl-declaration-mark {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .8125rem; letter-spacing: .02em; color: var(--sem-accent); }
+:is(npl-declaration, .npl-declaration) .npl-declaration-target {
+  font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
+:is(npl-declaration, .npl-declaration) .npl-declaration-target::before { content: "→ "; }
+
+
 /* sem-shell / sem-terminal — the interactive shell (light DOM: this
    stylesheet is the only style channel; every rule scopes to both the
    reusable core and the demo element). With the script absent the
