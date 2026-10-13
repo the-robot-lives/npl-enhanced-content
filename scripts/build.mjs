@@ -50,6 +50,7 @@
  * recorded in ROADMAP.md ("R — Reading experience"); change both together.
  */
 
+import { createHash } from 'node:crypto';
 import { existsSync, rmSync, statSync, readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
@@ -161,6 +162,44 @@ writeFileSync(
 );
 
 /* ---------------------------------------------------------------------------
+ * Build version — the cache-bust token (`?v=`) every URL that loads one of
+ * these artifacts carries. Content hash over the shipped bundles plus the
+ * sources that feed the lazy chunks: it changes when any artifact changes
+ * and is identical across rebuilds of the same code (no timestamps in the
+ * hash inputs). Written to dist/build-version.json for downstream build
+ * steps (spec-page rewrite) and inlined into both lazy loaders through the
+ * virtual manifest modules (`BUILD_VERSION`), so the loaders pass v= on to
+ * the chunks they dynamically import.
+ * ------------------------------------------------------------------------ */
+function hashTree(hash, dir) {
+  if (!existsSync(dir)) return;
+  for (const name of readdirSync(dir).sort()) {
+    const p = resolve(dir, name);
+    if (statSync(p).isDirectory()) hashTree(hash, p);
+    else {
+      hash.update(name);
+      hash.update(readFileSync(p));
+    }
+  }
+}
+const versionHash = createHash('sha256');
+for (const f of ['semtext.js', 'npl.js', 'semtext-agent.js', 'semtext-js-shell.js']) {
+  const p = resolve(root, 'dist', f);
+  if (existsSync(p)) {
+    versionHash.update(f);
+    versionHash.update(readFileSync(p));
+  }
+}
+hashTree(versionHash, resolve(root, 'src/lit'));
+hashTree(versionHash, resolve(root, 'src/lazy'));
+const BUILD_VERSION = versionHash.digest('hex').slice(0, 16);
+writeFileSync(
+  resolve(root, 'dist', 'build-version.json'),
+  JSON.stringify({ version: BUILD_VERSION }, null, 2) + '\n',
+);
+console.log(`\n  build version ${BUILD_VERSION} (dist/build-version.json) — every bundle URL ships as ?v=${BUILD_VERSION}`);
+
+/* ---------------------------------------------------------------------------
  * Lazy phase — semtext-lazy.js + chunks/, npl-lazy.js + npl-chunks/ (see
  * the header comment). One loop, one config per namespace.
  *
@@ -236,14 +275,18 @@ for (const lazy of LAZY_TARGETS) {
 
   /** Serves the generated manifest to the bundle at build time, so the
    *  artifact inlines it (no runtime fetch of a JSON file) while the
-   *  source never hardcodes a component list. */
+   *  source never hardcodes a component list. BUILD_VERSION rides along:
+   *  the loader reads it and appends `?v=` to every chunk it imports, so
+   *  a rebuilt bundle revalidates the chunks too (cache-bust). */
   const manifestPlugin = {
     name: `${lazy.id}-manifest`,
     resolveId(id) {
       return id === lazy.virtualId ? `\0${lazy.virtualId}` : null;
     },
     load(id) {
-      return id === `\0${lazy.virtualId}` ? `export default ${JSON.stringify(lazyManifest)};` : null;
+      return id === `\0${lazy.virtualId}`
+        ? `export default ${JSON.stringify(lazyManifest)};\nexport const BUILD_VERSION = ${JSON.stringify(BUILD_VERSION)};`
+        : null;
     },
   };
 

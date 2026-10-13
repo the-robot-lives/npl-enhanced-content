@@ -286,6 +286,12 @@ if (specPages.length) {
 
   console.log('  spec page                     size     nojs');
   console.log('  ---------------------------------------------------------');
+  // Cache-bust token for bundle script srcs (scripts/build.mjs writes it
+  // beside the artifacts); absent ⇒ srcs ship without ?v=.
+  const buildVersionFile = resolve(root, 'dist', 'build-version.json');
+  const BUILD_VERSION = existsSync(buildVersionFile)
+    ? JSON.parse(readFileSync(buildVersionFile, 'utf8')).version ?? ''
+    : '';
   for (const file of specPages) {
     const src = readFileSync(resolve(specSrcDir, file), 'utf8');
     // Every relative linked asset must exist (scripts/standalone-lib.mjs
@@ -297,7 +303,7 @@ if (specPages.length) {
       const check = rel.replace(/^(themes\/)semtext-theme-(.+\.css)$/, 'themes/$2');
       if (!existsSync(resolve(root, check))) throw new Error(`spec/${file} links ${ref}, which does not exist`);
     }
-    const built = rewriteSpecPage(src);
+    const built = rewriteSpecPage(src, BUILD_VERSION);
     const name = basename(file, '.html');
     const page = resolve(specOutDir, `${name}.html`);
     const nojs = resolve(specOutDir, `${name}.nojs.html`);

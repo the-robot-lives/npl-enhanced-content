@@ -10,9 +10,13 @@
 declare module 'virtual:semtext-manifest' {
   const manifest: Record<string, string>;
   export default manifest;
+  /** Build-generated cache-bust token (`?v=`) the loader passes to chunks. */
+  export const BUILD_VERSION: string;
 }
 
 declare module 'virtual:npl-manifest' {
   const manifest: Record<string, string>;
   export default manifest;
+  /** Build-generated cache-bust token (`?v=`) the loader passes to chunks. */
+  export const BUILD_VERSION: string;
 }

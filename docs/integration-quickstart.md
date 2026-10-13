@@ -66,8 +66,14 @@ elements**: CSS renders them completely, no script ever defines them.
 ```html
 <link rel="stylesheet" href="semtext/semtext.css">
 <link rel="stylesheet" href="semtext/themes/semtext-theme-minimal-tech-light.css">
-<script defer src="semtext/semtext.js"></script>
+<script defer src="semtext/semtext.js?v={BUILD_VERSION}"></script>
 ```
+
+`?v=` is a cache-bust token so a browser never serves a stale bundle: fill
+it from the build — `scripts/build.mjs` computes a content hash of every
+artifact and writes it to `dist/build-version.json` (and inlines it into
+`semtext-lazy.js` / `npl-lazy.js`, which pass the same `v=` on to every
+chunk they import).
 
 One tag, and placement barely matters: `defer` is the only rule. Inside
 the bundle the ordering is handled for you — the `sem-source` snapshot

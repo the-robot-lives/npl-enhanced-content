@@ -31,7 +31,7 @@
 
 import { bootLazyLoader, defaultImportChunk, installOnDocumentReady } from './boot.js';
 import { createLoader, type LazyLoader } from './loader.js';
-import manifest from 'virtual:semtext-manifest';
+import manifest, { BUILD_VERSION } from 'virtual:semtext-manifest';
 
 declare global {
   interface Window {
@@ -59,6 +59,6 @@ installOnDocumentReady(() => {
   // instance is exposed on window either way, so pages can hydrate
   // subtrees inserted after boot without a second script.
   window.SemTextLazy = window.__semLazyOff
-    ? createLoader(manifest, defaultImportChunk, /^sem-/)
-    : bootLazyLoader(manifest, { pattern: /^sem-/ });
+    ? createLoader(manifest, (chunkPath) => defaultImportChunk(chunkPath, BUILD_VERSION), /^sem-/)
+    : bootLazyLoader(manifest, { pattern: /^sem-/, version: BUILD_VERSION });
 });

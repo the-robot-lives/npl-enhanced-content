@@ -15,6 +15,6 @@
  */
 
 import { bootLazyLoader, installOnDocumentReady } from './boot.js';
-import manifest from 'virtual:npl-manifest';
+import manifest, { BUILD_VERSION } from 'virtual:npl-manifest';
 
-installOnDocumentReady(() => bootLazyLoader(manifest, { pattern: /^npl-/ }));
+installOnDocumentReady(() => bootLazyLoader(manifest, { pattern: /^npl-/, version: BUILD_VERSION }));

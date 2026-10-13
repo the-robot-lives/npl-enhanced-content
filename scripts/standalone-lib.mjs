@@ -76,11 +76,15 @@ export function specAssetRefs(html) {
  *  source-side theme names map to the SHIPPED artifact names (spec v0.6: the
  *  vocabulary is dist/semtext.css, named themes carry the `semtext-theme-`
  *  prefix). Only real tags are touched; an escaped example in a listing is
- *  text. */
-export function rewriteSpecPage(html) {
+ *  text. With `version` (the build's content hash, dist/build-version.json),
+ *  every rewritten script src carrying a bundle `.js` gains `?v=<version>` so
+ *  browsers never serve a stale build. */
+export function rewriteSpecPage(html, version = '') {
   return html
     .replace(/(<link\b[^>]*?\bhref=["'])\.\.\/themes\/_vocabulary\.css(["'])/gi, '$1../semtext.css$2')
     .replace(/(<link\b[^>]*?\bhref=["'])\.\.\/themes\/([\w.-]+\.css)(["'])/gi,
       (m, pre, name, post) => (name.startsWith('semtext-theme-') ? m : `${pre}../themes/semtext-theme-${name}${post}`))
-    .replace(/(<(?:link|script)\b[^>]*?\b(?:href|src)=["'])\.\.\/dist\//gi, '$1../');
+    .replace(/(<(?:link|script)\b[^>]*?\b(?:href|src)=["'])\.\.\/dist\//gi, '$1../')
+    .replace(/(<script\b[^>]*?\bsrc=["']\.\.\/[^"'?]*\.js)(["'])/gi,
+      (m, pre, post) => (version ? `${pre}?v=${version}${post}` : m));
 }

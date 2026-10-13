@@ -8,3 +8,5 @@
  */
 const manifest: Record<string, string> = { 'sem-note': 'chunks/sem-note.js' };
 export default manifest;
+/** Build-time cache-bust token; the real one is a content hash. */
+export const BUILD_VERSION = 'test';

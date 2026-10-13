@@ -17,10 +17,15 @@ export interface LazyBootOptions {
   pattern: RegExp;
   /** Chunk importer override (tests); the built entries dynamic-import. */
   importChunk?: ImportChunk;
+  /** Cache-bust token appended as `?v=` to every chunk URL. The built
+   *  entries pass the inlined BUILD_VERSION; a host page that loads the
+   *  loader itself with `?v=` overrides it (see defaultImportChunk). */
+  version?: string;
 }
 
 export function bootLazyLoader(manifest: Manifest, options: LazyBootOptions): LazyLoader {
-  const loader = createLoader(manifest, options.importChunk ?? defaultImportChunk, options.pattern);
+  const importChunk = options.importChunk ?? ((chunkPath: string) => defaultImportChunk(chunkPath, options.version));
+  const loader = createLoader(manifest, importChunk, options.pattern);
 
   const watcher = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
@@ -43,9 +48,18 @@ export function bootLazyLoader(manifest: Manifest, options: LazyBootOptions): La
  *  keeps Rollup from trying to bundle the dynamic specifier: these chunks
  *  are already built, next to the script. Exported so an entry that skips
  *  the document-wide boot (window.__semLazyOff) can still build a loader
- *  whose dynamic imports resolve exactly like the booted one's. */
-export function defaultImportChunk(chunkPath: string): Promise<unknown> {
-  return import(/* @vite-ignore */ new URL(chunkPath, import.meta.url).href);
+ *  whose dynamic imports resolve exactly like the booted one's.
+ *
+ *  Cache-bust: the chunk URL carries `?v=`. The host page's own query wins
+ *  (a page that loads semtext-lazy.js?v=X gets chunks at ?v=X — the version
+ *  is passed on), else the `version` the entry inlined from the build — so
+ *  a rebuilt bundle never resolves to a stale cached chunk. */
+export function defaultImportChunk(chunkPath: string, version?: string): Promise<unknown> {
+  const own = new URL(import.meta.url);
+  const url = new URL(chunkPath, import.meta.url);
+  const v = own.searchParams.get('v') ?? version ?? null;
+  if (v) url.searchParams.set('v', v);
+  return import(/* @vite-ignore */ url.href);
 }
 
 /** Boot at DOMContentLoaded, matching the full bundle's init pattern

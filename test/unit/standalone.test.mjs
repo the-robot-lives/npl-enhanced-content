@@ -59,4 +59,11 @@ describe('rewriteSpecPage', () => {
     const html = '<script src="../dist/a.js"></script><link href="../dist/b.css"><pre>&lt;script src="../dist/a.js"&gt;</pre><p>../dist/prose</p>';
     expect(rewriteSpecPage(html)).toBe('<script src="../a.js"></script><link href="../b.css"><pre>&lt;script src="../dist/a.js"&gt;</pre><p>../dist/prose</p>');
   });
+
+  it('appends the cache-bust version to bundle script srcs, never to link/css or escaped text', () => {
+    const html = '<script defer src="../dist/semtext.js"></script><link href="../dist/semtext.css"><pre>&lt;script src="../dist/semtext.js"&gt;</pre>';
+    expect(rewriteSpecPage(html, 'deadbeefcafe1234')).toBe(
+      '<script defer src="../semtext.js?v=deadbeefcafe1234"></script><link href="../semtext.css"><pre>&lt;script src="../dist/semtext.js"&gt;</pre>',
+    );
+  });
 });
