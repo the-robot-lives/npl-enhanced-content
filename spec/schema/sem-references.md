@@ -33,11 +33,14 @@ Parameters are read as `data-<name>` first, then bare `<name>`.
 
 - `kind`: `footnotes` | `bibliography` (free token; these two get
   distinct styling). Optional.
-- `sem-reference`:
-  - `id` (required): the citation target.
-  - `href` (optional): external location.
-  - `cite` (optional): short citation label (`RFC 6749`).
-  - Text = the reference's description.
+- `sem-reference`: the citable entry; its text is the reference's
+  description.
+- `id` (required; on each `sem-reference`): the citation target — the
+  global `id`.
+- `href` (optional; on each `sem-reference`): external location
+  (`data-href` in the class form).
+- `cite` (optional; on each `sem-reference`): short citation label
+  (`RFC 6749`).
 - Inline citation: any `<a href="#<reference-id>">` outside the references
   container. Its text is the author's (`[1]`, `¹`, a name) — the vocabulary
   does not renumber authored citation text.
