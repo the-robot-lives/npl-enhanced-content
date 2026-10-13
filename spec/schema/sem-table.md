@@ -23,6 +23,7 @@ sorts.
     <thead><tr><th scope="col">Token</th><th scope="col">Lifetime</th><th scope="col">Rotates</th></tr></thead>
     <tbody>
       <tr><td>access</td><td data-value="900">15 min</td><td>no</td></tr>
+      <tr><td>device</td><td data-value="604800">7 days</td><td>yes</td></tr>
       <tr><td>refresh</td><td data-value="2592000">30 days</td><td>yes</td></tr>
     </tbody>
   </table>
@@ -34,17 +35,21 @@ Class-form alias (conventions Appendix A): `div.sem-table[data-kind][data-contro
 `td[data-value]` is a sort key on a plain HTML cell, not a vocabulary
 parameter — it is `data-*` in both forms.
 
-- Child: **exactly one `<table>`** with a `<thead>` whose header row uses
-  `<th scope="col">`, one `<tbody>`, and optionally a `<caption>`. A table
-  without a `<thead>` gets no sort control. Anything else inside the table
-  (`<tfoot>`, `colgroup`) is left alone.
+- Child: **exactly one `<table>`**, holding exactly one thead (its first
+  row: header cells carrying `scope="col"`), one tbody, and optionally a
+  caption first. A table without a thead gets no sort control. Anything
+  else inside the table — tfoot, colgroup — is left alone.
 - `data-value` (optional, on `<td>`): the sort key for that cell when the
   visible text is not the key (`15 min` vs `900`). Two numeric keys compare
   numerically; anything else compares as text, locale-aware.
-- `controls` (optional): comma flags from `sort`, `filter`; default
+- `controls` (optional): one of the comma flags `sort`, `filter`; default
   `sort`. Unknown flags are ignored.
-- `sticky` (boolean, optional): the header row sticks to
-  the top of the scroll container. CSS only — works with scripts off.
+- `sticky` (boolean, optional): the header row sticks to the top of the
+  scroll container. Opting in also caps the element at `max-height: 24rem`
+  so a long table scrolls inside itself — the stick needs an internal
+  scroll container to engage, and without it a page-level table never
+  gains one and the header would scroll away like any other row. CSS only
+  — works with scripts off.
 - `id`, `kind`, `tags`, `audience` per the global catalog. `kind="comparison"`
   — on the `sem-table` or on a plain `<table>` — additionally sticks the
   first column on horizontal scroll (CSS only).
@@ -63,7 +68,9 @@ same function once its `<table>` exists)
 - `.sem-table-chrome` is inserted as the element's first child, before the
   table: the filter input when enabled (`input[type="search"]
   .sem-table-filter[aria-label="Filter rows"]`) and always a
-  `.sem-table-status` live region.
+  `.sem-table-status` live region. The chrome pins to the element's left
+  edge while the body scrolls horizontally, so the filter and status stay
+  in view on a narrow viewport.
 - **sort** — each header cell's content is wrapped in
   `button.sem-table-sort[type="button"]`; the `<th>` carries
   `aria-sort="none"`. Activating a header sorts the body rows by that
@@ -85,9 +92,10 @@ same function once its `<table>` exists)
 
 ### JS-off
 
-- A plain table. `data-sticky` still sticks the header and `kind="comparison"`
-  still sticks the first column, because both are CSS. No chrome, no
-  buttons, nothing hidden.
+- A plain table. `data-sticky` still sticks the header (with the same
+  `max-height` internal scroll) and `kind="comparison"` still sticks the
+  first column, because both are CSS. No chrome, no buttons, nothing
+  hidden.
 
 ## Events
 
