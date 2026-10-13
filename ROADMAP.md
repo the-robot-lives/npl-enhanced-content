@@ -74,7 +74,7 @@ guardrail discipline they document.
 | Artifact | Budget | Measured (2026-10-13) |
 |---|---|---|
 | `semtext.js` (one bundle) | **126 KB** | 124.1 raw / 39.4 gzipped |
-| `npl.js` | **48 KB** | 46.2 raw / 14.5 gzipped |
+| `npl.js` | **52 KB** | 46.2 raw / 14.5 gzipped |
 | `semtext-agent.js` | **24 KB** | 20.3 raw / 7.3 gzipped |
 | `semtext-js-shell.js` | **256 KB** | 74.8 raw / 26.2 gzipped |
 | `semtext-lazy.js` (loader) | **8 KB** | 3.0 raw / 1.4 gzipped |
@@ -85,7 +85,7 @@ share the single bundle budget:
 
 | Artifact | Budget | Measured |
 |---|---|---|
-| `semtext-fallback.js` | 14 KB | 13.0 |
+| `semtext-fallback.js` | 64 KB (raised from 14 KB — tier-2 fallback budget, user decision 2026-10-14; the shipped copy is a frozen legacy artifact) | 13.0 |
 | `semtext-reading.js` | 19.5 KB | 19.4 — at the line |
 | `semtext.js` (Lit only) | 56 KB | 49.5 |
 | `semtext-extract.js` | 12 KB | 9.7 |

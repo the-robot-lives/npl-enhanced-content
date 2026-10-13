@@ -120,7 +120,9 @@ const targets = [
     name: 'npl.js',
     entry: 'src/npl.ts',
     global: 'NPL',
-    budgetKb: 48,
+    // 48 → 52 KB (2026-10-14, docs-overhaul landing; spec r4-1 budget
+    // note — ROADMAP "Size budgets" carries the history).
+    budgetKb: 52,
     required: true,
   },
   {
@@ -143,7 +145,10 @@ const targets = [
     name: 'semtext-js-shell.js',
     entry: 'src/js-shell.ts',
     global: 'SemTextShell',
-    budgetKb: 96,
+    // 96 → 256 KB: the canvas-everywhere terminal renderer raise (commit
+    // 6b34053 updated ROADMAP "Size budgets" but not this constant — the
+    // build table has disagreed with the recorded budget since).
+    budgetKb: 256,
     required: true,
   },
 ];
