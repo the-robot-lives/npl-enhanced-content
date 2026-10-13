@@ -20,9 +20,9 @@ Class-form alias (conventions Appendix A, npl namespace):
 `.npl-flags[data-preset]` — same dual-form contract as the sem-* tier,
 `data-preset` wins when both spellings are present.
 
-- `preset`: string — no default (omit it entirely for no badge). One of
-  `minimal`, `full`, `production`, `creative`, `tireless` (the NPL flag
-  source spells these `preset:<name>`; the attribute accepts the bare
+- `preset`: string — optional, no default (omit it entirely for no badge).
+  One of `minimal`, `full`, `production`, `creative`, `tireless` (the NPL
+  flag source spells these `preset:<name>`; the attribute accepts the bare
   word or the prefixed spelling, normalized for display). An unknown
   preset is NOT an error: it warns through the author-facing channel and
   renders with the invalid-preset warning class (see Rendered form).
