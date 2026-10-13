@@ -793,6 +793,45 @@ npl-vos, .npl-vos { display: block; }
   font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
 :is(npl-declaration, .npl-declaration) .npl-declaration-target::before { content: "→ "; }
 
+/* ── npl-poa ── */
+/* npl-poa — plan-of-action block (component: src/lit/npl/npl-poa.ts).
+   The authored children ARE the content: the mermaid fence degrades to a
+   readable code block (no diagram runtime, ever), the reasoning and the
+   selected path read as prose. <reasoning>/<selected> are unknown inline
+   elements to the browser, so the block-level correction below is what
+   keeps the JS-off box from fusing them into one run-on line behind the
+   fence — box semantics only, no generated labels: the schema's JS-off
+   promise is nothing hidden, nothing generated. Enhanced, the component
+   stamps the tree `data-npl-poa-tree` + `data-direction` and features
+   the chosen option as a generated `.npl-poa-choice` (`-label` /
+   `-text` spans) after the authored `<selected>`; the choice is the one
+   prominent element — accent bar + tint, never opaque, text fully
+   readable — and the authored selected stays visible beneath it as the
+   source of record (quieted, not hidden; a theme wanting a single
+   presentation hides it in its own CSS, the base never does). Reasoning
+   renders `white-space: pre-line` — the weighted paths are authored one
+   per line and pre-line is what makes that authoring visible without
+   re-writing the source.
+   Display-only: no focus chrome, no motion. */
+:is(npl-poa, .npl-poa) { margin: 1rem 0; }
+:is(npl-poa, .npl-poa) > pre { margin: 0 0 .5rem; padding: .75rem 1rem;
+  border: 1px solid var(--sem-border); border-radius: 8px;
+  background: var(--sem-surface); overflow-x: auto; font-size: .875rem; }
+:is(npl-poa, .npl-poa) > :is(reasoning, .npl-poa-reasoning) { display: block; margin: .5rem 0 0;
+  white-space: pre-line; }
+:is(npl-poa, .npl-poa) > :is(selected, .npl-poa-selected) { display: block; margin: .5rem 0 0; }
+:is(npl-poa, .npl-poa)[data-sem-upgraded] > :is(selected, .npl-poa-selected) { color: var(--sem-muted); font-size: .875rem; }
+:is(npl-poa, .npl-poa) > .npl-poa-choice { margin: .75rem 0 0; padding: .5rem .75rem;
+  border-left: 3px solid var(--sem-accent); border-radius: 6px;
+  background: color-mix(in srgb, var(--sem-accent) 12%, transparent); font-weight: 500; }
+/* the label/text spans are children of the generated <p>, not of the host */
+:is(npl-poa, .npl-poa) .npl-poa-choice-label { font-variant-caps: all-small-caps;
+  letter-spacing: .05em; color: var(--sem-accent); }
+:is(npl-poa, .npl-poa) .npl-poa-choice-label::after { content: " · "; font-weight: 400; }
+/* ── end npl-poa ── */
+
+
+
 
 /* ── npl-poa ── */
 /* npl-poa — plan-of-action block (component: src/lit/npl/npl-poa.ts).
