@@ -50,6 +50,18 @@ same prose, different interaction model per view.
 
 Class-form alias (conventions Appendix A): `div.sem-details[data-view-as]` › `div.sem-detail` › `span.sem-highlight`.
 
+Default authoring (`view-as` omitted — plain reading): the same prose with
+the `<highlight>` emphasized and fully legible, nothing occluded:
+
+```html
+<sem-details id="oidc-docs">
+  <sem-detail>
+    The OIDC token travels in the
+    <highlight>Authorization</highlight> header.
+  </sem-detail>
+</sem-details>
+```
+
 - `view-as`: `plain` (default) | `quiz`. Display-only sugar — the
   prose is identical; quiz view additionally occludes highlights.
 - `sem-detail`: one prose passage; any inline content, `<highlight>`
@@ -68,8 +80,9 @@ Class-form alias (conventions Appendix A): `div.sem-details[data-view-as]` › `
   Container claims `data-sem-upgraded`; hide/mask rules key off it.
 - Reveal: click or Enter/Space on the occluded span → becomes
   `.sem-highlight .sem-revealed` (readable, accent-tinted), loses
-  `role`/`tabindex`. Reveals are per-item and irreversible (self-check
-  model).
+  `role`/`tabindex` and the `reveal` label (revealed text is no longer a
+  control, so the label must not override its accessible name). Reveals
+  are per-item and irreversible (self-check model).
 
 ## JS-off behavior
 
