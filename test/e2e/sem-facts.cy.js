@@ -5,6 +5,8 @@
 //          upgrade supersedes the fallback behavior
 //   Scenario: list view (default) — all facts visible, no chrome
 //   Scenario: flashcards — one card at a time, flip reveals conclusion
+//   Scenario: flashcards — one tab stop on the current card; Enter/Space
+//             flip it, aria-expanded tracks, focus ring visible
 //   Scenario: flashcards — meter uses .sem-facts-meter, wraps around
 //   Scenario: quiz — conclusion hidden until correct selection, scored
 //   Scenario: quiz — wrong pick marked, counts as answered
@@ -98,6 +100,30 @@ describe('sem-facts', () => {
       cy.get(fc + '.sem-current').click();
       cy.get(fc + '.sem-current.sem-flipped .sem-conclusion').should('be.visible');
       cy.get(fc + '.sem-facts-meter').should('contain', '1/2');
+    });
+
+    it('flashcards: keyboard flips — one tab stop, Enter/Space, aria-expanded', () => {
+      const fc = 'sem-facts[data-view-as="flashcards"] ';
+      // the deck keeps one stop in the tab order: the current card alone
+      cy.get(fc + '.sem-fact.sem-current')
+        .should('have.attr', 'tabindex', '0')
+        .and('have.attr', 'aria-expanded', 'false');
+      cy.get(fc + '.sem-fact:not(.sem-current)').then(($rest) => {
+        $rest.each((_, f) => expect(f.getAttribute('tabindex')).to.equal('-1'));
+      });
+      // Enter flips the focused card; aria-expanded tracks the reveal
+      cy.get(fc + '.sem-current').focus().type('{enter}');
+      cy.get(fc + '.sem-current.sem-flipped')
+        .should('have.attr', 'aria-expanded', 'true');
+      cy.get(fc + '.sem-current .sem-conclusion').should('be.visible');
+      // Space flips back
+      cy.get(fc + '.sem-current').focus().type(' ');
+      cy.get(fc + '.sem-current:not(.sem-flipped)')
+        .should('have.attr', 'aria-expanded', 'false');
+      // moving the deck resets the flip and moves the single stop
+      cy.get(fc + '[data-act="next"]').click();
+      cy.get(fc + '.sem-current').should('have.attr', 'tabindex', '0');
+      cy.get(fc + '.sem-current.sem-flipped').should('not.exist');
     });
 
     it('quiz: conclusion hidden, correct pick scores', () => {

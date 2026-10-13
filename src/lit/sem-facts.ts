@@ -80,6 +80,10 @@ export class SemFacts extends SemElement {
           if (box!.hasAttribute('data-answered')) return;
           box!.setAttribute('data-answered', '');
           b.classList.add(o.correct ? 'sem-answered' : 'sem-wrong-pick');
+          // a miss teaches — the correct option marks too once answered
+          if (!o.correct) {
+            box!.querySelector('button[data-correct="true"]')?.classList.add('sem-answered');
+          }
           if (o.correct) score.correct++;
           score.answered++;
           meter.textContent =
@@ -93,6 +97,11 @@ export class SemFacts extends SemElement {
       items.forEach((f, k) => {
         f.classList.toggle('sem-current', k === i);
         f.classList.remove('sem-flipped');
+        // one tab stop + collapsed state on the visible card (flashcards deck)
+        if (view === 'flashcards') {
+          (f as HTMLElement).tabIndex = k === i ? 0 : -1;
+          f.setAttribute('aria-expanded', 'false');
+        }
       });
       meter.textContent = (i + 1) + '/' + items.length;
       if (view === 'quiz') renderQuiz(items[i]);
@@ -106,7 +115,16 @@ export class SemFacts extends SemElement {
 
     if (view === 'flashcards') {
       items.forEach((f) => {
-        f.addEventListener('click', () => f.classList.toggle('sem-flipped'));
+        const flip = () =>
+          f.setAttribute('aria-expanded', String(f.classList.toggle('sem-flipped')));
+        f.addEventListener('click', flip);
+        f.addEventListener('keydown', (e) => {
+          const k = e as KeyboardEvent;
+          if (k.key === 'Enter' || k.key === ' ') {
+            k.preventDefault(); // Space must flip, not scroll
+            flip();
+          }
+        });
       });
     }
     // Deep link into a card (fallback/target): make it the current one.
