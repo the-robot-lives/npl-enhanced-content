@@ -190,7 +190,11 @@ export class NplHormones extends SemElement {
     >
       <span class="npl-hormones-symbol">${row.symbol}</span>
       <span class="npl-hormones-name">${row.name}</span>
-      <span class="npl-hormones-bar" role="img" aria-label="${row.name} ${row.value} of ${MAX}">
+      <span
+        class="npl-hormones-bar"
+        role="img"
+        aria-label="${row.name} ${row.value} (range ${MIN} to ${MAX})"
+      >
         <span class="npl-hormones-fill" style=${`width: ${percent}%`}></span>
       </span>
       <span class="npl-hormones-value">${row.value}</span>

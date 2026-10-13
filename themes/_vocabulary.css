@@ -1163,3 +1163,61 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
   color: color-mix(in srgb, var(--sem-wrong) 75%, var(--sem-fg)); }
 :is(npl-hormones, .npl-hormones) .npl-hormones-alert-body { display: block; margin-top: .25rem; font-size: .875rem; }
 /* ── end npl-hormones ── */
+
+/* ── npl-rubric ── */
+/* npl-rubric — display-only weighted scoring rubric (component:
+   src/lit/npl/npl-rubric.ts). The component renders one light-DOM
+   `.npl-rubric-table`: a titled caption, a `.npl-rubric-criterion` row per
+   authored criterion (weight · score right-aligned, tabular figures), and a
+   `.npl-rubric-overall` footer row carrying the stated or computed figure.
+   Class-form criteria (`.npl-criterion`) upgrade through the same table, so
+   the two authoring forms read identically. The card box is gated on the
+   upgrade marker — JS-off the authored criteria read as plain prose, so no
+   empty frame is drawn. A rubric is read at a glance: the overall figure is
+   the decision line, so the footer takes the family's accent bar + tint
+   (never opaque — every figure stays fully legible), and an excluded
+   criterion is quieted with its reason spelled out in words, never colour
+   alone. Display-only: no focus chrome, no motion. */
+:is(npl-rubric, .npl-rubric)[data-sem-upgraded] {
+  border: 1px solid var(--sem-border); border-radius: 12px;
+  padding: .875rem 1rem 1rem; margin: 1rem 0; background: var(--sem-surface);
+  overflow-x: auto; }
+:is(npl-rubric, .npl-rubric) .npl-rubric-table {
+  width: 100%; border-collapse: collapse; text-align: left; font-size: .875rem; }
+:is(npl-rubric, .npl-rubric) .npl-rubric-title {
+  text-align: left; padding: 0 0 .5rem; font-weight: 600; font-size: .9375rem;
+  color: var(--sem-fg); }
+:is(npl-rubric, .npl-rubric) .npl-rubric-table thead th {
+  padding: .35rem .5rem; border-bottom: 1px solid var(--sem-border);
+  font-size: .75rem; font-weight: 500; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--sem-muted); }
+:is(npl-rubric, .npl-rubric) .npl-rubric-table thead th:nth-child(n + 2),
+:is(npl-rubric, .npl-rubric) .npl-rubric-criterion > td {
+  text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+:is(npl-rubric, .npl-rubric) .npl-rubric-criterion {
+  border-bottom: 1px solid color-mix(in srgb, var(--sem-border) 60%, transparent); }
+:is(npl-rubric, .npl-rubric) .npl-rubric-criterion > th {
+  padding: .4rem .5rem; font-weight: 500; color: var(--sem-fg); }
+:is(npl-rubric, .npl-rubric) .npl-rubric-criterion > td {
+  padding: .4rem .5rem; color: var(--sem-fg); }
+/* an excluded row stays visible, quieted; the reason is spelled in words
+   (`.npl-rubric-flag`), never signalled by colour alone */
+:is(npl-rubric, .npl-rubric) .npl-rubric-criterion[data-excluded] > th,
+:is(npl-rubric, .npl-rubric) .npl-rubric-criterion[data-excluded] > td { color: var(--sem-muted); }
+:is(npl-rubric, .npl-rubric) .npl-rubric-flag {
+  display: block; margin-top: .1rem; font-size: .75rem; font-weight: 400;
+  color: color-mix(in srgb, var(--sem-wrong) 75%, var(--sem-fg)); }
+/* the decision line: the overall figure, accent bar + tint, never opaque */
+:is(npl-rubric, .npl-rubric) .npl-rubric-overall > th {
+  padding: .5rem .5rem .5rem .6rem; border-left: 3px solid var(--sem-accent);
+  border-radius: 6px 0 0 6px; font-weight: 600;
+  background: color-mix(in srgb, var(--sem-accent) 12%, transparent); }
+:is(npl-rubric, .npl-rubric) .npl-rubric-overall > td {
+  padding: .5rem .5rem; border-radius: 0 6px 6px 0; text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--sem-accent) 12%, transparent); }
+:is(npl-rubric, .npl-rubric) .npl-rubric-source {
+  margin-left: .4em; font-size: .7rem; font-weight: 400;
+  font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
+/* ── end npl-rubric ── */
