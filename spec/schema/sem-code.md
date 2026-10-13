@@ -27,9 +27,27 @@ Class-form alias (conventions Appendix A): `div.sem-code[data-lang][data-filenam
 with the same `<pre><code>` child. Parameters are read as `data-<name>`
 first, then bare `<name>`.
 
+Every attribute is optional: the authoring forms below are all the same
+element, chosen to suit the listing.
+
+```html
+<!-- smallest valid listing: default controls (copy only), no chrome labels -->
+<sem-code><pre><code>npm run build</code></pre></sem-code>
+
+<!-- the defaults soften for a listing wider than the pane -->
+<sem-code lang="sh"><pre><code>curl -sS … | jq -r '.access_token'</code></pre></sem-code>
+
+<!-- start soft-wrapped; the Wrap control renders pressed -->
+<sem-code lang="json" filename="config.json" wrap controls="copy,wrap">
+<pre><code>{ "retry": { "attempts": 5 } }</code></pre>
+</sem-code>
+```
+
 - Child: **exactly one `<pre>`**, conventionally wrapping one `<code>`. The
   listing is the `<code>`'s text (the `<pre>`'s when no `<code>` is
-  authored).
+  authored). A `<code>` that already holds element children (author-side
+  highlighting) is left as authored — no line spans or `<mark>` are
+  generated over it.
 - `lang` (optional): language token, rendered as a badge.
 - `filename` (optional): provenance label.
 - `mark` (optional): emphasised lines, 1-based, comma list of numbers
