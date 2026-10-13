@@ -15,6 +15,37 @@ scope.
 
 ## Authoring form
 
+A join does not render itself — it materializes a bucket that a
+`sem-data-query` in the same `sem-data-visualizer` reads. The working
+form is therefore the whole container: two named sources, the join
+declaration, and a query over the joined bucket. Inner join: `u3` has
+no orders, so its row drops.
+
+```html
+<sem-data-visualizer id="dv-user-orders">
+  <sem-data-source data-name="Users" data-format="table">
+    | user-id | name | plan |
+    | :------ | :--- | :--- |
+    | u1      | Ada  | team |
+    | u2      | Bao  | free |
+    | u3      | Cleo | team |
+  </sem-data-source>
+  <sem-data-source data-name="Orders" data-format="table">
+    | order | user-id | total |
+    | :---- | :------ | ----: |
+    | o-101 | u2      |   120 |
+    | o-102 | u1      |    80 |
+    | o-103 | u2      |    45 |
+  </sem-data-source>
+  <sem-data-join name="user-orders" left="Users" right="Orders" on="user-id">
+  </sem-data-join>
+  <sem-data-query>SELECT name, total FROM user-orders ORDER BY total DESC</sem-data-query>
+</sem-data-visualizer>
+```
+
+The element itself is only the declaration (shown alone here; a join
+outside a `sem-data-visualizer` resolves nothing):
+
 ```html
 <sem-data-join name="user-orders" left="Users" right="Orders" on="user-id">
 </sem-data-join>

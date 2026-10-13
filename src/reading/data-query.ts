@@ -68,6 +68,19 @@ function joinError(j: Element, message: string): void {
   warn('sem-data-join: ' + message);
 }
 
+/** Buckets minted by joins, per container. Lets a failing run withdraw a
+ * join's own previous result without ever touching a source bucket. */
+const joinMinted = new WeakMap<Element, Set<string>>();
+
+function mintedRefs(container: Element): Set<string> {
+  let refs = joinMinted.get(container);
+  if (!refs) {
+    refs = new Set();
+    joinMinted.set(container, refs);
+  }
+  return refs;
+}
+
 /**
  * Materialize every direct sem-data-join child. Idempotent: re-running on a
  * bucket event recomputes and overwrites the registered join bucket, so a
@@ -80,18 +93,38 @@ export function wireJoins(container: Element): void {
     const left = (param(j, 'left') ?? '').trim();
     const right = (param(j, 'right') ?? '').trim();
     const on = (param(j, 'on') ?? '').trim();
+    const ref = name ? normalizeRef(name) : '';
+    const buckets = bucketsFor(container);
+    // A failing run withdraws this join's own previous result (an
+    // unresolved join registers no bucket) and drops its stale ok state.
+    const fail = (message: string): void => {
+      if (ref && mintedRefs(container).has(ref)) {
+        mintedRefs(container).delete(ref);
+        buckets.delete(ref);
+        changed = true; // queries must re-run against the withdrawn bucket
+      }
+      j.removeAttribute('data-sem-join-state');
+      joinError(j, message);
+    };
     if (!name || !left || !right || !on) {
-      joinError(j, 'join needs data-name, data-left, data-right and data-on');
+      fail('join needs data-name, data-left, data-right and data-on');
       return;
     }
-    const buckets = bucketsFor(container);
+    // A result bucket must not shadow a source bucket (authoring error);
+    // re-materializing this join's own bucket is the idempotent path.
+    const prior = buckets.get(ref);
+    if (prior && !mintedRefs(container).has(ref)) {
+      fail('join name "' + name + '" collides with existing bucket "' + prior.name + '"');
+      return;
+    }
     const lb = buckets.get(normalizeRef(left));
     const rb = buckets.get(normalizeRef(right));
-    if (!lb) { joinError(j, 'unknown bucket "' + left + '"'); return; }
-    if (!rb) { joinError(j, 'unknown bucket "' + right + '"'); return; }
+    if (!lb) { fail('unknown bucket "' + left + '"'); return; }
+    if (!rb) { fail('unknown bucket "' + right + '"'); return; }
     const joined = joinBuckets(lb, rb, on);
-    if (!joined.ok) { joinError(j, joined.error); return; }
+    if (!joined.ok) { fail(joined.error); return; }
     j.querySelectorAll(':scope > .sem-data-error').forEach((n) => n.remove());
+    if (ref) mintedRefs(container).add(ref);
     // Quiet register: the single event fires below if anything changed —
     // a per-join dispatch would re-enter this very listener forever.
     if (registerQuiet(container, name, joined.table)) changed = true;
