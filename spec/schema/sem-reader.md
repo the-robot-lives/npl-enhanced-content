@@ -6,8 +6,8 @@ Contract per conventions.md v0.6. BDD source of truth for
 ## Scope semantics
 
 The reading chrome of a long document: an outline, a reading-progress bar,
-and the reader-side controls a browser can offer that a printed page cannot
-— focus mode, type size and face, colour scheme, print, audience. It is
+and the reader-side controls a printed page cannot offer — focus mode,
+type size and face, colour scheme, print, audience. It is
 **chrome, not content**: it mints no record, its outline is derived from
 the document's headings, and a document without it loses nothing a machine
 could read. It exists as one element (rather than one per control) because
@@ -26,14 +26,14 @@ One per document, a direct child of the root wrapper.
 Class-form alias (conventions Appendix A): `div.sem-reader[data-controls][data-outline-depth]`. Parameters are read
 as `data-<name>` first, then bare `<name>`.
 
-- `controls` (optional): comma flags, in any order, from `outline`,
-  `progress`, `focus`, `type`, `color`, `print`, `audience`. Default
-  `outline,progress`. Unknown flags (including `theme`, reserved for R/W3)
-  are ignored. Controls render in the **canonical order** above, not in
-  attribute order.
-- `outline-depth` (optional): deepest heading level in the generated
-  outline, `2`–`6`; default `3`. The outline always starts at `h2` — `h1`
-  is the document title.
+- `controls`: optional. Comma flags, in any order, one of `outline`,
+  `progress`, `focus`, `type`, `color`, `print`, `audience` — default
+  `outline,progress`; unknown flags, including the theme flag reserved for
+  R/W3, are ignored. Controls render in the **canonical order** above, not
+  in attribute order.
+- `outline-depth`: integer — optional. Deepest heading level in the
+  generated outline, `2`–`6`; default `3`. The outline always starts at
+  `h2` — `h1` is the document title.
 - Child (optional): an authored `<nav aria-label="Contents">`. When
   present it is the outline, **used verbatim** — no ids are assigned, no
   list is generated, nothing inside it is rewritten. This is the JS-off
