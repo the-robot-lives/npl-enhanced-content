@@ -59,6 +59,10 @@ query.
   when the edited statement diverges from the authored one.
 - No `sem-data-query` declaration ⇒ no query chrome (plain per-source
   tables only).
+- The authored statement parks in a `.sem-data-raw` box hidden by the
+  same container/runtime contract as `sem-data-source` once the query
+  is wired. The box stays in the DOM (edits rewrite its text; the
+  element carries `data-sem-upgraded` too).
 
 ### JS-off
 

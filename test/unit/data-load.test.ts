@@ -113,7 +113,7 @@ describe('loadSource (the enhance, async)', () => {
     const json = JSON.parse((dv.querySelector('#s1 .sem-data-schema') as HTMLScriptElement).textContent!);
     expect(json.format).toBe('csv');
     expect(json.name).toBe('Services');
-    expect(dv.querySelector('#s1')!.getAttribute('data-sem-fallback')).not.toBeNull();
+    expect(dv.querySelector('#s1')!.getAttribute('data-sem-upgraded')).not.toBeNull();
   });
 
   it('renders a clear error on HTTP failures and network/CORS blocks', async () => {

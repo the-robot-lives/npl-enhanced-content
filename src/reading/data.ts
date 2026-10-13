@@ -41,7 +41,7 @@ import { formatFromUrl, resolveSource, sniffFormat } from '../data/load.js';
 import { normalizeRef } from '../data/names.js';
 import { fetchSource } from './data-load.js';
 import { buildTable, wireSort, STAMP } from './data-tableview.js';
-import { registerBucket, wireQueryChrome, wireViewButtons } from './data-query.js';
+import { registerBucket, wireQueryChrome, wireViewButtons, joinMintedName } from './data-query.js';
 import {
   applyDeepLinkToContainer,
   applyDeepLinkToSource,
@@ -69,6 +69,13 @@ export function enhanceDataVisualizerElement(el: Element): void {
   if (!el.querySelector(':scope > ' + DATA_SOURCE + ' > :is(.sem-data-body, .sem-data-error, .sem-data-pending)')) {
     el.querySelectorAll(':scope > ' + DATA_SOURCE).forEach((src) => renderSource(src));
   }
+  // Park each query's authored statement before its chrome wires (see
+  // parkPayload); idempotent, and textContent is unchanged, so the chrome
+  // reads the same statement it always did.
+  el.querySelectorAll(':scope > sem-data-query, :scope > .sem-data-query').forEach((q) => {
+    parkPayload(q);
+    q.setAttribute('data-sem-upgraded', '');
+  });
   // Joins + the default query chrome wire on every pass (both idempotent).
   wireQueryChrome(el);
   // Phase 6 (§10): the Expand/Copy-link chrome, then any deep-link state in
@@ -203,7 +210,18 @@ function finishSource(src: Element, parsed: { ok: true; table: TableData; schema
     applied.warnings.forEach((w) => warn('sem-data-source: ' + w));
   }
   const name = (param(src, 'name') ?? '').trim();
-  if (name) registerBucket(src, name, parsed.table); // joins + queries see this bucket
+  if (name) {
+    // Authoring error, the mirror of the join-side guard (data-query.ts
+    // wireJoins): a source must not silently overwrite a bucket a join
+    // minted. The join keeps its bucket; the source shows the alert.
+    const container = src.parentElement;
+    const shadowed = container ? joinMintedName(container, name) : null;
+    if (shadowed) {
+      renderError(src, 'source name "' + name + '" collides with join bucket "' + shadowed + '"');
+      return;
+    }
+    registerBucket(src, name, parsed.table); // joins + queries see this bucket
+  }
   renderTable(src, parsed.table, schema, format, structure);
 }
 
@@ -247,7 +265,29 @@ function loadSource(src: Element): void {
   });
 }
 
+/**
+ * Park an element's authored payload inside a `div.sem-data-raw` child
+ * (the sem-md `.sem-md-raw` precedent): the box stays in the DOM —
+ * `textContent` is byte-identical, so parsing, bucket mirroring (SELECT *)
+ * and extraction keep working — and the theme hides it while the element
+ * carries `data-sem-upgraded`. Pages with no JS never get the box.
+ * Idempotent on the box's presence.
+ */
+export function parkPayload(el: Element): void {
+  if (el.querySelector(':scope > .sem-data-raw')) return;
+  const raw = document.createElement('div');
+  raw.className = 'sem-data-raw';
+  while (el.firstChild) raw.appendChild(el.firstChild);
+  el.insertBefore(raw, el.firstChild);
+}
+
 function renderTable(src: Element, table: TableData, schema: ColumnSchema[], format: string, structure: string): void {
+  // A successful render shows the generated table alone (schema
+  // sem-data-source.md §Rendered form): park the authored payload — it
+  // stays in the DOM for extraction, hidden by the theme contract once
+  // data-sem-upgraded lands below. A failed render never parks: the
+  // authored text stays visible beside the error.
+  parkPayload(src);
   const views = parseViews(param(src, 'views'));
   const view = resolveView(views, param(src, 'view'));
   const shown = visibleColumns(view, table.columns);
@@ -278,7 +318,7 @@ function renderTable(src: Element, table: TableData, schema: ColumnSchema[], for
   wireViewButtons(src, tableEl, table.columns);
   // A bucket-scoped deep link (§10) whose source landed late applies here.
   applyDeepLinkToSource(src);
-  src.setAttribute('data-sem-fallback', '');
+  src.setAttribute('data-sem-upgraded', '');
 }
 
 function renderError(src: Element, message: string): void {

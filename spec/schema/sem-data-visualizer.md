@@ -62,6 +62,9 @@ selector reads `:is(sem-data-visualizer, .sem-data-visualizer)`.
   loads): `#dv=<id>&view=<name>` scopes a container, `#dv=<id>&q=<query>`
   restores an edited default query, `modal=1` reopens the modal.
 - The element carries `data-sem-upgraded` once wired.
+- Hiding each child's authored payload is the container/runtime
+  contract (the `.sem-data-raw` boxes are runtime-owned, not authoring
+  surface); the authored markup stays in the DOM for extraction.
 
 ### JS-off
 

@@ -97,6 +97,10 @@ one bare-by-brief name and reads `data-source` as its alias twin.
   must not echo above it. A failed render keeps the authored text
   visible alongside the inline error; a pending load shows it with the
   status region.
+- Mechanism (container/runtime contract): on success the authored
+  payload parks in a `.sem-data-raw` box that the theme hides while
+  `data-sem-upgraded` is set. The box stays in the DOM, so extraction
+  is unchanged; JS-off pages never contain it.
 
 ### JS-off
 

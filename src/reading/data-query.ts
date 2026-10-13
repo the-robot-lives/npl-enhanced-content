@@ -81,6 +81,14 @@ function mintedRefs(container: Element): Set<string> {
   return refs;
 }
 
+/** The authored name of the bucket a join minted under `ref` in this
+ * container, if any. The source path (reading/data.ts) uses it to refuse
+ * shadowing a join result — the mirror of the guard in wireJoins. */
+export function joinMintedName(container: Element, ref: string): string | null {
+  const r = normalizeRef(ref);
+  return mintedRefs(container).has(r) ? bucketsFor(container).get(r)?.name ?? null : null;
+}
+
 /**
  * Materialize every direct sem-data-join child. Idempotent: re-running on a
  * bucket event recomputes and overwrites the registered join bucket, so a
@@ -191,6 +199,17 @@ function runQueryChrome(chrome: Chrome, container: Element): void {
   chrome.status.textContent = result.table.rows.length + (result.table.rows.length === 1 ? ' row.' : ' rows.');
 }
 
+/**
+ * Rewrite the live statement without dropping a parked `.sem-data-raw`
+ * box (reading/data.ts parkPayload): the box's text tracks the edit, the
+ * element's other children are untouched.
+ */
+function setStatement(q: Element, text: string): void {
+  const raw = q.querySelector(':scope > .sem-data-raw');
+  if (raw) raw.textContent = text;
+  else q.textContent = text;
+}
+
 /** Wire one sem-data-query element: chrome after it, debounced re-runs. */
 function wireQuery(q: Element, container: Element): void {
   if (q.hasAttribute('data-sem-query-wired')) return;
@@ -246,7 +265,7 @@ function wireQuery(q: Element, container: Element): void {
     chrome.timer = setTimeout(() => {
       // Editing rewrites the live query node so extraction and re-wire see
       // the current statement; the authored attribute stays untouched.
-      q.textContent = textarea.value;
+      setStatement(q, textarea.value);
       rerun();
     }, 300);
   });
@@ -324,7 +343,7 @@ export function setQueryText(container: Element, text: string): boolean {
     const c = chomes.get(q);
     if (!c) continue;
     c.input.value = text;
-    c.q.textContent = text;
+    setStatement(c.q, text);
     c.rerun();
     return true;
   }

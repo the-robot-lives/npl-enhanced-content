@@ -82,6 +82,9 @@ both are present.
   no re-entry loop).
 - A join whose buckets or key do not resolve renders `.sem-data-error`
   (`role="alert"`) on the join element and registers no bucket.
+- The join itself carries no payload: hiding authored raw boxes is the
+  container/runtime contract of `sem-data-source`/`sem-data-query`,
+  never something the join declaration does.
 
 ### JS-off
 
