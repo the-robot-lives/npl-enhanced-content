@@ -1,7 +1,8 @@
 # Terminal Core v2 — Epoch 2 architecture
 
 Status: **design (approved direction, not implemented)** · Owner: terminal lane ·
-Drafted 2026-10-14 · Companion to `src/terminal/PLUGINS.md` (the v1 plugin
+Drafted 2026-10-14 · Amended 2026-10-14 (canvas-everywhere renderer; 256 KB shell
+budget — see Decisions) · Companion to `src/terminal/PLUGINS.md` (the v1 plugin
 contract, which this design freezes) and `ROADMAP.md` (invariants, budgets).
 
 This document specifies the Epoch 2 rebuild of the `sem-shell` /
@@ -16,6 +17,17 @@ script-runner lane), and the card/subsection/toc render commands
 (render-card lane). No code ships with this document; it is the contract the
 Epoch 2 implementation is written against.
 
+> **Decisions (user, 2026-10-14).**
+> 1. **Canvas everywhere.** The canvas driver is the one rendering path and is
+>    bundled into `semtext-js-shell.js` — no `semtext-shell-canvas.js` chunk, no
+>    `renderer="canvas"` opt-in. One classic IIFE ⇒ no runtime fetch ⇒ invariant
+>    1 holds on file:// by construction. The DOM remains only as the hidden,
+>    synchronised accessibility + find-in-page + copy mirror, plus the authored
+>    JS-off static transcript (unchanged). §§1, 3, 8, 9, 13, 14, 16, 17 amended.
+> 2. **Shell bundle budget = 256 KB raw** (the user's number; absorbs the canvas
+>    driver). §13.1 and the `ROADMAP.md` size-budget table updated; every other
+>    budget unchanged.
+
 ## 1. Scope and invariants
 
 **In scope:** everything between "a key press arrives" and "pixels / DOM text
@@ -28,15 +40,16 @@ The ROADMAP's non-negotiable invariants apply unchanged, and three of them
 shape this design hard enough to restate:
 
 1. **Canonical artifact = standalone XHTML, IIFE classic scripts, no runtime
-   fetch, file:// double-click works.** Every v2 capability must either fit
-   the `semtext-js-shell.js` IIFE bundle or be an *optional* add-on bundle a
-   page chooses to load. The canvas driver is therefore an opt-in chunk
-   (§8.4), never a dependency of the default experience.
+   fetch, file:// double-click works.** Every v2 capability must fit the
+   `semtext-js-shell.js` IIFE bundle — and since the 2026-10-14 decision they
+   all do by construction: the canvas driver is compiled into the same classic
+   bundle (§8.4), so there is no runtime fetch, no dynamic import, and file://
+   works unchanged. No v2 capability ships as a separate opt-in chunk.
 2. **Light DOM for content, shadow DOM for chrome only.** A canvas viewport
-   is chrome; the *text* stays content. The DOM renderer remains the default
-   render path and, when canvas is enabled, remains as the accessible,
-   searchable text mirror (§9). Nothing that a user could select or copy may
-   exist only inside a canvas.
+   is chrome; the *text* stays content. Canvas paints the pixels; the DOM
+   survives solely as the hidden, synchronised accessibility + find-in-page +
+   copy mirror (§8.1, §9) — nothing a user could select or copy may exist
+   only inside a canvas, so the mirror is load-bearing, not a fallback.
 3. **JS-off documents stay readable; the zero-JS contract is untouched.** The
    authored static transcript (a `role="log"` div with past lines, no input
    element — see `web/demo/shell.html`) is replaced on first connect exactly
@@ -100,9 +113,9 @@ them.
                             │ out()/err()/write() — text + ANSI
                             ▼
                  ┌─────────────────────┐    damage sets    ┌───────────────┐
-                 │       Screen        │──────────────────►│ Renderers     │
-                 │ primary+alt buffers │                   │ dom (default) │
-                 │ scrollback ring     │                   │ canvas (opt)  │
+                 │       Screen        │──────────────────►│ canvas driver │
+                 │ primary+alt buffers │                   │  (the paint)  │
+                 │ scrollback ring     │(mirror: throttled)│ hidden mirror │
                  └──────────┬──────────┘                   └───────┬───────┘
                             │ OSC 0/2 title, 9 status              │ pixels
                             ▼                                      ▼
@@ -119,9 +132,10 @@ Layer rules (these are the design's load-bearing walls):
   gains one new output sink: writes flow through the ANSI parser (ansi lane)
   into the Screen instead of only accumulating `ShellLine`s. `ExecResult`
   keeps its `lines` view, derived from the same writes.
-- **The Screen is the single source of truth for what is displayed.** Both
-  renderers read it; neither owns state. The DOM renderer of v1 becomes "a
-  renderer over the screen", not "the transcript".
+- **The Screen is the single source of truth for what is displayed.** The
+  canvas driver and the DOM mirror both read it; neither owns state. The v1
+  DOM renderer becomes "the mirror", not "the transcript" — and not a second
+  live paint path (§8.2).
 - **Discipline is a strategy, not a place.** Cooked and raw are two
   implementations of one interface; the v1 line editor's *behaviors*
   (history with draft, Tab completion, Ctrl+L) move into cooked mode intact.
@@ -142,8 +156,8 @@ New modules (all under `src/terminal/` unless noted):
 | `input/keys.ts` | key normalization, chord grammar, `sendKeys` parser |
 | `input/mouse.ts` | selection state, click/wheel routing, SGR-style reports |
 | `apps/api.ts` | `TerminalApp` contract, runner, alt-screen lifecycle |
-| `render/dom.ts` | DOM renderer v2 (default + a11y mirror) |
-| `render/canvas.ts` | canvas driver (optional chunk) |
+| `render/canvas.ts` | the renderer — glyph atlas, damage paint, DPR, selection overlay (in-bundle; the one visible path) |
+| `render/mirror.ts` | the v1 DOM renderer, demoted: hidden synchronised mirror (a11y tree, find-in-page, copy; promoted to the visible paint under forced-colors / 2d-context failure) |
 | `chrome/sem-scroll.ts` | Lit scrollbar component |
 | `chrome/tabs.ts` | tab model (per-tab session, shared VFS) |
 | `env/direnv.ts` | `.envrc` subset evaluation on `cd` |
@@ -180,10 +194,10 @@ stored, not baked (renderers and selection highlighting compose it at paint).
 240 extended, i.e. the xterm 256 cube), `0x8000–0xFFFE` index a per-screen
 truecolor table (RGB24 stored, table deduplicates), `0xFFFF` = theme default
 (foreground/background tokens from the active `data-sem-theme`). The palette
-module resolves refs → CSS colors for the DOM renderer and → fill styles for
-canvas, from one place, so the two renderers cannot drift. Themes map the 16
+module resolves refs → CSS colors for the DOM mirror and → fill styles for
+canvas, from one place, so paint and mirror cannot drift. Themes map the 16
 ANSI names the way `themes/_vocabulary.css` maps semantics today (a dedicated
-`--sem-ansi-*` ramp added by the terminal CSS block owner; see §14 M1).
+`--sem-ansi-*` ramp added by the terminal CSS block owner; see §14 M2).
 
 ### 4.3 Lines and buffers
 
@@ -325,7 +339,7 @@ mode can never leak past the app's lifetime.
 | `#navigate` history | cooked discipline |
 | `#complete` | cooked discipline (calls `complete.ts` unchanged) |
 | `#renderPrompt` `<input>` | prompt row painted on the grid + hidden input |
-| `#renderLine` spans | DOM renderer reading screen cells |
+| `#renderLine` spans | mirror renderer reading screen cells |
 | `#onFrameKeydown` Escape ladder | discipline transitions (§6.3 keeps the ladder) |
 
 ## 6. Full-screen app API
@@ -399,7 +413,7 @@ it falls back to `run` (authors provide both, the piped path being the plain
 renderer). The existing `emit({kind:'tui'})` DATA-action keeps working all
 through v2 and is *not* deprecated on that timeline — the flashcard view
 re-implements itself as a `TerminalApp` when its colourised grid version
-lands, and the emit path retires only when parity is verified (§14 M4).
+lands, and the emit path retires only when parity is verified (§14 M5).
 
 First apps: `bat` pager (Epoch 2), `semtext tui` grid version (Epoch 2),
 `nano` (Epoch 3).
@@ -486,7 +500,9 @@ playback).
 
 ## 8. Renderers
 
-One contract, two implementations:
+One contract, two implementations — the canvas driver paints, the DOM
+implementation mirrors (2026-10-14 decision: canvas is the only visible path;
+§8.2):
 
 ```ts
 interface ScreenRenderer {
@@ -497,27 +513,35 @@ interface ScreenRenderer {
 }
 ```
 
-### 8.1 DOM renderer (default, and the a11y surface)
+### 8.1 The DOM mirror (a11y tree, find-in-page, copy — and the fallback paint)
 
-Renders the *visible viewport* as light-DOM line divs (one div per screen
-line, spans per attribute run — the shape `#renderLine` already produces,
-now driven by cells instead of `splitSgr`). Scrollback is not rendered as
-DOM: scrolling re-renders the viewport window (and the full scrollback text
-remains available through copy and the mirror's focus mode, §9). Cost is
-O(rows) regardless of scrollback depth. This renderer is the default for
-every deployment, the file:// path, forced-colors mode, and reduced-motion
-users.
+Renders the viewport as light-DOM line divs (one div per screen line, spans
+per attribute run — the shape `#renderLine` already produces, now driven by
+cells instead of `splitSgr`) — visually hidden (clipped to zero size,
+`aria-hidden="false"`) and derived from the same damage sets as the canvas,
+throttled to ≥ 100ms / on-idle. It is the accessibility tree, the surface
+browser find-in-page and platform text services read, and the text source
+copy extracts from (§9). Scrollback is not kept as DOM: the mirror
+re-renders the viewport window on scroll; the full scrollback text remains
+available through copy and app-level search (the pager's `/`). Cost is
+O(rows) regardless of scrollback depth. Under `forced-colors: active` — or
+if the canvas 2d context cannot be created — the mirror is promoted to the
+*visible* renderer for the session (same code path, unclipped): the
+automatic fallback strategy, with no opt-out attribute.
 
-### 8.2 Why the DOM renderer stays default
+### 8.2 Why canvas is the one path (2026-10-14 decision)
 
-Belt-and-braces honesty about the canvas driver: it buys smoothness at deep
-scrollback and per-cell fidelity (true ligature-free glyph control, blink
-timing, selection compositing), but the DOM renderer already satisfies every
-functional requirement, keeps text native (find-in-page works), and is the
-accessible path. Canvas is an enhancement, loaded as an optional chunk —
-pages opt in with `renderer="canvas"`; everyone else pays nothing.
+The original draft kept the DOM renderer as the default with canvas as an
+opt-in chunk; the user decided otherwise: one rendering path, bundled. Two
+live paint paths mean two code paths to test, a per-page opt-in no landing
+page would exercise, and a file:// story with a conditional second script
+tag. One in-bundle canvas driver gives every page — file:// included — the
+same pixels, and the DOM code that remains is repurposed, not deleted: the
+mirror (§8.1) already produces the exact light-DOM shape v1 rendered, so
+a11y, find-in-page, copy, and the forced-colors paint all fall out of code
+that had to exist anyway.
 
-### 8.3 Canvas driver (optional chunk `semtext-shell-canvas.js`)
+### 8.3 Canvas driver (in `semtext-js-shell.js` — the one renderer)
 
 - **Glyph atlas**: one offscreen canvas texture per style bucket (the cross
   product that matters is: bold × italic × underline × dim × fg-color-ref;
@@ -533,34 +557,48 @@ pages opt in with `renderer="canvas"`; everyone else pays nothing.
   Consolas, monospace`); cell metrics measured once per font-load state
   (document.fonts.ready) and re-measured on change; width-2 glyphs measured
   against the same table the screen uses, so grid math and paint agree.
-- **Cursor**: drawn as a block/underline/beam rect at the cursor cell
+- **Cursor**: drawn as a block/underline/beam at the cursor cell
   (style settable by apps), blinking at 530ms on/off — **steady, not
   blinking, under `prefers-reduced-motion`** (canvas queries the media
-  query; the DOM renderer's CSS does the same via the theme block).
-- **Selection**: translucent overlay rect per selected run; copy feeds from
-  `extractText`.
+  query; the mirror's CSS does the same via the theme block).
+- **Selection**: translucent overlay rect per selected run; the selection
+  lives on the screen as `(absoluteLine, col)` ranges, so the mirror can
+  express the same ranges natively (platform selection, a11y highlighting)
+  and the two cannot disagree; copy feeds from one `extractText` (§9).
 - **Forced-colors / high-contrast**: the element detects
-  `forced-colors: active` and falls back to the DOM renderer for the
-  session (canvas cannot honor forced color semantics honestly).
+  `forced-colors: active` (and any `getContext('2d')` failure) and promotes
+  the DOM mirror to the visible renderer for the session (§8.1) — canvas
+  cannot honor forced-color semantics honestly. Automatic only; no public
+  attribute switches renderers.
 
-### 8.4 Loading (invariant 1 compliant)
+### 8.4 Loading — one bundle, no fetch (invariant 1 by construction)
 
-`semtext-js-shell.js` (IIFE, file://-safe) ships everything through §7 and
-the DOM renderer. The canvas driver is a separate IIFE chunk that registers
-itself as the `canvas` renderer implementation; a page opts in by loading it
-(next to the shell bundle) plus `renderer="canvas"` on the element. Over
-http(s) the lazy manifest can carry it; on file:// the page simply doesn't,
-and everything still works. No runtime fetch ever happens inside the shell
-bundle itself.
+`semtext-js-shell.js` (IIFE, file://-safe) ships everything: §3–§7, the
+canvas driver, and the DOM mirror. There is no `semtext-shell-canvas.js`
+chunk and no `renderer="canvas"` opt-in (2026-10-14 decision): one classic
+script, evaluated in one pass — nothing is fetched, imported, or
+lazy-loaded at runtime, on any origin. Invariant 1 holds by construction
+rather than by discipline. The document-side lazy loader
+(`semtext-lazy.js`) is untouched and stays out of the shell's business.
 
 ## 9. Accessibility
 
-- **The DOM mirror is the accessibility tree.** With canvas active, the DOM
-  renderer stays mounted as a visually-hidden mirror (`aria-hidden="false"`,
-  clipped to zero size) updated from the same damage sets, throttled to ≥
-  100ms / on-idle. Screen readers, find-in-page, and platform text services
-  all read it; the two surfaces derive from one source so they cannot
-  disagree.
+- **The DOM mirror is the accessibility tree — always.** With canvas the
+  only visible path, the mirror (§8.1) is unconditionally mounted:
+  visually-hidden (`aria-hidden="false"`, clipped to zero size), derived
+  from the same damage sets, throttled to ≥ 100ms / on-idle. Screen
+  readers, browser find-in-page, and platform text services all read it;
+  both surfaces derive from one source (the screen) so they cannot
+  disagree. Find-in-page hits map back through the mirror's line/cell
+  structure to screen ranges and are painted on canvas as selection-overlay
+  rects — the browser highlights nothing visible by itself (the mirror is
+  clipped); the canvas does.
+- **Selection and clipboard run through the screen.** Drag-select paints
+  canvas overlays; assistive/platform selection on the mirror addresses the
+  same `(absoluteLine, col)` ranges. Copy — keyboard, context menu, or
+  `navigator.clipboard` (execCommand from the hidden input on file://,
+  §7.4) — feeds from one `extractText`, so canvas selection and mirror
+  selection copy identical text.
 - **Live regions**: the transcript keeps `role="log" aria-live="polite"` (v1
   semantics). App screens announce a compact summary line on change ("pager:
   lines 1–24 of 214") rather than diffing 2,000 cells into speech — the
@@ -668,15 +706,16 @@ and §12's direnv hooks feed the same variables — no new channels invented.
 
 ### 13.1 Bundle (raw minified, `npm run build:strict` gates)
 
-| Artifact | Budget today | After Epoch 1 (est.) | v2 proposal | Rationale |
+| Artifact | Budget today | After Epoch 1 (est.) | v2 budget | Rationale |
 |---|---|---|---|---|
-| `semtext-js-shell.js` | 96 KB (74.8 measured) | ~88–92 KB (ansi parser, script-runner, cards, demo files) | **110 KB** | screen + discipline + input + apps + scrollbar + direnv ≈ +16–20 KB |
-| `semtext-shell-canvas.js` (new, optional) | — | — | **24 KB** | canvas driver + atlas, opt-in chunk; not loaded on file:// |
+| `semtext-js-shell.js` | 96 KB (74.8 measured) | ~88–92 KB (ansi parser, script-runner, cards, demo files) | **256 KB raw** | the user's number (2026-10-14): screen + discipline + input + apps + scrollbar + direnv + **the canvas driver, bundled (no separate chunk)** |
 | `semtext.js` (core) | 126 KB (124.1) | unchanged | **unchanged** | terminal code must never grow the document bundle (existing rule, `scripts/build.mjs`) |
 
-Gzip targets: shell ≤ 40 KB, canvas ≤ 9 KB. Every budget line keeps the
-existing build discipline: printed per build, failing only under
-`--strict-budget`, history recorded in `ROADMAP.md` "Size budgets".
+Gzip target: shell ≤ 90 KB (canvas included; derived at the current raw:gzip
+ratio). Every budget line keeps the existing build discipline: printed per
+build, failing only under `--strict-budget`, history recorded in
+`ROADMAP.md` "Size budgets" (the 96 → 256 KB bump is logged there,
+2026-10-14).
 
 ### 13.2 Runtime
 
@@ -709,16 +748,17 @@ every phase — that is the migration's definition of success.
 
 | Phase | Ships | Acceptance |
 |---|---|---|
-| **M0 — parser lands** (Epoch 1, ansi lane) | ANSI/VT parser behind one output hook | existing tests green; SGR codes beyond the whitelist parsed, still rendered via span classes |
-| **M1 — screen beneath** | `Screen` introduced as the write sink; DOM renderer reads cells; `lines` becomes a derived view over writes | all v1 transcript tests green against the derived `lines`; double-render of prompt row removed |
-| **M2 — discipline swap** | cooked editor on the grid (hidden input, drawn cursor); v1 `#onKeydown`/`#navigate`/`#complete` logic deleted | typing/history/completion e2e parity checklist; IME composition e2e; `nojs.html` proof unchanged |
-| **M3 — apps + alt screen** | `TerminalApp` API, runner, bat pager, semtext-tui grid version alongside the DOM overlay | pager interactions (§ product intent: ↑/↓/PgUp/PgDn, `/` find, n/N, q/:q/Esc) e2e; tui keyboard+mouse e2e; interrupt ladder e2e |
-| **M4 — chrome + env** | `sem-scroll`, OSC title/status feeds into window chrome, direnv subset, `sendKeys` public | scrollbar e2e; direnv unit + e2e; sendKeys drives the landing demo scripts |
-| **M5 — canvas chunk** | optional `semtext-shell-canvas.js`, `renderer="canvas"`, DOM-as-mirror | canvas e2e + pixel-diff via the snap harness; forced-colors fallback e2e; a11y mirror assertions |
+| **M1 — parser lands** (Epoch 1, ansi lane) | ANSI/VT parser behind one output hook | existing tests green; SGR codes beyond the whitelist parsed, still rendered via span classes |
+| **M2 — screen beneath** | `Screen` introduced as the write sink; the DOM paint reads cells (interim visible path); `lines` becomes a derived view over writes | all v1 transcript tests green against the derived `lines`; double-render of prompt row removed |
+| **M3 — canvas paints, DOM mirrors** | the canvas driver (from the one bundle) becomes the visible renderer; the DOM renderer demoted to the hidden mirror; forced-colors / 2d-context promotion logic | canvas e2e + pixel-diff via the snap harness; mirror text assertions (never only pixels); forced-colors mirror-promotion e2e; file:// smoke — same bundle, no fetch |
+| **M4 — discipline swap** | cooked editor on the grid (hidden input, drawn cursor); v1 `#onKeydown`/`#navigate`/`#complete` logic deleted | typing/history/completion e2e parity checklist; IME composition e2e; `nojs.html` proof unchanged |
+| **M5 — apps + alt screen** | `TerminalApp` API, runner, bat pager, semtext-tui grid version alongside the DOM overlay | pager interactions (§ product intent: ↑/↓/PgUp/PgDn, `/` find, n/N, q/:q/Esc) e2e; tui keyboard+mouse e2e; interrupt ladder e2e |
+| **M6 — chrome + env** | `sem-scroll`, OSC title/status feeds into window chrome, direnv subset, `sendKeys` public | scrollbar e2e; direnv unit + e2e; sendKeys drives the landing demo scripts |
 
-Rollback story: M1–M4 are internal restructurings with the same external
-surface, so a revert is a revert. M5 is a separate artifact — disabling it
-is removing one script tag. The v1 TUI overlay is only deleted after the
+Rollback story: M1–M6 keep the external surface constant, so a revert is a
+revert. M3 flips the visible path, but the DOM paint code stays in the bundle
+as the mirror/fallback — reverting M3 promotes it visible again, with no
+artifact boundary involved. The v1 TUI overlay is only deleted after the
 grid tui passes the overlay's own e2e suite (`semtext-tui.test.ts` +
 cypress) — parity, then retire.
 
@@ -738,9 +778,10 @@ cypress) — parity, then retire.
   parity; pager key set; tui keyboard + click; Escape ladder; sendKeys
   driving the four landing scripts; scrollback + scrollbar; reduced-motion
   (instant playback, steady cursor); `nojs.html` still proves the JS-off
-  transcript; canvas chunk (screenshot diff via the snap harness + mirror
-  text assertions — never only pixels); forced-colors fallback; a11y mirror
-  (axe on the mirror, live-region announcements).
+  transcript; canvas paint (screenshot diff via the snap harness + mirror
+  text assertions — never only pixels); forced-colors mirror-promotion; a11y
+  mirror (axe on the mirror, live-region announcements); a file:// smoke of
+  the single bundle.
 - **Perf:** §13.2 benches, reported in CI.
 - **Fuzz:** the ansi lane's parser fuzz (random bytes, split at every
   offset) extends to the screen — no throw, no unbounded growth, damage
@@ -752,26 +793,28 @@ cypress) — parity, then retire.
 |---|---|
 | IME regressions from losing the visible input | hidden-input surface is specified (§7.2) and e2e'd in M2 before the v1 input is deleted |
 | Canvas grid vs screen width disagreement (font metrics drift) | one metrics module, measured after `document.fonts.ready`; disagreement impossible by construction |
-| A11y mirror drift / double source of truth | one source (the screen); mirror is a renderer; mirror assertions in e2e |
+| A11y mirror drift / double source of truth | one source (the screen); the mirror is derived from the same damage sets; mirror assertions in e2e |
 | Scrollback memory on long sessions | ring capacity attr + hard cap; lines immutable once in the ring |
 | Safari/file:// clipboard limits | execCommand fallback specified; copy degrades to selection + Ctrl+C on the mirror (native path still works — text is real DOM) |
-| Bundle growth pressure | canvas is a chunk; per-phase budget checks; core bundle forbidden to grow (standing rule) |
+| Bundle growth pressure | the 256 KB raw shell budget absorbs the in-bundle canvas driver (2026-10-14 decision); per-phase budget checks; core bundle forbidden to grow (standing rule) |
 | Escape-ladder behavior change surprising v1 users | ladder documented here, e2e-pinned, and the v1 meanings all survive |
 | Mobile: virtual keyboards + raw mode | cooked works with composition path; raw-mode apps on touch get an on-screen key bar (Epoch 3, noted — not silently broken: apps declare `touch` capability and the shell refuses to spawn pager-on-touch with a readable message until then) |
 
 ## 17. Open questions
 
 1. Should perf budgets gate CI (fail the build) or report-only for the
-   first cycles? (Recommend report-only through M4, gate after.)
+   first cycles? (Recommend report-only until the migration completes at
+   M6, gate after.)
 2. Tab model timing: land `chrome/tabs.ts` data model in Epoch 2 (unused)
    or defer all of it to Epoch 3 with the tab strip?
 3. Direnv: is the declarative subset enough for the demo use cases, or do
    we need `PATH`-like list mutation (`export PATH=$PATH:/x`) in v1 of it?
    (Recommend yes to list-append sugar — cheap, common.)
-4. Canvas chunk on http pages: lazy-chunk integration (manifest entry) vs
-   plain second script tag. (Recommend manifest entry, matching the
-   existing lazy system.)
-5. `semtext tui` grid version: replace the flashcard DOM overlay at M3 or
+4. With canvas-everywhere, renderer switching is automatic-only
+   (forced-colors, 2d-context failure): should any user- or author-facing
+   escape hatch to the mirror paint exist (e.g. a debug attribute), or
+   none at all? (Recommend none — one code path exercised in the wild.)
+5. `semtext tui` grid version: replace the flashcard DOM overlay at M5 or
    keep hybrid-semantic mode permanently for screen-reader quality?
    (Recommend permanent hybrid — it is the better a11y answer.)
 

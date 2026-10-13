@@ -76,7 +76,7 @@ guardrail discipline they document.
 | `semtext.js` (one bundle) | **126 KB** | 124.1 raw / 39.4 gzipped |
 | `npl.js` | **48 KB** | 46.2 raw / 14.5 gzipped |
 | `semtext-agent.js` | **24 KB** | 20.3 raw / 7.3 gzipped |
-| `semtext-js-shell.js` | **96 KB** | 74.8 raw / 26.2 gzipped |
+| `semtext-js-shell.js` | **256 KB** | 74.8 raw / 26.2 gzipped |
 | `semtext-lazy.js` (loader) | **8 KB** | 3.0 raw / 1.4 gzipped |
 | `npl-lazy.js` (loader) | **8 KB** | 3.0 raw / 1.4 gzipped |
 
@@ -120,6 +120,12 @@ Data-visualizer phase 6 (2026-10-13) raised reading 55 → 61 KB (measured 59.5)
 85 → 91 KB (measured 89.7): the full-page modal viewer and the deep links —
 the Expand/Copy-link chrome, dialog teleport/focus trap, hash parse/apply
 (`src/reading/data-modal.ts`, `src/data/deeplink.ts`, spec §10).
+
+Shell budget (2026-10-14, docs/terminal/CORE-V2.md) raised the `semtext-js-shell.js`
+budget 96 → 256 KB raw (user decision): Epoch 2 folds the screen model, line
+discipline, input model, app API, and the canvas driver — the one rendering path,
+bundled, no separate chunk (see CORE-V2 §8.2/§8.4) — into the single file://-safe
+IIFE. Measured today: 74.8 raw / 26.2 gzipped.
 
 
 ## History (recorded decisions — preserved)
