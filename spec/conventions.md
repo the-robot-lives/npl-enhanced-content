@@ -39,7 +39,7 @@ listed with its full entry in [SS5](#5-element-entries).
 
 | Bucket | Elements | What it covers |
 | :-- | :-- | :-- |
-| **Document & structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent`, `sem-embed` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
+| **Document & structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
 | **Prose & code** | `sem-md`, `sem-note`, `sem-code` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
 | **Disclosure & views** | `sem-details` / `sem-detail`, `highlight`, `sem-reveal`, `sem-source`, `sem-views` / `sem-view` | The same content under different reading interactions -- occluded detail, Q-A reveal, markup flip, perspective tabs |
 | **Facts & recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `sem-distractor`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
@@ -220,7 +220,11 @@ bare `id` / `container/child` deep links, and `name=value` parameters
 `.sem-note-summary`, `.sem-code-line`). No other element may reuse that
 bare class name for its own chrome. `.sem-progress` names only the progress
 element -- a facts-chrome label needing similar styling is `.sem-facts-meter`,
-never `.sem-progress` borrowed from another element.
+never `.sem-progress` borrowed from another element. The `npl-*` namespace mirrors the rule: each NPL element owns exactly
+`.npl-<element>` and `.npl-<element>-*` -- its class-form identity class
+(Appendix A, NPL namespace) and its generated chrome (`.npl-agent-header`,
+`.npl-section-header`) -- and no other element may reuse that bare class name for
+its own chrome.
 
 ## 3. NPL notation inside tags
 
@@ -320,6 +324,13 @@ element is one row of Appendix A. Entries are grouped by conceptual bucket
 **Zero-JS** render entirely from CSS and markup with no script dependency.
 
 ### Document & structure
+
+**sem-enhanced-document** -- the required root wrapper; every SemText
+document wraps its vocabulary in one. **Normative statement:
+[§1 Document skeleton](#1-document-skeleton)** -- the script's handlers
+scope to it, Lit components register against it, and it may carry a
+`role="main"` landmark; the alias form may use
+`<main class="sem-enhanced-document">`.
 
 **sem-reader** -- reading chrome: outline, progress, focus, type, colour,
 print, audience. **Normative: `spec/schema/sem-reader.md`.**
@@ -593,7 +604,9 @@ inside the block only.
 
 NPL elements are loaded by `npl.js` / `npl-lazy.js` on top of the SemText
 core. Each has a normative schema under `spec/schema/npl/`. The core bundle
-(`semtext.js`, `semtext-lazy.js`) carries no NPL code.
+(`semtext.js`, `semtext-lazy.js`) carries no NPL code. Each element also carries the class-form alias of Appendix A's NPL
+namespace (`.npl-<element>` identity class, `data-<parameter>`
+parameters, `.npl-<part>` part aliases).
 
 Key NPL elements: `npl-agent` (agent definition), `npl-directive` (instruction),
 `npl-section` (section marker), `npl-rubric` (scoring guide),
@@ -781,3 +794,44 @@ identical (SS4); extraction yields the **same records** from either form
 (`spec/extraction.md`, the cross-form equality test in
 `test/e2e/sem-source.cy.js`). Reference class-form documents:
 `web/demo/index.html`, `web/demo/reading.html`.
+
+### NPL namespace (npl-*)
+
+The NPL namespace aliases by the same mechanical mapping: identity =
+`class="npl-<element>"` on a `div` (or `span` for inline parts), every bare
+parameter = `data-<parameter>`, every bare child part = a `div`/`span`
+classed `.npl-<part>` -- parts may be read either way where a schema
+documents it (`npl-ref` sections, `npl-critique` children). Parameters
+read in either spelling with `data-<name>` winning, the same contract as
+§2 (the `nplParam` reader implements it). One recorded exception:
+`collapsed` on `npl-cot` -- the component mirrors the boolean to
+`data-collapsed` for CSS/extraction parity but reads the bare attribute
+only; its schema is normative for that attribute.
+
+| Canonical tag form | Class-form alias |
+| :-- | :-- |
+| `<npl-agent name>` | `.npl-agent[data-name]` |
+| `<npl-directive glyph>` | `.npl-directive[data-glyph]` |
+| `<npl-section type>` | `.npl-section[data-type]` |
+| `<npl-rubric title>` | `.npl-rubric[data-title]` > `.npl-criterion`, `.npl-overall-score` |
+| `<npl-critique>` | `.npl-critique` > `.npl-subject`, `.npl-perspective`, `.npl-strengths`, `.npl-weaknesses`, `.npl-verdict` |
+| `<npl-declaration version>` | `.npl-declaration[data-version]` |
+| `<npl-example label>` | `.npl-example[data-label]` |
+| `<npl-flag name>` | `.npl-flag[data-name]` |
+| `<npl-flags preset>` | `.npl-flags[data-preset]` |
+| `<npl-mindread confidence>` | `.npl-mindread[data-confidence]` |
+| `<npl-thought type>` | `.npl-thought[data-type]` |
+| `<npl-poa direction>` | `.npl-poa[data-direction]` |
+| `<npl-ref variant>` | `.npl-ref[data-variant]` |
+| `<npl-vos phase>` | `.npl-vos[data-phase]` |
+| `<npl-artifact type>` | `.npl-artifact[data-type]` > `.npl-title`, `.npl-content` |
+| `<npl-mode primary>` | `.npl-mode[data-primary]` |
+| `<npl-mood mood>` | `.npl-mood[data-mood]` |
+| `<npl-hormones variant>` | `.npl-hormones[data-variant]` |
+| `<npl-cot>` | `.npl-cot`; `collapsed` stays bare in both forms (like `sem-note`, `sem-reveal`) |
+| `<npl-intent>` | `.npl-intent`; parts in both spellings -- `.npl-intent-assumptions` etc. |
+
+The alias form is the same compatibility contract Q6 keeps for the `sem-*`
+tier: supported in both namespaces, tag form canonical. Each element's
+schema (`spec/schema/npl/<element>.md`) is normative for its attribute
+list.

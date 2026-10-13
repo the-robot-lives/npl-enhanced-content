@@ -58,7 +58,7 @@
   <sem-md id="md-buckets" kind="bucket-overview" label="Element buckets" controls="toggle,copy">
     | Bucket | Elements | What it covers |
     | :-- | :-- | :-- |
-    | **Document &amp; structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent`, `sem-embed` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
+    | **Document &amp; structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
     | **Prose &amp; code** | `sem-md`, `sem-note`, `sem-code` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
     | **Disclosure &amp; views** | `sem-details` / `sem-detail`, `highlight`, `sem-reveal`, `sem-source`, `sem-views` / `sem-view` | The same content under different reading interactions -- occluded detail, Q-A reveal, markup flip, perspective tabs |
     | **Facts &amp; recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `sem-distractor`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
@@ -166,7 +166,7 @@
     <sem-property id="p-alias-spelling" key="Alias spelling" role="definition" aria-label="Alias spelling"><code>data-&lt;name&gt;</code> is accepted everywhere <code>&lt;name&gt;</code> is, and wins when both are present (extraction &sect;3.6; the script copies each bare parameter to its <code>data-*</code> twin before any handler runs, <a href="#4-the-script--degradation-rules">&sect;4</a> rule 1). Writing both spellings on one element is an <strong>authoring error</strong> -- the precedence exists so extraction stays stable and the mirror is a no-op, not so an author can mean two things; a <code>sem-source</code> fence always shows the markup as authored, so a mixed element would display a parameter the script does not use.</sem-property>
     <sem-property id="p-runtime-state" key="Runtime state" role="definition" aria-label="Runtime state">State the script writes is always <code>data-*</code> -- <code>data-active</code> on the shown view, <code>data-view-as</code> rewritten by a <code>sem-source</code> / <code>sem-md</code> toggle, the <code>data-sem-upgraded</code> marker -- so an authored bare attribute is never overwritten and a <code>sem-source</code> fence still shows the markup as written.</sem-property>
     <sem-property id="p-hash-state" key="Hash state" role="definition" aria-label="Hash state">The hash is <code>&amp;</code>-joined segments (<code>src/shared/state.ts</code>): bare <code>id</code> / <code>container/child</code> deep links, and <code>name=value</code> parameters (<code>sem-audience=&lt;profile&gt;</code>). Every writer edits its own segment only, so <code>#deploy/argocd&amp;sem-audience=operator</code> survives a tab switch.</sem-property>
-    <sem-property id="p-class-namespace" key="Class namespace" role="definition" aria-label="Class namespace">Each element owns exactly the class namespace <code>.sem-&lt;element&gt;</code> and <code>.sem-&lt;element&gt;-*</code>: the alias form's identity class and the element's generated chrome (<code>.sem-facts-chrome</code>, <code>.sem-note-summary</code>, <code>.sem-code-line</code>). No other element may reuse that bare class name for its own chrome. <code>.sem-progress</code> names only the progress element -- a facts-chrome label needing similar styling is <code>.sem-facts-meter</code>, never <code>.sem-progress</code> borrowed from another element.</sem-property>
+    <sem-property id="p-class-namespace" key="Class namespace" role="definition" aria-label="Class namespace">Each element owns exactly the class namespace <code>.sem-&lt;element&gt;</code> and <code>.sem-&lt;element&gt;-*</code>: the alias form's identity class and the element's generated chrome (<code>.sem-facts-chrome</code>, <code>.sem-note-summary</code>, <code>.sem-code-line</code>). No other element may reuse that bare class name for its own chrome. <code>.sem-progress</code> names only the progress element -- a facts-chrome label needing similar styling is <code>.sem-facts-meter</code>, never <code>.sem-progress</code> borrowed from another element. The <code>npl-*</code> namespace mirrors the rule: each NPL element owns exactly <code>.npl-&lt;element&gt;</code> and <code>.npl-&lt;element&gt;-*</code> -- its class-form identity class (Appendix A, <a href="#appendix-a-npl-namespace">NPL namespace</a>) and its generated chrome (<code>.npl-agent-header</code>, <code>.npl-section-header</code>) -- and no other element may reuse that bare class name for its own chrome.</sem-property>
   </sem-properties>
 
   <h2 id="3-npl-notation-inside-tags">3. NPL notation inside tags</h2>
@@ -208,6 +208,9 @@
   <h3 id="bucket-document">Document &amp; structure</h3>
 
   <!-- sem-reader --------------------------------------------------------- -->
+  <h4 id="e-enhanced-document">sem-enhanced-document -- the required root wrapper</h4>
+  <p>Every SemText document wraps its vocabulary in one. <strong>Normative statement: <a href="#1-document-skeleton">&sect;1 Document skeleton</a></strong> -- the script's handlers scope to it, Lit components register against it, and it may carry a <code>role="main"</code> landmark; the alias form may use <code>&lt;main class="sem-enhanced-document"&gt;</code>.</p>
+
   <h4 id="e-reader">sem-reader -- reading chrome: outline, progress, focus, type, colour, print, audience</h4>
   <p><strong>Normative: <a href="#r-sem-reader">spec/schema/sem-reader.md</a>.</strong></p>
   <sem-code id="c-reader" lang="html"><pre><code>&lt;sem-reader controls="outline,progress,focus,type,color,print,audience" outline-depth="3"&gt;
@@ -507,7 +510,7 @@
        NPL
        ═══════════════════════════════════════════════════════════════════ -->
   <h3 id="bucket-npl">NPL</h3>
-  <p>NPL elements are loaded by <code>npl.js</code> / <code>npl-lazy.js</code> on top of the SemText core. Each has a normative schema under <code>spec/schema/npl/</code>. The core bundle (<code>semtext.js</code>, <code>semtext-lazy.js</code>) carries no NPL code.</p>
+  <p>NPL elements are loaded by <code>npl.js</code> / <code>npl-lazy.js</code> on top of the SemText core. Each has a normative schema under <code>spec/schema/npl/</code>. The core bundle (<code>semtext.js</code>, <code>semtext-lazy.js</code>) carries no NPL code. Each element also carries the class-form alias of <a href="#appendix-a-npl-namespace">Appendix A's NPL namespace</a> (<code>.npl-&lt;element&gt;</code> identity class, <code>data-&lt;parameter&gt;</code> parameters, <code>.npl-&lt;part&gt;</code> part aliases).</p>
 
   <sem-properties id="p-npl-elements" kind="npl-catalog">
     <sem-property id="p-npl-agent" key="npl-agent" role="definition" aria-label="npl-agent">Agent definition: name, bio, instructions, model settings.</sem-property>
@@ -643,6 +646,37 @@
   </sem-md>
 
   <p>Rules the alias inherits unchanged: a <code>data-*</code> parameter wins over a bare one on the same element (<a href="#2-attribute-catalog">&sect;2</a>); the hide rules, the marker and events are identical (<a href="#4-the-script--degradation-rules">&sect;4</a>); extraction yields the <strong>same records</strong> from either form (<a href="#r-extraction">spec/extraction.md</a>, the cross-form equality test in <code>test/e2e/sem-source.cy.js</code>). Reference class-form documents: <code>web/demo/index.html</code>, <code>web/demo/reading.html</code>.</p>
+
+
+  <h3 id="appendix-a-npl-namespace">NPL namespace (npl-*)</h3>
+  <p>The NPL namespace (<code>npl-*</code>, <code>spec/schema/npl/</code>) aliases by the same mechanical mapping: identity = <code>class="npl-&lt;element&gt;"</code> on a <code>div</code> (or <code>span</code> for inline parts), every bare parameter = <code>data-&lt;parameter&gt;</code>, every bare child part = a <code>div</code>/<code>span</code> classed <code>.npl-&lt;part&gt;</code> -- parts may be read either way where a schema documents it (<code>npl-ref</code> sections, <code>npl-critique</code> children). Parameters read in either spelling with <code>data-&lt;name&gt;</code> winning, the same contract as <a href="#2-attribute-catalog">&sect;2</a> (the <code>nplParam</code> reader implements it). One recorded exception: <code>collapsed</code> on <code>npl-cot</code> -- the component mirrors the boolean to <code>data-collapsed</code> for CSS/extraction parity but reads the bare attribute only; its schema is normative for that attribute.</p>
+
+  <sem-md id="md-alias-npl" kind="mapping" label="Canonical tag form &rarr; class-form alias (NPL)" controls="toggle,copy">
+    | Canonical tag form | Class-form alias |
+    | :-- | :-- |
+    | `&lt;npl-agent name&gt;` | `.npl-agent[data-name]` |
+    | `&lt;npl-directive glyph&gt;` | `.npl-directive[data-glyph]` |
+    | `&lt;npl-section type&gt;` | `.npl-section[data-type]` |
+    | `&lt;npl-rubric title&gt;` | `.npl-rubric[data-title]` &gt; `.npl-criterion`, `.npl-overall-score` |
+    | `&lt;npl-critique&gt;` | `.npl-critique` &gt; `.npl-subject`, `.npl-perspective`, `.npl-strengths`, `.npl-weaknesses`, `.npl-verdict` |
+    | `&lt;npl-declaration version&gt;` | `.npl-declaration[data-version]` |
+    | `&lt;npl-example label&gt;` | `.npl-example[data-label]` |
+    | `&lt;npl-flag name&gt;` | `.npl-flag[data-name]` |
+    | `&lt;npl-flags preset&gt;` | `.npl-flags[data-preset]` |
+    | `&lt;npl-mindread confidence&gt;` | `.npl-mindread[data-confidence]` |
+    | `&lt;npl-thought type&gt;` | `.npl-thought[data-type]` |
+    | `&lt;npl-poa direction&gt;` | `.npl-poa[data-direction]` |
+    | `&lt;npl-ref variant&gt;` | `.npl-ref[data-variant]` |
+    | `&lt;npl-vos phase&gt;` | `.npl-vos[data-phase]` |
+    | `&lt;npl-artifact type&gt;` | `.npl-artifact[data-type]` &gt; `.npl-title`, `.npl-content` |
+    | `&lt;npl-mode primary&gt;` | `.npl-mode[data-primary]` |
+    | `&lt;npl-mood mood&gt;` | `.npl-mood[data-mood]` |
+    | `&lt;npl-hormones variant&gt;` | `.npl-hormones[data-variant]` |
+    | `&lt;npl-cot&gt;` | `.npl-cot`; `collapsed` stays bare in both forms (like `sem-note`, `sem-reveal`) |
+    | `&lt;npl-intent&gt;` | `.npl-intent`; parts in both spellings -- `.npl-intent-assumptions` etc. |
+  </sem-md>
+
+  <p>The alias form is the same compatibility contract Q6 keeps for the <code>sem-*</code> tier: supported in both namespaces, tag form canonical. Each element's schema (<code>spec/schema/npl/&lt;element&gt;.md</code>) is normative for its attribute list.</p>
 
   <h2 id="references">References</h2>
   <sem-references id="refs" kind="bibliography" role="list">
