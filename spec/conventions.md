@@ -617,7 +617,7 @@ Key NPL elements: `npl-agent` (agent definition), `npl-directive` (instruction),
 `npl-critique` (evaluation), `npl-declaration` (statement of intent),
 `npl-example` (worked example), `npl-flag` / `npl-flags` (warning/note flags),
 `npl-mindread` (intent/subtext analysis), `npl-thought` (reasoning trace),
-`npl-poa` (plan of action), `npl-ref` (cross-reference), `npl-vos` (voice/style),
+`npl-poa` (plan of action), `npl-ref` (post-hoc reflection), `npl-vos` (voice/style),
 `npl-artifact` (output artifact), `npl-mode` (operating mode),
 `npl-mood` (tone), `npl-hormones` (drive settings),
 `npl-cot` (chain of thought), `npl-intent` (intent declaration).
