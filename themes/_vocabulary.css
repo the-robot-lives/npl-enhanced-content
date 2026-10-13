@@ -793,6 +793,68 @@ npl-vos, .npl-vos { display: block; }
   font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
 :is(npl-declaration, .npl-declaration) .npl-declaration-target::before { content: "→ "; }
 
+/* ── npl-mindread ── */
+/* npl-mindread — theory-of-mind reading card (component: src/lit/npl/npl-mindread.ts).
+   The component mints its labels as real generated elements — the confidence
+   meter, one `.npl-mindread-heading` per authored section, a type chip per
+   signal, a label per inferred field — so the chrome rules below key on those
+   `.npl-mindread-*` part classes; the section rules are box-semantics only,
+   which is what keeps the JS-off box from fusing the authored prose into one
+   run-on line (nothing hidden, nothing labelled, no generated masquerade).
+   Enhanced, the reading lays out in canonical order under its meter: signals
+   and inferred fields each get their own line with the small-caps chip or
+   label in front, and the adaptation — the actionable conclusion — takes the
+   family's accent bar + tint treatment. A reading explains and never
+   occludes: every authored word stays fully readable; the unknown-type chip
+   carries a "?" and its own text, never colour alone.
+   Display-only: no focus chrome, no motion. */
+:is(npl-mindread, .npl-mindread) { display: block; margin: 1rem 0; padding: 1rem;
+  border: 1px solid var(--sem-border); border-radius: 12px; background: var(--sem-surface); }
+:is(npl-mindread, .npl-mindread) > :is(subject, .npl-subject, signals, .npl-signals,
+  inferred, .npl-inferred, adaptation, .npl-adaptation) { display: block; }
+/* the confidence meter exists only after the upgrade (component-rendered):
+   label · value on one line, the clamp note wrapping beneath */
+:is(npl-mindread, .npl-mindread) .npl-mindread-confidence {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .5em;
+  margin-bottom: .25rem; padding-bottom: .75rem; border-bottom: 1px solid var(--sem-border); }
+:is(npl-mindread, .npl-mindread) .npl-mindread-confidence-label {
+  font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
+:is(npl-mindread, .npl-mindread) .npl-mindread-confidence-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600;
+  color: color-mix(in srgb, var(--sem-accent) 80%, var(--sem-fg)); }
+:is(npl-mindread, .npl-mindread) .npl-mindread-confidence-out {
+  flex-basis: 100%; font-size: .75rem;
+  color: color-mix(in srgb, var(--sem-wrong) 75%, var(--sem-fg)); }
+/* generated section heading — small-caps label line, family rhythm */
+:is(npl-mindread, .npl-mindread) .npl-mindread-heading {
+  margin: .75rem 0 .25rem; font-size: .8125rem; font-weight: 600;
+  font-variant-caps: all-small-caps; letter-spacing: .06em; color: var(--sem-muted); }
+/* one evidence line per authored signal; the type rides in front as a chip */
+:is(npl-mindread, .npl-mindread) > :is(signals, .npl-signals) > :is(signal, .npl-signal) {
+  display: block; margin-top: .25rem; }
+:is(npl-mindread, .npl-mindread) .npl-mindread-signal-type {
+  display: inline-block; margin-right: .5em; padding: .05rem .55em;
+  border: 1px solid var(--sem-border); border-radius: 999px; font-size: .75rem;
+  font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
+:is(npl-mindread, .npl-mindread) .npl-mindread-signal-unknown {
+  border-color: color-mix(in srgb, var(--sem-wrong) 55%, var(--sem-border));
+  color: color-mix(in srgb, var(--sem-wrong) 75%, var(--sem-fg)); }
+:is(npl-mindread, .npl-mindread) .npl-mindread-signal-unknown::after { content: " ?"; }
+/* the inferred read: motive / mood / cognitive / unspoken, one field per line */
+:is(npl-mindread, .npl-mindread) > :is(inferred, .npl-inferred) >
+  :is(motive, .npl-motive, mood, .npl-mood, cognitive, .npl-cognitive,
+      unspoken, .npl-unspoken) { display: block; margin-top: .25rem; }
+:is(npl-mindread, .npl-mindread) .npl-mindread-field-label {
+  font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
+:is(npl-mindread, .npl-mindread) .npl-mindread-field-label::after { content: "·"; margin: 0 .4em 0 .25em; opacity: .7; }
+/* the closing adaptation: the line the reader acts on (accent bar + tint, never opaque) */
+:is(npl-mindread, .npl-mindread) > :is(adaptation, .npl-adaptation) {
+  margin-top: .75rem; padding: .5rem .75rem;
+  border-left: 3px solid var(--sem-accent); border-radius: 6px;
+  background: color-mix(in srgb, var(--sem-accent) 12%, transparent); font-weight: 500; }
+/* ── end npl-mindread ── */
+
+
 /* ── npl-poa ── */
 /* npl-poa — plan-of-action block (component: src/lit/npl/npl-poa.ts).
    The authored children ARE the content: the mermaid fence degrades to a
@@ -828,41 +890,6 @@ npl-vos, .npl-vos { display: block; }
 :is(npl-poa, .npl-poa) .npl-poa-choice-label { font-variant-caps: all-small-caps;
   letter-spacing: .05em; color: var(--sem-accent); }
 :is(npl-poa, .npl-poa) .npl-poa-choice-label::after { content: " · "; font-weight: 400; }
-/* ── end npl-poa ── */
-
-
-
-
-/* ── npl-poa ── */
-/* npl-poa — plan-of-action block (component: src/lit/npl/npl-poa.ts).
-   The authored children ARE the content: the mermaid fence degrades to a
-   readable code block (no diagram runtime, ever), the reasoning and the
-   selected path read as prose. <reasoning>/<selected> are unknown inline
-   elements to the browser, so the block-level correction below is what
-   keeps the JS-off box from fusing them into one run-on line behind the
-   fence — box semantics only, no generated labels: the schema's JS-off
-   promise is nothing hidden, nothing generated. Enhanced, the component
-   stamps the tree `data-npl-poa-tree` + `data-direction` and features
-   the chosen option as a generated `.npl-poa-choice` (`-label` /
-   `-text` spans) after the authored `<selected>`; the choice is the one
-   prominent element — accent bar + tint, never opaque, text fully
-   readable — and the authored selected stays visible beneath it as the
-   source of record (quieted, not hidden; a theme wanting a single
-   presentation hides it in its own CSS, the base never does).
-   Display-only: no focus chrome, no motion. */
-:is(npl-poa, .npl-poa) { margin: 1rem 0; }
-:is(npl-poa, .npl-poa) > pre { margin: 0 0 .5rem; padding: .75rem 1rem;
-  border: 1px solid var(--sem-border); border-radius: 8px;
-  background: var(--sem-surface); overflow-x: auto; font-size: .875rem; }
-:is(npl-poa, .npl-poa) > :is(reasoning, .npl-poa-reasoning) { display: block; margin: .5rem 0 0; }
-:is(npl-poa, .npl-poa) > :is(selected, .npl-poa-selected) { display: block; margin: .5rem 0 0; }
-:is(npl-poa, .npl-poa)[data-sem-upgraded] > :is(selected, .npl-poa-selected) { color: var(--sem-muted); font-size: .875rem; }
-:is(npl-poa, .npl-poa) > .npl-poa-choice { margin: .75rem 0 0; padding: .5rem .75rem;
-  border-left: 3px solid var(--sem-accent); border-radius: 6px;
-  background: color-mix(in srgb, var(--sem-accent) 12%, transparent); font-weight: 500; }
-:is(npl-poa, .npl-poa) > .npl-poa-choice-label { font-variant-caps: all-small-caps;
-  letter-spacing: .05em; color: var(--sem-accent); }
-:is(npl-poa, .npl-poa) > .npl-poa-choice-label::after { content: " · "; font-weight: 400; }
 /* ── end npl-poa ── */
 
 /* ── npl-mood ── */
@@ -907,6 +934,28 @@ npl-vos, .npl-vos { display: block; }
 :is(npl-mood, .npl-mood) > .npl-mood-detail > .npl-mood-context::before { content: "context · "; }
 :is(npl-mood, .npl-mood) > .npl-mood-detail > .npl-mood-approach::before { content: "approach · "; }
 /* ── end npl-mood ── */
+
+/* ── npl-mode ── */
+/* npl-mode — cognitive lens declaration (component: src/lit/npl/npl-mode.ts).
+   Display-only. The component mints one `.npl-mode-chip[data-type]` per
+   typed `mode` child — `.npl-mode-chip-primary` on every chip when the
+   declaration is primary, in either authoring spelling (the mirror writes
+   the resolved `data-primary` on the host). These are the only consumers
+   of the part classes; a lens chip is a label, never an occlusion: the
+   label stays the foreground colour on the surface/accent tint it sits
+   on (AA at the chip's reduced size), the primary mark is the accent
+   border plus tint, never an opaque fill. Display-only: no focus chrome,
+   no motion. */
+:is(npl-mode, .npl-mode) > .npl-mode-chip {
+  display: inline-block; margin: 0 .375rem .375rem 0;
+  padding: .1rem .6rem; border: 1px solid var(--sem-border);
+  border-radius: 999px; background: var(--sem-surface);
+  color: var(--sem-fg); font-size: .8125rem; line-height: 1.5; }
+:is(npl-mode, .npl-mode) > .npl-mode-chip-primary {
+  border-color: color-mix(in srgb, var(--sem-accent) 55%, var(--sem-border));
+  background: color-mix(in srgb, var(--sem-accent) 12%, transparent);
+  font-weight: 600; }
+/* ── end npl-mode ── */
 
 
 /* npl-agent — agent definition card (component: src/lit/npl/npl-agent.ts).
