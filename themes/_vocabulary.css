@@ -699,8 +699,6 @@ npl-poa, .npl-poa { display: block; }
 npl-ref, .npl-ref { display: block; }
 npl-rubric, .npl-rubric { display: block; }
 npl-section, .npl-section { display: block; }
-npl-mode, .npl-mode { display: block; }
-npl-mood, .npl-mood { display: block; }
 npl-thought, .npl-thought { display: block; }
 npl-vos, .npl-vos { display: block; }
 
@@ -770,7 +768,6 @@ npl-vos, .npl-vos { display: block; }
   font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
 :is(npl-directive, .npl-directive) > .npl-directive-qualifier::before { content: "· "; }
 
-
 /* npl-declaration — version/extension banner for a rules document
    (component: src/lit/npl/npl-declaration.ts). The component hoists a
    `.npl-declaration-banner` header (`.npl-declaration-mark`, plus a
@@ -796,6 +793,173 @@ npl-vos, .npl-vos { display: block; }
   font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
 :is(npl-declaration, .npl-declaration) .npl-declaration-target::before { content: "→ "; }
 
+
+/* ── npl-poa ── */
+/* npl-poa — plan-of-action block (component: src/lit/npl/npl-poa.ts).
+   The authored children ARE the content: the mermaid fence degrades to a
+   readable code block (no diagram runtime, ever), the reasoning and the
+   selected path read as prose. <reasoning>/<selected> are unknown inline
+   elements to the browser, so the block-level correction below is what
+   keeps the JS-off box from fusing them into one run-on line behind the
+   fence — box semantics only, no generated labels: the schema's JS-off
+   promise is nothing hidden, nothing generated. Enhanced, the component
+   stamps the tree `data-npl-poa-tree` + `data-direction` and features
+   the chosen option as a generated `.npl-poa-choice` (`-label` /
+   `-text` spans) after the authored `<selected>`; the choice is the one
+   prominent element — accent bar + tint, never opaque, text fully
+   readable — and the authored selected stays visible beneath it as the
+   source of record (quieted, not hidden; a theme wanting a single
+   presentation hides it in its own CSS, the base never does).
+   Display-only: no focus chrome, no motion. */
+:is(npl-poa, .npl-poa) { margin: 1rem 0; }
+:is(npl-poa, .npl-poa) > pre { margin: 0 0 .5rem; padding: .75rem 1rem;
+  border: 1px solid var(--sem-border); border-radius: 8px;
+  background: var(--sem-surface); overflow-x: auto; font-size: .875rem; }
+:is(npl-poa, .npl-poa) > :is(reasoning, .npl-poa-reasoning) { display: block; margin: .5rem 0 0; }
+:is(npl-poa, .npl-poa) > :is(selected, .npl-poa-selected) { display: block; margin: .5rem 0 0; }
+:is(npl-poa, .npl-poa)[data-sem-upgraded] > :is(selected, .npl-poa-selected) { color: var(--sem-muted); font-size: .875rem; }
+:is(npl-poa, .npl-poa) > .npl-poa-choice { margin: .75rem 0 0; padding: .5rem .75rem;
+  border-left: 3px solid var(--sem-accent); border-radius: 6px;
+  background: color-mix(in srgb, var(--sem-accent) 12%, transparent); font-weight: 500; }
+:is(npl-poa, .npl-poa) > .npl-poa-choice-label { font-variant-caps: all-small-caps;
+  letter-spacing: .05em; color: var(--sem-accent); }
+:is(npl-poa, .npl-poa) > .npl-poa-choice-label::after { content: " · "; font-weight: 400; }
+/* ── end npl-poa ── */
+
+/* ── npl-mood ── */
+/* npl-mood — affective-state chip (component: src/lit/npl/npl-mood.ts).
+   Display-only. The component mints `.npl-mood-chip` (`.npl-mood-emoji` +
+   an optional `.npl-mood-qualifier`) and, when any detail child is
+   authored, groups it once into a generated `.npl-mood-detail` panel —
+   the authored tone / context / approach children are moved into it,
+   never hidden or dropped. JS-off nothing is generated: the rule below
+   surfaces the authored `mood` as the lead line (`attr(mood)`, the
+   data-* spelling honoured) so the attribute is not lost, and the detail
+   children read as plain prose; the part-class rules only bite once the
+   generated chip / panel exist. The mood reads as a quiet badge —
+   hairline border, surface fill, a small-caps qualifier in the accent
+   mixed toward the foreground for AA at label size — never an opaque
+   block that could hide the text. Display-only: no focus chrome, no
+   motion. */
+:is(npl-mood, .npl-mood) { display: block; margin: 1rem 0; }
+/* JS-off lead line: the authored mood. Suppressed once upgraded (the chip
+   then carries it). data-* spelling wins when both are present. */
+:is(npl-mood, .npl-mood):not([data-sem-upgraded]):not([data-mood])::before {
+  content: attr(mood); font-weight: 500; }
+:is(npl-mood, .npl-mood):not([data-sem-upgraded])[data-mood]::before {
+  content: attr(data-mood); font-weight: 500; }
+/* Enhanced: the chip. */
+:is(npl-mood, .npl-mood) > .npl-mood-chip {
+  display: inline-flex; align-items: baseline; gap: .4em;
+  padding: .15rem .6rem; border: 1px solid var(--sem-border);
+  border-radius: 999px; background: var(--sem-surface); }
+:is(npl-mood, .npl-mood) > .npl-mood-chip > .npl-mood-emoji {
+  font-size: 1.1em; line-height: 1; }
+:is(npl-mood, .npl-mood) > .npl-mood-chip > .npl-mood-qualifier {
+  font-variant-caps: all-small-caps; letter-spacing: .05em;
+  color: color-mix(in srgb, var(--sem-accent) 80%, var(--sem-fg)); }
+/* Enhanced: the detail panel groups the authored tone / context / approach. */
+:is(npl-mood, .npl-mood) > .npl-mood-detail { margin: .5rem 0 0; }
+:is(npl-mood, .npl-mood) > .npl-mood-detail > :is(.npl-mood-tone, .npl-mood-context, .npl-mood-approach) {
+  display: block; margin-top: .15rem; }
+:is(npl-mood, .npl-mood) > .npl-mood-detail > :is(.npl-mood-tone, .npl-mood-context, .npl-mood-approach)::before {
+  font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); font-weight: 400; }
+:is(npl-mood, .npl-mood) > .npl-mood-detail > .npl-mood-tone::before { content: "tone · "; }
+:is(npl-mood, .npl-mood) > .npl-mood-detail > .npl-mood-context::before { content: "context · "; }
+:is(npl-mood, .npl-mood) > .npl-mood-detail > .npl-mood-approach::before { content: "approach · "; }
+/* ── end npl-mood ── */
+
+
+/* npl-agent — agent definition card (component: src/lit/npl/npl-agent.ts).
+   The generated header (name · type · NPL@version, plus an `extends` part
+   when a parent is authored) must read as card chrome, not as a run-on
+   line of body words: the source form's `⌜…⌝` header marks those fields
+   distinctly and the enhanced render carries the same information
+   hierarchy. Small-caps field labels identify each part without relying
+   on colour alone; the version renders `NPL@0.3`, the source grammar's
+   own spelling. The card box is gated on the upgrade marker — JS-off the
+   contract is plain prose, so no empty box frames it. Display-only: no
+   focus chrome, no motion. */
+:is(npl-agent, .npl-agent)[data-sem-upgraded] { border: 1px solid var(--sem-border);
+  border-radius: 12px; padding: 1rem; margin: 1rem 0; background: var(--sem-surface); }
+:is(npl-agent, .npl-agent)[data-sem-upgraded] > .npl-agent-header {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .125rem .875rem;
+  padding-bottom: .5rem; margin-bottom: .75rem;
+  border-bottom: 1px solid var(--sem-border); }
+.npl-agent-header > .npl-agent-name { font-weight: 600; }
+.npl-agent-header > :is(.npl-agent-type, .npl-agent-version, .npl-agent-extends) { color: var(--sem-muted); }
+.npl-agent-header > :is(.npl-agent-name, .npl-agent-type, .npl-agent-version, .npl-agent-extends)::before {
+  font-variant-caps: all-small-caps; letter-spacing: .05em; color: var(--sem-muted); }
+.npl-agent-header > .npl-agent-name::before { content: "name · "; }
+.npl-agent-header > .npl-agent-type::before { content: "type · "; }
+.npl-agent-header > .npl-agent-version::before { content: "NPL@"; }
+.npl-agent-header > .npl-agent-extends::before { content: "extends · "; }
+
+
+/* ── npl-flag ── */
+/* npl-flag — one runtime flag row (component: src/lit/npl/npl-flag.ts).
+   The component renders the authored name into `.npl-flag-name` and the
+   value into `.npl-flag-value`; the element itself is the apply control
+   (role="button", focusable, `aria-pressed` mirrors the applied state).
+   Every rule below is gated on the upgrade marker — JS-off the contract
+   is plain prose, so no empty box frames a row whose name/value live in
+   attributes. A flag is a labelled value the reader applies: the name
+   reads as a muted mono label, the value as the row's payload, and the
+   row carries a quiet hover/focus affordance. Nothing is ever occluded —
+   an out-of-range value is a warning tint plus a glyph on the value span
+   (the text stays fully readable; occlusion belongs to the quiz tier),
+   and the applied state is a static check mark plus a calm border, never
+   a motion effect. */
+:is(npl-flag, .npl-flag)[data-sem-upgraded] { display: block; margin: .375rem 0;
+  padding: .375rem .625rem; border: 1px solid var(--sem-border); border-radius: 8px;
+  background: transparent; cursor: pointer; }
+:is(npl-flag, .npl-flag)[data-sem-upgraded]:hover { border-color: color-mix(in srgb, var(--sem-accent) 55%, var(--sem-border)); }
+:is(npl-flag, .npl-flag)[data-sem-upgraded]:focus-visible { outline: 2px solid var(--sem-accent); outline-offset: 1px; }
+:is(npl-flag, .npl-flag)[data-sem-upgraded] > .npl-flag-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .875rem; color: var(--sem-muted); }
+:is(npl-flag, .npl-flag)[data-sem-upgraded] > .npl-flag-name::after { content: " = "; }
+:is(npl-flag, .npl-flag)[data-sem-upgraded] > .npl-flag-value { font-variant-numeric: tabular-nums; font-weight: 500; }
+:is(npl-flag, .npl-flag)[data-sem-upgraded] > .npl-flag-value.npl-flag-invalid {
+  background: color-mix(in srgb, var(--sem-note-warning) 16%, transparent);
+  border-radius: 4px; padding: 0 .3em; }
+:is(npl-flag, .npl-flag)[data-sem-upgraded] > .npl-flag-value.npl-flag-invalid::before {
+  content: "⚠ "; color: var(--sem-note-warning); }
+:is(npl-flag, .npl-flag)[data-applied] { border-color: color-mix(in srgb, var(--sem-correct) 55%, var(--sem-border)); }
+:is(npl-flag, .npl-flag)[data-sem-upgraded] > .npl-flag-value.npl-flag-applied::after {
+  content: " ✓"; color: var(--sem-correct); font-weight: 600; }
+/* ── end npl-flag ── */
+
+
+/* ── npl-flags ── */
+/* npl-flags — preset-flagged runtime config block (component:
+   src/lit/npl/npl-flags.ts). The component's only chrome is the
+   `.npl-flags-preset` badge, hoisted ahead of the authored `npl-flag`
+   children and note text; those children and notes are the author's own
+   light DOM and the npl-flag block above styles them, so nothing here
+   touches them. The container keeps the schema's `display: block` and
+   frames the block as a card (border + surface), matching the npl-critique
+   / npl-declaration family. The badge is accent-tinted chrome — `--sem-fg`
+   on a 14% tint, AA at all sizes — and a badge for an unknown preset keeps
+   the same shape in the note-warning colour AND appends an "unknown" cue,
+   so the warning never rides on colour alone. Display-only: no focus
+   chrome, no motion. */
+:is(npl-flags, .npl-flags) { border: 1px solid var(--sem-border); border-radius: 12px;
+  padding: 1rem; margin: 1rem 0; background: var(--sem-surface); }
+:is(npl-flags, .npl-flags) > .npl-flags-preset {
+  display: inline-block; margin: 0 0 .625rem; padding: .1rem .55rem;
+  border: 1px solid color-mix(in srgb, var(--sem-accent) 55%, var(--sem-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sem-accent) 14%, var(--sem-surface));
+  color: var(--sem-fg); font-weight: 600; font-size: .72rem; line-height: 1.5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-caps: all-small-caps; letter-spacing: .05em; }
+:is(npl-flags, .npl-flags) > .npl-flags-preset-invalid {
+  border-style: dashed; border-color: var(--sem-note-warning);
+  background: color-mix(in srgb, var(--sem-note-warning) 16%, var(--sem-surface));
+  color: color-mix(in srgb, var(--sem-note-warning) 70%, var(--sem-fg)); }
+:is(npl-flags, .npl-flags) > .npl-flags-preset-invalid::after { content: " — unknown"; }
+/* ── end npl-flags ── */
 
 /* sem-shell / sem-terminal — the interactive shell (light DOM: this
    stylesheet is the only style channel; every rule scopes to both the
@@ -849,3 +1013,65 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
   sem-terminal .sem-shell-prompt, sem-shell .sem-shell-prompt { display: none; }
   sem-terminal .sem-shell-replay, sem-shell .sem-shell-replay { display: none; }
 }
+
+/* ── npl-hormones ── */
+/* Synthetic-hormones panel (component: src/lit/npl/npl-hormones.ts).
+   The component renders `.npl-hormones-row` bars plus state/triggered
+   lines and `.npl-hormones-alert` cards; the rules below key on those
+   part classes. JS-off, the box stays the authored prose the schema
+   promises (only the box rule in the npl enumeration applies). JS-on,
+   the authored `panel`/`state`/`triggered`/`alert` sources are hidden —
+   the generated panel re-presents them, so nothing is shown twice (same
+   upgrade-gated contract as sem-views). Display-only: no focus chrome,
+   no motion. Colour never carries meaning alone: fired rows keep the
+   accent bar + tint (never opaque — text stays fully readable), delta
+   arrows carry their own glyph, and clamped values keep the numeric
+   readout. */
+:is(npl-hormones, .npl-hormones)[data-sem-upgraded] > :is(panel, state, triggered, alert) { display: none; }
+:is(npl-hormones, .npl-hormones)[data-sem-upgraded] { padding: .25rem 0; }
+:is(npl-hormones, .npl-hormones) .npl-hormones-row {
+  display: grid; grid-template-columns: 3em minmax(6em, auto) 1fr 2.5em 1.25em;
+  gap: 0 .6em; align-items: center; padding: .3rem .5rem;
+  border-left: 3px solid transparent; border-radius: 6px; }
+:is(npl-hormones, .npl-hormones) .npl-hormones-symbol {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .8125rem; letter-spacing: .02em; color: var(--sem-muted); }
+:is(npl-hormones, .npl-hormones) .npl-hormones-name { font-size: .875rem; }
+:is(npl-hormones, .npl-hormones) .npl-hormones-bar {
+  display: block; height: .5rem; min-width: 4rem; border-radius: 999px;
+  background: var(--sem-border); overflow: hidden; }
+:is(npl-hormones, .npl-hormones) .npl-hormones-fill {
+  display: block; height: 100%; border-radius: 999px;
+  background: color-mix(in srgb, var(--sem-accent) 80%, var(--sem-fg)); }
+:is(npl-hormones, .npl-hormones) .npl-hormones-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .8125rem; text-align: right; font-variant-numeric: tabular-nums; }
+:is(npl-hormones, .npl-hormones) .npl-hormones-delta { text-align: center; font-size: .875rem; }
+:is(npl-hormones, .npl-hormones) .npl-hormones-delta[data-delta="up"] {
+  color: color-mix(in srgb, var(--sem-correct) 75%, var(--sem-fg)); }
+:is(npl-hormones, .npl-hormones) .npl-hormones-delta[data-delta="down"] {
+  color: color-mix(in srgb, var(--sem-wrong) 75%, var(--sem-fg)); }
+:is(npl-hormones, .npl-hormones) .npl-hormones-delta[data-delta="flat"] { color: var(--sem-muted); }
+/* the fired row: accent bar + tint, never opaque — the row reads as
+   highlighted while every value stays fully legible */
+:is(npl-hormones, .npl-hormones) .npl-hormones-row[data-fired] {
+  border-left-color: var(--sem-accent);
+  background: color-mix(in srgb, var(--sem-accent) 12%, transparent); }
+/* a clamped row marks its value readout; the raw authored value rides
+   the row's data-value attribute for extraction */
+:is(npl-hormones, .npl-hormones) .npl-hormones-row[data-clamped] .npl-hormones-value {
+  text-decoration: underline dotted color-mix(in srgb, var(--sem-wrong) 75%, var(--sem-fg)); }
+:is(npl-hormones, .npl-hormones) .npl-hormones-state,
+:is(npl-hormones, .npl-hormones) .npl-hormones-triggered {
+  margin-top: .5rem; padding: 0 .5rem; font-size: .8125rem; color: var(--sem-muted); }
+:is(npl-hormones, .npl-hormones) .npl-hormones-alert {
+  display: block; margin: .5rem 0; padding: .5rem .75rem;
+  border: 1px solid color-mix(in srgb, var(--sem-wrong) 45%, var(--sem-border));
+  border-left: 3px solid var(--sem-wrong); border-radius: 6px;
+  background: color-mix(in srgb, var(--sem-wrong) 8%, transparent); }
+:is(npl-hormones, .npl-hormones) .npl-hormones-alert-head {
+  display: block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .8125rem; letter-spacing: .02em;
+  color: color-mix(in srgb, var(--sem-wrong) 75%, var(--sem-fg)); }
+:is(npl-hormones, .npl-hormones) .npl-hormones-alert-body { display: block; margin-top: .25rem; font-size: .875rem; }
+/* ── end npl-hormones ── */

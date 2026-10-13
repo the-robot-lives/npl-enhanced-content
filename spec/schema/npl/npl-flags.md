@@ -31,9 +31,16 @@ Class-form alias (conventions Appendix A, npl namespace):
 ## Rendered form
 
 - Enhanced: `<npl-flags>` itself (Lit `NplFlags` — light DOM, no shadow
-  root; content stays searchable/copyable; generated chrome uses the
-  `.npl-flags-preset` class, `.npl-flags-preset-invalid` when the preset
-  is unknown). `npl-flag` children and note text stay in place beside it.
+  root; content stays searchable/copyable). One chrome element,
+  `.npl-flags-preset` (the resolved preset badge, `.npl-flags-preset-invalid`
+  when the preset is unknown), renders the `preset:<name>` badge *first*;
+  the authored `npl-flag` children and note text are left untouched beneath
+  it — chrome leads the element, and `updated()` enforces the order on light
+  DOM (npl-agent's rule). The vocabulary base (`themes/_vocabulary.css`)
+  frames the block as a card and styles the badge, so the box and its chrome
+  appear together.
 - JS-off: the block box from the npl section of `themes/_vocabulary.css`
-  (`npl-flags, .npl-flags { display: block; }`). Nothing hidden, nothing
-  generated — authored flags and notes read as plain prose.
+  (`npl-flags, .npl-flags { display: block; }`), framed as a card by the
+  vocabulary. Nothing hidden, nothing generated — the badge exists only
+  after the upgrade, so the authored `npl-flag` children and note text read
+  as plain prose.

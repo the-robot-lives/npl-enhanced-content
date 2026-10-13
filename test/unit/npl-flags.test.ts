@@ -9,6 +9,8 @@
 //   Scenario: an unknown preset gets the warning class, not a throw
 //   Scenario: npl-flag children and note text survive in light DOM
 //   Scenario: no preset authored — no badge
+//   Scenario: the generated badge leads the authored children (chrome order)
+//   Scenario: a note-only body keeps the badge ahead of the note text
 //
 //happy-dom never completes a Lit re-render cycle for these light-DOM
 //elements (attribute/property mutations post-upgrade patch nothing), so
@@ -72,6 +74,21 @@ describe('npl-flags', () => {
     const flag = el.querySelector('npl-flag');
     expect(flag).toBeInstanceOf(NplFlag);
     expect(el.textContent).toContain('tuning notes');
+  });
+
+  it('the generated badge leads the authored children (chrome order)', async () => {
+    const el = container();
+    await el.updateComplete;
+    const badge = el.querySelector(':scope > .npl-flags-preset');
+    expect(badge).not.toBeNull();
+    expect(el.firstChild).toBe(badge);
+    expect((badge as Element).nextSibling).toBeInstanceOf(NplFlag);
+  });
+
+  it('a note-only body keeps the badge ahead of the note text', async () => {
+    const el = author('<npl-flags preset="full">verbose</npl-flags>');
+    await el.updateComplete;
+    expect(el.firstChild).toBe(el.querySelector('.npl-flags-preset'));
   });
 
   it('no preset authored — no badge', async () => {
