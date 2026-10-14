@@ -73,7 +73,7 @@ guardrail discipline they document.
 
 | Artifact | Budget | Measured (2026-10-13) |
 |---|---|---|
-| `semtext.js` (one bundle) | **126 KB** | 132.3 raw / 41.9 gzipped — over budget pending the sem-browser promotion call (docs-overhaul phase 2) |
+| `semtext.js` (one bundle) | **144 KB** (raised from 126 — user decision 2026-10-14) | 132.3 raw / 41.9 gzipped — in budget |
 | `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
 | `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
 | `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
@@ -126,6 +126,12 @@ budget 96 → 256 KB raw (user decision): Epoch 2 folds the screen model, line
 discipline, input model, app API, and the canvas driver — the one rendering path,
 bundled, no separate chunk (see CORE-V2 §8.2/§8.4) — into the single file://-safe
 IIFE. Measured today: 74.8 raw / 26.2 gzipped.
+
+Core bundle budget (2026-10-14) raised `semtext.js` 126 → 144 KB raw (user
+decision): the docs-overhaul content (spec v0.7 reference/tag review, sem-shell,
+sem-browser, npl class form) measured 132.3 raw / 41.9 gzipped — inside the
+new line. Any future bump still goes through this section and
+`scripts/build.mjs` together.
 
 
 ## History (recorded decisions — preserved)

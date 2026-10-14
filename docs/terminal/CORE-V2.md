@@ -812,7 +812,7 @@ and §12's direnv hooks feed the same variables — no new channels invented.
 | Artifact | Budget today | After Epoch 1 (est.) | v2 budget | Rationale |
 |---|---|---|---|---|
 | `semtext-js-shell.js` | 96 KB (74.8 measured) | ~88–92 KB (ansi parser, script-runner, cards, demo files) | **256 KB raw** | the user's number (2026-10-14): screen + discipline + input + apps + scrollbar + direnv + **the canvas driver, bundled (no separate chunk)** |
-| `semtext.js` (core) | 126 KB (124.1) | unchanged | **unchanged** | terminal code must never grow the document bundle (existing rule, `scripts/build.mjs`) |
+| `semtext.js` (core) | 144 KB (132.3 measured; raised from 126, 2026-10-14) | unchanged | **unchanged** | terminal code must never grow the document bundle (existing rule, `scripts/build.mjs`) |
 
 Gzip target: shell ≤ 90 KB (canvas included; derived at the current raw:gzip
 ratio). Every budget line keeps the existing build discipline: printed per

@@ -110,7 +110,9 @@ const targets = [
     // bundle with the reading merge: payload parsers, sql/query engine,
     // source loader, modal viewer + deep links — measured 124.1). Recorded
     // in ROADMAP "Size budgets".
-    budgetKb: 126,
+    // 126 → 144 KB (2026-10-14, user decision): docs-overhaul content landed
+    // at 132.3 raw. Recorded in ROADMAP "Size budgets".
+    budgetKb: 144,
     required: true,
   },
   {

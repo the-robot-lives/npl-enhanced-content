@@ -35,10 +35,10 @@ not block.
 
 | Artifact | Budget (KB minified) |
 |---|---|
-| `semtext.js` | 126 |
-| `npl.js` | 48 |
+| `semtext.js` | 144 (raised from 126, 2026-10-14) |
+| `npl.js` | 52 |
 | `semtext-agent.js` | 24 |
-| `semtext-js-shell.js` | 96 |
+| `semtext-js-shell.js` | 256 |
 | `semtext-lazy.js` / `npl-lazy.js` (loaders) | 8 each |
 
 The bundle is the former five artifacts merged (analysis estimate ~89.5 KB
