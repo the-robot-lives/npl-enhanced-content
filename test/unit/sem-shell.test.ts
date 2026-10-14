@@ -219,47 +219,40 @@ describe('scripted playback + the flashcard view', () => {
     expect(bare.querySelector('.sem-shell-replay')).toBeNull();
   });
 
-  it('semtext tui opens the overlay; j, Enter, / and q drive it; Escape closes', async () => {
+  it('semtext tui hands over to the full-screen app; keys drive it; q exits', async () => {
     const el = await attach('sem-shell');
     type(el, 'semtext tui demo/token-rotation.html');
     await el.updateComplete;
-    const tui = el.querySelector('.sem-tui') as HTMLElement;
-    expect(tui).not.toBeNull();
-    expect(tui.getAttribute('role')).toBe('dialog');
-    expect(tui.textContent).toContain('Token Rotation');
-    expect(tui.textContent).toContain('card 1/');
-    const front = tui.querySelector('.sem-tui-front')!.textContent ?? '';
-    expect(front.length).toBeGreaterThan(0);
-    expect(tui.querySelector('.sem-tui-back')).toBeNull(); // collapsed
-    tui.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' }));
-    await el.updateComplete;
-    expect(tui.textContent).toContain('card 2/');
-    tui.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    await el.updateComplete;
-    expect(tui.querySelector('.sem-tui-back')).not.toBeNull();
-    tui.dispatchEvent(new KeyboardEvent('keydown', { key: 'q' }));
-    await el.updateComplete;
+    // the command path spawns the app now — the card overlay is element-API only
+    expect(el.appLive).toBe(true);
     expect(el.querySelector('.sem-tui')).toBeNull();
-    expect(el.playing).toBe(false); // q closes the view without stopping a script
+    expect(el.lines.some((l) => l.kind === 'stdout' && l.text.startsWith('tui:'))).toBe(false);
+    // keys go through the one input pipeline (§7.5) into the app
+    el.sendKeys('j');
+    await el.updateComplete;
+    expect(el.appLive).toBe(true); // j moved the cursor, did not close
+    el.sendKeys('q');
+    await el.updateComplete;
+    expect(el.appLive).toBe(false);
+    expect(el.lines.some((l) => l.kind === 'status' && l.text === 'exit 0')).toBe(true);
   });
 
-  it('the TUI filter row narrows cards; its Escape stays in the row', async () => {
+  it('the app view keeps its own keys: / filters in-app, Escape only ends the filter', async () => {
     const el = await attach('sem-shell');
     type(el, 'semtext tui demo/token-rotation.html');
     await el.updateComplete;
-    const tui = el.querySelector('.sem-tui') as HTMLElement;
-    tui.dispatchEvent(new KeyboardEvent('keydown', { key: '/' }));
+    expect(el.appLive).toBe(true);
+    el.sendKeys('/');
     await el.updateComplete;
-    const filter = tui.querySelector('.sem-tui-filter') as HTMLInputElement;
-    expect(filter).not.toBeNull();
-    filter.value = 'PKCE';
-    filter.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(el.appLive).toBe(true); // the in-app filter opened, not a DOM row
+    expect(el.querySelector('.sem-tui-filter')).toBeNull();
+    el.sendKeys('<Escape>');
     await el.updateComplete;
-    expect(tui.textContent).toContain('filter: PKCE');
-    filter.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(el.appLive).toBe(true); // Escape ended the filter, the app stays up
+    el.sendKeys('q');
     await el.updateComplete;
-    expect(el.querySelector('.sem-tui-filter')).toBeNull(); // row closed, view kept
-    expect(tui.textContent).toContain('filter: PKCE');
+    expect(el.appLive).toBe(false);
+    expect(el.lines.some((l) => l.kind === 'status' && l.text === 'exit 0')).toBe(true);
   });
 });
 describe('open', () => {

@@ -21,8 +21,9 @@ import type { CommandContext, CommandSpec } from '../../terminal-core.js';
 import { completePaths } from '../../complete.js';
 import { filterDoc, formatDoc, outlineDoc, parseHtml } from '../../../shell/semtext-cli.js';
 import { extractRecords, type SemRecord } from '../../../extract/records.js';
-import { deriveSummary } from '../../../shared/summary.js';
-import type { TuiCard } from '../../tui.js';
+import { buildTuiTree } from './tui-tree.js';
+import { createTuiApp } from '../../tui-app.js';
+import type { TuiNode } from '../../tui.js';
 
 function readArg(ctx: CommandContext, arg: string): { path: string; kind: 'file' | 'dir' } | { error: string } {
   const path = ctx.vfs.resolve(ctx.state.cwd, arg);
@@ -45,29 +46,18 @@ function readDoc(ctx: CommandContext, fileArgs: string[]): { html: string; label
 }
 
 /* ------------------------------------------------------------------ *
- * semtext render / tui — record and card projections
+ * semtext render / tui — record and outline projections
  * ------------------------------------------------------------------ */
 
-function recordsToCards(html: string): { title: string; cards: TuiCard[] } {
-  const doc = parseHtml(html);
-  const title = doc.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim() || 'document';
-  const cards: TuiCard[] = [];
-  for (const r of extractRecords(doc)) {
-    if (!r.text) continue;
-    const front = r.text.includes(' :: ') ? r.text.split(' :: ')[0]! : deriveSummary(r.text);
-    const fieldLines: string[] = [];
-    for (const [key, value] of Object.entries(r.fields)) {
-      if (value === undefined || value === null || value === '') continue;
-      fieldLines.push(`${key}: ${Array.isArray(value) ? value.join(' | ') : String(value)}`);
-    }
-    const back = [r.text, ...fieldLines].join('\n');
-    const meta = [r.id ? `#${r.id}` : null, r.kind ? `kind=${r.kind}` : null, r.tags.length ? `tags=${r.tags.join(',')}` : null]
-      .filter((bit): bit is string => bit !== null)
-      .join(' · ');
-    cards.push({ front, back, meta });
-    if (cards.length >= 50) break;
+/** The piped `tui` renderer: the tree as an indented listing. */
+function plainOutline(nodes: TuiNode[], depth = 0, out: string[] = []): string[] {
+  for (const node of nodes) {
+    const head = node.number !== '' ? `${node.number} ${node.label}` : node.label;
+    out.push(`${'  '.repeat(depth)}${node.kind === 'block' ? '· ' : ''}${head}`);
+    if (node.kind === 'block' && node.meta !== '') out.push(`${'  '.repeat(depth + 1)}${node.meta}`);
+    plainOutline(node.children, depth + 1, out);
   }
-  return { title, cards };
+  return out;
 }
 
 const OUTLINE_INDENT = (depth: number): string => '  '.repeat(Math.max(0, depth - 1));
@@ -116,14 +106,16 @@ const HELP: Record<string, string[]> = {
   tui: [
     'usage: semtext tui <file>',
     '',
-    'Read-only flashcard view of the document records, as boxed panels.',
+    'Full-screen browser for the document outline on the alternate',
+    'screen: sections and their blocks, records inlined in place.',
     '',
-    '  j / ArrowDown   next card          k / ArrowUp   previous card',
-    '  Enter           expand or collapse the back of the card',
-    '  /               filter cards by text (Enter or Esc ends the filter)',
+    '  j / ArrowDown   next row            k / ArrowUp   previous row',
+    '  Enter / Space   expand or collapse  h / l         fold / unfold',
+    '  g / Home, G / End   first / last    PgUp / PgDn   page',
+    '  /               filter rows (Enter or Esc ends the filter)',
     '  q / Esc         close the view and return to the prompt',
     '',
-    '  semtext tui demo/token-rotation.html',
+    '  semtext tui demo/auth-notes.sem.html',
   ],
 };
 
@@ -137,6 +129,26 @@ const semtext: CommandSpec = {
   name: 'semtext',
   usage: 'semtext <sub> [file] — render | toc | tui | outline | filter | format | expand',
   complete: (ctx) => (ctx.args.length === 0 ? ['render', 'tui', 'outline', 'filter', 'format', 'expand'] : completePaths(ctx)),
+  // Full-screen handover (CORE-V2 §6.4): the core only asks on a tty, and
+  // declining (null) falls back to run() — the plain renderer and the
+  // error path stay here. Only `semtext tui <file>` with a browsable
+  // tree spawns; every other subcommand keeps running inline.
+  app(ctx) {
+    const [subArg, ...rest] = ctx.args;
+    const sub = subArg === '--render' ? 'render' : subArg === '--toc' ? 'toc' : subArg;
+    if (sub !== 'tui' || rest.includes('--help') || rest.includes('-h')) return null;
+    const fileArgs: string[] = [];
+    for (let i = 0; i < rest.length; i++) {
+      const a = rest[i]!;
+      if (a === '--type' || a === '--text' || a === '--section') i += 1; // valued flags
+      else if (a !== '--json') fileArgs.push(a);
+    }
+    const doc = readDoc(ctx, fileArgs);
+    if ('error' in doc) return null;
+    const built = buildTuiTree(doc.html);
+    if (built.roots.length === 0) return null;
+    return createTuiApp(built.roots, built.title);
+  },
   run(ctx) {
     const [subArg, ...rest] = ctx.args;
     // Flag spellings (CLI parity): `semtext --render f` == `semtext render f`,
@@ -212,14 +224,16 @@ const semtext: CommandSpec = {
         return;
       }
       if (sub === 'tui') {
-        const { title, cards } = recordsToCards(doc.html);
-        if (cards.length === 0) {
-          ctx.err('semtext tui: no records in this document');
+        // Reached when piped (the tty path spawns the grid app above):
+        // the plain renderer — the outline listing, no interaction.
+        const built = buildTuiTree(doc.html);
+        if (built.roots.length === 0) {
+          ctx.err('semtext tui: nothing to browse in this document');
           ctx.exit(1);
           return;
         }
-        ctx.out(`tui: ${title} — ${cards.length} cards (j/k move, Enter expands, / filters, q closes)`);
-        if (ctx.color) ctx.emit({ kind: 'tui', title, cards }); // interactive only on a terminal
+        ctx.out(`tui: ${built.title}`);
+        for (const line of plainOutline(built.roots)) ctx.out(line);
         return;
       }
       if (sub === 'expand') {

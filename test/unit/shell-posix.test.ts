@@ -165,14 +165,16 @@ describe('cat', () => {
 });
 
 describe('bat', () => {
-  it('numbers lines with a dim gutter and highlights html when colored', () => {
-    const lines = out(core.execLine('bat /page.html'));
-    expect(lines[0]).toContain('\x1b[2m1\x1b[0m │');
-    expect(lines.join('\n')).toContain('\x1b[36m'); // a colored tag name
+  it('a tty invocation claims the screen — the pager app spawns (§6.4)', () => {
+    // r2-integrate: bat registers CommandSpec.app; on a tty (last stage, no
+    // redirect) the hook claims the invocation and run() never prints.
+    const r = core.execLine('bat /page.html');
+    expect(r.actions.some((a) => a.kind === 'app')).toBe(true);
+    expect(status(r)).toBe(0);
   });
 
-  it('--plain prints bare text with no gutter or color', () => {
-    const lines = out(core.execLine('bat --plain /page.html'));
+  it('--plain prints bare text with no gutter or color when piped (non-tty keeps run())', () => {
+    const lines = out(core.execLine('bat --plain /page.html | cat'));
     expect(lines[0]).toBe('<!doctype html>');
     expect(lines.join('\n')).not.toContain('\x1b[');
   });
