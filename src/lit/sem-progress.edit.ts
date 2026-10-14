@@ -15,7 +15,7 @@ import { registerDescriptor } from '../editor/schema/registry.js';
 registerDescriptor({
   tag: 'sem-progress',
   title: 'Progress',
-  bucket: 'data',
+  bucket: 'sequence',
   summary: 'A completion meter — one scalar completion assertion (value 0..1).',
   templates: [
     {

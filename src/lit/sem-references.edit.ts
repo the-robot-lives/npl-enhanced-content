@@ -21,7 +21,7 @@ const REFERENCE = ':scope > ' + sel('reference');
 registerDescriptor({
   tag: 'sem-references',
   title: 'References',
-  bucket: 'data',
+  bucket: 'definitions',
   summary: 'A numbered list of works or notes the prose cites.',
   itemList: {
     childSelector: REFERENCE,

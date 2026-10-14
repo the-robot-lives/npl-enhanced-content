@@ -15,7 +15,7 @@ import { registerDescriptor } from '../editor/schema/registry.js';
 registerDescriptor({
   tag: 'sem-step',
   title: 'Step',
-  bucket: 'data',
+  bucket: 'sequence',
   summary: 'One instruction in a procedure — status-annotated, positionally numbered.',
   textSlots: [
     {

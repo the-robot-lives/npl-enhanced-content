@@ -35,7 +35,8 @@ describe('editor schema loader', () => {
     const schema = loadSchema();
     expect(schema.tags.length).toBe(49);
     // tagCount is advisory (EDITOR.md §3.1) — assert agreement, never rely on it
-    expect(schema.byName.size).toBe(schema.tags.length + 1); // + sem-chat seed
+    // Lookup-only seeds: sem-chat + sem-enhanced-document + agent + sem-browser
+    expect(schema.byName.size).toBe(schema.tags.length + 4);
   });
 
   it('normalizes every attribute: boolean required, array allowedValues', () => {
@@ -66,7 +67,10 @@ describe('editor schema loader', () => {
     expect(canonicalTagName('.sem-note')).toBe('sem-note');
     expect(canonicalTagName('.SEM-NOTE')).toBe('sem-note');
     expect(canonicalTagName('note')).toBe('sem-note');
-    const npl = loadSchema().tags.find((t) => t.family === 'npl');
+    // first npl tag whose stripped bare name isn't owned by a lookup-only seed
+    const npl = loadSchema().tags.find(
+      (t) => t.family === 'npl' && t.name.replace(/^npl-/, '') !== 'agent',
+    );
     if (npl) expect(canonicalTagName(npl.name.replace(/^npl-/, ''))).toBe(npl.name);
   });
 

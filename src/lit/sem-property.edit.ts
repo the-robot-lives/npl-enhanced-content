@@ -17,7 +17,7 @@ import { registerDescriptor } from '../editor/schema/registry.js';
 registerDescriptor({
   tag: 'sem-property',
   title: 'Property',
-  bucket: 'data',
+  bucket: 'definitions',
   summary: 'One key/value assertion — key is the term, the text is the value.',
   textSlots: [
     {

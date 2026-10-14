@@ -273,8 +273,9 @@ note}], example, optionsIn? }] }`). Notes the editor depends on:
 interface EditDescriptor {
   tag: string;                 // 'sem-note' — the canonical element spelling
   title: string;               // outline entry, label chip, inserter tile
-  bucket: 'document' | 'prose' | 'disclosure' | 'views' | 'data' | 'code'
-        | 'npl-a' | 'npl-b';   // reference bucket (inserter grouping, Phase 2 lanes)
+  bucket: 'document' | 'prose' | 'disclosure' | 'views' | 'data' | 'sequence'
+        | 'definitions' | 'recall' | 'code' | 'npl-a' | 'npl-b';
+        // reference bucket (inserter grouping, Phase 2 lanes)
   summary?: string;            // schema summary default
   textSlots?: TextSlot[];      // §3.4
   itemList?: ItemListSpec;     // §3.4

@@ -38,7 +38,7 @@ const INCORRECT_PART = ':is(incorrect-statement, .incorrect-statement, .sem-inco
 registerDescriptor({
   tag: 'sem-fact',
   title: 'Fact',
-  bucket: 'data', // recall family — see header note
+  bucket: 'recall', // recall family — see header note
   textSlots: [
     {
       selector: ':scope > ' + part('statement'),

@@ -17,7 +17,7 @@ import { registerDescriptor } from '../editor/schema/registry.js';
 registerDescriptor({
   tag: 'sem-event',
   title: 'Event',
-  bucket: 'data',
+  bucket: 'sequence',
   summary: 'One dated assertion on a chronology — at when (until until), this happened.',
   textSlots: [
     {

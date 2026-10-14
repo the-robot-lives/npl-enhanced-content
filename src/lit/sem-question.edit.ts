@@ -24,7 +24,7 @@ const TYPES = ['mc', 'multi', 'blank', 'match', 'order', 'tf', 'short'];
 registerDescriptor({
   tag: 'sem-question',
   title: 'Quiz question',
-  bucket: 'data', // recall family — EditBucket lacks 'recall' yet (see report)
+  bucket: 'recall', // recall family — EditBucket lacks 'recall' yet (see report)
   summary: 'A quiz question with candidate options (Tier 1).',
   textSlots: [
     {

@@ -18,7 +18,7 @@ const STEP = ':scope > ' + sel('step');
 registerDescriptor({
   tag: 'sem-procedure',
   title: 'Procedure',
-  bucket: 'data',
+  bucket: 'sequence',
   summary: 'An ordered, status-annotated procedure — steps in execution order.',
   itemList: {
     childSelector: STEP,

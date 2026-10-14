@@ -7,7 +7,7 @@
  * follows `descriptor.bucket`, in EditBucket declaration order.
  */
 
-import { getDescriptor, getTag, loadSchema } from '../schema/index.js';
+import { getDescriptor, getTag, handDescriptors, loadSchema } from '../schema/index.js';
 import type { EditBucket, SchemaTagSpec, TemplateSnippet } from '../schema/types.js';
 import type { EditorDocument } from '../model/types.js';
 import type { InsertEntry, InsertGroup, InsertTarget } from './types.js';
@@ -80,6 +80,28 @@ export function insertCatalog(): readonly InsertEntry[] {
   for (const spec of loadSchema().tags) push(spec);
   const chat = getTag('sem-chat');
   if (chat !== undefined) push(chat);
+  // Hand-only descriptors (out-of-schema tags — sem-question/sem-option,
+  // desc-recall): reachable ONLY through handDescriptors(), so the plain
+  // schema loop never sees them. No spec → synthesize a bare template.
+  const seen = new Set(entries.map((e) => e.tag));
+  for (const descriptor of handDescriptors()) {
+    const tag = descriptor.tag.toLowerCase();
+    if (seen.has(tag) || getTag(descriptor.tag) !== undefined) continue;
+    seen.add(tag);
+    entries.push({
+      tag,
+      title: descriptor.title,
+      summary: descriptor.summary ?? '',
+      bucket: BUCKET_OVERRIDES.get(tag) ?? descriptor.bucket,
+      template:
+        descriptor.templates?.[0] ?? {
+          id: `${tag}:minimal`,
+          label: descriptor.title,
+          xml: `<${descriptor.tag}></${descriptor.tag}>`,
+        },
+      wizard: descriptor.wizard ?? null,
+    });
+  }
   cachedCatalog = entries;
   return entries;
 }

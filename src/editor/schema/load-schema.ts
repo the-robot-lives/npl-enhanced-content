@@ -106,6 +106,27 @@ export const SEM_CHAT_SPEC: SchemaTagSpec = normalizeTag({
   example: '<sem-chat id="demo">\n  <script type="application/json">[{"role":"user","text":"hi"}]</script>\n</sem-chat>',
 });
 
+/**
+ * sem-browser — hand-written, schema-complete seed (reader element, not in
+ * elements.json). `src` loads a framed document; `label` names it; `resolve`
+ * is a host-injection hook name. Authored children are the zero-JS fallback
+ * figure. The prose-bucket lane ships the descriptor (Phase 2).
+ */
+export const SEM_BROWSER_SPEC: SchemaTagSpec = normalizeTag({
+  name: 'sem-browser',
+  family: 'sem',
+  summary: 'A framed document viewport with an inert address bar.',
+  description:
+    'Reader element: with `src` it frames a fetched document (authored children become the hidden zero-JS fallback); without one it re-homes the authored children into the viewport. The editor edits `src`/`label`/`resolve` and the fallback figure.',
+  attributes: [
+    { name: 'src' },
+    { name: 'label' },
+    { name: 'resolve' },
+  ],
+  children: [{ name: 'figure', note: 'zero-JS fallback shown before upgrade / without JS' }],
+  example: '<sem-browser src="/demos/tokens.html" label="Token lifetimes">\n  <figure>Token lifetime chart</figure>\n</sem-browser>',
+});
+
 let cached: ElementSchema | null = null;
 
 /** The normalized bundled schema. Memoized — one parse per session. */
@@ -117,6 +138,11 @@ export function loadSchema(): ElementSchema {
   for (const tag of tags) byName.set(tag.name.toLowerCase(), tag);
   // sem-chat rides in the lookup only — element.json tagCount stays honest.
   byName.set('sem-chat', SEM_CHAT_SPEC);
+  // Out-of-schema editor tags (sem-chat precedent): lookup-only so their
+  // descriptors resolve; element.json tagCount stays honest.
+  byName.set('sem-enhanced-document', normalizeTag({ name: 'sem-enhanced-document', family: 'sem', attributes: [] }));
+  byName.set('agent', normalizeTag({ name: 'agent', family: 'sem', attributes: [] }));
+  byName.set('sem-browser', SEM_BROWSER_SPEC);
   cached = {
     specVersion: raw.specVersion ?? '0',
     tags,

@@ -23,7 +23,7 @@ const PROPERTY = ':scope > ' + sel('property');
 registerDescriptor({
   tag: 'sem-properties',
   title: 'Properties',
-  bucket: 'data',
+  bucket: 'definitions',
   summary: 'A closed set of key/value assertions — a definition grid.',
   itemList: {
     childSelector: PROPERTY,

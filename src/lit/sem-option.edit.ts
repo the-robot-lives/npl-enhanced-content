@@ -15,7 +15,7 @@ import { registerDescriptor } from '../editor/schema/registry.js';
 registerDescriptor({
   tag: 'sem-option',
   title: 'Quiz option',
-  bucket: 'data', // recall family — EditBucket lacks 'recall' yet (see report)
+  bucket: 'recall', // recall family — EditBucket lacks 'recall' yet (see report)
   summary: 'One candidate answer; `correct` marks the right one (Tier 1).',
   textSlots: [
     {

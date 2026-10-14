@@ -69,6 +69,9 @@ export type EditBucket =
   | 'disclosure'
   | 'views'
   | 'data'
+  | 'sequence'
+  | 'definitions'
+  | 'recall'
   | 'code'
   | 'npl-a'
   | 'npl-b';
@@ -156,6 +159,10 @@ export interface EditDescriptor {
   tag: string;
   title: string;
   bucket: EditBucket;
+  /** Selectors for the element's own generated render chrome — matched
+   *  nodes are skipped by authored-position mapping like `data-sem-chrome`
+   *  (used when the chrome carries no `data-npl-generated` marker). */
+  chromeSelectors?: readonly string[];
   summary?: string;
   textSlots?: TextSlot[];
   itemList?: ItemListSpec;

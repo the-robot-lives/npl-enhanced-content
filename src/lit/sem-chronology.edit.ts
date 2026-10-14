@@ -20,7 +20,7 @@ const EVENT = ':scope > ' + sel('event');
 registerDescriptor({
   tag: 'sem-chronology',
   title: 'Chronology',
-  bucket: 'data',
+  bucket: 'sequence',
   summary: 'An ordered sequence of dated events — a timeline.',
   itemList: {
     childSelector: EVENT,

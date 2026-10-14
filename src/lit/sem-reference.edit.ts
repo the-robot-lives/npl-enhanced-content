@@ -16,7 +16,7 @@ import { registerDescriptor } from '../editor/schema/registry.js';
 registerDescriptor({
   tag: 'sem-reference',
   title: 'Reference',
-  bucket: 'data',
+  bucket: 'definitions',
   summary: 'One citable entry — id is the citation anchor, href/cite the target.',
   textSlots: [
     {
