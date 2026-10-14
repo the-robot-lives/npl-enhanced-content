@@ -28,14 +28,19 @@ const ITEM_CLASS = 'sem-term-menu-item';
 const HINT_CLASS = 'sem-term-menu-hint';
 const EDGE_MARGIN = 8;
 
-/** Everything injectable for tests; production uses the host document. */
+/** Everything injectable for tests; production uses the host document.
+ *  `items` (EDITOR.md §4.7) replaces `buildMenuItems(host)` as the row
+ *  builder — the editor hosts its own verbs through it; the terminal
+ *  default is untouched (byte-identical behaviour, ids included). */
 export interface ContextMenuOptions {
   doc?: Document | null;
+  items?: (host: MenuHost) => readonly MenuItemSpec[];
 }
 
 export class ContextMenuController {
   readonly #host: MenuHost;
   readonly #doc: Document | null;
+  readonly #itemsBuilder: (host: MenuHost) => readonly MenuItemSpec[];
   #menu: HTMLElement | null = null;
   #items: MenuItemSpec[] = [];
   #buttons: HTMLButtonElement[] = [];
@@ -91,6 +96,7 @@ export class ContextMenuController {
   constructor(host: MenuHost, options: ContextMenuOptions = {}) {
     this.#host = host;
     this.#doc = options.doc ?? (typeof document !== 'undefined' ? document : null);
+    this.#itemsBuilder = options.items ?? buildMenuItems;
   }
 
   get isOpen(): boolean {
@@ -117,7 +123,7 @@ export class ContextMenuController {
     if (doc === null || this.#menu !== null) return;
     const surface = this.#host.surface();
 
-    this.#items = buildMenuItems(this.#host);
+    this.#items = [...this.#itemsBuilder(this.#host)];
     const menu = doc.createElement('div');
     menu.className = MENU_CLASS;
     menu.setAttribute('role', 'menu');
