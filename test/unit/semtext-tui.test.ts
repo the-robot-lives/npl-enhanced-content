@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
-// Unit spec — the flashcard view state machine (src/terminal/tui.ts) and
-// the `semtext tui` command side (cards from records, the TuiAction).
+// Unit spec — the flashcard view state machine (src/terminal/tui.ts, kept
+// for the element overlay) and the `semtext tui` command side: the grid
+// app spawn on a tty, the plain outline listing when piped.
 //
 // Feature: the TUI state machine
 //   Scenario: createTuiState starts on card 1, collapsed, unfiltered
@@ -11,9 +12,9 @@
 //   Scenario: '/' opens the filter row; closing keeps the filter text
 //   Scenario: q / Q / Escape are close keys; tuiPosition is 1-based
 // Feature: `semtext tui` (the command)
-//   Scenario: emits a tui action with cards when colored; a summary line always
-//   Scenario: piped (color off) prints the summary and emits nothing
-//   Scenario: an empty document errors, exit 1
+//   Scenario: spawns the semtext-tui app when the output is a terminal
+//   Scenario: piped prints the plain outline listing and emits nothing
+//   Scenario: a document with nothing to browse errors, exit 1
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
@@ -123,26 +124,26 @@ describe('`semtext tui` — the command side', () => {
     }
   });
 
-  it('emits a tui action with cards when the output is a terminal', () => {
+  it('spawns the semtext-tui app when the output is a terminal', () => {
     const r = core.execLine('semtext tui demo/token-rotation.html');
     expect(r.actions).toHaveLength(1);
-    const action = r.actions[0] as { kind: string; title: string; cards: TuiCard[] };
-    expect(action.kind).toBe('tui');
-    expect(action.title).toBe('Token Rotation');
-    expect(action.cards.length).toBeGreaterThan(3);
-    expect(action.cards.every((c) => c.front !== '' && c.back !== '')).toBe(true);
-    expect(out(r).join(' ')).toMatch(/tui: Token Rotation — \d+ cards/);
+    const action = r.actions[0] as { kind: string; app: { id: string } };
+    expect(action.kind).toBe('app');
+    expect(action.app.id).toBe('semtext-tui');
+    expect(out(r)).toEqual([]); // the app owns the screen; no transcript noise
   });
 
-  it('piped (color off) prints the summary line and emits no action', () => {
+  it('piped prints the plain outline listing and emits no action', () => {
     const r = core.execLine('semtext tui demo/token-rotation.html | cat');
     expect(r.actions).toEqual([]);
-    expect(out(r).join(' ')).toMatch(/tui: Token Rotation — \d+ cards/);
+    const lines = out(r);
+    expect(lines[0]).toBe('tui: Token Rotation');
+    expect(lines.join('\n')).toMatch(/^\s*1\s+\S/m); // a numbered section row
   });
 
-  it('a document with no records errors, exit 1', () => {
+  it('a document with nothing to browse errors, exit 1', () => {
     core.vfs.mountFile('/blank.html', '<html><body><p>nothing semantic here</p></body></html>');
-    expect(errs(core.execLine('semtext tui /blank.html')).join(' ')).toMatch(/no records/);
+    expect(errs(core.execLine('semtext tui /blank.html')).join(' ')).toMatch(/nothing to browse/);
     expect(core.state.lastStatus).toBe(1);
   });
 });

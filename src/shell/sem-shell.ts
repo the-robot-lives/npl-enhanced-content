@@ -1,12 +1,22 @@
 import type { ShellLine } from '../terminal/terminal-core.js';
+import type { PropertyValues } from 'lit';
 import { SemElement } from '../lit/base.js';
 import { SemTerminal } from '../terminal/sem-terminal.js';
+import { lineText } from '../terminal/screen/screen.js';
 import { demoPlugin } from '../terminal/plugins/demo/plugin.js';
 import { posixPlugin } from '../terminal/plugins/posix/plugin.js';
 import { cardsPlugin } from '../terminal/plugins/cards/plugin.js';
 import { attachAutostart } from '../terminal/script/autostart.js';
 import type { AutostartHandle } from '../terminal/script/autostart.js';
 import type { DemoDriver } from '../terminal/script/demo-runner.js';
+import {
+  nullViewControl,
+  readStoredView,
+  resolveViewChoice,
+  writeStoredView,
+  type DomMenuViewControl,
+  type RendererChoice,
+} from '../terminal/menu/index.js';
 
 /**
  * sem-shell — the SemText demo terminal: <sem-terminal> configured with the
@@ -38,9 +48,53 @@ import type { DemoDriver } from '../terminal/script/demo-runner.js';
  * stay still until each shell is actually looked at.
  */
 export class SemShell extends SemTerminal {
+  /**
+   * `renderer` — the visible paint (CORE-V2 §8.5b): `"canvas"` (the
+   * default spelling) or `"dom"` (pins the mirror's paint — a printable
+   * docs page, a bug report that must show the DOM view). Observed live
+   * (property and attribute); still bounded by §8.5a — if the canvas was
+   * refused (forced-colors, failed 2d context) the DOM view shows
+   * regardless. `...SemTerminal.properties` — Lit subclasses that declare
+   * `static properties` shadow the parent's table without the spread.
+   */
+  static properties = {
+    ...SemTerminal.properties,
+    // reflect: the pin is author-visible state — setting `.renderer` updates
+    // the attribute too (§8.5b: observed live as property AND attribute).
+    renderer: { type: String, reflect: true },
+  };
+
+  declare renderer: string;
+
   #shellBooted = false;
   #autostart: AutostartHandle | null = null;
   #autoRunning = false;
+
+  /** The view the element paints right now (§8.5). */
+  #view: RendererChoice = 'dom';
+  /** False until the canvas renderer proves available (§8.5a bounds everything). */
+  #canvasAvailable = false;
+  /**
+   * Injected storage for tests; default is the browsing session's
+   * sessionStorage (§8.5c — per element, per session, never a cookie).
+   */
+  viewStorage: Storage | null | undefined;
+  /**
+   * The integrator's seam (r2-canvas): applies the view choice to the live
+   * renderer (`useDomView()` / `useCanvasView()`). Until a canvas renderer
+   * is wired, the DOM transcript is the only paint and this stays null.
+   */
+  viewDelegate: ((choice: RendererChoice) => void) | null = null;
+  /**
+   * What the terminal's context menu reads (the r2 dom-menu patch on
+   * sem-terminal casts this off the element). Answers for the moment of
+   * the call, so the menu's switch label and availability are always live.
+   */
+  readonly semView: DomMenuViewControl = {
+    current: () => this.#view,
+    switchTo: (next) => this.#setView(next),
+    canvasAvailable: () => this.#canvasAvailable,
+  };
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -71,12 +125,87 @@ export class SemShell extends SemTerminal {
         }
       });
     this.#attachAutostart();
+    this.#resolveView();
+  }
+
+  /**
+   * Live `renderer` changes (§8.5b: observed, property and attribute) —
+   * the author's pin re-applies over any stored session switch.
+   */
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    if (changed.has('renderer')) this.#resolveView();
   }
 
   disconnectedCallback(): void {
     this.#autostart?.dispose();
     this.#autostart = null;
     super.disconnectedCallback();
+  }
+
+  /* ------------------------------------------------------------------ *
+   * the visible paint (CORE-V2 §8.5)
+   * ------------------------------------------------------------------ */
+
+  /** The view the element currently paints — `"canvas"` or `"dom"`. */
+  get viewChoice(): RendererChoice {
+    return this.#view;
+  }
+
+  /** Whether the canvas renderer proved available (§8.5a). */
+  get canvasAvailable(): boolean {
+    return this.#canvasAvailable;
+  }
+
+  /**
+   * The canvas renderer constructed cleanly (§8.5a) — re-resolve: the
+   * default flips dom → canvas unless the author pinned `renderer="dom"`
+   * or the user's stored switch already chose the text view.
+   */
+  markCanvasAvailable(): void {
+    this.#canvasAvailable = true;
+    this.#resolveView();
+  }
+
+  /**
+   * The canvas was refused — forced-colors or a failed 2d context
+   * (§8.5a). The DOM view shows for the runtime; the forced fallback is
+   * NOT the user's switch and is never persisted.
+   */
+  markCanvasUnavailable(): void {
+    this.#canvasAvailable = false;
+    this.#resolveView();
+  }
+
+  /** Boot / attribute-change decision (menu/view.ts precedence). */
+  #resolveView(): void {
+    this.#view = resolveViewChoice({
+      attr: this.getAttribute('renderer'),
+      stored: readStoredView(this.#sessionStorage(), this.id || 'default'),
+      canvasAvailable: this.#canvasAvailable,
+    });
+    this.#applyView();
+  }
+
+  /** A user switch (§8.5c): apply + persist for the browsing session. */
+  #setView(next: RendererChoice): void {
+    if (next === 'canvas' && !this.#canvasAvailable) return; // bounded by §8.5a
+    this.#view = next;
+    writeStoredView(this.#sessionStorage(), this.id || 'default', next);
+    this.#applyView();
+  }
+
+  #applyView(): void {
+    this.viewDelegate?.(this.#view);
+  }
+
+  #sessionStorage(): Storage | null {
+    if (this.viewStorage !== undefined) return this.viewStorage;
+    try {
+      return this.ownerDocument?.defaultView?.sessionStorage ?? null;
+    } catch {
+      return null;
+    }
   }
 
   /* ------------------------------------------------------------------ *
@@ -151,7 +280,19 @@ export class SemShell extends SemTerminal {
       },
       open: (): boolean => this.tui !== null,
       stopped: (): boolean => this.#autostart === null,
-      transcript: (): string[] => this.lines.map((line) => line.text),
+      // @expect is a contains check — while an app holds the alt surface
+      // it must assert what is ON SCREEN (the bat lane's integrate patch).
+      transcript: (): string[] => {
+        if (this.appLive) {
+          const rows: string[] = [];
+          for (let row = 0; row < this.screen.rows; row++) {
+            const line = this.screen.alternate.lines[row];
+            if (line !== undefined) rows.push(lineText(line));
+          }
+          return rows;
+        }
+        return this.lines.map((line) => line.text);
+      },
     };
   }
 }
