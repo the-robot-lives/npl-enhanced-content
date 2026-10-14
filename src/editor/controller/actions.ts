@@ -9,6 +9,7 @@
 import type { EditorContext, ElementBinding } from './types.js';
 import type { EditorNode, NodeId } from '../model/types.js';
 import { parse } from '../model/document.js';
+import { stripStops } from '../templates/stops.js';
 import { isSafeUrl } from '../safety/url.js';
 import { rebuildSubtree } from '../safety/sanitize.js';
 import { itemListItems, modelIdFor, siblingIndexOf, slotTextTarget } from './map.js';
@@ -20,15 +21,10 @@ function parentIdOf(ctx: EditorContext, id: NodeId): NodeId | null {
   return ctx.doc.node(id)?.parentId ?? null;
 }
 
-/** Strip snippet stop grammar (${n:default}, ${n|a,b}, ${n}) — the +/−
- *  glyphs insert READY items, not stop-marked ones (§4.6). Choice stops
- *  resolve to their FIRST option (`${2|1,2,3|}` → `1`), never the list. */
-export function stripTemplateStops(xml: string): string {
-  return xml
-    .replace(/\$\{\d+\|([^|,}]*)[^}]*\}/g, '$1')
-    .replace(/\$\{\d+:([^}]*)\}/g, '$1')
-    .replace(/\$\{\d+\}/g, '');
-}
+/** Strip snippet stop grammar — shared implementation in
+ *  templates/stops.ts (single pass; choice stops resolve to their FIRST
+ *  option). Kept as an alias for controller call sites and suites. */
+export const stripTemplateStops = stripStops;
 
 /** Parse a template snippet XML and rebuild it with `doc`'s id counter. */
 export function buildFromXml(doc: EditorContext['doc'], xml: string): EditorNode | null {
