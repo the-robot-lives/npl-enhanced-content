@@ -9,12 +9,13 @@
 
 import type { PluginManifest } from '../../terminal-core.js';
 import { posixCommands } from './commands.js';
+import { applyEnvDirenv } from './env-commands.js';
 
 export const posixPlugin: PluginManifest = {
   name: 'posix-sh',
   version: '0.1.0',
   description: 'POSIX-style commands over the virtual file system: ls, cat, bat, grep, pipes and redirects',
-  commands: posixCommands,
+  commands: applyEnvDirenv(posixCommands),
   files: [],
 };
 
