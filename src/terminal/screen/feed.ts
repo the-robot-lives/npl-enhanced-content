@@ -25,6 +25,11 @@ export class ScreenFeed {
   readonly screen: Screen;
   readonly machine = new AnsiStateMachine();
   readonly truecolor = new TruecolorTable();
+  /**
+   * Observer for every parsed token batch, fired before they apply — the
+   * chrome's title feed taps OSC 0/1/2/9 here (§11.1, osc-tabs XR-1).
+   */
+  onTokens: ((tokens: readonly AnsiToken[]) => void) | null = null;
 
   constructor(screen: Screen) {
     this.screen = screen;
@@ -48,6 +53,7 @@ export class ScreenFeed {
 
   /** Apply one token batch — also the path for tokens produced elsewhere. */
   apply(tokens: readonly AnsiToken[]): void {
+    this.onTokens?.(tokens);
     for (const token of tokens) this.applyToken(token);
   }
 
