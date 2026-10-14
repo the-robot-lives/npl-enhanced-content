@@ -327,3 +327,47 @@ describe('storage + Tab completion', () => {
     expect(note?.text).toContain('more'); // capped display above 8 candidates
   });
 });
+
+describe('start-script site-path fetch (r2.1)', () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  it('fetches a path script and plays its body', async () => {
+    const fetches: string[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      fetches.push(String(input));
+      return new Response('# demo\n$ echo fetched-ok\n@expect fetched-ok\n', { status: 200 });
+    }) as typeof fetch;
+    delete (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver;
+    const shell = document.createElement('sem-shell') as SemShell;
+    shell.setAttribute('start-script', '/demo/scripts/fetch-demo.txt');
+    document.body.appendChild(shell);
+    // The fetched script types `$ echo fetched-ok` and runs it: the input
+    // locks while the demo owns the keyboard.
+    await vi.waitFor(
+      () => {
+        const input = shell.querySelector('.sem-shell-input') as HTMLInputElement | null;
+        expect(input).not.toBeNull();
+        expect(input!.readOnly).toBe(true);
+      },
+      { timeout: 3000, interval: 50 },
+    );
+    expect(fetches.some((u) => u.endsWith('/demo/scripts/fetch-demo.txt'))).toBe(true);
+    shell.remove();
+  }, 10000);
+
+  it('a failed fetch leaves the static transcript and free input', async () => {
+    globalThis.fetch = (async () => new Response('nope', { status: 404 })) as typeof fetch;
+    delete (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver;
+    const shell = document.createElement('sem-shell') as SemShell;
+    shell.setAttribute('start-script', '/demo/scripts/missing.txt');
+    document.body.appendChild(shell);
+    await new Promise((r) => setTimeout(r, 400));
+    const input = shell.querySelector('.sem-shell-input') as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+    expect(input!.readOnly).toBe(false);
+    shell.remove();
+  }, 10000);
+});

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · start-script from a site path</title>
+<!-- sem:inline vocabulary -->
+<style>
+  body { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 .5rem; }
+  p  { margin: .6rem 0; }
+</style>
+<!-- sem:inline shell -->
+</head>
+<body>
+<h1>start-script from a site path</h1>
+<p>This <code>&lt;sem-shell&gt;</code> names its demo <em>by path</em>
+(<code>scripts/echo-demo.txt</code>) — the landing page's contract. The
+shell fetches the file when it first scrolls into view, then plays the
+fetched body as a demo-format script. <strong>Escape hands the terminal
+back.</strong> The shell starts <em>below the fold</em>.</p>
+<div aria-hidden="true" style="height:120vh"></div>
+<h2>The shell, in view</h2>
+<!-- The authored children ARE the zero-JS contract: a static transcript
+     with no input element. The upgrade replaces them (and the build's
+     .nojs.html variant ships exactly this as proof). -->
+<sem-shell aria-label="SemText shell" start-script="scripts/echo-demo.txt">
+  <div class="sem-shell-frame">
+    <div class="sem-shell-transcript" role="log">
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>echo start-script-fetched</div>
+      <div class="sem-shell-line">start-script-fetched</div>
+    </div>
+  </div>
+</sem-shell>
+</body>
+</html>

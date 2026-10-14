@@ -26,6 +26,12 @@ import { watchInView, watchVisible, type VisibilitySource } from './in-view.js';
 export interface AutostartOptions {
   /** The attribute carrying the script value (default `start-script`). */
   attribute?: string;
+  /**
+   * Explicit demo-format script text overriding the attribute. Hosts that
+   * resolve the attribute themselves — the start-script FILE fetch in
+   * sem-shell — pass the fetched body here.
+   */
+  script?: string;
   /** Fraction visible that counts as in view (default 0.5). */
   start?: number;
   /** Injectable IntersectionObserver constructor (tests). */
@@ -51,7 +57,10 @@ export interface AutostartHandle {
 }
 
 export function attachAutostart(target: HTMLElement, driver: DemoDriver, options: AutostartOptions = {}): AutostartHandle {
-  const steps = resolveScriptValue(target.getAttribute(options.attribute ?? 'start-script'));
+  const steps =
+    options.script !== undefined
+      ? parseDemoScript(options.script)
+      : resolveScriptValue(target.getAttribute(options.attribute ?? 'start-script'));
   if (steps === null) return { dispose: () => undefined };
 
   const clock = options.clock ?? realClock;
