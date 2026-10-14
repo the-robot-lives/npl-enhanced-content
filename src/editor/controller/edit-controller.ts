@@ -31,7 +31,9 @@ export class EditController implements ReactiveController {
     this.host = host;
     this.ctx = ctx;
     this.binding = binding;
-    host.addController(this);
+    // Plain hosts (zero-JS tags) have no controller registry — attach still
+    // works, hostConnected runs via the attach path's explicit connect.
+    (host as { addController?: (c: unknown) => void }).addController?.(this);
   }
 
   // ── ReactiveController lifecycle ──────────────────────────────────────────

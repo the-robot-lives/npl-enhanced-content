@@ -78,9 +78,18 @@ export function attachEditor(el: SemElement, ctx: EditorContext): EditController
   const descriptor = ctx.descriptors(el.tagName.toLowerCase());
   let doc = ctx.doc;
   if (locateModelRoot(doc, el) === null) {
+    // NOTE (§4.2): a live DOM only carries the browser's canonical
+    // serialization — authored whitespace inside open tags (wrapped
+    // attributes) is unrecoverable here, so undo restores canonical bytes.
+    // Authored-faithful editing goes through `createContext({ source })`.
     // Lit runtime markers (empty + `?lit$` comments) are chrome, never
-    // authored content — strip before the model ever sees them (§2.4).
-    const source = el.outerHTML.replace(/<!--(?:\\?lit\$[^>]*)?-->/g, '');
+    // authored content — strip before the model ever sees them (§2.4), as
+    // is SemSource's runtime fence (`template.sem-source-raw`).
+    const source = el.outerHTML
+      .replace(/<!--(?:\\?lit\$[^>]*)?-->/g, '')
+      .replace(/<template[^>]*\\bsem-source-raw\\b[^>]*>[\\s\\S]*?<\/template>/gi, '')
+      // Runtime-only attrs (base.ts's claim marker et al.) never export.
+      .replace(/\\sdata-sem-upgraded(?:="[^"]*"|='[^']*'|=[^\\s>]*)?(?=[\\s>])/gi, '');
     const parsed = tryParse(source);
     if (!parsed.ok) {
       ctx.announce(`Cannot edit ${el.tagName.toLowerCase()}: failed to parse`);

@@ -13,7 +13,7 @@ import {
   attachEditor, createContext, detachEditor, watchEditMode, claim, bindingFor,
 } from '../../src/editor/controller/attach.js';
 import { EditController } from '../../src/editor/controller/edit-controller.js';
-import { addItem, removeItem, moveElement, duplicateElement, commitSlotText } from '../../src/editor/controller/actions.js';
+import { addItem, removeItem, moveElement, duplicateElement, commitSlotText, stripTemplateStops } from '../../src/editor/controller/actions.js';
 import { caretFromDomPosition, domPositionFor } from '../../src/editor/controller/selection.js';
 import { siblingIndexOf } from '../../src/editor/controller/map.js';
 import type { EditorContext } from '../../src/editor/controller/types.js';
@@ -243,6 +243,38 @@ describe('re-render protocol (§4.4)', () => {
     removeItem(ctx, c.binding, itemEl);
     await flush();
     expect(el.querySelectorAll(':scope > :is(sem-fact, .sem-fact)').length).toBe(1);
+  });
+
+  it('stripTemplateStops resolves choice stops to their FIRST option (npl-b)', () => {
+    expect(stripTemplateStops('<sem-step status="${2|todo,doing,done|}">${1:Do it}</sem-step>')).toBe(
+      '<sem-step status="todo">Do it</sem-step>',
+    );
+    expect(stripTemplateStops('<x k="${1:Key}" aria-label="${1:Key}">')).toBe('<x k="Key" aria-label="Key">');
+    expect(stripTemplateStops('<x k="${3}">')).toBe('<x k="">');
+  });
+
+  it('addItem on a doc LARGER than the template (regression: id-counter collision)', async () => {
+    // buildFromXml used to mint ids inside the live doc's range whenever the
+    // template subtree was smaller than the doc — canApply rejected with
+    // "already attached". Per-document allocators make this impossible.
+    const many = Array.from({ length: 8 }, (_, i) =>
+      `<sem-fact><statement>Fact ${i + 1}</statement><conclusion>C${i + 1}</conclusion></sem-fact>`).join('');
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `<sem-facts id="f1">${many}</sem-facts>`;
+    const el = wrap.firstElementChild as HTMLElement;
+    document.body.appendChild(el);
+    const ctx = createContext();
+    const c = attachEditor(el, ctx);
+    if (c === null) throw new Error('attach failed');
+    expect(ctx.doc.childrenOf(c.binding.rootId).length).toBe(8);
+    expect(addItem(ctx, c.binding)).toBe(true);
+    await flush();
+    expect(ctx.doc.childrenOf(c.binding.rootId).length).toBe(9);
+    expect(el.querySelectorAll(':scope > :is(sem-fact, .sem-fact)').length).toBe(9);
+    // every model id unique — no silent table overwrite
+    const ids = new Set(ctx.doc.childrenOf(c.binding.rootId).map((n) => n.id));
+    expect(ids.size).toBe(9);
+    expect(el.querySelectorAll(':scope > :is(sem-fact, .sem-fact)')[8]!.textContent).toContain('Statement');
   });
 });
 

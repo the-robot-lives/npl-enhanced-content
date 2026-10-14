@@ -136,8 +136,10 @@ export async function rerenderElement(
   }
 
   // ── 3. re-establish element chrome ──
-  el.requestUpdate();
-  await el.updateComplete;
+  // Plain (non-Lit) elements have no lifecycle — skip cleanly.
+  const litHost = el as { requestUpdate?: () => void; updateComplete?: Promise<unknown> };
+  if (typeof litHost.requestUpdate === 'function') litHost.requestUpdate();
+  await litHost.updateComplete?.catch(() => {}); // broken update ≠ broken edit session
   if (ctx.doc.version !== version) return; // stale — newest rerender wins
   await binding.descriptor?.rerender?.(el);
   if (ctx.doc.version !== version) return;

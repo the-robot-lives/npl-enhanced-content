@@ -84,7 +84,7 @@ export function hideOutline(binding: ElementBinding): void {
 export function stampGlyphs(ctx: EditorContext, binding: ElementBinding): void {
   const list = binding.descriptor?.itemList;
   if (list === undefined) return;
-  const items = itemListItems(binding);
+  const items = itemListItems(ctx, binding);
   items.forEach((item, i) => {
     if (item.querySelector(`:scope > .sem-ed-glyph[data-glyph="minus"]`)) return;
     item.classList.add('sem-ed-item');

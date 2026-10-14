@@ -21,6 +21,16 @@ import type { EditorNode, NodeId } from '../model/types.js';
 import type { RegionMap, TextSlot } from '../schema/types.js';
 
 /** Editor chrome: never authored content, never indexed, never serialized. */
+/** Authored index with descriptor chrome awareness (§4.4): generated
+ *  render chrome never advances the authored position. */
+export function authoredIndexOf(binding: ElementBinding | null, node: Node): number {
+  let i = 0;
+  for (let p = node.previousSibling; p !== null; p = p.previousSibling) {
+    if (!isRuntimeChrome(p) && !isGeneratedChrome(binding, p)) i++;
+  }
+  return i;
+}
+
 /** Index of `id` among its siblings (element OR document parent —
  *  `doc.indexOf` answers -1 under the document node). */
 export function siblingIndexOf(ctx: EditorContext, id: NodeId): number {
@@ -33,7 +43,24 @@ export function siblingIndexOf(ctx: EditorContext, id: NodeId): number {
 }
 
 export function isChromeNode(node: Node): boolean {
-  return node.nodeType === Node.ELEMENT_NODE && (node as Element).hasAttribute('data-sem-chrome');
+  return node.nodeType === Node.ELEMENT_NODE &&
+    ((node as Element).hasAttribute('data-sem-chrome') ||
+     (node as Element).hasAttribute('data-npl-generated'));
+}
+
+/** Descriptor-declared generated chrome (EditDescriptor.chromeSelectors):
+ *  element render chrome that carries no marker attribute. */
+export function isGeneratedChrome(binding: ElementBinding | null, node: Node): boolean {
+  const sels = binding?.descriptor?.chromeSelectors;
+  if (sels === undefined || sels.length === 0 || node.nodeType !== Node.ELEMENT_NODE) return false;
+  const el = node as Element;
+  return sels.some((s) => {
+    try {
+      return el.matches(s);
+    } catch {
+      return false; // invalid selector — never treat as chrome on a throw
+    }
+  });
 }
 
 /** Lit update markers: empty comments (`<!---->`) and lit-html part
@@ -118,7 +145,7 @@ export function modelIdFor(ctx: EditorContext, binding: ElementBinding, el: Elem
       anchorId = hit;
       continue;
     }
-    const child = ctx.doc.childrenOf(anchorId)[authoredIndex(step)];
+    const child = ctx.doc.childrenOf(anchorId)[authoredIndexOf(binding, step)];
     if (child === undefined || child.kind !== 'element') return null;
     anchorId = child.id;
   }
@@ -168,11 +195,36 @@ export function slotForElement(binding: ElementBinding, el: Element): TextSlot |
 }
 
 /** Items of the binding's item list, in order (empty when none declared). */
-export function itemListItems(binding: ElementBinding): Element[] {
+export function itemListItems(ctx: EditorContext, binding: ElementBinding): Element[] {
   const list = binding.descriptor?.itemList;
   if (list === undefined) return [];
-  return Array.from(binding.el.querySelectorAll(list.childSelector));
+  const dom = Array.from(binding.el.querySelectorAll(list.childSelector));
+  if (dom.length > 0) return dom;
+  // Model-side fallback: SSR / pre-upgrade DOM often cannot match a
+  // `:is()`/class-alias childSelector even though the model holds the
+  // items. Match model children by the selector's tag names and project.
+  const tags = new Set(
+    Array.from(list.childSelector.matchAll(/([a-z][\w-]*)/gi))
+      .map((m) => m[1].toLowerCase())
+      .filter((t) => !SELECTOR_KEYWORDS.has(t)),
+  );
+  if (tags.size === 0) return [];
+  const out: Element[] = [];
+  const kids = Array.from(binding.el.children).filter((k) => !isRuntimeChrome(k) && !isGeneratedChrome(binding, k));
+  for (const child of ctx.doc.childrenOf(binding.rootId)) {
+    if (child.kind !== 'element' || !tags.has(child.name.toLowerCase())) continue;
+    const el = kids[childIndex(ctx, binding.rootId, child.id)];
+    if (el !== undefined) out.push(el);
+  }
+  return out;
 }
+
+/** Position of `id` within `parentId`'s model children (−1 when absent). */
+function childIndex(ctx: EditorContext, parentId: NodeId, id: NodeId): number {
+  return ctx.doc.childrenOf(parentId).findIndex((c) => c.id === id);
+}
+
+const SELECTOR_KEYWORDS = new Set(['scope', 'is', 'not', 'where', 'has', 'first-child', 'last-child', 'nth-child']);
 
 /** First text content of a subtree (item preview labels). */
 export function previewTextOf(node: EditorNode | undefined): string {

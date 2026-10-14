@@ -21,10 +21,11 @@ function parentIdOf(ctx: EditorContext, id: NodeId): NodeId | null {
 }
 
 /** Strip snippet stop grammar (${n:default}, ${n|a,b}, ${n}) — the +/−
- *  glyphs insert READY items, not stop-marked ones (§4.6). */
+ *  glyphs insert READY items, not stop-marked ones (§4.6). Choice stops
+ *  resolve to their FIRST option (`${2|1,2,3|}` → `1`), never the list. */
 export function stripTemplateStops(xml: string): string {
   return xml
-    .replace(/\$\{\d+\|([^|}]*)\|[^}]*\}/g, '$1')
+    .replace(/\$\{\d+\|([^|,}]*)[^}]*\}/g, '$1')
     .replace(/\$\{\d+:([^}]*)\}/g, '$1')
     .replace(/\$\{\d+\}/g, '');
 }
@@ -40,7 +41,7 @@ export function buildFromXml(doc: EditorContext['doc'], xml: string): EditorNode
 export function addItem(ctx: EditorContext, binding: ElementBinding): boolean {
   const list = binding.descriptor?.itemList;
   if (list === undefined) return false;
-  const items = itemListItems(binding);
+  const items = itemListItems(ctx, binding);
   const node = buildFromXml(ctx.doc, list.template.xml);
   if (node === null) return false;
   let parent: NodeId = binding.rootId;
