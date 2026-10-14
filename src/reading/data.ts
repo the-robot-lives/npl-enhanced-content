@@ -239,6 +239,8 @@ function loadSource(src: Element): void {
   }
   const pending = document.createElement('div');
   pending.className = 'sem-data-pending';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  pending.setAttribute('data-sem-chrome', '');
   pending.setAttribute('role', 'status');
   pending.textContent = 'Loading ' + href + '…';
   src.appendChild(pending);
@@ -277,6 +279,8 @@ export function parkPayload(el: Element): void {
   if (el.querySelector(':scope > .sem-data-raw')) return;
   const raw = document.createElement('div');
   raw.className = 'sem-data-raw';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  raw.setAttribute('data-sem-chrome', '');
   while (el.firstChild) raw.appendChild(el.firstChild);
   el.insertBefore(raw, el.firstChild);
 }
@@ -295,6 +299,8 @@ function renderTable(src: Element, table: TableData, schema: ColumnSchema[], for
 
   const body = document.createElement('div');
   body.className = 'sem-data-body';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  body.setAttribute('data-sem-chrome', '');
   body.appendChild(buildTable(table, schema, shown, name));
   src.appendChild(body);
 
@@ -303,6 +309,8 @@ function renderTable(src: Element, table: TableData, schema: ColumnSchema[], for
   const json = document.createElement('script');
   json.type = 'application/json';
   json.className = 'sem-data-schema';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  json.setAttribute('data-sem-chrome', '');
   json.textContent = JSON.stringify({
     name: name || null,
     format,
@@ -324,6 +332,8 @@ function renderTable(src: Element, table: TableData, schema: ColumnSchema[], for
 function renderError(src: Element, message: string): void {
   const p = document.createElement('p');
   p.className = 'sem-data-error';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  p.setAttribute('data-sem-chrome', '');
   p.setAttribute('role', 'alert');
   p.textContent = 'sem-data-source: ' + message;
   src.appendChild(p);

@@ -155,12 +155,18 @@ function currentView(container: Element): { name: string; isDefault: boolean } |
 export function wireDataTools(container: Element): void {
   if (container.hasAttribute('data-sem-tools')) return;
   container.setAttribute('data-sem-tools', '');
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  container.setAttribute('data-sem-chrome', '');
   const bar = document.createElement('div');
   bar.className = 'sem-data-tools';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  bar.setAttribute('data-sem-chrome', '');
 
   const expand = document.createElement('button');
   expand.type = 'button';
   expand.className = 'sem-data-expand';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  expand.setAttribute('data-sem-chrome', '');
   expand.textContent = 'Expand';
   expand.setAttribute('aria-haspopup', 'dialog');
   expand.setAttribute('aria-expanded', 'false');
