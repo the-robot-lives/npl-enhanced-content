@@ -8,6 +8,7 @@ import { posixPlugin } from '../terminal/plugins/posix/plugin.js';
 import { cardsPlugin } from '../terminal/plugins/cards/plugin.js';
 import { attachAutostart } from '../terminal/script/autostart.js';
 import type { AutostartHandle } from '../terminal/script/autostart.js';
+import { looksLikeScriptPath } from '../terminal/script/demo-format.js';
 import type { DemoDriver } from '../terminal/script/demo-runner.js';
 import {
   nullViewControl,
@@ -213,10 +214,46 @@ export class SemShell extends SemTerminal {
    * ------------------------------------------------------------------ */
 
   #attachAutostart(): void {
-    if (this.getAttribute('start-script') === null) return;
+    const value = this.getAttribute('start-script');
+    if (value === null) return;
+    // A site-path value names a fetchable demo-format file (the landing's
+    // `/demo/scripts/<tab>.txt`). r2 parsed such values inline as a single
+    // comment step, so the demos never typed. Fetch, then attach with the
+    // body; a failed fetch leaves the static transcript untouched.
+    if (looksLikeScriptPath(value)) {
+      void this.#fetchStartScript(value);
+      return;
+    }
     this.#autostart = attachAutostart(this, this.#demoDriver(), {
       onRunning: (running) => this.#autoRunningChanged(running),
     });
+  }
+
+  async #fetchStartScript(path: string): Promise<void> {
+    try {
+      // A relative path resolves against the document; a non-http base
+      // (about:blank in tests, sandboxed docs) keeps the raw path.
+      let url: URL | string = path;
+      try {
+        url = new URL(path, this.ownerDocument?.baseURI ?? location.href);
+      } catch {
+        /* keep the raw path */
+      }
+      const response = await fetch(url);
+      if (!response.ok) return;
+      const body = (await response.text()).trim();
+      if (body === '') return;
+      // A late fetch after a disconnect (which nulls the handle) must not
+      // re-attach into a detached element; nor double-attach on reconnect.
+      if (this.#autostart !== null || !this.isConnected) return;
+      this.#autostart = attachAutostart(this, this.#demoDriver(), {
+        script: body,
+        onRunning: (running) => this.#autoRunningChanged(running),
+      });
+    } catch {
+      // No fetchable script (offline, 404, blocked): the static fallback
+      // transcript stays; never throw from a landing page.
+    }
   }
 
   /** The script owns the keyboard while it runs; the reader takes it back. */
