@@ -144,6 +144,8 @@ export class SemTerminal extends SemElement {
   /* -- shell-v2 context menu (§8.5; dom-menu integrate patch) -- */
   #browserPassthroughArmed = false;
   #menu = new ContextMenuController(this.#menuHost());
+  /** The surface the input model is attached to (attach is not idempotent). */
+  #inputSurface: HTMLElement | null = null;
 
   /* -- shell-v2 core-screen wiring (CORE-V2 §4–§8) -- */
   /** The screen: source of truth for scrollback, selection, alt apps. */
@@ -278,6 +280,8 @@ export class SemTerminal extends SemElement {
   disconnectedCallback(): void {
     this.#stopPlayback(false);
     this.#menu.detach();
+    this.#input.detach();
+    this.#inputSurface = null;
     this.#offLines?.();
     this.#offLines = null;
     this.#offEnv?.();
@@ -653,14 +657,23 @@ export class SemTerminal extends SemElement {
     };
     if (shell.viewDelegate == null) {
       shell.viewDelegate = (choice) => {
-        if (choice === 'dom') renderer.useDomView();
-        else renderer.useCanvasView();
+        if (choice === 'dom') {
+          renderer.useDomView();
+          this.dataset.paint = 'dom';
+        } else {
+          renderer.useCanvasView();
+          this.dataset.paint = 'canvas';
+        }
       };
     }
     this.#renderer = renderer;
     renderer.attach(this.#paintScreen, surface);
     this.dataset.paint = 'canvas';
     shell.markCanvasAvailable?.();
+    // The paint path owns the input surface from here on (bat lane's
+    // required flip — core-screen deviation 2): hidden input (IME/paste),
+    // mouse/selection, wheel, and the context menu all ride the surface.
+    this.#ensureInputAttached(surface);
     this.#onMetrics(renderer.metrics());
   }
 
@@ -696,6 +709,20 @@ export class SemTerminal extends SemElement {
     this.#mirrorOnly = mirror;
     this.#domView = true;
     this.dataset.paint = 'dom';
+    // The mirror-only fallback paints the same surface — the input rides it
+    // there too (wheel, selection, context menu have no canvas to lean on).
+    this.#ensureInputAttached(surface);
+  }
+
+  /**
+   * Attach the input model to the paint surface exactly once per surface
+   * (InputModel.attach is not idempotent — double-attach leaks listeners).
+   */
+  #ensureInputAttached(surface: HTMLElement): void {
+    if (this.#inputSurface === surface) return;
+    this.#input.detach();
+    this.#input.attach(surface);
+    this.#inputSurface = surface;
   }
 
   /** Metrics settled (attach, font load, zoom): refit the screen (§8.3). */
