@@ -49,6 +49,8 @@ export class CookedLine implements LineDiscipline {
     private readonly prompt: () => string,
     /** Buffer/caret mirror — the element keeps its input in sync. */
     private readonly onChange: (buffer: string, caret: number) => void = () => {},
+    /** The shell callback: a line was submitted (Enter) — run it. */
+    private readonly onLine: (line: string) => void = () => {},
   ) {}
 
   get buffer(): string {
@@ -63,6 +65,13 @@ export class CookedLine implements LineDiscipline {
   promptRow(): { text: string; caret: number } {
     const ps = `${this.prompt()} $ `;
     return { text: ps, caret: stringWidth(ps) + stringWidth(this.#buffer.slice(0, this.#caret)) };
+  }
+
+  /** The visible input is edited natively (IME, drag); adopt its state. */
+  syncFrom(buffer: string, caret: number): void {
+    this.#buffer = buffer;
+    this.#caret = Math.max(0, Math.min(caret, buffer.length));
+    // Adopting native text is NOT history movement: the draft stays.
   }
 
   onSubmit(line: string): void {
@@ -86,19 +95,19 @@ export class CookedLine implements LineDiscipline {
     this.#draft = '';
   }
 
-  key(ev: KeyEvent): void {
+  key(ev: KeyEvent): boolean {
     const key = ev.key;
     if (ev.ctrl && !ev.alt && !ev.meta) {
-      if (this.#control(key)) return;
+      if (this.#control(key)) return true;
     }
     if (ev.alt && !ev.ctrl && !ev.meta && key === 'Backspace') {
       this.#killWord();
-      return;
+      return true;
     }
     switch (key) {
       case 'Enter':
         this.#submit();
-        return;
+        return true;
       case 'Backspace':
         if (this.#caret > 0) {
           this.#buffer = this.#buffer.slice(0, this.#caret - 1) + this.#buffer.slice(this.#caret);
@@ -127,18 +136,19 @@ export class CookedLine implements LineDiscipline {
         this.#navigate(1);
         break;
       case 'Tab':
-        if (ev.shift) return; // Shift+Tab keeps its focus meaning
+        if (ev.shift) return false; // Shift+Tab keeps its focus meaning
         this.#complete();
-        return;
+        return true;
       default:
         if (!ev.ctrl && !ev.meta && !ev.alt && key.length === 1) {
           this.#buffer = this.#buffer.slice(0, this.#caret) + key + this.#buffer.slice(this.#caret);
           this.#caret += 1;
         } else {
-          return; // modifier-only or composed key — not ours
+          return false; // modifier-only or composed key — not ours
         }
     }
     this.onChange(this.#buffer, this.#caret);
+    return true;
   }
 
   /** The named control keys; true when the key was consumed. */
@@ -237,7 +247,8 @@ export class CookedLine implements LineDiscipline {
 
   #submit(): void {
     const line = this.#buffer;
-    this.onSubmit(line);
+    this.onSubmit(line); // history + draft reset, buffer cleared
+    this.onLine(line); // the shell callback — run it (§5.1)
   }
 }
 
