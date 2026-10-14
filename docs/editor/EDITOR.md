@@ -1,9 +1,9 @@
 # EDITOR.md — SemText editor: the written contract
 
-Status: **Phase 0 draft** (LANE=design, 2026-10-14, worktree `epic-editor` @ `67064b5`).
+Status: **Phase 0, reconciled** (LANE=design, 2026-10-14, worktree `epic-editor`).
 Every lane implements against this file. Where code and this doc disagree, **this doc lane
-reconciles to `src/editor/model/types.ts`** and lists the deltas in §13. Until `types.ts`
-lands, §2 is the provisional model shape every lane codes behind a local adapter.
+reconciles to `src/editor/model/types.ts`**; the reconciliation that folded the published
+`types.ts` (@`0aaba35`) into §2 is logged in §13.
 
 Companion documents: the approved plan (`~/.claude/plans/goofy-baking-peacock.md`) is the
 spec for *what and why*; this file is the contract for *exactly what each piece is called,
@@ -76,145 +76,132 @@ already owns — editor chrome paints from `sem-ed-*` classes only (§9.3).
 
 ## 2. Document model contract (`src/editor/model/`)
 
-Published by LANE=model-core as its first commit: `src/editor/model/types.ts`. The names
-below are the shapes every other lane codes against; §13 records the reconciliation.
+Published by LANE=model-core: `src/editor/model/types.ts` (first commit, @`0aaba35`).
+Implementations live beside it (`parse.ts`, `serialize.ts`, `ops.ts`, `document.ts`,
+`position.ts`, `entities.ts`) and re-export from `src/editor/model/index.ts`. §2 is
+**types.ts restated for lane use**; the deltas found at reconciliation are listed in §13.
+The model is pure data + pure functions over it: it never imports Lit and never touches
+the DOM.
 
 ### 2.1 Node kinds and shapes
 
-```ts
-type NodeId = string;                 // 'n1', 'n2', … stable within a session
-interface SourceRange { start: number; end: number }   // byte offsets into doc.source
+`EditorNode` is a discriminated union over `kind`; every node carries
+`NodeCommon { id, parentId, range }`:
 
-type NodeKind = 'root' | 'element' | 'text' | 'comment' | 'doctype' | 'cdata' | 'pi';
+- `DocumentNode` (`kind: 'document'`) — the synthetic root; `parentId` is null only here.
+- `ElementNode` — `name` (authored spelling, case-preserved; match with
+  `name.toLowerCase()`), `attrs: AttrNode[]` in authored order, `children`,
+  `selfClosing` (authored `<br />` form; void elements created by ops default to
+  self-closing — `VOID_ELEMENTS`), plus the close-tag trivia the serializer needs
+  (`preGt`, `closeTag`).
+- `TextNode` — `value` (decoded; **edits write here**), `raw` (authored slice, emitted
+  verbatim while `edited` is false), `edited` flag, and `mode: 'normal' | 'raw'`.
+  `<script>`/`<style>` content is ONE raw text node (`RAW_TEXT_ELEMENTS`): entities not
+  decoded, tags never parsed. This is what keeps the sem-chat JSON payload byte-exact
+  and inert (§8).
+- `CommentNode`, `CdataNode`, `ProcessingInstructionNode` (`target` + `value`),
+  `DoctypeNode` — bodies verbatim, never decoded.
 
-interface SemAttr {
-  name: string;
-  value: string | null;               // null = boolean/empty-authored attribute
-  quote: '"' | "'" | null;            // authored quote style; null = unquoted
-  range: SourceRange;
-}
+Attributes (`AttrNode`): `name` (matched case-insensitively), `value` (decoded; `null` =
+bare/boolean attribute like `collapsed`), `rawValue` (authored slice with entities
+intact; `null` once created/edited — the serializer then escapes `value`), `quote:
+'"' | "'" | ''` (`''` = bare), `pre` (whitespace between the previous token and the
+name), `range`.
 
-interface SemNode {
-  id: NodeId;
-  kind: NodeKind;
-  range: SourceRange;                 // exact source span, leading trivia excluded
-  tag?: string;                       // element: authored spelling, case-preserved
-  attrs?: SemAttr[];                  // element: authored order preserved
-  selfClosing?: boolean;              // element: authored `<x/>` form preserved
-  value?: string;                     // text/comment/cdata/pi raw content as authored
-  parent: NodeId | null;
-  children?: NodeId[];                // element | root, authored order
-}
-
-interface ParseError {
-  message: string;                    // author-facing, no stack
-  range: SourceRange;
-  severity: 'error' | 'warning';
-  recovered: boolean;                 // true = parse continued past it
-}
-
-interface ParsedDoc {
-  root: NodeId;                       // the synthetic root's id
-  nodes: Map<NodeId, SemNode>;
-  source: string;                     // the exact source this tree was parsed from
-  errors: ParseError[];
-}
-```
-
-Trivia preserved per node: attribute order and quote style, self-closing vs explicit
-close form, raw entity text inside text nodes and attribute values, comments, CDATA,
-processing instructions, doctype, whitespace between nodes (each node's `range` plus the
-gaps between sibling ranges reproduce the source exactly). Case-sensitivity: tag and
-attribute names are stored as authored; SemText authoring is lowercase, and the editor
-emits lowercase for new nodes.
+Ids: assigned at parse time (`n1`, `n2`, …); never reassigned by edits; untouched nodes
+keep their id across transactions. Op-created nodes allocate from the same document
+counter via the factories `doc.createElement(spec)` / `doc.createText(value, mode?)`.
+Ranges: half-open `[start, end)` in UTF-16 code units (`String.prototype.slice`
+coordinates), valid as of the most recent `parse()`/`serialize()` — `serialize()`
+refreshes every node's range and raw text (callers needing current offsets serialize
+first). Trivia preserved per node: attribute order, quote style, per-attribute leading
+whitespace, `preGt`/close-tag trivia, self-closing vs explicit close form, raw entity
+text in text nodes and attribute values, comments, CDATA, PIs, doctype, inter-node
+whitespace.
 
 ### 2.2 Parsing and the last-good tree
 
-- `parse(source: string): ParsedDoc` — **never throws**. Malformed input produces
-  structured `ParseError`s with ranges and a best-effort tree; `recovered: true` marks
-  where the parser synthesised structure to continue.
-- `tryParse(source: string): ParsedDoc` — the same function; the distinct name exists for
-  the call sites that mean "parse and tolerate failure" (code view live re-parse, paste
-  sanitising, import). Model keeps the last good tree active until a parse succeeds with
-  **zero** `severity: 'error'` entries (warnings don't block).
-- `serialize(doc: ParsedDoc, opts?: SerializeOptions): string` — byte-exact for every
-  untouched document (`serialize(parse(x)) === x` is a property test over the whole
-  corpus, §10). Touched nodes re-emit canonically but style-matching: the serializer
-  copies indentation context from neighbours and the quote style from the node's own
-  surviving attributes. `SerializeOptions = { pretty?: boolean }` is v1-ignored; the
-  serializer always re-emits what the ranges + ops imply.
+- Parsing lives **outside** the document. Module-level `parse(source)` /
+  `tryParse(source)` return `ParseResult = { ok: true; doc: EditorDocument; issues } |
+  { ok: false; doc; issues; error: ParseIssue }`. Neither throws; malformed input yields
+  a best-effort tree plus structured `ParseIssue { code, severity, message, range }`s
+  with typed codes (`unclosed-tag`, `mismatched-close`, `stray-close`, `unexpected-eof`,
+  `invalid-char`, `bad-attr`, `unknown-entity`, `implicit-nesting`, `invalid-doctype`).
+- The **last good tree** is a document-instance decision: the session keeps using the
+  previous `EditorDocument` when `tryParse` returns `ok: false`; the code view renders
+  the failed attempt's `issues` against the still-active tree. `doc.issues` carries the
+  issues of the parse the instance was created from.
+- Serialization: `doc.serialize(style?: Partial<SerializeStyle>)` — byte-identical for
+  untouched nodes (`serialize(parse(x)) === x` is a property test over the whole corpus,
+  §10); edited/created nodes re-emit canonically from preserved trivia plus
+  `SerializeStyle { quote, indent, newline }` (`quote` affects newly created attributes
+  only). `doc.serializeSubtree(id, style?)` emits one subtree and refreshes only its
+  ranges — this is what the controller's re-render protocol uses (§4.4).
 
 ### 2.3 Ops
 
 ```ts
-type SerializedNode = { /* JSON-able SemNode subtree; ids optional (assigned on insert) */ };
+type EditOp =
+  | { type: 'insertNode';     parent: NodeId; index: number; node: EditorNode }
+  | { type: 'removeNode';     node: NodeId }
+  | { type: 'moveNode';       node: NodeId; parent: NodeId; index: number }
+  | { type: 'setAttr';        node: NodeId; name: string; value: string | null }
+  | { type: 'removeAttr';     node: NodeId; name: string }
+  | { type: 'setText';        node: NodeId; value: string }
+  | { type: 'wrap';           node: NodeId; wrapper: ElementSpec }
+  | { type: 'unwrap';         node: NodeId }
+  | { type: 'replaceSubtree'; node: NodeId; replacement: EditorNode };
 
-type Op =
-  | { type: 'insertNode';     parentId: NodeId; index: number; node: SerializedNode }
-  | { type: 'removeNode';     id: NodeId }
-  | { type: 'moveNode';       id: NodeId; parentId: NodeId; index: number }
-  | { type: 'setAttr';        id: NodeId; name: string; value: string | null; quote?: '"' | "'" }
-  | { type: 'removeAttr';     id: NodeId; name: string }
-  | { type: 'setText';        id: NodeId; value: string }
-  | { type: 'wrap';           ids: NodeId[]; node: SerializedNode }
-  | { type: 'unwrap';         id: NodeId }
-  | { type: 'replaceSubtree'; id: NodeId; node: SerializedNode };
+interface ElementSpec { tag: string; attrs?: Array<{ name: string; value?: string | null }>;
+                        children?: EditorNode[] }
 ```
 
-Semantics pinned for all lanes:
+Semantics pinned for all lanes (guards enforced by `canApply(op)`; `apply` throws
+`ModelError` on rejection — UI paths check `canApply` first):
 
-- `index` is a position in the parent's `children` array **before** the op applies; ops in
-  one transaction see each other's results left to right.
-- `removeNode`/`replaceSubtree` detach the whole subtree; undo restores it with the **same
-  ids** (undo entries carry the detached subtree, they never re-derive it).
-- `setAttr` with `value: null` authors the bare attribute spelling (`collapsed`); with a
-  quote it authors `name="value"`. Editing an attribute preserves its position among the
-  node's attrs.
-- `setText` writes raw text; callers escape entities themselves (the controller escapes
-  on commit from `contenteditable`, §4.5).
-- `wrap` wraps a contiguous sibling run in one new element (the new element is a single
-  node with `ids` as its children); `unwrap` splices an element's children into its
-  grandparent at its position and drops the element.
+- `index` is a position in the parent's `children` array **before** the op applies.
+- `moveNode`/`insertNode` refuse to place a node inside its own subtree.
+- `setText` targets text nodes only.
+- Duplicate attribute names: `setAttr` rewrites the first match; `removeAttr` removes
+  every match.
+- Nodes passed by reference (`insertNode`, `replaceSubtree`'s replacement,
+  `wrap`'s wrapper children) are **adopted** and must not already be attached to this
+  document. Template snippets and duplicate subtrees therefore rebuild through
+  `doc.createElement`/`doc.createText` so ids come from the document counter (§3.3).
+- `setAttr` with `value: null` authors the bare attribute spelling (`collapsed`).
+  Attribute position among the node's attrs is preserved; a surviving attribute keeps
+  its authored quote, a new one follows `SerializeStyle.quote` (default `"`).
+- `setText` writes decoded text; the serializer re-escapes (`escapeText`) on emit —
+  callers never hand-escape into the model.
+- `wrap` wraps **one** node in a new element (`wrapper`); wrapping a sibling run is one
+  transaction — `wrap` on the first node, then `moveNode` each additional sibling into
+  the wrapper. `unwrap` splices the node's children into its grandparent at its
+  position and drops the element.
 - Ops are the **only** mutation path. Descriptors and chrome never edit the DOM directly
   with intent to persist.
 
 ### 2.4 Transactions, history, events
 
-```ts
-interface Transaction { ops: Op[]; label?: string }
-
-class EditorModel {
-  parse(source: string): ParsedDoc;          // installs the tree if clean; else records errors
-  get doc(): ParsedDoc;                      // the active (last good) tree
-  apply(tx: Transaction): void;              // atomic: all ops or none; pushes history; emits
-  undo(): boolean;  redo(): boolean;
-  canUndo: boolean; canRedo: boolean;
-  history(): Array<{ label?: string; kind: 'do' | 'undo' | 'redo' }>;
-  node(id: NodeId): SemNode | null;
-  children(id: NodeId): SemNode[];
-  parentOf(id: NodeId): SemNode | null;
-  pathTo(id: NodeId): NodeId[];              // root → id (outline/breadcrumb)
-  // selection mapping (§2.6)
-  caretFromOffset(offset: number): Caret;
-  offsetFromCaret(caret: Caret): number;
-  rangeOf(id: NodeId): SourceRange;
-  nodeAtOffset(offset: number): NodeId | null;
-}
-type Caret = { nodeId: NodeId; offset: number };   // offset in code units of node text
-
-// Events dispatched on the <sem-editor> host (bubbles: false, composed: false):
-//   sem-edit-change     detail { ops: Op[]; transaction: Transaction; version: number;
-//                                cause: 'apply' | 'undo' | 'redo' | 'parse' }
-//   sem-edit-selection  detail { anchor: Caret; focus: Caret }
-//   sem-edit-errors     detail { errors: ParseError[] }        // fired on parse result change
-//   sem-edit-mode       detail { mode: 'wysiwyg' | 'code' | 'split' }
-// Programmatic listeners: model.subscribe(listener: (e: ModelChange) => void): () => void
-```
-
-`version` increments on every committed change; lanes use it to discard stale async
-re-renders. History is a single undo/redo stack for the whole document (no per-element
-stacks). Undo coalescing: consecutive `setText` ops on the same node within 800 ms merge
-into one history entry (typing feels like one step); every other op is its own entry.
+- `doc.transaction(label, (tx) => { tx.push(op); … })` — ops apply immediately (the tree
+  is live for reads inside the callback), batch into **one** undo entry and **one**
+  change event; a rejected op rolls back the transaction's earlier ops (tree unchanged).
+  `doc.apply(op, opts?)` is the one-op convenience. `doc.openTransaction(label)` returns
+  a `TransactionSpan` (`commit()` / `abort()`, each exactly once) for async flows.
+- Coalescing (typing): pass `TransactionOptions.coalesce` — transactions sharing a key
+  merge into ONE undo entry while they arrive within the coalesce window. The inline
+  text editor passes a per-node key (`text:<nodeId>`), so a typing burst is one undo
+  step (§4.5). `silent: true` skips the change event (bulk imports).
+- History: a single push-only stack for the whole document — `undo()` / `redo()` /
+  `canUndo()` / `canRedo()` (**methods, not properties**), `history(): readonly
+  HistoryEntry[]` (oldest first; `depth` counts from newest), `clearHistory()`.
+- Events: `doc.on('change' | 'history' | '*', cb): Unsubscribe`. `ChangeEvent { doc,
+  transaction, version }` fires once per commit; `HistoryChangeEvent { canUndo, canRedo
+  }` on stack movement. `version` is monotonic, one bump per transaction commit; lanes
+  use it to discard stale async re-renders (§4.4).
+- The shell MAY mirror commits onto the `<sem-editor>` host as DOM CustomEvents
+  (`sem-edit-change` / `sem-edit-selection` / `sem-edit-errors` / `sem-edit-mode`) for
+  page embedders. The **intra-editor contract is `doc.on`** — no lane may depend on the
+  DOM events existing.
 
 ### 2.5 Source-of-truth boundaries
 
@@ -228,15 +215,21 @@ into one history entry (typing feels like one step); every other op is its own e
 
 ### 2.6 Selection and position mapping
 
-- Model carets are `{ nodeId, offset }` into text nodes. DOM ⇄ model mapping walks the
-  **authored children** only (§0: runtime chrome and Lit `<!---->` markers are skipped).
-- `caretFromDomPosition(domNode, domOffset): Caret | null` and
-  `domPositionFor(caret): { node: Text; offset: number } | null` live in
-  `src/editor/model/selection.ts`; both return `null` when the position is inside chrome
-  the editor does not model (callers then fall back to the nearest authored ancestor).
-- WYSIWYG ⇄ code-view sync maps carets through source offsets (`rangeOf` /
-  `caretFromOffset`). Split-mode selection sync is one-way-on-typing (the pane you type in
-  drives; the other follows on commit or idle 250 ms) so the two never fight for focus.
+- Model positions: `DocPos { node, offset }` — for a text node `offset` is a decoded-text
+  offset (UTF-16 units of `value`); for an element it is a child boundary
+  (`0..children.length`); for comment/cdata/pi it is an offset into the body.
+  `Selection = { anchor: DocPos, focus: DocPos }`; equal for a collapsed caret.
+- Source mapping lives on the document: `posToOffset(pos): number | null`,
+  `offsetToPos(offset): DocPos | null` (rounds left), `rangeOf(id)`.
+- DOM ⇄ model mapping — `caretFromDomPosition(domNode, domOffset): DocPos | null` and
+  `domPositionFor(caret): { node: Text; offset: number } | null` — lives in
+  `src/editor/controller/selection.ts`, deliberately outside `types.ts` (the model stays
+  DOM-free). It walks **authored children only** (§0: runtime chrome and Lit `<!---->`
+  markers are skipped); both return `null` for a position inside unmodeled chrome, and
+  callers fall back to the nearest authored ancestor.
+- WYSIWYG ⇄ code-view sync maps carets through `posToOffset`/`offsetToPos`. Split-mode
+  selection sync is one-way-on-typing (the pane you type in drives; the other follows on
+  commit or idle 250 ms) so the two never fight for focus.
 
 ---
 
@@ -326,8 +319,10 @@ Semantics pinned for all lanes:
   inserted item's snippet with the first stop focused.
 - `templates[].xml` is the *authoring form* of an insert snippet. Stops use the
   `${n:placeholder}` / `${n|a,b}` grammar; the controller turns the first stop into the
-  post-insert caret. Snippets are parsed through the model's parser (never
-  `insertAdjacentHTML`) so safety passes apply to inserted content too.
+  post-insert caret. Snippets are parsed with the module-level parser (never
+  `insertAdjacentHTML`), then rebuilt through `doc.createElement`/`doc.createText` so
+  ids come from the document counter and the adoption rule (§2.3) holds — safety passes
+  apply to inserted content too.
 - `regions()` maps what the element *rendered* back to model ids — needed wherever the
   element regroups or clones content (sem-note wraps the body in `.sem-note-body`;
   npl-mood groups details into `.npl-mood-detail`; sem-chat reuses authored
@@ -354,15 +349,15 @@ per bucket (§11).
 |---|---|
 | Inline text slot (contenteditable) | `setText` on the slot's text node (split/merge text nodes as needed) |
 | Attribute field in property modal | `setAttr` / `removeAttr` per changed field, one transaction |
-| `+` on an item list | `insertNode(parentId, index, item template parsed)` |
+| `+` on an item list | `insertNode(parent, index, <item template rebuilt via createElement>)` |
 | `−` on an item | `removeNode(item id)` |
 | Link popover field | `setAttr(attr)` or `setText` (slot form), URL-safety-checked (§8) |
 | Reorder (drag / Alt+arrows) | one `moveNode` |
-| Wrap in… | `wrap` |
+| Wrap in… | `wrap(node, wrapper)` (+ `moveNode` per additional sibling) |
 | Convert to… | `replaceSubtree` + `setAttr` mapping (per-descriptor convert table) |
-| JSON items editor (sem-chat) | `replaceSubtree` of the `<script>` node (byte-exact unless edited) |
+| JSON items editor (sem-chat) | `setText` on the payload's raw text node (mode `raw` — byte-exact unless edited) |
 | Insert before/after (menu, `+` zone, slash) | `insertNode` |
-| Duplicate | `insertNode(copy of subtree, sibling index + 1)` — ids re-assigned |
+| Duplicate | `insertNode` of the subtree rebuilt via factories, sibling index + 1 — fresh ids |
 
 ---
 
@@ -442,8 +437,9 @@ After a transaction touches element `E`'s subtree, the controller re-projects:
    `data-sem-chrome` nodes to drop.
 2. **Replace authored children**: remove `E`'s current authored children — everything
    except `data-sem-chrome` nodes and comment markers — then insert the model's children
-   of `E` as a fragment built by `renderAuthorInert()` (§8): the parser re-parses the
-   children's serialized form and stamps DOM via `createContextualFragment` so scripts
+   of `E` as a fragment built by `renderAuthorInert()` (§8): the source emitted by
+   `doc.serializeSubtree(E)` is re-parsed and stamped via `createContextualFragment` so
+   scripts
    are neutralised on the way in. Preserving untouched subtrees *node-for-node* (moving
    existing DOM instead of re-creating) is the v1 optimisation: children whose model ids
    still exist with unchanged ranges are kept and re-ordered, not rebuilt — this keeps
@@ -455,8 +451,8 @@ After a transaction touches element `E`'s subtree, the controller re-projects:
    `el.whenChildrenReady(selector)` — the controller awaits the same promise the element
    uses rather than polling.
 4. **Restore**: re-apply the captured caret; if the focused chrome was rebuilt, refocus
-   its successor. Emit nothing (the model already emitted `sem-edit-change`; the
-   re-render is a projection, not an edit).
+   its successor. Emit nothing (the document already fired its `change` event via
+   `doc.on`; the re-render is a projection, not an edit).
 5. **Guard every step on `version`**: a newer transaction invalidates an in-flight
    re-render; the newest one wins.
 
@@ -471,7 +467,8 @@ model on parse (same rule `sem-source` applies) and never round-trip into serial
   editing; the slot keeps its authored wrapping.
 - **Enter** inserts a line break (multiline slots) or commits (single-line slots).
   **Blur** commits. **Esc** reverts to the model value without an op. Commit = one
-  `setText` transaction (escaped per `TextSlot.escape`), announced via `aria-live`
+  `setText` transaction (decoded value committed; the model re-escapes on emit —
+  `TextSlot.escape` stays `'entities'` for paste paths), announced via `aria-live`
   (§7).
 - Typing coalesces in history (§2.4). The editor never re-renders under an active
   contenteditable caret — model changes from elsewhere defer that slot's projection until
@@ -555,11 +552,12 @@ with one smoke test.
 
 ### 5.3 Outline and breadcrumb
 
-- Outline pane (left rail, collapsible, hidden < 700 px): tree from `model.pathTo` of
+- Outline pane (left rail, collapsible, hidden < 700 px): tree from `doc` ancestor walks
+  (`ancestorsOf`) of
   element nodes with descriptors (`title` + tag), keyboard-navigable listbox; Enter
   selects + scrolls into view; F2 / Enter-again opens properties; Delete removes with the
   §7 confirm path. Current selection follows the canvas.
-- Breadcrumb row above the canvas: `pathTo(selection)` as `nav[aria-label="Breadcrumb"]`
+- Breadcrumb row above the canvas: `ancestorsOf(selection)` as `nav[aria-label="Breadcrumb"]`
   links; clicking an ancestor selects it.
 
 ### 5.4 Property modal
@@ -634,8 +632,8 @@ render a `+`.
   `source.split('\n')` — same streaming discipline as the terminal scanner; the model's
   `ParseError` ranges overlay as gutter markers + squiggles (`sem-ed-err`), listed in a
   `role="alert"` strip under the toolbar with jump-to-line links.
-- Live re-parse: `input` → debounce 300 ms → `model.parse` → clean: install tree +
-  project; errors: keep **last good tree** active (§2.2), show the error strip, mark the
+- Live re-parse: `input` → debounce 300 ms → `tryParse` → clean: adopt the new
+  document and re-project; errors: keep **last good tree** active (§2.2), show the error strip, mark the
   textarea `aria-invalid="true"`. Fixing the source auto-recovers; the manual "Re-parse
   now" button is the escape hatch for pasted-large-source jank.
 - Tab key inserts two spaces (source editing), never leaves the textarea.
@@ -816,7 +814,7 @@ reaches into model internals).
 | Date | Event |
 |---|---|
 | 2026-10-14 | Phase 0 draft written against plan §Architecture 1; `src/editor/model/types.ts` **not yet published**. §2 is provisional; reconcile within one working session of its landing. |
-| *(pending)* | model-core publishes `types.ts` → design reconciles §2 names/shapes to it and lists deltas here. |
+| 2026-10-14 | `types.ts` published (@`0aaba35`); §2 reconciled to it. Deltas from the provisional draft: single `SemNode` → `EditorNode` discriminated union, root kind `'root'` → `'document'`; `SemAttr` → `AttrNode` with `rawValue`/`pre` trivia and `quote: ''` (not `null`) for bare attributes; ranges are **UTF-16 code units**, not bytes; `Caret {nodeId}` → `DocPos {node}` with per-kind offset semantics; `ParseError`/`recovered` → `ParseIssue` with typed `ParseIssueCode` + `ParseResult {ok}`; `ParsedDoc` + `EditorModel` class → the live `EditorDocument` interface (`createDocument`/`parse` module functions); model events are `doc.on('change'\|'history'\|'*')`, not host CustomEvents — `sem-edit-*` DOM events demoted to an optional shell mirror; op field names `parentId/id` → `parent/node`; `wrap(ids[])` → `wrap(node, wrapper: ElementSpec)` (sibling runs = wrap + moveNode in one transaction); `setAttr` loses its `quote` param (style via `SerializeStyle.quote`); `SerializedNode` payloads → `EditorNode` by reference with the adoption rule, so templates/duplicates rebuild through `createElement`/`createText`; typing coalescing = explicit `TransactionOptions.coalesce` key (not a fixed 800 ms rule); `serialize(style)` refreshes ranges, `serializeSubtree` added (adopted by §4.4 step 2); raw-text mode for `script`/`style` formalised as one `TextNode mode:'raw'` (sem-chat JSON payload); `canUndo`/`canRedo` are methods; node factories + `ModelError`/`ApplyCheck` guards. No semantic conflicts found — every pinned semantic (id stability, last-good tree, byte-exact untouched serialization, atomic transactions, chrome-vs-authored boundary) is expressible in `types.ts` as published. |
 
 Standing reconciliation rules: this doc yields to `types.ts` on names and shapes; the
 *semantics* pinned here (id stability, last-good tree, byte-exact untouched
