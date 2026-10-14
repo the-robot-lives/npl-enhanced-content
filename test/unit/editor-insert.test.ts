@@ -8,6 +8,9 @@ import { createDocument } from '../../src/editor/model/document.js';
 import type { EditorDocument, ElementNode, NodeId } from '../../src/editor/model/types.js';
 import { createContext } from '../../src/editor/controller/attach.js';
 import type { EditorContext } from '../../src/editor/controller/types.js';
+// side-effect imports: register the hand-only descriptors under test
+import '../../src/lit/sem-question.edit.js';
+import '../../src/lit/sem-option.edit.js';
 import {
   allowedTagsAt, canInsertTagAt, indexAmongChildren, resolveInsertTarget, containerTagAt,
 } from '../../src/editor/insert/placement.js';
@@ -17,8 +20,18 @@ import {
 import {
   applyBooleanFields, compileSnippet, interpolateTemplate, previewSource,
 } from '../../src/editor/insert/compile.js';
+import { scanStops, stripStops } from '../../src/editor/templates/stops.js';
 import { documentMovedSince, insertEntryAt } from '../../src/editor/insert/apply.js';
 import type { InsertEntry, InsertTarget } from '../../src/editor/insert/types.js';
+import type { WizardField } from '../../src/editor/schema/types.js';
+
+/** Wizard field fixture: name carries the value key; type drives validation. */
+const f = (name: string, type: WizardField['type'] = 'text', options?: string[]): WizardField => ({
+  name,
+  label: name,
+  type,
+  ...(options !== undefined ? { options } : {}),
+});
 
 const SOURCE = '<sem-facts><sem-fact>One</sem-fact></sem-facts><sem-note><span class="sem-note-body">Hello</span></sem-note>';
 
@@ -51,6 +64,16 @@ describe('allowedTagsAt (schema placement)', () => {
     // npl-flag has NO optionsIn — it rides the root too (its container gate
     // is children data, not optionsIn), matching the pinned placement rule
     expect(allowed.has('npl-flag')).toBe(true);
+    // hand-only descriptors (no schema entry): sem-question is top-level
+    // (no containerOf); sem-option is companion-gated, never at the root
+    expect(allowed.has('sem-question')).toBe(true);
+    expect(allowed.has('sem-option')).toBe(false);
+  });
+
+  it('a hand-only containerOf descriptor gates on its container (sem-question → sem-option)', () => {
+    const q = createDocument('<sem-question type="mc"></sem-question>');
+    const id = (q.root.children[0] as ElementNode).id;
+    expect([...allowedTagsAt(q, id)]).toEqual(['sem-option']);
   });
 
   it('a container allows its companions (sem-facts → sem-fact)', () => {
@@ -152,15 +175,24 @@ describe('resolveInsertTarget (request normalization)', () => {
 // ── catalog ─────────────────────────────────────────────────────────────────
 
 describe('insertCatalog', () => {
-  it('has one entry per schema tag plus sem-chat, each with a template', () => {
+  it('has one entry per schema tag plus sem-chat plus the hand-only descriptors', () => {
     const catalog = insertCatalog();
-    expect(catalog.length).toBe(50);
+    expect(catalog.length).toBe(52); // 49 schema + sem-chat + sem-question + sem-option
     for (const e of catalog) {
       expect(e.template.xml.length).toBeGreaterThan(0);
       expect(BUCKET_ORDER).toContain(e.bucket);
     }
     expect(catalog.some((e) => e.tag === 'sem-chat')).toBe(true);
     expect(catalog.some((e) => e.tag === 'sem-note')).toBe(true);
+  });
+
+  it('hand-only descriptors surface with their real templates (sem-question)', () => {
+    const q = entry('sem-question');
+    expect(q.title).toBe('Quiz question');
+    expect(q.bucket).toBe('recall'); // EditBucket widened by the schema lane
+    expect(q.wizard).not.toBeNull();
+    expect(q.template.xml).toContain('${1|'); // their positional choice stop rides along
+    expect(entry('sem-option').tag).toBe('sem-option');
   });
 
   it('sem-chat rides the data bucket (lane override)', () => {
@@ -176,12 +208,16 @@ describe('insertCatalog', () => {
     expect(groups.every((g) => g.entries.length > 0)).toBe(true);
   });
 
-  it('entriesForTarget filters by placement', () => {
+  it('entriesForTarget filters by placement (schema AND hand-only)', () => {
     const { doc, rootId, factsId } = setup();
     const atRoot = entriesForTarget(doc, { parentId: rootId, index: 0 });
     expect(atRoot.some((e) => e.tag === 'sem-note')).toBe(true);
     expect(atRoot.some((e) => e.tag === 'sem-fact')).toBe(false);
+    expect(atRoot.some((e) => e.tag === 'sem-question')).toBe(true);
     expect(entriesForTarget(doc, { parentId: factsId, index: 0 }).map((e) => e.tag)).toEqual(['sem-fact']);
+    const q = createDocument('<sem-question type="mc"></sem-question>');
+    const qId = (q.root.children[0] as ElementNode).id;
+    expect(entriesForTarget(q, { parentId: qId, index: 0 }).map((e) => e.tag)).toEqual(['sem-option']);
   });
 
   it('filterEntries matches title/tag/summary case-insensitively', () => {
@@ -194,30 +230,50 @@ describe('insertCatalog', () => {
 
 // ── compile / interpolation ────────────────────────────────────────────────
 
-describe('interpolateTemplate (wizard field→stop binding)', () => {
-  it('binds a field to the stop whose placeholder is the field name', () => {
-    expect(interpolateTemplate('<sem-note>${1:caption}</sem-note>', { caption: 'Hi' })).toBe(
-      '<sem-note>Hi</sem-note>',
+describe('interpolateTemplate (POSITIONAL wizard binding — the desc-lane convention)', () => {
+  it('binds field i to stop i (placeholder text is a label, not a key)', () => {
+    // sem-question's real shape: field 'prompt' ↔ stop `${2:Prompt}`
+    const fields = [f('type', 'select', ['mc', 'cloze']), f('prompt')];
+    const xml = '<sem-question><p data-kind="prompt">${2:Prompt}</p></sem-question>';
+    expect(interpolateTemplate(xml, fields, { type: 'mc', prompt: 'Why?' })).toBe(
+      '<sem-question><p data-kind="prompt">Why?</p></sem-question>',
     );
   });
 
   it('escapes attribute stops with the authored quote, text stops without', () => {
-    const xml = '<x label="${1:caption}">${1:caption}</x>';
-    const out = interpolateTemplate(xml, { caption: 'a "b" <c> &' });
+    const xml = '<x label="${1:Label}">${2:Body}</x>';
+    const values = { label: 'a "b" <c> &', body: 'a "b" <c> &' };
+    const out = interpolateTemplate(xml, [f('label'), f('body')], values);
     expect(out).toContain('label="a &quot;b&quot; &lt;c&gt; &amp;"');
     expect(out).toContain('>a "b" &lt;c&gt; &amp;<');
   });
 
-  it('unbound stops keep their placeholder text', () => {
-    expect(interpolateTemplate('<x>${1:caption}</x>', {})).toBe('<x>caption</x>');
+  it('more stops than fields: extra named stops keep their placeholder text', () => {
+    expect(interpolateTemplate('<x>${1:A} ${2:B}</x>', [f('a')], { a: 'v' })).toBe('<x>v B</x>');
   });
 
-  it('choice stops fall back to the first option', () => {
-    expect(interpolateTemplate('<x v="${2|b,c|}"/>', {})).toBe('<x v="b"/>');
+  it('a bound choice stop takes the field value (validated at the step)', () => {
+    const fields = [f('kind'), f('level', 'select', ['b', 'c'])];
+    expect(interpolateTemplate('<x v="${2|b,c|}"/>', fields, { kind: 'k', level: 'c' })).toBe('<x v="c"/>');
+  });
+
+  it('an UNBOUND choice stop falls to the first option', () => {
+    expect(interpolateTemplate('<x v="${2|b,c|}"/>', [], {})).toBe('<x v="b"/>');
+  });
+
+  it('an empty non-required named field substitutes an empty string (attr stays, validator warns)', () => {
+    expect(interpolateTemplate('<x note="${1:Note}">t</x>', [f('note')], { note: '' })).toBe(
+      '<x note="">t</x>',
+    );
+  });
+
+  it('a bare stop substitutes its field value, or nothing when unbound', () => {
+    expect(interpolateTemplate('<x>${1}</x>', [f('v')], { v: 'x' })).toBe('<x>x</x>');
+    expect(interpolateTemplate('<x>${1}</x>', [], {})).toBe('<x></x>');
   });
 
   it('is single-pass: a value containing stop grammar is never re-scanned', () => {
-    expect(interpolateTemplate('<x>${1:caption}</x>', { caption: '${2|evil|}' })).toBe(
+    expect(interpolateTemplate('<x>${1:Caption}</x>', [f('cap')], { cap: '${2|evil|}' })).toBe(
       '<x>${2|evil|}</x>',
     );
   });
@@ -233,14 +289,39 @@ describe('interpolateTemplate (wizard field→stop binding)', () => {
   });
 
   it('previewSource parses + serializes the result', () => {
-    expect(previewSource('<sem-note>${1:caption}</sem-note>', { caption: 'Hey' })).toContain('Hey');
+    expect(previewSource('<sem-note>${1:Caption}</sem-note>', [f('cap')], { cap: 'Hey' })).toContain('Hey');
   });
 
-  it('compileSnippet builds a detached node with a fresh id', () => {
+  it('compileSnippet builds a detached node with a fresh id (stops stripped)', () => {
     const { doc } = setup();
-    const node = compileSnippet('<sem-note variant="info">x</sem-note>', doc);
+    const node = compileSnippet('<sem-note variant="${2|info,warn|}">${1:Caption}</sem-note>', doc);
     expect(node?.kind).toBe('element');
+    expect((node as ElementNode).attrs.find((a) => a.name === 'variant')?.value).toBe('info');
+    expect((node as ElementNode).children[0]?.kind).toBe('text');
     expect(doc.node((node as ElementNode).id)).toBeUndefined(); // not attached yet
+  });
+});
+
+describe('templates/stops (the ONE shared stop grammar)', () => {
+  it('scanStops classifies named, choice, and bare stops in order', () => {
+    const stops = scanStops('<x a="${1:hey}" v="${2|b,c|}">${3}</x>');
+    expect(stops.map((s) => s.kind)).toEqual(['named', 'choice', 'bare']);
+    expect(stops[0]?.text).toBe('hey');
+    expect(stops[1]?.options).toEqual(['b', 'c']);
+    expect(stops[2]?.index).toBe(3);
+  });
+
+  it('choice options are verbatim (split on comma, never trimmed)', () => {
+    expect(scanStops('<x v="${2|a, b|}"/>')[0]?.options).toEqual(['a', ' b']);
+  });
+
+  it('stripStops: named → placeholder, choice → first option, bare → removed', () => {
+    expect(stripStops('<x a="${1:hey}" v="${2|b,c|}">${3}</x>')).toBe('<x a="hey" v="b"></x>');
+  });
+
+  it('stripStops keeps the comma form intact (the desc-data conflict case)', () => {
+    // the legacy controller regex mangled option lists; the shared parser does not
+    expect(stripStops('<sem-chronology v="${2|timeline,list|}"/>')).toBe('<sem-chronology v="timeline"/>');
   });
 });
 

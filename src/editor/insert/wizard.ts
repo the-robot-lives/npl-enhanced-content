@@ -209,7 +209,10 @@ export function openWizard(
 
   const renderedSource = (): string => {
     const final = steps[steps.length - 1];
-    const interpolated = interpolateTemplate(final.template.xml, draft);
+    // positional binding: all fields across steps, in order, ↔ the final
+    // template's stops (compile.ts header documents the convention)
+    const allFields = steps.flatMap((s) => s.fields);
+    const interpolated = interpolateTemplate(final.template.xml, allFields, draft);
     return applyBooleanFields(interpolated, draft, booleanNames());
   };
 

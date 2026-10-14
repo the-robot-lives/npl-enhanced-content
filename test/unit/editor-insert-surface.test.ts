@@ -166,8 +166,11 @@ describe('openInsertPanel', () => {
 
 // ── wizard ──────────────────────────────────────────────────────────────────
 
+// POSITIONAL convention: fields across ALL steps, in order (caption, href,
+// body, level, collapsed) ↔ the final template's stops 1..5. Placeholder
+// text is a human label, not a key.
 const WIZ_TEMPLATE =
-  '<sem-note caption="${1:caption}" href="${2:href}" level="${3:level}" collapsed="${4:collapsed}">${1:caption}</sem-note>';
+  '<sem-note caption="${2:Link}" level="${4|info,warn|}" collapsed="${5:toggle}">${1:Caption} ${3:Body}</sem-note>';
 
 function wizardEntry(): InsertEntry {
   const f = (name: string, label: string, over: Partial<WizardField> = {}): WizardField => ({
@@ -253,8 +256,11 @@ describe('openWizard (the generic stepper)', () => {
     expect(doc.version).toBe(version + 1); // one transaction
     const node = doc.childrenOf(rootId)[2]!;
     expect(node.kind).toBe('element');
-    expect((node as { attrs: { name: string; value: string | null }[] }).attrs.find((a) => a.name === 'collapsed')).toBeDefined();
-    expect(doc.textOf(node.id)).toBe('He said "hi" <b>'); // decoded, not escaped
+    const attrs = (node as { attrs: { name: string; value: string | null }[] }).attrs;
+    expect(attrs.find((a) => a.name === 'collapsed')).toBeDefined(); // boolean → bare attr
+    expect(attrs.find((a) => a.name === 'caption')?.value).toBe('https://example.com/a?b=1'); // href ↔ stop 2
+    expect(attrs.find((a) => a.name === 'level')?.value).toBe('warn'); // choice stop takes the select value
+    expect(doc.textOf(node.id)).toBe('He said "hi" <b> wizard body text'); // decoded, not escaped
     expect(announced.some((m) => m.includes('via wizard'))).toBe(true);
     expect(document.querySelector('dialog')).toBeNull();
   });

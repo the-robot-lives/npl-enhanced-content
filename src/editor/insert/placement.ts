@@ -18,8 +18,20 @@
  */
 
 import type { DocumentNode, EditorDocument, EditorNode, NodeId } from '../model/types.js';
-import { canonicalTagName, companionsOf, getTag, loadSchema } from '../schema/index.js';
+import type { EditDescriptor } from '../schema/types.js';
+import { canonicalTagName, companionsOf, getTag, handDescriptors, loadSchema } from '../schema/index.js';
 import type { InsertRequestDetail, InsertTarget } from './types.js';
+
+// pass-through for lane consumers (dnd placement imports it from here)
+export { canonicalTagName };
+
+/** Hand-written descriptors for tags with NO schema entry (sem-question,
+ *  sem-option — Tier-1 quiz pair; desc-recall). They have no placement
+ *  data, so this lane defines their rule: `containerOf: T` → inside T only;
+ *  otherwise top-level (validator warns `unknown-tag`, never blocks). */
+function handOnlyDescriptors(): EditDescriptor[] {
+  return handDescriptors().filter((d) => getTag(d.tag) === undefined);
+}
 
 /**
  * Canonical tag names insertable as children of `parentId` (an element node
@@ -36,6 +48,9 @@ export function allowedTagsAt(doc: EditorDocument, parentId: NodeId): Set<string
       if (spec.optionsIn === null) allowed.add(spec.name.toLowerCase());
     }
     allowed.add('sem-chat'); // seeded spec, optionsIn-less by construction
+    for (const d of handOnlyDescriptors()) {
+      if (d.containerOf === undefined) allowed.add(d.tag.toLowerCase());
+    }
     return allowed;
   }
   if (node.kind !== 'element') return allowed;
@@ -46,6 +61,9 @@ export function allowedTagsAt(doc: EditorDocument, parentId: NodeId): Set<string
     if (canonical !== null) allowed.add(canonical);
   }
   for (const companion of companionsOf(tag)) allowed.add(companion.name.toLowerCase());
+  for (const d of handOnlyDescriptors()) {
+    if (d.containerOf?.toLowerCase() === tag) allowed.add(d.tag.toLowerCase());
+  }
   return allowed;
 }
 

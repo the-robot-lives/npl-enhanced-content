@@ -7,13 +7,15 @@
  * `insertAdjacentHTML` (§8) — so fresh ids come from the document counter
  * and the adoption rule holds.
  *
- * Wizard binding (pinned here; the generic stepper is this lane's):
- * a wizard FIELD binds to the stop whose PLACEHOLDER TEXT equals the field
- * name (`${1:caption}` ← field `caption`). Select and boolean fields use a
- * text stop too — their validation comes from `WizardField.options` /
- * `required`. Stops without a matching field keep their placeholder text.
- * Choice stops (`${n|a,b|}`) are display-only in v1 and fall back to their
- * first option at compile, matching the controller's strip rule.
+ * Wizard binding — POSITIONAL BY ORDINAL, per the desc-lane convention
+ * (npl-a + recall ship it; this lane adopted it): stop `${i}` of the FINAL
+ * step's template binds to the i-th FIELD of the wizard (steps
+ * concatenated in order). Placeholder text is a human label, not a key.
+ * Choice stops (`${n|a,b|}`) take the bound field's value (validated
+ * against `options` at the step); an UNBOUND choice stop falls to its
+ * first option. A stop with no field keeps its placeholder text. An empty
+ * non-required field substitutes an empty string (`attr=""` stays; the
+ * property modal/validator warns, never blocks).
  *
  * Escaping is stop-position aware: a stop inside an attribute value
  * (`attr="${1:field}"`) escapes with `escapeAttr`, a stop in text content
@@ -27,31 +29,41 @@ import { parse } from '../model/document.js';
 import { currentIdCounter } from '../model/parse.js';
 import { rebuildSubtree } from '../safety/sanitize.js';
 import { getTemplateCompiler } from '../shell/context.js';
-import { buildFromXml } from '../controller/actions.js';
-
-/** One combined scan so substituted values are never re-parsed as stops. */
-const STOP_SCAN = /\$\{\d+:([^}]*)\}|\$\{\d+\|([^|}]*)\|[^}]*\}|\$\{\d+\}/g;
+import { STOP_SCAN, stripStops } from '../templates/stops.js';
+import type { WizardField } from '../schema/types.js';
 
 const SENTINEL_SCAN = /\u0000(\d+)\u0000/g;
 
 /**
- * Substitute wizard field values into a template's named stops.
- * Unmatched named stops keep their placeholder; choice/bare stops fall to
- * their first option / nothing (compiled away later).
+ * Substitute wizard field values into a template's stops by ORDINAL:
+ * stop `${i}` ↔ fields[i-1] (steps concatenated in order). `values` is
+ * keyed by field name. Ordinal binding (not source order) so templates may
+ * place a later field's stop before an earlier one; the shipped
+ * descriptors number 1..n sequentially, where the two coincide.
  */
-export function interpolateTemplate(xml: string, values: Readonly<Record<string, string>>): string {
+export function interpolateTemplate(
+  xml: string,
+  fields: readonly WizardField[],
+  values: Readonly<Record<string, string>>,
+): string {
   const payloads: string[] = [];
-  const marked = xml.replace(STOP_SCAN, (_whole, named?: string, choice?: string) => {
-    if (named !== undefined) {
-      const value = values[named];
-      if (value !== undefined) {
-        payloads.push(value);
-        return `\u0000${payloads.length - 1}\u0000`;
-      }
-      return named; // unbound stop keeps its placeholder text
+  const marked = xml.replace(STOP_SCAN, (whole: string, ...rest: unknown[]) => {
+    const groups = (rest[rest.length - 1] ?? {}) as Record<string, string | undefined>;
+    const ordinal = Number(groups.n ?? groups.c ?? groups.b ?? 0);
+    const field = fields[ordinal - 1] ?? null;
+    const value = field !== null ? values[field.name] : undefined;
+    let payload: string;
+    if (groups.options !== undefined) {
+      // choice stop: bound non-empty value wins; unbound falls to first option
+      payload =
+        value !== undefined && value !== '' ? value : (groups.options.split(',')[0] ?? '');
+    } else if (groups.n !== undefined && field === null) {
+      return groups.text ?? whole; // no field for this stop — placeholder stays
+    } else {
+      payload = value ?? '';
     }
-    if (choice !== undefined && choice !== '') return choice.split(',')[0] ?? '';
-    return '';
+    payloads.push(payload);
+    return `\u0000${payloads.length - 1}\u0000`;
   });
   return marked.replace(SENTINEL_SCAN, (whole, index: string) => {
     const before = marked.slice(0, marked.indexOf(whole));
@@ -95,14 +107,22 @@ export function applyBooleanFields(
 
 /**
  * Build a detached node from a RAW template (stops still in). Strips the
- * stops (controller semantics), parses through the model, rebuilds through
- * the doc factories, then re-clones with collision-free ids.
+ * stops via the same positional scan (fields=[], so choice stops fall to
+ * their first option and named stops keep placeholder text), parses through
+ * the model, rebuilds through the doc factories, then re-clones with
+ * collision-free ids. The seam wins when integrate wires one.
+ *
+ * NOTE: deliberately NOT `buildFromXml`/`stripTemplateStops` — the
+ * controller's stripper mangles choice stops (desc-npl-b report); the
+ * controller lane is fixing it. This path is self-contained.
  */
 export function compileSnippet(xml: string, doc: EditorDocument): EditorNode | null {
   const seam = getTemplateCompiler();
-  const built = seam !== null ? seam(xml, doc) : buildFromXml(doc, xml);
-  if (built === null) return null;
-  return cloneFresh(doc, built, { v: currentIdCounter() });
+  if (seam !== null) {
+    const built = seam(xml, doc);
+    return built === null ? null : cloneFresh(doc, built, { v: currentIdCounter() });
+  }
+  return compileRendered(interpolateTemplate(xml, [], {}), doc);
 }
 
 /**
@@ -153,7 +173,11 @@ export function serializePreview(source: string): string {
   return parse(source).serialize();
 }
 
-/** Serialized preview of a template with values applied. */
-export function previewSource(xml: string, values: Readonly<Record<string, string>>): string {
-  return serializePreview(interpolateTemplate(xml, values));
+/** Serialized preview of a template with field values applied. */
+export function previewSource(
+  xml: string,
+  fields: readonly WizardField[],
+  values: Readonly<Record<string, string>>,
+): string {
+  return serializePreview(interpolateTemplate(xml, fields, values));
 }
