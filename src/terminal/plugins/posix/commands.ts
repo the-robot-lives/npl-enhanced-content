@@ -18,6 +18,7 @@
 import type { CommandContext, CommandSpec, CompletionContext } from '../../terminal-core.js';
 import { highlightAnsi } from '../../sh-highlight.js';
 import { resolvePath } from '../../vfs.js';
+import { batApp } from '../../apps/bat/bat-app.js';
 
 /* ------------------------------------------------------------------ *
  * shared helpers
@@ -279,6 +280,10 @@ function emit(ctx: CommandContext, text: string, numbered: boolean, start: numbe
 const bat: CommandSpec = {
   name: 'bat',
   usage: "bat [--plain] [-l lang] [--color=when] [file...] — cat with highlighting (html, text)",
+  // §6.4: a tty claims the full-screen pager; every decline falls through
+  // to run() (bat lane's registration request — the app hook only fires
+  // when isTty && ctx.color).
+  app: batApp,
   run(ctx) {
     const args = expandShorts(ctx.args);
     let plain = false;

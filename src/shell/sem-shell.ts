@@ -2,6 +2,7 @@ import type { ShellLine } from '../terminal/terminal-core.js';
 import type { PropertyValues } from 'lit';
 import { SemElement } from '../lit/base.js';
 import { SemTerminal } from '../terminal/sem-terminal.js';
+import { lineText } from '../terminal/screen/screen.js';
 import { demoPlugin } from '../terminal/plugins/demo/plugin.js';
 import { posixPlugin } from '../terminal/plugins/posix/plugin.js';
 import { cardsPlugin } from '../terminal/plugins/cards/plugin.js';
@@ -279,7 +280,19 @@ export class SemShell extends SemTerminal {
       },
       open: (): boolean => this.tui !== null,
       stopped: (): boolean => this.#autostart === null,
-      transcript: (): string[] => this.lines.map((line) => line.text),
+      // @expect is a contains check — while an app holds the alt surface
+      // it must assert what is ON SCREEN (the bat lane's integrate patch).
+      transcript: (): string[] => {
+        if (this.appLive) {
+          const rows: string[] = [];
+          for (let row = 0; row < this.screen.rows; row++) {
+            const line = this.screen.alternate.lines[row];
+            if (line !== undefined) rows.push(lineText(line));
+          }
+          return rows;
+        }
+        return this.lines.map((line) => line.text);
+      },
     };
   }
 }
