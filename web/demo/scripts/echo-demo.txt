@@ -1,0 +1,4 @@
+# Fetched demo
+## The shell fetched this file and played its body — the r2.1 start-script path contract.
+$ echo start-script-fetched
+@expect start-script-fetched

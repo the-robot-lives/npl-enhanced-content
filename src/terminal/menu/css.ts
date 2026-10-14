@@ -10,8 +10,12 @@
  */
 
 export const MENU_DOM_CSS = `
-/* ── shell-v2-dom-menu ── */
-sem-terminal .sem-term-menu, sem-shell .sem-term-menu {
+/* ── shell-v2-dom-menu ──
+   r2.1: the menu appends to document.body (a popover must not be clipped
+   by the frame's overflow), so the bare class selectors below are the ones
+   that match; the sem-terminal/sem-shell descendants stay for any host
+   that renders the menu inside the element. */
+sem-terminal .sem-term-menu, sem-shell .sem-term-menu, .sem-term-menu {
   position: fixed;
   z-index: 1000;
   min-width: 210px;
@@ -24,7 +28,7 @@ sem-terminal .sem-term-menu, sem-shell .sem-term-menu {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
   font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
-sem-terminal .sem-term-menu-item, sem-shell .sem-term-menu-item {
+sem-terminal .sem-term-menu-item, sem-shell .sem-term-menu-item, .sem-term-menu-item {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -40,14 +44,14 @@ sem-terminal .sem-term-menu-item, sem-shell .sem-term-menu-item {
   border-radius: 5px;
   cursor: default;
 }
-sem-terminal .sem-term-menu-item:focus, sem-shell .sem-term-menu-item:focus {
+sem-terminal .sem-term-menu-item:focus, sem-shell .sem-term-menu-item:focus, .sem-term-menu-item:focus {
   background: color-mix(in srgb, var(--sem-accent, #7ec8a2) 22%, transparent);
   outline: none;
 }
-sem-terminal .sem-term-menu-item[aria-disabled="true"], sem-shell .sem-term-menu-item[aria-disabled="true"] {
+sem-terminal .sem-term-menu-item[aria-disabled="true"], sem-shell .sem-term-menu-item[aria-disabled="true"], .sem-term-menu-item[aria-disabled="true"] {
   opacity: 0.45;
 }
-sem-terminal .sem-term-menu-hint, sem-shell .sem-term-menu-hint {
+sem-terminal .sem-term-menu-hint, sem-shell .sem-term-menu-hint, .sem-term-menu-hint {
   margin-left: auto;
   padding-left: 12px;
   font-size: 11px;
@@ -58,7 +62,7 @@ sem-terminal .sem-term-menu-hint, sem-shell .sem-term-menu-hint {
   @keyframes sem-term-menu-in {
     from { opacity: 0; transform: translateY(-2px) scale(0.98); }
   }
-  sem-terminal .sem-term-menu, sem-shell .sem-term-menu {
+  sem-terminal .sem-term-menu, sem-shell .sem-term-menu, .sem-term-menu {
     animation: sem-term-menu-in 120ms ease-out;
   }
 }

@@ -186,3 +186,27 @@ describe('sem-shell start-script wiring', () => {
     shell.remove();
   }, 10000);
 });
+
+describe('attachAutostart script option (r2.1 fetch flow)', () => {
+  it('an explicit script overrides the attribute value', () => {
+    FakeIntersectionObserver.instances = [];
+    const clock = makeClock();
+    const target = document.createElement('div');
+    target.setAttribute('start-script', '/demo/scripts/site.txt');
+    document.body.appendChild(target);
+    const { driver, calls } = makeDriver();
+    const handle = attachAutostart(target, driver, {
+      clock,
+      IntersectionObserver: FakeIntersectionObserver as unknown as typeof IntersectionObserver,
+      script: '# fetched\n$ echo fetched-ok',
+    });
+    // The explicit script plays even though the attribute names a file —
+    // the fetch flow's contract: the host resolves, autostart executes.
+    FakeIntersectionObserver.instances[0]!.show(target, 0.9);
+    clock.advance(5000); // delay, typing and the run elapse
+    expect(calls).toContain('type:echo fetched-ok');
+    expect(calls).toContain('run');
+    handle.dispose();
+    target.remove();
+  });
+});
