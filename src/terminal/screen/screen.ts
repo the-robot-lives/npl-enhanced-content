@@ -65,7 +65,7 @@ export class Screen implements ScreenModel, ScreenTextSource {
   readonly modes: ScreenModes = { autowrap: true, altScreen: false };
   readonly cursor: CursorState = { line: 0, col: 0, visible: true, style: 'block' };
 
-  #savedCursor: { col: number; attrs: number; fg: Color; bg: Color } | null = null;
+  #savedCursor: { line: number; col: number; attrs: number; fg: Color; bg: Color } | null = null;
   #attrs = 0;
   #fg: Color = COLOR_DEFAULT;
   #bg: Color = COLOR_DEFAULT;
@@ -302,7 +302,7 @@ export class Screen implements ScreenModel, ScreenTextSource {
 
   /** DECSC — save cursor position + pen (§4.4). */
   saveCursor(): void {
-    this.#savedCursor = { col: this.cursor.col, attrs: this.#attrs, fg: this.#fg, bg: this.#bg };
+    this.#savedCursor = { line: this.cursor.line, col: this.cursor.col, attrs: this.#attrs, fg: this.#fg, bg: this.#bg };
   }
 
   /** DECRC — restore, or home + keep pen when nothing was saved. */
@@ -312,6 +312,7 @@ export class Screen implements ScreenModel, ScreenTextSource {
       this.moveCursor(0, 0);
       return;
     }
+    this.cursor.line = Math.max(0, saved.line);
     this.cursor.col = clampIndex(saved.col, this.#cols - 1);
     this.#attrs = saved.attrs;
     this.#fg = saved.fg;
@@ -356,14 +357,20 @@ export class Screen implements ScreenModel, ScreenTextSource {
     const wide = charWidth(cp) === 2;
     if (this.#pendingWrap) {
       this.#pendingWrap = false;
+      const wrapped = this.active.lines[this.cursorRow];
+      if (wrapped) wrapped.wrapped = true;
       this.carriageReturn();
       this.lineFeed();
     }
     if (wide && this.cursor.col === this.#cols - 1 && this.modes.autowrap) {
       // A wide glyph never straddles the margin (xterm leaves the last cell blank).
+      const wrapped = this.active.lines[this.cursorRow];
+      if (wrapped) wrapped.wrapped = true;
       this.carriageReturn();
       this.lineFeed();
     } else if (this.cursor.col >= this.#cols && this.modes.autowrap) {
+      const wrapped = this.active.lines[this.cursorRow];
+      if (wrapped) wrapped.wrapped = true;
       this.carriageReturn();
       this.lineFeed();
     }
@@ -791,6 +798,7 @@ export class Screen implements ScreenModel, ScreenTextSource {
     if (total === 0) return '';
     const from = range === null ? 0 : Math.max(0, range.start.line);
     const to = range === null ? total - 1 : Math.min(range.end.line, total - 1);
+    const rectangular = range?.rectangular === true;
     const lines: string[] = [];
     for (let abs = from; abs <= to; abs++) {
       const line = this.lineAt(abs);
@@ -798,8 +806,10 @@ export class Screen implements ScreenModel, ScreenTextSource {
         lines.push('');
         continue;
       }
-      const startCol = range !== null && abs === range.start.line ? range.start.col : 0;
-      const endCol = range !== null && abs === range.end.line ? range.end.col : line.cols - 1;
+      // Rectangular: EVERY row uses the range's column bounds; stream
+      // selection bounds only its two end rows.
+      const startCol = range !== null && (rectangular || abs === range.start.line) ? range.start.col : 0;
+      const endCol = range !== null && (rectangular || abs === range.end.line) ? range.end.col : line.cols - 1;
       lines.push(lineText(line, startCol, endCol));
     }
     return lines.join('\n');

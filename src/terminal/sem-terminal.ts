@@ -24,6 +24,15 @@ import {
 import { completeLine } from './complete.js';
 import { attachLocalStorage } from './backends/local-storage.js';
 import { createS3Backend } from './backends/s3.js';
+import { Screen, lineText } from './screen/screen.js';
+import { ScreenFeed } from './screen/feed.js';
+import { AppRunner } from './app/runner.js';
+import { CookedLine, RawLine, abbreviateHome } from './line/discipline.js';
+import { TitleFeed } from './title/title-feed.js';
+import { onEnvFeed } from './env/direnv.js';
+import { InputModel } from './input/index.js';
+import type { KeyEvent } from './screen/types.js';
+import type { AppSpawnAction } from './terminal-core.js';
 
 /**
  * sem-terminal — the reusable terminal core: input, history, transcript,
@@ -68,6 +77,8 @@ export class SemTerminal extends SemElement {
     playback: { type: Array },
     playing: { type: Boolean, state: true },
     tui: { type: Object, state: true },
+    /** A full-screen app owns the screen (§6.2) — prompt hidden, keys raw. */
+    appLive: { type: Boolean, state: true },
   };
 
   declare cwd: string;
@@ -81,18 +92,72 @@ export class SemTerminal extends SemElement {
   declare playback: PlaybackStep[] | null;
   declare playing: boolean;
   declare tui: TuiState | null;
+  declare appLive: boolean;
 
   readonly core = new TerminalCore();
 
-  #history: string[] = [];
-  #historyIndex = -1;
-  #draft = '';
   #booted = false;
   #playbackHandle: PlaybackHandle | null = null;
   #playbackStopped = false;
   #hasScript = false;
   /** onLine unsubscribe for the core's async line channel. */
   #offLines: (() => void) | null = null;
+
+  /* -- shell-v2 core-screen wiring (CORE-V2 §4–§8) -- */
+  /** The screen: source of truth for scrollback, selection, alt apps. */
+  readonly screen = new Screen({ cols: 80, rows: 24 });
+  /** Parser-gated write sink into the screen. */
+  readonly #feed = new ScreenFeed(this.screen);
+  /** Raw-mode handover; the runner drives its lifetime. */
+  readonly #raw = new RawLine();
+  /** Full-screen app lifecycle (spawn, guaranteed teardown, Ctrl+C 130). */
+  readonly #runner = new AppRunner(this.#feed, this.screen, this.#raw, (code, crash) => this.#onAppExit(code, crash));
+  /** Cooked line editor — the relocated v1 input semantics (§5.2). */
+  readonly #cooked = new CookedLine(
+    {
+      emit: (text) => this.appendLines([{ kind: 'comment', text }]),
+      clearViewport: () => this.#clearTranscript(),
+    },
+    () => this.core,
+    () => abbreviateHome(this.cwd, this.core.state.env.HOME ?? '/'),
+    (buffer, caret) => this.#mirrorInput(buffer, caret),
+    (line) => this.#exec(line), // Enter inside the discipline → the shell
+  );
+  /** OSC 0/1/2 + 9 chrome feed (§11.1); TAB_TITLE lands here too (§11.3). */
+  readonly titleFeed = new TitleFeed();
+  #offEnv: (() => void) | null = null;
+  /**
+   * The ONE input path (§7.5): physical keys (via the input element's
+   * keydown), playback `pressKey`, and programmatic `sendKeys` all land in
+   * the same pipeline. The DOM surface attach (hidden input, mouse,
+   * selection) stays OFF while the visible `<input>` is the IME surface —
+   * it flips on with the canvas renderer, whose canvas has no native
+   * input surface.
+   */
+  readonly #input = new InputModel({
+    dispatchKey: (ev) => this.#routeKey(ev),
+    isRawMode: () => this.appLive,
+    isAltScreen: () => this.screen.altScreen,
+    insertCooked: (text) => this.#insertCooked(text),
+    pasteRaw: (text) => {
+      if (this.appLive) this.#runner.paste(text);
+    },
+    dispatchMouse: (info) => {
+      this.#runner.mouse(info);
+    },
+    onWheelScroll: (dy) => {
+      this.screen.scrollBy(dy);
+      this.requestUpdate();
+      return true;
+    },
+    rowToAbsoluteLine: (row) => row + this.screen.viewportTop(),
+    metrics: () => ({ cols: this.screen.cols, rows: this.screen.rows, cellWidth: 8, cellHeight: 16 }),
+    getLineText: (line) => {
+      const l = this.screen.lineAt(line);
+      return l === null ? '' : lineText(l);
+    },
+    openContextMenu: () => {}, // chrome menu arrives with the canvas surface
+  });
 
   constructor() {
     super();
@@ -103,6 +168,7 @@ export class SemTerminal extends SemElement {
     this.playback = null;
     this.playing = false;
     this.tui = null;
+    this.appLive = false;
     this.core.mountKinds.set('s3', {
       id: 's3',
       help: 'S3 bucket over https (read-only unless the page sets a signer)',
@@ -115,6 +181,13 @@ export class SemTerminal extends SemElement {
     this.setAttribute('aria-label', 'Terminal');
     this.#offLines?.();
     this.#offLines = this.core.onLine((line) => this.appendLines([line]));
+    // .envrc chrome feeds — TAB_TITLE drives the tab title (§11.3);
+    // TAB_THEME is applied by the tab chrome (the osc-tabs lane's TabModel).
+    this.#offEnv?.();
+    this.#offEnv = onEnvFeed((feed) => {
+      const title = feed.vars.TAB_TITLE;
+      if (title !== undefined) this.titleFeed.setTitle(title);
+    });
     this.core.vfs.onError = (error) => {
       this.appendLines([{ kind: 'stderr', text: `${error.backend}: ${error.path}: ${error.message}` }]);
     };
@@ -132,6 +205,8 @@ export class SemTerminal extends SemElement {
     this.#stopPlayback(false);
     this.#offLines?.();
     this.#offLines = null;
+    this.#offEnv?.();
+    this.#offEnv = null;
     super.disconnectedCallback();
   }
 
@@ -261,18 +336,43 @@ export class SemTerminal extends SemElement {
     };
   }
 
-  /** Where a playback key lands: the TUI when open, else the input line. */
+  /** Where a playback key lands: the TUI when open, else the input path —
+   * the SAME pipeline physical keys take (§7.5). */
   #playbackKey(key: string): void {
     if (this.tui) {
       this.#tuiKey(key);
       return;
     }
-    if (key === 'Enter') {
-      this.#submitInput();
+    this.#input.handleSingleKey(key);
+  }
+
+  /** Programmatic keys (§7.5): the sendKeys grammar — typing's twin. */
+  sendKeys(spec: string): void {
+    this.#input.sendKeys(spec);
+  }
+
+  /** The InputHost dispatch seam: raw → app, cooked → the discipline. */
+  #routeKey(ev: KeyEvent): void {
+    if (this.appLive) {
+      this.#runner.key(ev);
+      this.#touchApp();
       return;
     }
-    if (key === 'ArrowUp') this.#navigate(-1);
-    else if (key === 'ArrowDown') this.#navigate(1);
+    const input = this.#inputEl();
+    if (input) {
+      const caret = input.selectionStart ?? input.value.length;
+      this.#cooked.syncFrom(input.value, caret);
+    }
+    this.#cooked.key(ev);
+    this.#mirrorInput(this.#cooked.buffer, this.#cooked.caret);
+  }
+
+  /** Cooked paste/composition insert: one key event per code point. */
+  #insertCooked(text: string): void {
+    for (const char of text) {
+      this.#cooked.key({ key: char, ctrl: false, alt: false, shift: false, meta: false });
+    }
+    this.#mirrorInput(this.#cooked.buffer, this.#cooked.caret);
   }
 
   /** The replay button: stop where it is, start over. */
@@ -297,8 +397,7 @@ export class SemTerminal extends SemElement {
         <div class="sem-shell-transcript" role="log" aria-live="polite" aria-label="Shell transcript">
           ${this.lines.map((line) => this.#renderLine(line))}
         </div>
-        ${this.tui ? this.#renderTui() : this.#renderPrompt()}
-      </div>
+        ${this.appLive ? this.#renderApp() : this.tui ? this.#renderTui() : this.#renderPrompt()}      </div>
     `;
   }
 
@@ -386,6 +485,14 @@ export class SemTerminal extends SemElement {
   }
 
   appendLines(newLines: ShellLine[]): void {
+    for (const line of newLines) {
+      // stdout/stderr (and the echoed cmd) are the ANSI-bearing streams —
+      // mirror them into the screen sink and the chrome title feed (§4.5).
+      if (line.kind === 'stdout' || line.kind === 'stderr' || line.kind === 'cmd') {
+        this.#feed.write(line.text);
+        this.titleFeed.consume(line.text);
+      }
+    }
     this.lines = [...this.lines, ...newLines];
   }
 
@@ -411,6 +518,9 @@ export class SemTerminal extends SemElement {
     const input = this.#inputEl();
     if (!input) return;
     const value = input.value;
+    // The discipline owns history/draft; the form path submits externally.
+    this.#cooked.syncFrom(value, value.length);
+    this.#cooked.onSubmit(value);
     input.value = '';
     this.#exec(value);
   }
@@ -419,21 +529,29 @@ export class SemTerminal extends SemElement {
     const result = this.core.execLine(value);
     this.cwd = result.state.cwd;
     if (result.clear) {
-      this.lines = [];
-      this.#ansi.reset();
-      this.#ansi.reset();
+      this.#clearTranscript();
     } else {
       this.appendLines(result.lines);
-    }
-    if (value.trim() !== '') {
-      this.#history.push(value);
-      this.#draft = '';
-      this.#historyIndex = -1;
     }
     for (const action of result.actions) {
       if (action.kind === 'window') this.#openWindow(action);
       else if (action.kind === 'tui') this.#openTui(action);
+      else if (action.kind === 'app') this.#spawnApp((action as AppSpawnAction).app);
     }
+  }
+
+  /**
+   * `clear` / Ctrl+L (§5.2): the DOM transcript empties, parser attribute
+   * state resets, and the SCREEN keeps its scrollback — only the viewport
+   * clears (§4.6), so the plain-transcript ring survives the wipe.
+   */
+  #clearTranscript(): void {
+    this.lines = [];
+    this.#ansi.reset();
+    this.#ansi.reset();
+    this.#feed.reset();
+    this.screen.clearViewport();
+    this.titleFeed.reset();
   }
 
   /**
@@ -462,8 +580,25 @@ export class SemTerminal extends SemElement {
     if (this.tui) this.tui = { ...this.tui }; // new reference → Lit re-renders
   }
 
-  /** Escape priority: filter row owns it; else close the TUI; else stop playback. */
+  /**
+   * The §6.3 Escape ladder, raw-app aware: an attached app owns Escape
+   * first (its key), then the filter row, the TUI, then playback stop.
+   * Ctrl+C during an app interrupts it with exit 130 (§6.3).
+   */
   #onFrameKeydown(event: KeyboardEvent): void {
+    if (this.appLive) {
+      if (event.key === 'c' && event.ctrlKey && !event.altKey && !event.metaKey) {
+        event.preventDefault();
+        this.#runner.requestInterrupt();
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.#runner.key({ key: 'Escape', ctrl: false, alt: false, shift: false, meta: false });
+        this.#touchApp();
+      }
+      return;
+    }
     if (event.key !== 'Escape') return;
     if (this.tui?.filtering) return; // the filter input handles its own Escape
     if (this.tui) {
@@ -477,38 +612,88 @@ export class SemTerminal extends SemElement {
     }
   }
 
+  /**
+   * Keys land in the CookedLine discipline (§5.2) — the v1 semantics,
+   * relocated: history-with-draft, completion, the control table. The
+   * visible input is adopted before each key (IME/drag stay native) and
+   * re-mirrored after. Raw mode hands keys to the app instead (§5.3).
+   */
   #onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'ArrowUp') {
+    const input = event.target as HTMLInputElement;
+    if (this.appLive) {
       event.preventDefault();
-      this.#navigate(-1);
-    } else if (event.key === 'ArrowDown') {
+      this.#input.handleKey(toKeyEvent(event));
+      this.#touchApp();
+      return;
+    }
+    const caret = input.selectionStart ?? input.value.length;
+    this.#cooked.syncFrom(input.value, caret);
+    if (this.#cooked.key(toKeyEvent(event))) {
       event.preventDefault();
-      this.#navigate(1);
-    } else if (event.key === 'Tab' && !event.shiftKey) {
-      const input = event.target as HTMLInputElement;
-      if (input.value === '') return; // empty line: Tab moves focus, as usual
-      event.preventDefault();
-      this.#complete(input);
-    } else if (event.key === 'l' && event.ctrlKey && !event.altKey && !event.metaKey) {
-      event.preventDefault();
-      this.lines = [];
+      this.#mirrorInput(this.#cooked.buffer, this.#cooked.caret);
     }
   }
 
-  /**
-   * Tab completion: extend the input when one completion exists (or a
-   * longest common prefix applies); with several candidates and nothing
-   * common to add, print them once — capped at 8, then "… +N more".
-   */
-  #complete(input: HTMLInputElement): void {
-    const outcome = completeLine(input.value, this.core);
-    if (outcome.kind === 'none') return;
-    input.value = outcome.line;
-    if (outcome.kind === 'list') {
-      const shown = outcome.candidates.slice(0, 8);
-      const rest = outcome.candidates.length - shown.length;
-      this.appendLines([{ kind: 'comment', text: shown.join('  ') + (rest > 0 ? `  … +${rest} more` : '') }]);
+  /** Push discipline state back into the visible input (the IME surface). */
+  #mirrorInput(buffer: string, caret: number): void {
+    const input = this.#inputEl();
+    if (!input || input.value === buffer) return;
+    input.value = buffer;
+    try {
+      input.setSelectionRange(caret, caret);
+    } catch {
+      // input types without selection support — value is enough
     }
+  }
+
+  /* ---------------------------------------------------------------- *
+   * full-screen apps (§6)
+   * ---------------------------------------------------------------- */
+
+  /** Spawn an app action from the core: alt screen, raw keys, DOM paint. */
+  #spawnApp(app: import('./screen/types.js').App): void {
+    if (!this.#runner.spawn(app)) return;
+    this.appLive = true;
+    void this.updateComplete.then(() => this.#touchApp());
+  }
+
+  /** Runner exit callback: status line + `$?`, prompt restored (§6.2). */
+  #onAppExit(code: number, crash: string | null): void {
+    this.appLive = false;
+    this.core.state.lastStatus = code;
+    const lines: ShellLine[] = [];
+    if (crash !== null) lines.push({ kind: 'stderr', text: `${crash}` });
+    lines.push({ kind: 'status', text: `exit ${code}` });
+    this.appendLines(lines);
+    void this.updateComplete.then(() => this.#inputEl()?.focus());
+  }
+
+  /** The screen changed under the app — repaint the interim DOM grid. */
+  #touchApp(): void {
+    this.requestUpdate();
+  }
+
+  /** Interim DOM renderer behind the ScreenRenderer seam (§8); the canvas
+   * driver replaces this paint when wired (DOM stays the a11y mirror). */
+  #renderApp(): TemplateResult {
+    const rows: TemplateResult[] = [];
+    for (let row = 0; row < this.screen.rows; row++) {
+      const line = this.screen.alternate.lines[row];
+      const text = line === undefined ? '' : lineText(line);
+      const cursorRow = this.screen.altScreen && this.screen.cursor.visible ? Math.max(0, Math.min(this.screen.cursor.line, this.screen.rows - 1)) : -1;
+      rows.push(
+        html`<div class="sem-app-row${row === cursorRow ? ' sem-app-cursor-row' : ''}" data-row=${row}>${text === '' ? ' ' : text}</div>`,
+      );
+    }
+    return html`<div class="sem-app" role="application" aria-label="Full-screen application" @wheel=${this.#onAppWheel}>${rows}</div>`;
+  }
+
+  /** Alt-screen wheel: the app's view scrolls unless it wants mouse (§7.3). */
+  #onAppWheel(event: WheelEvent): void {
+    if (this.#runner.mouseReporting) return; // the app reports it instead
+    event.preventDefault();
+    this.screen.scrollBy(event.deltaY > 0 ? 1 : -1);
+    this.#touchApp();
   }
 
   /* ---------------------------------------------------------------- *
@@ -574,25 +759,22 @@ export class SemTerminal extends SemElement {
     }
   }
 
-  /** Up/down through history; down past the newest restores the draft. */
+  /** Up/down through history; down past the newest restores the draft.
+   * Thin delegate — playback and tests drive this; the state of record
+   * lives in the CookedLine discipline (§5.2). */
   #navigate(delta: number): void {
     const input = this.#inputEl();
-    if (!input || this.#history.length === 0) return;
-    if (this.#historyIndex === -1) {
-      if (delta > 0) return;
-      this.#draft = input.value;
-      this.#historyIndex = this.#history.length - 1;
-    } else {
-      this.#historyIndex += delta;
-      if (this.#historyIndex >= this.#history.length) {
-        this.#historyIndex = -1;
-        input.value = this.#draft;
-        return;
-      }
-      if (this.#historyIndex < 0) this.#historyIndex = 0;
-    }
-    input.value = this.#history[this.#historyIndex];
+    if (!input) return;
+    const caret = input.selectionStart ?? input.value.length;
+    this.#cooked.syncFrom(input.value, caret);
+    this.#cooked.key({ key: delta < 0 ? 'ArrowUp' : 'ArrowDown', ctrl: false, alt: false, shift: false, meta: false });
+    this.#mirrorInput(this.#cooked.buffer, this.#cooked.caret);
   }
 }
 
 SemElement.register('sem-terminal', SemTerminal);
+
+/** DOM KeyboardEvent → the normalized KeyEvent the discipline/app take (§7.1). */
+function toKeyEvent(event: KeyboardEvent): KeyEvent {
+  return { key: event.key, ctrl: event.ctrlKey, alt: event.altKey, shift: event.shiftKey, meta: event.metaKey };
+}

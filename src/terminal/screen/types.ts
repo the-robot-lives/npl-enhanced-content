@@ -183,6 +183,13 @@ export interface ScreenPos {
 export interface SelectionRange {
   start: ScreenPos;
   end: ScreenPos;
+  /**
+   * Alt-drag rectangle (additive, CORE-V2 silence): when true the range
+   * corners bound a COLUMN rectangle — every line in [start.line, end.line]
+   * contributes exactly [start.col, end.col]. Absent/false = stream
+   * selection. Extraction honors it; renderers may highlight per-cell.
+   */
+  rectangular?: boolean;
 }
 
 /* ------------------------------------------------------------------ *

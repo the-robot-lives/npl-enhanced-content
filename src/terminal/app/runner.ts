@@ -157,8 +157,10 @@ export class AppRunner {
     this.#mouseReport = false;
     try {
       app.stop();
-    } catch {
-      // stop() crashing must never block the restore below (§5.3).
+    } catch (error) {
+      // stop() crashing must never block the restore below (§5.3) — but it
+      // is still a crash: surface it when the exit was otherwise clean.
+      if (crash === null) crash = error instanceof Error ? error.message : String(error);
     }
     this.raw.detach();
     this.screen.exitAlternate();
