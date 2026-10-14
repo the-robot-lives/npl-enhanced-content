@@ -185,6 +185,9 @@ describe('refresh + logout', () => {
     // No stored session, and the popup's message never arrives: with fake
     // timers the 120s sign-in wait times out and ensureSession resolves
     // false — the caller's signal to detach the mount.
+    // Capture the real setTimeout before faking: the drain below needs
+    // genuine macrotask yields.
+    const realSetTimeout = setTimeout.bind(globalThis);
     vi.useFakeTimers();
     const backend = mounted();
     const lines: Array<{ kind: string; text: string }> = [];
@@ -193,13 +196,13 @@ describe('refresh + logout', () => {
       () => 'done' as const,
       () => 'rejected' as const,
     );
-    // Drain microtasks until the discovery fetch resolved and the sign-in
-    // wait is actually on the fake clock — advancing an empty queue would
-    // leave the timer past the advanced position.
-    // Drain microtasks until the discovery fetch resolved and the sign-in
-    // wait is actually on the fake clock — advancing an empty queue would
-    // leave the timer past the advanced position.
-    for (let i = 0; i < 200 && vi.getTimerCount() === 0; i++) await Promise.resolve();
+    // Yield real macrotasks until the discovery fetch + PKCE digest
+    // resolved and the 120s sign-in wait is actually on the fake clock:
+    // crypto.subtle resolves off the microtask queue, so a pure microtask
+    // drain races the timer scheduling under load. Bounded at 1s real.
+    for (let i = 0; i < 500 && vi.getTimerCount() === 0; i++) {
+      await new Promise((resolve) => realSetTimeout(resolve, 2));
+    }
     await vi.advanceTimersByTimeAsync(130_000); // fires the 120s sign-in timeout
     expect(await guard).toBe('done');
     await expect(done).resolves.toBe(false);

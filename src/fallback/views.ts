@@ -59,7 +59,13 @@ export function enhanceViews(scope: ParentNode): void {
     const tabs: HTMLButtonElement[] = [];
     const tabId = (k: number): string => `${root.id}-tab-${k + 1}`;
     views.forEach((v, k) => {
-      if (!v.id) v.id = `${root.id}-view-${k + 1}`;
+      if (!v.id) {
+        v.id = `${root.id}-view-${k + 1}`;
+        // Runtime state marker (conventions: script state is always
+        // data-*): the id is ours for aria wiring, not authored identity,
+        // so extraction must not report it as the record id.
+        v.setAttribute('data-sem-minted-id', '');
+      }
       v.setAttribute('role', 'tabpanel');
       v.setAttribute('aria-labelledby', tabId(k));
       const b = document.createElement('button');
