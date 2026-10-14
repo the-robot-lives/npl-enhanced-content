@@ -2,6 +2,8 @@
 
 ## 2026-10-14
 
+- shell-v2 round 2 (epic.shell-v2, CORE-V2 §4–§12): screen model + ANSI feed + line discipline + AppRunner (core-screen), keys/chords/mouse/paste/hidden-input (input), canvas paint pipeline + DOM a11y mirror (canvas), OSC titles + tab model + window-chrome strip (osc-tabs), `sem-scroll` virtual scrollbar (scroll), §8.5 context menu + `renderer` view preference (dom-menu), bat full-screen pager app (bat), `semtext tui` app port with colour TUI (tui), full integration on `sem-terminal` (paint path, menu host, tab/title chrome, bat registration, alt-screen demo transcript); release leg folded the lane CSS into the vocabulary, flipped InputModel.attach onto the paint surface + data-paint through the view delegate, added the §8.5 context-menu e2e (12/12) and merged develop (docs-overhaul #3–#6) — vitest 1255/1255, tsc clean, budgets: semtext.js 132.7/144 KB, shell 237.2/256 KB, npl.js 49.0/52 KB, fallback 13.0/64 KB — → develop (#7).
+
 - fix: e2e release-blockers — extraction ignores runtime-minted view ids
   (`data-sem-minted-id`) so JS-on records equal the JS-off baseline; the
   source-fence dedent skips sentinel placeholder lines (flush-left pre
@@ -10,7 +12,8 @@
   sem-table spec drives the filter through its real input handler
   (cypress actionability misjudges the sticky chrome); conventions.html
   resynced to the normative conventions.md (table rows, heading ids, one
-  escaped class-form snippet).
+  escaped class-form snippet) — → stage (#4), → main (#5); deploy blocked
+  (registry secrets missing on the-robot-lives repo; see release report).
 - s3 backend: self-hosted oidc sign-in (authorization-code + PKCE, STS
   AssumeRoleWithWebIdentity), SigV4 request signing in-browser, temporary
   session store (sessionStorage by default) with silent pre-expiry

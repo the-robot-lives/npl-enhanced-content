@@ -33,6 +33,7 @@ import {
   type MountedPlugin,
 } from './loader.js';
 import type { TuiAction } from './tui.js';
+import type { App as TerminalApp } from './screen/types.js';
 
 export interface ShellState {
   cwd: string;
@@ -63,7 +64,14 @@ export interface WindowAction {
   contentType: string;
 }
 
-export type ShellAction = WindowAction | TuiAction;
+/** Data-only request to hand the screen to a full-screen app (CORE-V2 §6.4). */
+export interface AppSpawnAction {
+  kind: 'app';
+  /** The app instance the element's AppRunner will spawn. */
+  app: TerminalApp;
+}
+
+export type ShellAction = WindowAction | TuiAction | AppSpawnAction;
 
 /**
  * Page-supplied S3 request signer (`core.setS3Signer`): given one
@@ -133,6 +141,14 @@ export interface CommandSpec {
    * common-prefix-extends, and lists on a second Tab.
    */
   complete?(ctx: CompletionContext): string[];
+  /**
+   * Full-screen app handover (CORE-V2 §6.4, additive). When the stage's
+   * stdout is a terminal (`ctx.color`) the core calls this INSTEAD of
+   * `run`; return the app to spawn, or null to fall back to `run`.
+   * Piped/redirected stages never see it — apps are tty-only, and `run`
+   * remains the piped fallback so plugins stay usable in pipelines.
+   */
+  app?(ctx: CommandContext): TerminalApp | null;
 }
 
 /** One virtual file-system entry a plugin contributes. */
@@ -559,6 +575,7 @@ export class TerminalCore {
       return result;
     }
     let ran = false;
+    let spawnedApp = false;
     let stdin: string | null = null;
     for (let i = 0; i < parsed.stages.length; i++) {
       const stage = parsed.stages[i];
@@ -605,7 +622,17 @@ export class TerminalCore {
           continue;
         }
         try {
-          spec.run(ctx);
+          // Full-screen app handover (CORE-V2 §6.4): tty-only, additive —
+          // app may decline (null) or the stage may be piped (no ctx.color),
+          // in which case `run` remains the fallback path.
+          const spawned = isTty ? spec.app?.(ctx) ?? null : null;
+          if (spawned !== null) {
+            result.actions.push({ kind: 'app', app: spawned });
+            spawnedApp = true;
+            explicitStatus = 0; // the app reports its own exit status (§6.2)
+          } else {
+            spec.run(ctx);
+          }
         } catch (cause) {
           stderrLines++;
           lines.push({ kind: 'stderr', text: `${argv[0]}: ${cause instanceof Error ? cause.message : String(cause)}` });
@@ -624,7 +651,9 @@ export class TerminalCore {
       this.state.lastStatus = explicitStatus ?? (stderrLines > 0 ? 1 : 0);
       stdin = stdout;
     }
-    if (ran && !result.clear) lines.push({ kind: 'status', text: `exit ${this.state.lastStatus}` });
+    // An app launch prints no `exit N` — the runner adds it when the app
+    // exits, with the app's own status (§6.2).
+    if (ran && !result.clear && !spawnedApp) lines.push({ kind: 'status', text: `exit ${this.state.lastStatus}` });
     this.state.env.PWD = this.state.cwd;
     return result;
   }

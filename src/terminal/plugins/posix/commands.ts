@@ -18,6 +18,7 @@
 import type { CommandContext, CommandSpec, CompletionContext } from '../../terminal-core.js';
 import { highlightAnsi } from '../../sh-highlight.js';
 import { resolvePath } from '../../vfs.js';
+import { batApp } from '../../apps/bat/bat-app.js';
 
 /* ------------------------------------------------------------------ *
  * shared helpers
@@ -279,6 +280,10 @@ function emit(ctx: CommandContext, text: string, numbered: boolean, start: numbe
 const bat: CommandSpec = {
   name: 'bat',
   usage: "bat [--plain] [-l lang] [--color=when] [file...] — cat with highlighting (html, text)",
+  // §6.4: a tty claims the full-screen pager; every decline falls through
+  // to run() (bat lane's registration request — the app hook only fires
+  // when isTty && ctx.color).
+  app: batApp,
   run(ctx) {
     const args = expandShorts(ctx.args);
     let plain = false;
@@ -756,13 +761,19 @@ const MAN: Record<string, string[]> = {
   ],
   cat: ['cat — print files', '', 'SYNOPSIS', '  cat [-n] [file...]', '', '-n numbers every line `%6d<TAB>`; `-` or no files read piped input.'],
   bat: [
-    'bat — cat with syntax highlighting',
+    'bat — pager with syntax highlighting',
     '',
     'SYNOPSIS',
     '  bat [--plain | -p] [-l LANG] [--color=when] [file...]',
     '',
-    'Line numbers and a gutter by default; --plain turns them off. HTML (and xml, svg)',
-    'is tokenized by a small built-in highlighter; other text passes through plain.',
+    'On a terminal bat takes over the screen: a header, numbered gutter and a',
+    'status bar, like less. Keys: arrows or j/k scroll, PgUp/PgDn page (keeping',
+    'one context line), Home/End or g/G jump, / searches (case-insensitive) with',
+    'n/N stepping hits, :q quits, q exits, Esc clears a search first. The mouse',
+    'wheel scrolls. Long lines truncate instead of wrapping. Piped output (no',
+    'tty) or --color=never keeps the old guttered print; --plain is bare lines,',
+    'no gutter or colour. HTML (and xml, svg, sem.html) is tokenized by a small',
+    'built-in highlighter; other text passes through plain.',
   ],
   head: ['head — first lines', '', 'SYNOPSIS', '  head [-n N | -N] [file...]', '', 'Default 10 lines; several files get `==> f <==` headers.'],
   tail: [

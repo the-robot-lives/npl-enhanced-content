@@ -18,6 +18,9 @@
 //   Scenario: shell-storage.nojs.html renders the static transcript
 // Feature: s3 mounts
 //   Scenario: public mount hydrates over an intercepted REST endpoint
+// Feature: the context menu
+//   Scenario: right-click and Shift+F10 open it; Copy and Select all act;
+//     the view switches to text and back; Escape closes
 
 describe('sem-shell', () => {
   const prompt = '#sem-shell-input';
@@ -189,6 +192,67 @@ describe('sem-shell', () => {
       cy.get(log).should('contain.text', 'hydrated');
       run('cat /s3/docs/readme.txt'); // list keys are base-relative
       cy.get(log).should('contain.text', 'served from the intercept');
+    });
+  });
+
+  describe('the context menu', () => {
+    beforeEach(() => {
+      cy.visit('/demo/shell.html');
+      takeOver();
+    });
+
+    it('right-click and Shift+F10 open it; Copy and Select all act; the view switches to text and back; Escape closes', () => {
+      const menu = () => cy.get('[role="menu"][aria-label="Terminal menu"]');
+      const surface = () => cy.get('sem-shell').find('.sem-term-surface');
+      // sem-shell extends sem-terminal — the paint attribute is on the shell
+      const paint = () => cy.get('sem-shell');
+
+      // the menu rides the paint surface (inputModel.attach) — wait for the
+      // canvas path so the contextmenu listener is live, as for a user
+      paint().should('have.attr', 'data-paint', 'canvas');
+
+      // right-click opens, focus lands on the first enabled item, and Copy
+      // (no selection yet — a silent no-op) activates and closes the menu
+      surface().rightclick();
+      menu().should('exist');
+      cy.focused().should('have.attr', 'role', 'menuitem');
+      cy.get('[data-menu-id="copy"]').click();
+      cy.get('[role="menu"]').should('not.exist');
+
+      // Shift+F10 on the terminal's key surface opens it again; Select all
+      // takes the whole transcript and closes
+      cy.get('.sem-shell-hidden-input').then(($el) => {
+        $el[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true }));
+      });
+      menu().should('exist');
+      cy.get('[data-menu-id="select-all"]').click();
+      cy.get('[role="menu"]').should('not.exist');
+
+      // switch to the DOM (text) view and back; the label answers the
+      // current view each time the menu is built
+      surface().rightclick();
+      menu().should('exist');
+      cy.get('[data-menu-id="switch-view"]')
+        .should('contain.text', 'Switch to text view')
+        .click();
+      paint().should('have.attr', 'data-paint', 'dom');
+      cy.get('[role="menu"]').should('not.exist');
+
+      surface().rightclick();
+      menu().should('exist');
+      cy.get('[data-menu-id="switch-view"]')
+        .should('contain.text', 'Switch to canvas view')
+        .click();
+      paint().should('have.attr', 'data-paint', 'canvas');
+
+      // Escape closes the menu without falling through to the terminal's
+      // own Escape ladder (the menu swallows it) — and the shell lives on
+      surface().rightclick();
+      menu().should('exist');
+      cy.focused().type('{esc}');
+      cy.get('[role="menu"]').should('not.exist');
+      run('echo alive-after-esc');
+      cy.get(log).should('contain.text', 'alive-after-esc');
     });
   });
 });
