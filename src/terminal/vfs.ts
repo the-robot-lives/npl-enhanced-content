@@ -69,6 +69,11 @@ export interface VfsBackend {
   rename(from: string, to: string): Promise<void>;
   /** Entries of the dir at `path` (bare names + kinds). */
   list(path: string): Promise<Array<{ name: string; kind: 'file' | 'dir' }>>;
+  /**
+   * Optional detach-side cleanup — umount/logout drops sessions and
+   * timers (e.g. the s3 oidc credential session). Never throws.
+   */
+  dispose?(): void;
 }
 
 /** One failed backend flush, for introspection and warnings. */

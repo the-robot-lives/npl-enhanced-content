@@ -328,7 +328,9 @@ describe('the s3 backend', () => {
   });
 
   it('createS3Backend validates args and picks the mode', () => {
-    expect(createS3Backend([])).toBe('usage: mount s3 <https://host/bucket/prefix/> <mountpoint>');
+    expect(createS3Backend([])).toBe(
+      'usage: mount s3 <https://host/bucket/prefix/> <mountpoint> [mode=… issuer= client_id= redirect= sts= role= region= persist=]',
+    );
     expect(createS3Backend([BASE, 'relative'])).toBe('s3: mountpoint must be absolute: "relative"');
     expect(createS3Backend(['http://h.example.test/b/'])).toContain('only https://');
     const signer: S3Signer = async () => 'https://signed.example.test/x';

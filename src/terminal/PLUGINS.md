@@ -263,6 +263,48 @@ mutating op (`write`, `mkdirp`, `rm`, `rename`) flushes through
     unreadable objects are skipped, a failed list lands on stderr and
     the mount stays empty rather than half-read.
 
+  - **oidc** mode — self-hosted cognito-style sign-in (e.g. Authentik,
+    Keycloak, MinIO's STS); no static key ever reaches the page:
+    `mount s3 <base> <mnt> mode=oidc issuer=<openid issuer>
+    client_id=<public client> redirect=<redirect uri> sts=<sts endpoint>
+    [role=<role arn>] [scope=<scope>] [session_name=<name>]
+    [region=<region>] [persist=session|local]`.
+    1. The shell runs authorization-code + PKCE in a popup against the
+       issuer's discovery document (`.well-known/openid-configuration`);
+       the redirect page must `postMessage({source: 'semtext-s3-auth',
+       state, code}, origin)` back — same origin only, state checked,
+       120 s timeout.
+    2. The `id_token` is exchanged at the STS endpoint with
+       `AssumeRoleWithWebIdentity` (MinIO supports this), yielding
+       temporary `AccessKeyId/SecretAccessKey/SessionToken` (default
+       role session name `semtext-shell`).
+    3. Every request is signed in-browser with SigV4
+       (`src/terminal/backends/sigv4.ts`, WebCrypto HMAC-SHA256) —
+       GET/PUT/DELETE/ListObjectsV2, path-style, custom endpoints.
+    4. The temporary credential set lives in `sessionStorage` by
+       default (`persist="local"` opts into `localStorage`), namespaced
+       per mountpoint (`semtext:shell:s3:<mount>`), and is refreshed
+       silently ~60 s before expiry through the refresh token (or
+       re-sign-in if none was issued). `mount --logout <mnt>` and
+       `umount` clear the store and stop the timer. Values are never
+       logged — `mount` listings show mode, store kind, and expiry
+       only.
+    - **Security notes.** Configure CORS on BOTH the bucket and the STS
+      endpoint for the app origin, methods GET/PUT/DELETE/POST and the
+      `Authorization`, `x-amz-*` headers. Scope the assumed role to the
+      mount prefix — least privilege, e.g.
+      `{"Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject",
+      "s3:DeleteObject", "s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::bucket/prefix/*",
+      "arn:aws:s3:::bucket"]}`. Temporary credentials in web storage are
+      XSS-readable — keep the STS TTL short (minutes), prefer
+      `sessionStorage` (dies with the tab) over `localStorage`, and
+      never paste credentials into markup: static
+      `access_key`/`secret_key` flags are REFUSED at parse time. A
+      strict CSP (`connect-src` limited to the bucket + issuer + STS,
+      no `unsafe-inline` scripts) bounds what an injected script can
+      reach.
+
 The element wires ANSI output through `AnsiStateMachine` +
 `ansiSpans` (see src/terminal/ansi/) — one machine per terminal so
 SGR state persists across lines, reset on clear/Ctrl+L; raw escape

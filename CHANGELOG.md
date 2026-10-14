@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-14
+
+- s3 backend: self-hosted oidc sign-in (authorization-code + PKCE, STS
+  AssumeRoleWithWebIdentity), SigV4 request signing in-browser, temporary
+  session store (sessionStorage by default) with silent pre-expiry
+  refresh, `mount --logout`, static credential flags refused. Vectors:
+  the AWS SigV4 doc example reproduced byte-for-byte; oidc suites cover
+  discovery/exchange/refresh/store/postMessage over stubbed fetch.
+
 Dated work log — newest first, one line per landed change.
 
 ## 2026-10-14

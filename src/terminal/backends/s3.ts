@@ -11,6 +11,12 @@
  *     reaches the browser.
  *   - SIGNER callback: `core.setS3Signer((op, key) => url)` for pages
  *     that want full control; same shape as presign, supplied in JS.
+ *   - OIDC ("self-hosted cognito style"): authorization-code + PKCE
+ *     against a configurable issuer, ID token → `AssumeRoleWithWebIdentity`
+ *     at a configurable STS endpoint → short-lived credentials; every
+ *     request is SigV4-signed in the browser (see s3-auth.ts / sigv4.ts).
+ *     Only the TEMPORARY credential set is stored (session/localStorage,
+ *     per-mount, expiry-checked); static keys stay refused everywhere.
  *
  * Static AWS credentials are NEVER accepted: URLs carrying an
  * AccessKey/secret are refused at mount time, and nothing in this module
@@ -27,14 +33,52 @@
 
 import type { S3Signer } from '../terminal-core.js';
 import type { VfsBackend, VfsStat } from '../vfs.js';
+import {
+  OidcSession,
+  S3SessionStore,
+  StsClient,
+  SESSION_REFRESH_LEAD_MS,
+  waitForAuthCode,
+} from './s3-auth.js';
+import { sigv4Headers } from './sigv4.js';
+
+/** Short-lived S3 credentials minted by an STS AssumeRoleWithWebIdentity. */
+export interface S3SessionCredentials {
+  accessKeyId: string;
+  secretAccessKey: string;
+  sessionToken: string;
+  /** Epoch ms; the store treats anything inside the refresh lead as stale. */
+  expiresAt: number;
+  region: string;
+}
+
+/** The `oidc` mount configuration — public client, no secrets anywhere. */
+export interface S3OidcMountOptions {
+  issuer: string;
+  clientId: string;
+  redirectUri: string;
+  scope?: string;
+  /** STS endpoint speaking AssumeRoleWithWebIdentity (MinIO/R2/AWS). */
+  stsEndpoint: string;
+  roleArn?: string;
+  sessionName?: string;
+}
+
+export type S3WriteMode = 'public' | 'presign' | 'signer' | 'oidc';
 
 export interface S3MountOptions {
   /** Object base URL, e.g. `https://s3.example.test/bucket/prefix/`. */
   base: string;
   /** Where it mounts, absolute, e.g. `/s3`. */
   mountpoint: string;
-  /** Write mode: none for `public` (read-only), presign, or signer. */
-  mode: 'public' | 'presign' | 'signer';
+  /** Write mode: `public` (read-only), presign, signer, or `oidc`. */
+  mode: S3WriteMode;
+  /** OIDC + STS configuration for mode `oidc`. */
+  oidc?: S3OidcMountOptions;
+  /** Signature region (oidc mode; default `us-east-1`). */
+  region?: string;
+  /** Keep the session in localStorage (default sessionStorage). */
+  persist?: 'session' | 'local';
   /** Presign endpoint minting short-lived URLs (`?op=get|put|delete&key=`). */
   presignEndpoint?: string;
   /** Page-supplied signer callback (core.s3Signer). */
@@ -94,11 +138,19 @@ export class S3Backend implements VfsBackend {
   readonly writable: boolean;
   readonly mountpoint: string;
   readonly base: URL;
-  readonly mode: S3MountOptions['mode'];
+  readonly mode: S3WriteMode;
   readonly presignEndpoint?: string;
   readonly signer?: S3Signer;
   readonly maxObjects: number;
   readonly maxBytes: number;
+  readonly region: string;
+  readonly oidc?: S3OidcMountOptions;
+  readonly persist: 'session' | 'local';
+  readonly store?: S3SessionStore;
+  #session: S3SessionCredentials | null = null;
+  #oidcSession: OidcSession | null = null;
+  #sts?: StsClient;
+  #refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(opts: S3MountOptions) {
     this.base = parseS3Base(opts.base); // throws with the reason on a bad URL
@@ -109,6 +161,16 @@ export class S3Backend implements VfsBackend {
     this.signer = opts.signer;
     this.maxObjects = opts.maxObjects ?? DEFAULT_MAX_OBJECTS;
     this.maxBytes = opts.maxBytes ?? DEFAULT_MAX_BYTES;
+    this.region = opts.region ?? 'us-east-1';
+    this.persist = opts.persist ?? 'session';
+    if (opts.mode === 'oidc') {
+      this.oidc = opts.oidc;
+      this.store = new S3SessionStore(opts.mountpoint, this.persist);
+      // Pre-boot restore: a revisit reuses the tab's (or the persisted)
+      // temporary session instead of re-running the sign-in dance.
+      const stored = this.store?.load() ?? null;
+      if (stored?.valid) this.#session = stored;
+    }
   }
 
   /** Object URL for one backend-relative key. */
@@ -145,11 +207,51 @@ export class S3Backend implements VfsBackend {
     return await response.text();
   }
 
+  /** Current session, or a clear failure naming the remedy. */
+  #requireSession(): S3SessionCredentials {
+    const stored = this.store?.load() ?? null;
+    if (stored?.valid) this.#session = stored;
+    if (this.#session && this.#session.expiresAt - SESSION_REFRESH_LEAD_MS > Date.now()) return this.#session;
+    throw new Error('no session — run `mount s3 … mode=oidc …` to sign in again (or `mount --logout` first)');
+  }
+
+  /** SigV4 headers for one object request (oidc mode). */
+  async #signedHeaders(method: string, url: string, body?: string, contentType?: string): Promise<Record<string, string>> {
+    const session = this.#requireSession();
+    const signed = await sigv4Headers({
+      method,
+      url,
+      body,
+      region: session.region,
+      accessKeyId: session.accessKeyId,
+      secretAccessKey: session.secretAccessKey,
+      sessionToken: session.sessionToken,
+      service: 's3',
+      headers: contentType ? { 'content-type': contentType } : undefined,
+    });
+    return signed as unknown as Record<string, string>;
+  }
+
+  /** GET (and in oidc mode PUT/DELETE) with signing merged onto the init. */
+  async #fetchObject(op: 'get' | 'put' | 'delete', key: string, body?: string, contentType?: string): Promise<string> {
+    const url = this.#urlFor(key);
+    const method = op === 'get' ? 'GET' : op === 'put' ? 'PUT' : 'DELETE';
+    const init: RequestInit = { method };
+    if (op !== 'get') {
+      init.body = body ?? '';
+      init.headers = await this.#signedHeaders(method, url, init.body as string | undefined, contentType);
+    } else if (this.mode === 'oidc') {
+      init.headers = await this.#signedHeaders('GET', url);
+    }
+    return this.#fetchText(url, init);
+  }
+
   /** List entries under a backend-relative dir (immediate children only). */
   async list(path: string): Promise<Array<{ name: string; kind: 'file' | 'dir' }>> {
     const prefix = path === '/' || path === '' ? '' : path.replace(/^\/+|\/+$/g, '') + '/';
     const url = `${this.base.toString()}?list-type=2&prefix=${encodeURIComponent(prefix)}&max-keys=1000`;
-    const xml = await this.#fetchText(url);
+    const init: RequestInit | undefined = this.mode === 'oidc' ? { headers: await this.#signedHeaders('GET', url) } : undefined;
+    const xml = await this.#fetchText(url, init);
     const entries = parseS3ListXml(xml, this.base);
     const seen = new Map<string, 'file' | 'dir'>();
     for (const entry of entries) {
@@ -171,7 +273,7 @@ export class S3Backend implements VfsBackend {
     const children = await this.list('/' + clean);
     if (children.length > 0) return { kind: 'dir', size: children.length };
     try {
-      const text = await this.#fetchText(await this.#urlForOp('get', clean));
+      const text = await this.#fetchObject('get', clean);
       return { kind: 'file', size: text.length };
     } catch {
       return null;
@@ -181,7 +283,7 @@ export class S3Backend implements VfsBackend {
   async read(path: string): Promise<string | null> {
     const clean = path.replace(/^\/+|\/+$/g, '');
     try {
-      return await this.#fetchText(await this.#urlForOp('get', clean));
+      return await this.#fetchObject('get', clean);
     } catch {
       return null;
     }
@@ -189,6 +291,10 @@ export class S3Backend implements VfsBackend {
 
   async write(path: string, content: string): Promise<void> {
     const clean = path.replace(/^\/+|\/+$/g, '');
+    if (this.mode === 'oidc') {
+      await this.#fetchObject('put', clean, content, 'text/plain');
+      return;
+    }
     const url = await this.#urlForOp('put', clean);
     await this.#fetchText(url, { method: 'PUT', headers: { 'content-type': 'text/plain' }, body: content });
   }
@@ -202,7 +308,8 @@ export class S3Backend implements VfsBackend {
     if (opts.recursive) {
       const prefix = clean === '' ? '' : clean + '/';
       const url = `${this.base.toString()}?list-type=2&prefix=${encodeURIComponent(prefix)}&max-keys=1000`;
-      for (const entry of parseS3ListXml(await this.#fetchText(url), this.base)) {
+      const init: RequestInit | undefined = this.mode === 'oidc' ? { headers: await this.#signedHeaders('GET', url) } : undefined;
+      for (const entry of parseS3ListXml(await this.#fetchText(url, init), this.base)) {
         await this.#deleteKey(entry.key);
       }
       return;
@@ -211,6 +318,10 @@ export class S3Backend implements VfsBackend {
   }
 
   async #deleteKey(key: string): Promise<void> {
+    if (this.mode === 'oidc') {
+      await this.#fetchObject('delete', key, '');
+      return;
+    }
     const url = await this.#urlForOp('delete', key);
     await this.#fetchText(url, { method: 'DELETE' });
   }
@@ -235,7 +346,8 @@ export class S3Backend implements VfsBackend {
     let entries: S3Entry[];
     try {
       const url = `${this.base.toString()}?list-type=2&max-keys=1000`;
-      entries = parseS3ListXml(await this.#fetchText(url), this.base);
+      const init: RequestInit | undefined = this.mode === 'oidc' ? { headers: await this.#signedHeaders('GET', url) } : undefined;
+      entries = parseS3ListXml(await this.#fetchText(url, init), this.base);
     } catch (cause) {
       report({ kind: 'stderr', text: `s3: ${this.mountpoint}: list failed: ${cause instanceof Error ? cause.message : String(cause)}` });
       return;
@@ -256,7 +368,7 @@ export class S3Backend implements VfsBackend {
         break;
       }
       try {
-        const content = await this.#fetchText(await this.#urlForOp('get', entry.key));
+        const content = await this.#fetchObject('get', entry.key);
         put(entry.key, content);
         bytes += content.length;
         seeded++;
@@ -267,25 +379,178 @@ export class S3Backend implements VfsBackend {
     const capNote = truncated ? ` (capped at ${this.maxObjects} objects / ${this.maxBytes} bytes)` : '';
     report({ kind: 'stdout', text: `s3: ${this.mountpoint} ready — ${seeded} objects hydrated${capNote}` });
   }
+
+  /**
+   * One mount line for `mount` listings — expiry and store kind only;
+   * credential VALUES never appear here or anywhere user-visible.
+   */
+  describe(): string {
+    if (this.mode !== 'oidc') return '';
+    const stored = this.store?.load() ?? null;
+    if (!stored) return ' (oidc, not signed in)';
+    const minutes = Math.max(0, Math.round((stored.expiresAt - Date.now()) / 60_000));
+    return ` (oidc, ${this.persist}-storage, expires in ${minutes}m)`;
+  }
+
+  /**
+   * Make sure an oidc session exists: reuse the stored one, refresh a
+   * still-refreshable one, or run the PKCE popup dance. Reports progress
+   * through `report`; resolves false when the mount should NOT stay.
+   */
+  async ensureSession(
+    report: (line: { kind: 'stdout' | 'stderr'; text: string }) => void,
+  ): Promise<boolean> {
+    if (this.mode !== 'oidc' || !this.oidc || !this.store) return true;
+    // Build the OIDC/STS clients FIRST: the restore path schedules a
+    // pre-expiry refresh, and a null client there would silently no-op.
+    this.#sts ??= new StsClient({
+      endpoint: this.oidc.stsEndpoint,
+      region: this.region,
+      roleArn: this.oidc.roleArn,
+      sessionName: this.oidc.sessionName,
+    });
+    this.#oidcSession ??= new OidcSession({
+      issuer: this.oidc.issuer,
+      clientId: this.oidc.clientId,
+      redirectUri: this.oidc.redirectUri,
+      scope: this.oidc.scope,
+    });
+    const stored = this.store.load();
+    if (stored?.valid) {
+      this.#session = stored;
+      this.#scheduleRefresh(stored, report);
+      const minutes = Math.max(0, Math.round((stored.expiresAt - Date.now()) / 60_000));
+      report({ kind: 'stdout', text: `s3: ${this.mountpoint}: session restored (expires in ${minutes}m)` });
+      return true;
+    }
+    this.#session = null;
+    let started: { url: string; state: string; pkce: Awaited<ReturnType<OidcSession['start']>>['pkce'] };
+    try {
+      started = await this.#oidcSession.start();
+    } catch (cause) {
+      report({ kind: 'stderr', text: `s3: ${this.mountpoint}: sign-in failed: ${cause instanceof Error ? cause.message : String(cause)}` });
+      return false;
+    }
+    report({ kind: 'stdout', text: `s3: ${this.mountpoint}: opening sign-in …` });
+    report({ kind: 'stdout', text: `s3: ${this.mountpoint}: if the popup was blocked, open this URL and retry: ${started.url}` });
+    try {
+      if (typeof window !== 'undefined') {
+        window.open(started.url, 'semtext-s3-auth', 'width=480,height=640,noopener');
+      }
+      const code = await waitForAuthCode(started.state);
+      const { credentials, tokens } = await this.#oidcSession.exchange(code, started.pkce, this.#sts);
+      this.#session = credentials;
+      this.store.save({ ...credentials, issuer: this.oidc.issuer, clientId: this.oidc.clientId, refreshToken: tokens.refreshToken });
+      this.#scheduleRefresh(this.store.load() ?? { ...credentials, refreshToken: tokens.refreshToken }, report);
+      const minutes = Math.max(0, Math.round((credentials.expiresAt - Date.now()) / 60_000));
+      report({ kind: 'stdout', text: `s3: ${this.mountpoint}: signed in (expires in ${minutes}m)` });
+      return true;
+    } catch (cause) {
+      report({ kind: 'stderr', text: `s3: ${this.mountpoint}: ${cause instanceof Error ? cause.message : String(cause)}` });
+      return false;
+    }
+  }
+
+  /** Silent re-mint before expiry when the IdP issued a refresh_token. */
+  #scheduleRefresh(
+    stored: { expiresAt: number; refreshToken?: string } | null,
+    report: (line: { kind: 'stdout' | 'stderr'; text: string }) => void,
+  ): void {
+    if (!stored || !stored.refreshToken || this.mode !== 'oidc') return;
+    const delay = Math.max(0, stored.expiresAt - SESSION_REFRESH_LEAD_MS - Date.now());
+    if (this.#refreshTimer !== null) clearTimeout(this.#refreshTimer);
+    this.#refreshTimer = setTimeout(() => {
+      void (async () => {
+        try {
+          if (!this.#sts || !this.#oidcSession) return;
+          const refresh = await this.#oidcSession.refresh(stored.refreshToken!, this.#sts);
+          this.#session = refresh.credentials;
+          const refreshToken = refresh.tokens.refreshToken ?? stored.refreshToken!;
+          this.store?.save({ ...refresh.credentials, issuer: this.oidc?.issuer, clientId: this.oidc?.clientId, refreshToken });
+          this.#scheduleRefresh(this.store?.load() ?? { ...refresh.credentials, refreshToken }, report);
+        } catch {
+          // One stderr note; the session keeps serving until it truly
+          // expires, then #requireSession names the remedy.
+          report({ kind: 'stderr', text: `s3: ${this.mountpoint}: refresh failed — the session will expire; remount to sign in again` });
+        }
+      })();
+    }, delay);
+  }
+
+  /** Detach-side cleanup: stop the refresh timer, drop the session. */
+  dispose(): void {
+    if (this.#refreshTimer !== null) {
+      clearTimeout(this.#refreshTimer);
+      this.#refreshTimer = null;
+    }
+    this.#session = null;
+    this.store?.clear();
+  }
 }
 
 /**
- * Parse `mount s3 <url> <mountpoint>` args; return a ready backend or an
- * error message. A public base stays read-only; the signer/presign modes
- * switch on when the page supplied a signer (core.setS3Signer).
+ * Parse `mount s3 <url> <mountpoint> [flags]`; return a ready backend or
+ * an error message. Public bases stay read-only; presign/signer switch
+ * on when the page supplied a signer (core.setS3Signer); `mode=oidc`
+ * configures the PKCE + STS session (issuer= client_id= redirect= sts=).
+ * Static credential flags are REFUSED — temporary sessions only.
  */
 export function createS3Backend(args: string[], signer?: S3Signer): S3Backend | string {
   const base = args[0];
-  if (!base) return 'usage: mount s3 <https://host/bucket/prefix/> <mountpoint>';
+  if (!base) return 'usage: mount s3 <https://host/bucket/prefix/> <mountpoint> [mode=… issuer= client_id= redirect= sts= role= region= persist=]';
   const mountpoint = args[1] ?? '/s3';
   if (!mountpoint.startsWith('/')) return `s3: mountpoint must be absolute: "${mountpoint}"`;
+  const flags = new Map<string, string>();
+  for (const arg of args.slice(2)) {
+    const eq = arg.indexOf('=');
+    if (eq <= 0) return `s3: unexpected argument "${arg}" (want key=value flags)`;
+    flags.set(arg.slice(0, eq), arg.slice(eq + 1));
+  }
+  for (const banned of ['access_key', 'secret_key', 'accessKey', 'secretKey', 'session_token', 'sessionToken']) {
+    if (flags.has(banned)) return 's3: static credentials are never accepted — use mode=oidc (temporary STS session) or a signer';
+  }
+  const mode = (flags.get('mode') ?? (signer ? 'signer' : 'public')) as S3WriteMode;
+  if (!['public', 'presign', 'signer', 'oidc'].includes(mode)) {
+    return `s3: unknown mode "${mode}" (want public|presign|signer|oidc)`;
+  }
+  const presignEndpoint = flags.get('presign');
+  if (mode === 'presign' && !presignEndpoint) return 's3: presign mode needs presign=<endpoint>';
+  const persist = (flags.get('persist') ?? 'session') as 'session' | 'local';
+  if (persist !== 'session' && persist !== 'local') return `s3: persist must be session or local (got "${persist}")`;
+  let oidc: S3OidcMountOptions | undefined;
+  if (mode === 'oidc') {
+    const issuer = flags.get('issuer');
+    const clientId = flags.get('client_id') ?? flags.get('clientId');
+    const redirectUri = flags.get('redirect');
+    const stsEndpoint = flags.get('sts');
+    if (!issuer || !clientId || !redirectUri || !stsEndpoint) {
+      return 's3: oidc needs issuer=<openid issuer> client_id=<public client> redirect=<redirect uri> sts=<sts endpoint>';
+    }
+    oidc = {
+      issuer,
+      clientId,
+      redirectUri,
+      scope: flags.get('scope'),
+      stsEndpoint,
+      roleArn: flags.get('role'),
+      sessionName: flags.get('session_name'),
+    };
+  }
+  const maxObjects = flags.has('max_objects') ? Number.parseInt(flags.get('max_objects')!, 10) : undefined;
+  const maxBytes = flags.has('max_bytes') ? Number.parseInt(flags.get('max_bytes')!, 10) : undefined;
   let backend: S3Backend;
   try {
     backend = new S3Backend({
       base,
       mountpoint,
-      mode: signer ? 'signer' : 'public',
+      mode,
+      presignEndpoint,
       signer,
+      oidc,
+      region: flags.get('region'),
+      persist,
+      maxObjects,
+      maxBytes,
     });
   } catch (cause) {
     return cause instanceof Error ? cause.message : String(cause);

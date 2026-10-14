@@ -238,11 +238,28 @@ export class TerminalCore {
         usage: 'mount [kind …] — list storage backends, or mount one (`mount s3 <url> <mountpoint>`)',
         run: (ctx) => {
           const kind = ctx.args[0];
+          if (kind === '--logout') {
+            const target = ctx.args[1];
+            if (!target) {
+              ctx.err('mount --logout: missing mountpoint');
+              return;
+            }
+            const mountpoint = ctx.vfs.resolve(ctx.state.cwd, target);
+            const backend = ctx.vfs.mounts.get(mountpoint) ?? null;
+            if (!backend || !ctx.vfs.detachBackend(mountpoint)) {
+              ctx.err(`mount --logout: nothing mounted at ${mountpoint}`);
+              return;
+            }
+            (backend as { dispose?: () => void }).dispose?.();
+            ctx.out(`logged out of ${mountpoint} (temporary session dropped)`);
+            return;
+          }
           if (!kind) {
             ctx.out('storage backends:');
             if (ctx.vfs.mounts.size === 0) ctx.out('  (none)');
             for (const [mountpoint, backend] of ctx.vfs.mounts) {
-              ctx.out(`  ${mountpoint}  ${backend.id}${backend.writable ? '' : ' (read-only)'}`);
+              const describe = (backend as { describe?: () => string }).describe?.() ?? '';
+              ctx.out(`  ${mountpoint}  ${backend.id}${describe}${backend.writable ? '' : ' (read-only)'}`);
             }
             const kinds = [...this.mountKinds.keys()];
             ctx.out(`mountable kinds: ${kinds.length > 0 ? kinds.join(', ') : '(none loaded)'}`);
@@ -255,22 +272,21 @@ export class TerminalCore {
             if (kinds.length > 0) ctx.err(`mount: available kinds: ${kinds.join(', ')}`);
             return;
           }
-          const made = factory.create(ctx.args.slice(1));
-          if (typeof made === 'string') {
-            ctx.err(`mount: ${made}`);
+          const backend = factory.create(ctx.args.slice(1));
+          if (typeof backend === 'string') {
+            ctx.err(`mount: ${backend}`);
             return;
           }
-          try {
-            ctx.vfs.attachBackend(made);
-          } catch (cause) {
-            ctx.err(`mount: ${cause instanceof Error ? cause.message : String(cause)}`);
-            return;
-          }
-          ctx.out(`${kind}: mounted at ${made.mountpoint}${made.writable ? '' : ' (read-only)'}`);
-          if (typeof (made as { hydrate?: unknown }).hydrate === 'function') {
-            ctx.out(`${kind}: hydrating ${made.mountpoint} …`);
+          const detachDropped = (): void => {
+            this.vfs.detachBackend(backend.mountpoint);
+            (backend as { dispose?: () => void }).dispose?.();
+          };
+          ctx.out(`${kind}: mounted at ${backend.mountpoint}${backend.writable ? '' : ' (read-only)'}`);
+          const startHydrate = (): void => {
+            if (typeof (backend as { hydrate?: unknown }).hydrate !== 'function') return;
+            ctx.out(`${kind}: hydrating ${backend.mountpoint} ...`);
             const hydrate = (
-              made as {
+              backend as {
                 hydrate?: (
                   put: (path: string, content: string) => void,
                   report: (line: ShellLine) => void,
@@ -279,20 +295,43 @@ export class TerminalCore {
             ).hydrate!;
             const put = (path: string, content: string): void => {
               try {
-                this.vfs.mountFile(made.mountpoint + (path.startsWith('/') ? path : `/${path}`), content);
+                this.vfs.mountFile(backend.mountpoint + (path.startsWith('/') ? path : `/${path}`), content);
               } catch {
                 // Paths crossing the mount edge stay unseeded; hydration keeps going.
               }
             };
             hydrate
-              .call(made, put, (line) => this.emitLine(line))
+              .call(backend, put, (line) => this.emitLine(line))
               .catch((cause: unknown) => {
                 this.emitLine({
                   kind: 'stderr',
-                  text: `${kind}: ${made.mountpoint}: ${cause instanceof Error ? cause.message : String(cause)}`,
+                  text: `${kind}: ${backend.mountpoint}: ${cause instanceof Error ? cause.message : String(cause)}`,
                 });
               });
+          };
+          const ensureSession = (backend as { ensureSession?: unknown }).ensureSession;
+          if (typeof ensureSession === 'function') {
+            // oidc: attach now, authenticate async — hydration waits for it.
+            (ensureSession as (report: (line: ShellLine) => void) => Promise<boolean>)
+              .call(backend, (line) => this.emitLine(line))
+              .then((signedIn: boolean) => {
+                if (signedIn) {
+                  startHydrate();
+                } else {
+                  detachDropped();
+                  this.emitLine({ kind: 'stderr', text: `${kind}: ${backend.mountpoint}: mount dropped (not signed in)` });
+                }
+              })
+              .catch((cause: unknown) => {
+                detachDropped();
+                this.emitLine({
+                  kind: 'stderr',
+                  text: `${kind}: ${backend.mountpoint}: ${cause instanceof Error ? cause.message : String(cause)}`,
+                });
+              });
+            return;
           }
+          startHydrate();
         },
       },
       '(builtin)',
@@ -308,10 +347,12 @@ export class TerminalCore {
             return;
           }
           const mountpoint = ctx.vfs.resolve(ctx.state.cwd, target);
-          if (!ctx.vfs.detachBackend(mountpoint)) {
+          const backend = ctx.vfs.mounts.get(mountpoint) ?? null;
+          if (!backend || !ctx.vfs.detachBackend(mountpoint)) {
             ctx.err(`umount: nothing mounted at ${mountpoint}`);
             return;
           }
+          (backend as { dispose?: () => void }).dispose?.();
           ctx.out(`umounted ${mountpoint}`);
         },
       },
