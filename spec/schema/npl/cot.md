@@ -6,29 +6,40 @@ plus its outcome, folded in a native `<details>`. Lit component:
 
 ## Authoring form
 
+Both display states — expanded (the default) and `collapsed`:
+
 ```html
+<npl-cot>
+  <sem-step>Pull the failing test's log lines for the window.</sem-step>
+  <sem-step>The 502s cluster in one 30-second span, not across the hour.</sem-step>
+  <div outcome>The upstream proxy restarted mid-window; retry, not a code fault.</div>
+</npl-cot>
+
 <npl-cot collapsed>
-  <sem-step>first thought_process step</sem-step>
-  <sem-step>second thought_process step</sem-step>
-  <div outcome>the answer the steps arrive at</div>
+  <sem-step>Diff the two schema snapshots column by column.</sem-step>
+  <sem-step>Only the column order differs; no column was dropped.</sem-step>
+  <div outcome>Additive change; safe to migrate without a rollback.</div>
 </npl-cot>
 ```
 
 Class-form alias (conventions Appendix A, npl namespace):
-`.npl-cot[data-collapsed]` — same dual-form contract as the sem-* tier,
-`data-collapsed` wins when both spellings are present.
+`.npl-cot` on a block container, with the same bare `collapsed`
+attribute — Appendix A keeps `collapsed` bare in both authoring forms
+(sem-note, sem-reveal).
 
 Children: the thought_process steps — each a step element (any element
 child not marked as the outcome; `sem-step` is the conventional tag) — and
 at most one outcome element: an authored child carrying the `outcome`
 (or `data-outcome`) attribute, whatever its tag.
 
-- `collapsed`: boolean — default `false` (present ⇒ the block starts
-  collapsed). Sets the **initial** open state of the native details; the
-  user's own toggling is never re-forced. Mirrored to `data-collapsed`
-  (`"true"`/`"false"`) in `updated()` via afterParse (dual-form contract;
+- `collapsed`: boolean — default `false`. Absent ⇒ the block starts expanded;
+  present ⇒ it starts collapsed. Sets the **initial** open state of the native
+  details; the user's own toggling is never re-forced. The runtime mirrors the
+  boolean to `data-collapsed` (`"true"`/`"false"`) in `updated()` via
+  afterParse — a write for CSS/extraction parity, never an input (the
+  component reads the bare attribute only, like the sem tier's `collapsed`);
   the mirror is deferred past parse so a sem-source snapshot never sees
-  runtime writes).
+  runtime writes.
 - `id`, `kind`, `tags` per the global attribute catalog — no bullet needed.
 
 ## Rendered form

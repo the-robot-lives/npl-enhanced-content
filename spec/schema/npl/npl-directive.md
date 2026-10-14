@@ -12,9 +12,16 @@ Display-only (Lit `NplDirective`, `src/lit/npl/npl-directive.ts`).
 </npl-directive>
 ```
 
-Class-form alias (conventions Appendix A, npl namespace):
-`.npl-directive[data-glyph]` — same dual-form contract as the sem-* tier,
-`data-<name>` wins when both spellings are present.
+The prefix form of the source grammar sets `kind="prefix"` — the `➤`
+arrow renders between glyph and instruction:
+
+```html
+<npl-directive glyph="⚡" kind="prefix">cite sources</npl-directive>
+```
+
+Class-form alias (conventions §2, the `data-*` alias spelling — Appendix A
+maps only the sem-* tier): `.npl-directive[data-glyph]` — same dual-form
+contract, `data-<name>` wins when both spellings are present.
 
 - `glyph`: string — required; the emoji or symbol leading the chip. Rendered
   by `.npl-directive-glyph` (dropped, gracefully, when absent) and mirrored

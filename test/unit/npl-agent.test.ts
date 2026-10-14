@@ -72,12 +72,27 @@ describe('npl-agent', () => {
     expect(el.getAttribute('data-extends')).toBe('base-agent');
   });
 
-  it('data-* authored spellings win in the rendered header', async () => {
+  it('data-* authored spellings win in the rendered header — and are never clobbered', async () => {
     document.body.innerHTML =
       '<npl-agent id="c" name="scout" data-name="renamed" version="0.3" type="scout">' +
       'prose</npl-agent>';
     const el = document.getElementById('c') as NplAgent;
     await el.updateComplete;
     expect(el.querySelector('.npl-agent-name')?.textContent).toBe('renamed');
+    // the mirror writes the resolved value — the authored data-* spelling
+    // survives (conventions §2: data-* wins when both spellings are present)
+    expect(el.getAttribute('data-name')).toBe('renamed');
+
+    // a data-* spelling authored WITHOUT its bare twin must not be
+    // overwritten by the empty default either
+    document.body.innerHTML =
+      '<npl-agent id="d" data-name="renamed" data-type="coder" data-version="1.0">' +
+      'prose</npl-agent>';
+    const dualOnly = document.getElementById('d') as NplAgent;
+    await dualOnly.updateComplete;
+    expect(dualOnly.querySelector('.npl-agent-name')?.textContent).toBe('renamed');
+    expect(dualOnly.getAttribute('data-name')).toBe('renamed');
+    expect(dualOnly.getAttribute('data-type')).toBe('coder');
+    expect(dualOnly.getAttribute('data-version')).toBe('1.0');
   });
 });

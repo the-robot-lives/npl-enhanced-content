@@ -15,8 +15,21 @@ text (it *is* the document's record of the default query).
 
 ## Authoring form
 
+A direct member of a `sem-data-visualizer`, addressing one of the
+visualizer's named buckets — the smallest valid example therefore carries
+the bucket it queries.
+
 ```html
-<sem-data-query>SELECT name, port FROM services WHERE ready = true ORDER BY port LIMIT 5</sem-data-query>
+<sem-data-visualizer id="dv-services">
+  <sem-data-source data-name="services" data-format="table">
+    | name    | port | ready |
+    | :------ | ---: | :---- |
+    | api     | 8443 | true  |
+    | web     | 8080 | true  |
+    | metrics | 9090 | false |
+  </sem-data-source>
+  <sem-data-query>SELECT name, port FROM services WHERE ready = true ORDER BY port LIMIT 5</sem-data-query>
+</sem-data-visualizer>
 ```
 
 Class-form alias (conventions Appendix A): `.sem-data-query`.
@@ -46,6 +59,10 @@ query.
   when the edited statement diverges from the authored one.
 - No `sem-data-query` declaration ⇒ no query chrome (plain per-source
   tables only).
+- The authored statement parks in a `.sem-data-raw` box hidden by the
+  same container/runtime contract as `sem-data-source` once the query
+  is wired. The box stays in the DOM (edits rewrite its text; the
+  element carries `data-sem-upgraded` too).
 
 ### JS-off
 

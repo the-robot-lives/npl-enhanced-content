@@ -41,7 +41,7 @@ export class SemElement extends LitElement {
     super.connectedCallback();
     this.setAttribute('data-sem-upgraded', '');
     // Document-level marker: hide rules that have no per-element host
-    // (`.sem-distractor` in a list-view deck) gate on the root instead.
+    // (`.incorrect-statement` in a list-view deck) gate on the root instead.
     this.ownerDocument?.documentElement?.setAttribute('data-sem-upgraded', '');
   }
 

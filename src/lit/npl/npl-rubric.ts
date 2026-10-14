@@ -22,9 +22,9 @@ import { defineNpl, nplParam } from './shared.js';
  * the average).
  *
  * Display-only: one light-DOM `<table>`, no events, no interactivity. The
- * authored criterion/overall-score children are the data, not prose, so once
- * consumed they get `hidden` and the table speaks for them (JS-off keeps the
- * authored markup untouched).
+ * authored criterion/overall-score children are the data, not prose, so
+ * once consumed the table replaces them and speaks for them (JS-off keeps
+ * the authored markup untouched).
  */
 
 const CRITERION = ':scope > :is(npl-criterion, .npl-criterion)';
@@ -65,9 +65,14 @@ export class NplRubric extends SemElement {
   }
 
   updated(): void {
-    // dual-form contract: the data-* spelling mirrors the bare attribute,
-    // so CSS/extraction read one form (deferred past parse, like sem-note).
-    this.afterParse('title', () => this.setAttribute('data-title', this.title));
+    // dual-form contract: the data-* spelling mirrors the EFFECTIVE title
+    // (data-title wins when both are authored), so CSS/extraction read one
+    // form and an authored data-title is never clobbered by the empty
+    // property default. Deferred past parse, like sem-note.
+    const title = nplParam(this, 'title', this.title);
+    this.afterParse('title', () => {
+      if (this.getAttribute('data-title') !== title) this.setAttribute('data-title', title);
+    });
     if (this.#rows !== null || this.#awaiting) return;
     this.#awaiting = true;
     void this.whenChildrenReady(CRITERION).then(() => this.#collect());
@@ -92,12 +97,9 @@ export class NplRubric extends SemElement {
         scoreNum: num(score),
       };
     });
-    // The authored children are data — hide them once consumed so the table
-    // is the only rendered statement of the rubric (authored markup is left
-    // untouched when JS never runs).
-    Array.from(this.querySelectorAll(CRITERION)).forEach((el) => el.setAttribute('hidden', ''));
-    overallEl?.setAttribute('hidden', '');
-
+    // The authored children are data, not prose — lit's light-DOM render
+    // replaces them with the table (authored markup stays untouched when JS
+    // never runs), so the table is the only statement of the rubric.
     const stated = overallEl
       ? num(nplParam(overallEl, 'value') ?? (overallEl.textContent || '').trim())
       : null;
@@ -120,11 +122,14 @@ export class NplRubric extends SemElement {
 
   render(): TemplateResult {
     if (this.#rows === null) return html``; // children not parsed yet
+    // The effective title (data-title wins) names the table; class-form
+    // authoring of the title renders the caption too, not just the mirror.
+    const title = nplParam(this, 'title', this.title);
     // An entirely empty rubric renders nothing; title/overall-only still show.
-    if (this.#rows.length === 0 && !this.title && this.#overall === null) return html``;
+    if (this.#rows.length === 0 && !title && this.#overall === null) return html``;
     return html`
       <table class="npl-rubric-table">
-        ${this.title ? html`<caption class="npl-rubric-title">${this.title}</caption>` : nothing}
+        ${title ? html`<caption class="npl-rubric-title">${title}</caption>` : nothing}
         <thead>
           <tr>
             <th scope="col">Criterion</th>

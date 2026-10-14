@@ -5,16 +5,15 @@ Contract per conventions.md v0.6. BDD source of truth for
 
 ## Scope semantics
 
-A transparent wrapper around ordinary SemText content that lets a reader
-flip between the **rendered** section and its **markup as parsed, before
-any enhancement** (the pre-enhancement serialisation of the section)
-of the same section. It exists for documents that teach or demonstrate the
+A transparent wrapper around ordinary SemText content: the reader can
+flip between the section as rendered and its markup as parsed, before
+any enhancement. It exists for documents that teach or demonstrate the
 vocabulary: the reader sees what a fact deck renders as, then sees exactly
 what was written to get it, without a second copy of the markup that could
 drift. It is a wrapper, not content: it mints no record, its children
 extract exactly as they would without it, and a document without it loses
 nothing a machine could read. The verbatim source is the one thing it adds,
-and that is a *derived* view of the children, never a second authoring.
+and that is a derived view of the children, never a second authoring.
 
 Minting justification (conventions): an interaction (the toggle), a field
 (the verbatim markup shown in the fence) and a degradation behaviour (HTML
@@ -23,9 +22,14 @@ only, nothing hidden, JS-off).
 ## Authoring form
 
 ```html
-<sem-source id="s-facts" label="Facts — flashcards">
+<sem-source id="s-facts" label="Authored vs rendered">
   <h2>Facts — flashcards</h2>
-  <sem-facts view-as="flashcards">…</sem-facts>
+  <sem-facts id="s-facts-deck" view-as="flashcards">
+    <sem-fact id="s-facts-parse">
+      <statement>SemText snapshots the section before enhancement</statement>
+      <conclusion>The fence shows the parsed markup, never the file bytes.</conclusion>
+    </sem-fact>
+  </sem-facts>
 </sem-source>
 ```
 
@@ -35,10 +39,10 @@ Parameters are read as `data-<name>` first, then bare `<name>`.
 - Children: any SemText content — vocabulary elements, headings, prose.
   `sem-source` must not nest inside another `sem-source` (the inner one's
   markup is part of the outer one's source; the inner toggle is undefined).
-- `view-as` (optional): `html` (default) or `source` — the initial
-  mode. **Mutable presentation**: the toggle rewrites `data-view-as` at
-  runtime (the authored bare attribute is left alone), and extraction
-  ignores it (spec/extraction.md §5c).
+- `view-as`: `html` (default) | `source`. The initial mode. Mutable
+  presentation: the toggle rewrites `data-view-as` at runtime (the
+  authored bare attribute is left alone), and extraction ignores it
+  (spec/extraction.md §5c).
 - `label` (optional): a short caption rendered in the chrome.
 - `id`, `audience` per the global catalog. `kind` / `tags` are **not**
   honoured on the wrapper: a wrapper carrying them would mint a plain
@@ -73,8 +77,13 @@ and `querySelectorAll`, and skipped by extraction. Lit elements claim
 fence strips that marker when it renders; every other attribute a Lit
 element writes is deferred until the parse has finished
 (`SemElement.afterParse`), i.e. after the snapshot, so the fence is the
-authored markup. An authored `<\/script` sequence and a real end tag both
-round-trip as written, because nothing is escaped.
+authored markup. Because the component renders into light DOM, its first
+render also drops empty `<!---->` comment markers among the children;
+whichever pass takes the snapshot, the Lit wrapper strips empty comment
+nodes from the captured clone (recursive; authored comments with text
+survive) — runtime artefacts are never what was written. An authored
+`<\/script` sequence and a real end tag both round-trip as written,
+because nothing is escaped.
 
 **Chrome and fence (reading handler, `src/reading/source.ts`; the Lit
 component `SemSource` runs the same function after the snapshot pass).**

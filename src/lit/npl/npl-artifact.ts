@@ -18,7 +18,12 @@ import { defineNpl, nplParam } from './shared.js';
  *     `<script>` and event-handler attributes, and even inside light DOM a
  *     browser would fire those handlers. It is handed to an iframe with an
  *     EMPTY sandbox attribute — the strictest setting (no scripts, no
- *     same-origin, no forms, no popups) — via `srcdoc`.
+ *     same-origin, no forms, no popups) — via `srcdoc`. The iframe gets the
+ *     artifact title as its accessible name (`title` attribute; an untitled
+ *     iframe is a serious axe violation), `frameborder="0"` to drop the
+ *     legacy frame chrome, and mirrors the authored `<svg>` root's pixel
+ *     `width`/`height` so the figure displays at its own size instead of
+ *     the UA-default 300×150 box.
  *
  * The `type` parameter is optional; absent (or anything but `svg`) renders
  * the content preformatted, which is the safe display of raw text.
@@ -28,6 +33,14 @@ import { defineNpl, nplParam } from './shared.js';
 const TITLE = ':scope > :is(title, .npl-title)';
 const CONTENT = ':scope > :is(content, .npl-content)';
 const CHILDREN = ':scope > :is(title, content, .npl-title, .npl-content)';
+
+/** Plain pixel length ("320", "320px") read from an attribute; else null.
+ *  SVG root attributes are authored data — read, never executed. */
+function pxAttr(el: Element | null, name: string): string | null {
+  const v = el ? el.getAttribute(name) : null;
+  if (!v || !/^\d+(\.\d+)?(px)?$/.test(v)) return null;
+  return String(Math.round(parseFloat(v)));
+}
 
 export class NplArtifact extends SemElement {
   static properties = {
@@ -67,6 +80,8 @@ export class NplArtifact extends SemElement {
     const type = nplParam(this, 'type', this.type || 'text');
 
     const title = this.querySelector(TITLE);
+    // Capture the title text BEFORE the nodes move — the iframe's a11y name.
+    const label = title?.textContent?.trim() || '';
     if (title) {
       const heading = document.createElement('h3');
       heading.className = 'npl-artifact-title';
@@ -82,6 +97,15 @@ export class NplArtifact extends SemElement {
       const frame = document.createElement('iframe');
       frame.className = 'npl-artifact-svg';
       frame.setAttribute('sandbox', '');
+      frame.setAttribute('title', label || 'SVG artifact');
+      frame.setAttribute('frameborder', '0');
+      const root = content.querySelector('svg');
+      const w = pxAttr(root, 'width');
+      const h = pxAttr(root, 'height');
+      if (w && h) {
+        frame.setAttribute('width', w);
+        frame.setAttribute('height', h);
+      }
       frame.setAttribute('srcdoc', content.innerHTML);
       content.replaceWith(frame);
       return;

@@ -11,6 +11,8 @@
     { "path": "/README.md", "src": "files/README.md" },
     { "path": "/demo/welcome.html", "src": "files/welcome.html" },
     { "path": "/demo/token-rotation.html", "src": "files/token-rotation.html" },
-    { "path": "/demo/quiz.html", "src": "files/quiz.html" }
+    { "path": "/demo/quiz.html", "src": "files/quiz.html" },
+    { "path": "/demo/example-deck.sem.html", "src": "files/example-deck.sem.html" },
+    { "path": "/demo/auth-notes.sem.html", "src": "files/auth-notes.sem.html" }
   ]
 }

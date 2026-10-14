@@ -18,22 +18,31 @@ Contract per conventions.md v0.6 and the namespace recipe in
 ```
 
 Sections are authored as the element's direct children, in either spelling
-(tag form `<assessment>`, alias form `.npl-assessment` — conventions
-Appendix A): `assessment`, `improvements`, `validation`, `eval`,
-`fine-tune`. Any subset; rendering follows authored order. Content that is
+(tag form `<assessment>`, class form `.npl-assessment` — conventions
+Appendix A). Any subset; rendering follows authored order. Content that is
 not a section is left untouched.
 
 Class-form alias (conventions Appendix A, npl namespace):
 `.npl-ref[data-variant]` — same dual-form contract as the sem-* tier,
 `data-<name>` wins when both spellings are present.
 
-- `variant`: `full|compact` — default `full`. `full` renders each section
-  as a labelled block; `compact` renders one emoji line per section.
-  Any other value resolves to `full`, and the resolved variant mirrors to
-  `data-variant` (deferred past parse via afterParse, like sem-note, so a
-  sem-source snapshot never sees runtime writes). The variant is read at
-  upgrade; it is display-only and not switched after wiring.
+- `variant`: one of `full`, `compact`, optional — default `full`. `full`
+  renders each section as a labelled block; `compact` renders one emoji
+  line per section. Any other value resolves to `full`, and the resolved
+  variant mirrors to `data-variant` (dual-form contract; the mirror is
+  deferred past parse via afterParse, like sem-note, so a sem-source
+  snapshot never sees runtime writes). The variant is read at upgrade; it
+  is display-only and not switched after wiring.
 - `id`, `kind`, `tags` per the global attribute catalog.
+
+Sections — the element's children; either spelling, any subset, authored
+order:
+
+- `assessment` — what held and what did not across the finished turn.
+- `improvements` — concrete changes the next run should carry.
+- `validation` — how the result was checked.
+- `eval` — the measured outcome (scores, counts, diffs).
+- `fine-tune` — training or retrieval follow-ups.
 
 ## Rendered form
 

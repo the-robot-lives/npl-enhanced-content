@@ -49,8 +49,8 @@
       "name": "npl-agent",
       "family": "npl",
       "source": "spec/schema/npl/npl-agent.md",
-      "summary": "",
-      "description": "",
+      "summary": "Agent definition card: the element form of the NPL agent convention's `⌜name|type|NPL@version⌝ … ⌞name⌟` header.",
+      "description": "Agent definition card: the element form of the NPL agent convention's `⌜name|type|NPL@version⌝ … ⌞name⌟` header. The three header fields become attributes; the authored prose (the description and behavioural spec) stays the body and is never rewritten. Display-only (Lit `NplAgent`, `src/lit/npl/npl-agent.ts`).",
       "attributes": [
         {
           "name": "name",
@@ -58,7 +58,7 @@
           "type": "string",
           "allowedValues": [],
           "default": null,
-          "description": "`string` — required. The agent's identifier, the `⌜<agent-name>` field of the source form."
+          "description": "required. The agent's identifier, the `⌜<agent-name>` field of the source form. Mirrored to `data-name` after upgrade (the resolved value — an authored `data-name` is never overwritten)."
         },
         {
           "name": "type",
@@ -66,7 +66,7 @@
           "type": "string",
           "allowedValues": [],
           "default": null,
-          "description": "`string` — required. The agent's archetype (e.g. `scout`, `coder`)."
+          "description": "required. The agent's archetype (e.g. `scout`, `coder`). Mirrored to `data-type` after upgrade (the resolved value)."
         },
         {
           "name": "version",
@@ -74,7 +74,7 @@
           "type": "string",
           "allowedValues": [],
           "default": null,
-          "description": "`string` — required. The NPL contract version, the `NPL@{version}` field of the source form."
+          "description": "required. The NPL contract version, the `NPL@{version}` field of the source form. Mirrored to `data-version` after upgrade (the resolved value)."
         },
         {
           "name": "extends",
@@ -82,7 +82,7 @@
           "type": "string",
           "allowedValues": [],
           "default": null,
-          "description": "`string` — optional. The parent agent this definition extends; the header omits it when not authored."
+          "description": "optional. The parent agent this definition extends; the header omits it when not authored. Mirrored to `data-extends` after upgrade (the resolved value)."
         },
         {
           "name": "id",
@@ -110,14 +110,14 @@
         }
       ],
       "children": [],
-      "example": "<npl-agent name=\"scout\" type=\"scout\" version=\"0.3\" extends=\"base-agent\">\nLong-form description and behavioural spec prose.\n</npl-agent>"
+      "example": "<npl-agent name=\"scout\" type=\"scout\" version=\"0.3\" extends=\"base-agent\">\nRead-only scout: search, read, and summarise; never edit files or run\nwrites. Report findings with file paths and line numbers.\n</npl-agent>"
     },
     {
       "name": "npl-artifact",
       "family": "npl",
       "source": "spec/schema/npl/npl-artifact.md",
-      "summary": "A structured output block with metadata — the display of an NPL artifact (Lit `NplArtifact`, `src/lit/npl/npl-artifact.ts`).",
-      "description": "A structured output block with metadata — the display of an NPL artifact (Lit `NplArtifact`, `src/lit/npl/npl-artifact.ts`). Display-only: no events, no state; the authored children carry the data and the upgrade turns them into display chrome in place.",
+      "summary": "A structured output block with metadata — the display of an artifact an NPL agent emits (generated code, a report, a figure).",
+      "description": "A structured output block with metadata — the display of an artifact an NPL agent emits (generated code, a report, a figure). Display-only: no events, no state; the authored children carry the data and the upgrade turns them into display chrome in place (`title` becomes the heading, `content` becomes preformatted text, or a sandboxed iframe when `type=\"svg\"`) — Lit `NplArtifact`, `src/lit/npl/npl-artifact.ts`.",
       "attributes": [
         {
           "name": "type",
@@ -162,7 +162,7 @@
           "note": ""
         }
       ],
-      "example": "<npl-artifact type=\"code\">\n  <title>Q3 revenue breakdown</title>\n  <content>def q3(): return rows(\"2026-Q3\")</content>\n</npl-artifact>"
+      "example": "<npl-artifact type=\"code\">\n  <title>Q3 revenue breakdown</title>\n  <content>def q3(): return rows(\"2026-Q3\")</content>\n</npl-artifact>\n\n<npl-artifact type=\"svg\">\n  <title>Quarterly trend</title>\n  <content><svg width=\"320\" height=\"120\"><rect x=\"0\" y=\"70\" width=\"40\" height=\"50\"/><rect x=\"60\" y=\"40\" width=\"40\" height=\"80\"/><rect x=\"120\" y=\"15\" width=\"40\" height=\"105\"/></svg></content>\n</npl-artifact>\n\n<npl-artifact class=\"npl-artifact\" data-type=\"text\">\n  <span class=\"npl-title\">Release note</span>\n  <span class=\"npl-content\">v2.4 ships the viewer M2 lazy opt-in.</span>\n</npl-artifact>"
     },
     {
       "name": "npl-cot",
@@ -177,7 +177,7 @@
           "type": "boolean",
           "allowedValues": [],
           "default": "false",
-          "description": "(present ⇒ the block starts collapsed). Sets the **initial** open state of the native details; the user's own toggling is never re-forced. Mirrored to `data-collapsed` (`\"true\"`/`\"false\"`) in `updated()` via afterParse (dual-form contract; the mirror is deferred past parse so a sem-source snapshot never sees runtime writes)."
+          "description": "Absent ⇒ the block starts expanded; present ⇒ it starts collapsed. Sets the **initial** open state of the native details; the user's own toggling is never re-forced. The runtime mirrors the boolean to `data-collapsed` (`\"true\"`/`\"false\"`) in `updated()` via afterParse — a write for CSS/extraction parity, never an input (the component reads the bare attribute only, like the sem tier's `collapsed`); the mirror is deferred past parse so a sem-source snapshot never sees runtime writes."
         },
         {
           "name": "id",
@@ -214,7 +214,7 @@
           "note": ""
         }
       ],
-      "example": "<npl-cot collapsed>\n  <sem-step>first thought_process step</sem-step>\n  <sem-step>second thought_process step</sem-step>\n  <div outcome>the answer the steps arrive at</div>\n</npl-cot>"
+      "example": "<npl-cot>\n  <sem-step>Pull the failing test's log lines for the window.</sem-step>\n  <sem-step>The 502s cluster in one 30-second span, not across the hour.</sem-step>\n  <div outcome>The upstream proxy restarted mid-window; retry, not a code fault.</div>\n</npl-cot>\n\n<npl-cot collapsed>\n  <sem-step>Diff the two schema snapshots column by column.</sem-step>\n  <sem-step>Only the column order differs; no column was dropped.</sem-step>\n  <div outcome>Additive change; safe to migrate without a rollback.</div>\n</npl-cot>"
     },
     {
       "name": "npl-critique",
@@ -261,31 +261,34 @@
       "family": "npl",
       "source": "spec/schema/npl/npl-declaration.md",
       "summary": "Display-only banner for an NPL declaration block: the version/extension header of a rules document (`src/lit/npl/npl-declaration.ts`).",
-      "description": "Display-only banner for an NPL declaration block: the version/extension header of a rules document (`src/lit/npl/npl-declaration.ts`). The source forms are the NPL fences `⌜NPL@<version>⌝ … ⌞NPL@⌟` (definition) and `⌜extend:NPL@⌝ … ⌞NPL@⌟` (extension); the component renders the banner text the source spells, with the rules content as authored children.",
+      "description": "Display-only banner for an NPL declaration block: the version/extension header of a rules document (`src/lit/npl/npl-declaration.ts`). The source forms are the NPL fences `⌜NPL@<version>⌝ … ⌞NPL@⌟` (definition) and `⌜extend:NPL@<version>⌝ … ⌞NPL@⌟` (extension); the component renders the banner text the source spells, with the rules content as authored children.",
       "attributes": [
         {
           "name": "version",
           "required": true,
           "type": "string",
           "allowedValues": [],
-          "default": "",
-          "description": "(required; missing warns). Rendered in the banner mark (`⌜NPL@<version>⌝`) and mirrored to `data-version` (dual-form contract; the mirror is deferred past parse via afterParse so a sem-source snapshot never sees runtime writes)."
+          "default": null,
+          "description": "required; a missing version warns and the banner still renders, with the bare mark (`⌜NPL@⌝`). Rendered in the banner mark (`⌜NPL@<version>⌝`) and mirrored to `data-version` (dual-form contract; the mirror is deferred past parse via afterParse so a sem-source snapshot never sees runtime writes)."
         },
         {
           "name": "type",
           "required": null,
-          "type": "",
-          "allowedValues": [],
+          "type": "string",
+          "allowedValues": [
+            "definition",
+            "extension"
+          ],
           "default": "definition",
-          "description": "`definition` | `extension` — Selects the banner mark (`⌜NPL@…⌝` vs `⌜extend:NPL@…⌝`) and mirrors the resolved kind to `data-type`. Any other value falls back to `definition`."
+          "description": "one of `definition` | `extension`. Selects the banner mark (`⌜NPL@…⌝` vs `⌜extend:NPL@…⌝`) and mirrors the resolved kind to `data-type`. Any other value falls back to `definition`."
         },
         {
           "name": "extend-target",
           "required": false,
           "type": "string",
           "allowedValues": [],
-          "default": "",
-          "description": "(optional, extensions only). Rendered by `.npl-declaration-target` beside the mark and mirrored to `data-extend-target` (absent when unauthored)."
+          "default": null,
+          "description": "optional; the vocabulary an extension extends, authored on `type=\"extension\"` declarations. Rendered by `.npl-declaration-target` beside the mark whenever authored and mirrored to `data-extend-target` (absent when unauthored)."
         },
         {
           "name": "id",
@@ -313,7 +316,7 @@
         }
       ],
       "children": [],
-      "example": "<npl-declaration version=\"0.6\">rules content…</npl-declaration>\n<npl-declaration version=\"0.6\" type=\"extension\" extend-target=\"npl-core\">extending rules…</npl-declaration>"
+      "example": "<npl-declaration version=\"0.6\">Every response states its assumptions before its answer.</npl-declaration>\n<npl-declaration version=\"0.6\" type=\"extension\" extend-target=\"npl-core\">This extension adds the session-ledger contract on top of npl-core.</npl-declaration>"
     },
     {
       "name": "npl-directive",
@@ -336,11 +339,10 @@
           "type": "string",
           "allowedValues": [
             "directive",
-            "prefix",
-            "data-kind"
+            "prefix"
           ],
           "default": "directive",
-          "description": "; one of `directive` | `prefix`. A `prefix` chip renders the `➤` arrow between glyph and instruction, the prefix form's source grammar. Mirrored to `data-kind` (resolved value)."
+          "description": "one of `directive` | `prefix`. A `prefix` chip renders the `➤` arrow between glyph and instruction, the prefix form's source grammar. Mirrored to `data-kind` (resolved value)."
         },
         {
           "name": "qualifier",
@@ -383,7 +385,7 @@
           "type": "string",
           "allowedValues": [],
           "default": "npl-example",
-          "description": "Displayed by `.npl-example-label` and mirrored to `data-label` (dual-form contract; the mirror is deferred past parse via afterParse so a sem-source snapshot never sees runtime writes)."
+          "description": "Displayed by `.npl-example-label` and mirrored to `data-label` (dual-form contract: `data-label` wins when both spellings are present, so the mirror writes the resolved value and never clobbers an authored `data-label`; deferred past parse via afterParse so a sem-source snapshot never sees runtime writes)."
         },
         {
           "name": "id",
@@ -417,24 +419,24 @@
       "name": "npl-flag",
       "family": "npl",
       "source": "spec/schema/npl/npl-flag.md",
-      "summary": "Child of `npl-flags` (`npl-flags.md`); usable standalone.",
-      "description": "Child of `npl-flags` (`npl-flags.md`); usable standalone. Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and this file is the BDD source of truth for `test/unit/npl-flag.test.ts`.",
+      "summary": "One runtime flag row: a `name`/`value` pair rendered as one labelled row the reader can click to apply.",
+      "description": "One runtime flag row: a `name`/`value` pair rendered as one labelled row the reader can click to apply. Authored inside the `npl-flags` container; usable standalone. Values render verbatim; when the name implies a numeric range the value is checked against it, and an out-of-range or non-numeric value is not an error — the flag renders with the `npl-flag-invalid` warning class on its value span. Clicking the flag toggles `data-applied` on it and dispatches `npl-flags-change` to the host app.",
       "attributes": [
         {
           "name": "name",
-          "required": null,
-          "type": "",
+          "required": true,
+          "type": "string",
           "allowedValues": [],
           "default": null,
-          "description": "`<string>` — no default. Flag identifier; its wording implies the numeric range checked on `value` (below)."
+          "description": "required, no default. Flag identifier; its wording implies the numeric range checked on `value` (below)."
         },
         {
           "name": "value",
           "required": null,
-          "type": "",
+          "type": "string",
           "allowedValues": [],
           "default": null,
-          "description": "`<string>` — no default. Rendered verbatim; validated only when the name implies a numeric range. Name-implied ranges (case-insensitive substring of the name): - `freq` → `[0.0, 1.0]` — frequency flags - `factor` → `[-10, 10]` — hormone factors - `threshold` → numeric, unbounded Any other name (pump switches, meta, …) is free-form — never validated. An out-of-range or non-numeric value is NOT an error: the flag renders with the `npl-flag-invalid` warning class on its value span."
+          "description": "no default. Rendered verbatim; validated only when the name implies a numeric range (case-insensitive substring of the name): `freq` checks [0.0, 1.0] (frequency flags), `factor` checks [-10, 10] (hormone factors), `threshold` must be numeric and unbounded. Any other name (pump switches, meta, …) is free-form — never validated. An out-of-range or non-numeric value is NOT an error: the flag renders with the `npl-flag-invalid` warning class on its value span."
         },
         {
           "name": "id",
@@ -461,12 +463,7 @@
           "description": "per the global attribute catalog (conventions.md §2)"
         }
       ],
-      "children": [
-        {
-          "name": "npl-flags",
-          "note": ""
-        }
-      ],
+      "children": [],
       "example": "<npl-flag name=\"calm_factor\" value=\"0.5\"></npl-flag>"
     },
     {
@@ -478,13 +475,17 @@
       "attributes": [
         {
           "name": "preset",
-          "required": null,
-          "type": "",
+          "required": false,
+          "type": "string",
           "allowedValues": [
-            "npl-flags-preset-invalid"
+            "minimal",
+            "full",
+            "production",
+            "creative",
+            "tireless"
           ],
           "default": null,
-          "description": "`<string>` — no default (omit it entirely for no badge). One of `minimal | full | production | creative | tireless` (the NPL flag source spells these `preset:<name>`; the attribute accepts the bare word or the prefixed spelling, normalized for display). An unknown preset is NOT an error: it warns through the author-facing channel and renders with the `npl-flags-preset-invalid` warning class."
+          "description": "optional, no default (omit it entirely for no badge). One of `minimal`, `full`, `production`, `creative`, `tireless` (the NPL flag source spells these `preset:<name>`; the attribute accepts the bare word or the prefixed spelling, normalized for display). An unknown preset is NOT an error: it warns through the author-facing channel and renders with the invalid-preset warning class (see Rendered form)."
         },
         {
           "name": "id",
@@ -523,8 +524,8 @@
       "name": "npl-hormones",
       "family": "npl",
       "source": "spec/schema/npl/npl-hormones.md",
-      "summary": "Source block: the NPL synthetic-hormones pump (NoizuPromptLingo `conventions/pumps.yaml`, `synthetic-hormones`) — seven biochemical-analog hormones (Momentum MTM, Tension TNS, Curiosity CRS, Confidenc",
-      "description": "Source block: the NPL synthetic-hormones pump (NoizuPromptLingo `conventions/pumps.yaml`, `synthetic-hormones`) — seven biochemical-analog hormones (Momentum MTM, Tension TNS, Curiosity CRS, Confidence CNF, Affinity AFN, Fatigue FTG, Restlessness RST) drawn as bars with delta arrows and threshold alerts. Display-only: no events, no network, no timers.",
+      "summary": "Source block: the NPL synthetic-hormones pump (NoizuPromptLingo `conventions/pumps.yaml`, `synthetic-hormones`).",
+      "description": "Source block: the NPL synthetic-hormones pump (NoizuPromptLingo `conventions/pumps.yaml`, `synthetic-hormones`). Seven biochemical-analog hormones — Momentum MTM, Tension TNS, Curiosity CRS, Confidence CNF, Affinity AFN, Fatigue FTG, Restlessness RST — drawn as bars with delta arrows and threshold alerts. Display-only: no events, no network, no timers.",
       "attributes": [
         {
           "name": "variant",
@@ -532,7 +533,7 @@
           "type": "string",
           "allowedValues": [],
           "default": "panel",
-          "description": "`string` — `panel` renders one row per `h` plus the `state` and `triggered` lines; `bars` renders only the rows (the compact form); `alert` renders only the `alert` elements. Any other value falls back to `panel`."
+          "description": "`panel` renders one row per `h` plus the `state` and `triggered` lines; `bars` renders only the rows (the compact form); `alert` renders only the `alert` elements. Any other value falls back to `panel`."
         },
         {
           "name": "state",
@@ -589,7 +590,7 @@
           "note": "`<h>` (one per hormone, inside `panel`): `name` (`string`), `symbol` (`string`), `value` (`number`, range [-10, 10] — out-of-range values are clamped into range and the row is marked `data-clamped`, the raw text mirrored to `data-value`), `delta` (`number`; the sign drives the arrow: positive up `↑`, negative down `↓`, zero or absent flat `→`), `trigger` (`string`)."
         }
       ],
-      "example": "<npl-hormones variant=\"panel\">\n  <panel>\n    <h name=\"Momentum\"     symbol=\"MTM\" value=\"6\"   delta=\"+2\" trigger=\"Tests passed first try\"></h>\n    <h name=\"Restlessness\" symbol=\"RST\" value=\"8.5\" delta=\"-1\" trigger=\"Strategy failed\"></h>\n  </panel>\n  <state>Productive tension</state>\n  <triggered>RST threshold crossed</triggered>\n  <alert hormone=\"RST\" value=\"8.5\" threshold=\"7\" behavior=\"strategy-switch\">\n    Restlessness threshold crossed. Initiating plan-of-action.\n  </alert>\n</npl-hormones>"
+      "example": "<npl-hormones variant=\"panel\">\n  <panel>\n    <h name=\"Momentum\"     symbol=\"MTM\" value=\"6\"   delta=\"+2\" trigger=\"Tests passed first try\"></h>\n    <h name=\"Tension\"      symbol=\"TNS\" value=\"3\"   delta=\"0\"  trigger=\"Complexity\"></h>\n    <h name=\"Restlessness\" symbol=\"RST\" value=\"8.5\" delta=\"-1\" trigger=\"Strategy failed\"></h>\n  </panel>\n  <state>Productive tension</state>\n  <triggered>RST threshold crossed</triggered>\n  <alert hormone=\"RST\" value=\"8.5\" threshold=\"7\" behavior=\"strategy-switch\">\n    Restlessness threshold crossed. Initiating plan-of-action.\n  </alert>\n</npl-hormones>"
     },
     {
       "name": "npl-intent",
@@ -601,26 +602,26 @@
       "children": [
         {
           "name": "npl-intent-overview",
-          "note": ""
+          "note": "the goal: what the effort is trying to do."
         },
         {
           "name": "npl-intent-scope",
-          "note": ""
+          "note": "what is in and out of scope."
         },
         {
           "name": "npl-intent-outcomes",
-          "note": ""
+          "note": "what success looks like."
         },
         {
           "name": "npl-intent-assumptions",
-          "note": ""
+          "note": "the assumptions grid."
         },
         {
           "name": "npl-intent-assumption",
-          "note": "`confidence`: string — default `—`. Rendered into the grid's second column; either spelling, `data-confidence` wins."
+          "note": "one assumption row inside the grid; its statement is the authored text, plus one optional parameter, `confidence`: string — default `—`. Rendered into the grid's second column; either spelling, `data-confidence` wins."
         }
       ],
-      "example": "<npl-intent id=\"launch\" kind=\"initiative\">\n  <npl-intent-overview>Ship the fleet dashboard to stage.</npl-intent-overview>\n  <npl-intent-scope>Metrics only; no alerting yet.</npl-intent-scope>\n  <npl-intent-outcomes>\n    <ul><li>One pane per service</li></ul>\n  </npl-intent-outcomes>\n  <npl-intent-assumptions>\n    <npl-intent-assumption confidence=\"high\">SigNoz keeps serving uptime queries.</npl-intent-assumption>\n    <npl-intent-assumption data-confidence=\"medium\">The chart repo stays ArgoCD-watched.</npl-intent-assumption>\n  </npl-intent-assumptions>\n</npl-intent>"
+      "example": "<npl-intent id=\"launch\" kind=\"initiative\">\n  <npl-intent-overview>Ship the fleet dashboard to stage.</npl-intent-overview>\n  <npl-intent-scope>Metrics only; no alerting yet.</npl-intent-scope>\n  <npl-intent-outcomes>\n    <ul><li>One pane per service</li></ul>\n  </npl-intent-outcomes>\n  <npl-intent-assumptions>\n    <npl-intent-assumption confidence=\"high\">SigNoz keeps serving uptime queries.</npl-intent-assumption>\n    <npl-intent-assumption data-confidence=\"medium\">The chart repo stays ArgoCD-watched.</npl-intent-assumption>\n    <npl-intent-assumption>ArgoCD auto-syncs from the chart repo.</npl-intent-assumption>\n  </npl-intent-assumptions>\n</npl-intent>"
     },
     {
       "name": "npl-mindread",
@@ -635,7 +636,7 @@
           "type": "number",
           "allowedValues": [],
           "default": "<absent>",
-          "description": "`number` — optional, — a theory-of-mind reading is a guess until corrected; authored `0..1`. Out-of-range values are **clamped** into `[0,1]` (a non-numeric authoring clamps to `0`), and the host is **marked**: `data-confidence` carries the clamped value, `data-confidence-out-of-range` the verbatim authored value, and the meter gains a `npl-mindread-confidence-out` note."
+          "description": "optional, a theory-of-mind reading is a guess until corrected; authored `0..1`. Out-of-range values are **clamped** into `[0,1]` (a non-numeric authoring clamps to `0`), and the host is **marked**: `data-confidence` carries the clamped value, `data-confidence-out-of-range` the verbatim authored value, and the meter gains a `npl-mindread-confidence-out` note."
         }
       ],
       "children": [
@@ -678,14 +679,6 @@
         {
           "name": "adaptation",
           "note": ""
-        },
-        {
-          "name": "npl-mindread-signal-unknown",
-          "note": ""
-        },
-        {
-          "name": "warn",
-          "note": ""
         }
       ],
       "example": "<npl-mindread confidence=\"0.7\">\n  <subject>User</subject>\n  <signals><signal type=\"tone\">Terse fragments — formality dropped.</signal></signals>\n  <inferred>\n    <motive>Quick resolution over thoroughness.</motive>\n    <mood>😤 Pressured, time-crunched</mood>\n    <cognitive>Execution mode — solutions, not options.</cognitive>\n    <unspoken>Reassurance that it'll be ready.</unspoken>\n  </inferred>\n  <adaptation>Working solution first; edge cases deferred. Short replies.</adaptation>\n</npl-mindread>"
@@ -703,7 +696,7 @@
           "type": "boolean",
           "allowedValues": [],
           "default": "false",
-          "description": "`boolean` — Declares this the primary lens; marks the rendered chips (`npl-mode-chip-primary`) and mirrors to `data-primary` after parse."
+          "description": "Resolved in either authoring spelling (`data-primary` wins, conventions §2). Declares this the primary lens; marks the rendered chips (`npl-mode-chip-primary`) and mirrors to `data-primary` after parse — an authored `data-primary` is never clobbered by the default."
         },
         {
           "name": "id",
@@ -736,7 +729,7 @@
           "note": "`type`: `string` — required. The lens name; the chip's label. A `mode` without `type` is skipped."
         }
       ],
-      "example": "<npl-mode primary>\n  <mode type=\"reasoning\"></mode>\n  <mode type=\"critic\"></mode>\n</npl-mode>"
+      "example": "<npl-mode>\n  <mode type=\"planner\"></mode>\n  <mode type=\"executing\"></mode>\n</npl-mode>"
     },
     {
       "name": "npl-mood",
@@ -792,7 +785,7 @@
           "note": "the stance the mood implies going forward."
         }
       ],
-      "example": "<npl-mood mood=\"🙂 wistful\">\n  <div class=\"npl-mood-tone\">restrained, unhurried</div>\n  <div class=\"npl-mood-context\">draft reply to a cold opener</div>\n  <div class=\"npl-mood-approach\">ask one concrete question</div>\n</npl-mood>"
+      "example": "<npl-mood mood=\"🙂 wistful\">\n  <div class=\"npl-mood-tone\">restrained, unhurried</div>\n  <div class=\"npl-mood-context\">draft reply to a cold opener</div>\n  <div class=\"npl-mood-approach\">ask one concrete question</div>\n</npl-mood>\n\n<npl-mood mood=\"🔥 sharp\"/>"
     },
     {
       "name": "npl-poa",
@@ -806,14 +799,11 @@
           "required": null,
           "type": "string",
           "allowedValues": [
-            "string",
             "lr",
-            "td",
-            "data-direction",
-            "data-"
+            "td"
           ],
           "default": "lr",
-          "description": "`string` — One of `lr` | `td`; declares the intended flow and mirrors to `data-direction` (dual-form contract, `data-` wins, mirror deferred past parse via afterParse). The fence's own `graph LR`/`graph TD` line remains the renderer's source of truth — authored source is never rewritten. Anything other than `lr`/`td` falls back to `lr` with an author-facing warning."
+          "description": "One of `lr` | `td`; declares the intended flow and mirrors to `data-direction` (dual-form contract, `data-` wins, mirror deferred past parse via afterParse). The fence's own `graph LR`/`graph TD` line remains the renderer's source of truth — authored source is never rewritten. Anything other than `lr`/`td` falls back to `lr` with an author-facing warning."
         },
         {
           "name": "id",
@@ -911,8 +901,8 @@
       "name": "npl-rubric",
       "family": "npl",
       "source": "spec/schema/npl/npl-rubric.md",
-      "summary": "Display-only weighted scoring rubric (`src/lit/npl/npl-rubric.ts`).",
-      "description": "Display-only weighted scoring rubric (`src/lit/npl/npl-rubric.ts`). Source: NPL rubric blocks.",
+      "summary": "Display-only weighted scoring rubric: one table of criteria, each with a weight and a score, plus an overall figure that is stated or computed from the weighted average.",
+      "description": "Display-only weighted scoring rubric: one table of criteria, each with a weight and a score, plus an overall figure that is stated or computed from the weighted average. Source: NPL rubric blocks. The component renders the table and owns no state; a criterion whose weight or score is missing or non-numeric is marked, kept visible, and excluded from the average, and the overall figure is marked (stated) or (computed) (Lit `NplRubric`, `src/lit/npl/npl-rubric.ts`).",
       "attributes": [
         {
           "name": "title",
@@ -962,8 +952,8 @@
       "name": "npl-section",
       "family": "npl",
       "source": "spec/schema/npl/npl-section.md",
-      "summary": "Generic typed section for NPL prompt-section blocks (`src/lit/npl/npl-section.ts`): display-only chrome over untouched authored content — a labelled header for known types, a warning box for unknown o",
-      "description": "Generic typed section for NPL prompt-section blocks (`src/lit/npl/npl-section.ts`): display-only chrome over untouched authored content — a labelled header for known types, a warning box for unknown ones. Light DOM per the namespace recipe; content stays searchable/copyable.",
+      "summary": "Generic typed section for NPL prompt-section blocks (`src/lit/npl/npl-section.ts`): display-only chrome — a labelled header for known types, a warning class for unknown ones.",
+      "description": "Generic typed section for NPL prompt-section blocks (`src/lit/npl/npl-section.ts`): display-only chrome — a labelled header for known types, a warning class for unknown ones. Light DOM per the namespace recipe; content stays searchable/copyable.",
       "attributes": [
         {
           "name": "type",
@@ -978,11 +968,10 @@
             "logic",
             "note",
             "syntax",
-            "template",
-            "npl-section-warning"
+            "template"
           ],
           "default": null,
-          "description": "required. One of the known section types: `alg`, `alg-pseudo`, `diagram`, `example`, `format`, `logic`, `note`, `syntax`, `template`. A missing or unknown value is never fatal: the section renders with the `npl-section-warning` class, its content plain, plus one author-facing warning per offending value."
+          "description": "required. One of the known section types: `alg`, `alg-pseudo`, `diagram`, `example`, `format`, `logic`, `note`, `syntax`, `template`."
         },
         {
           "name": "id",
@@ -1010,7 +999,7 @@
         }
       ],
       "children": [],
-      "example": "<npl-section type=\"example\">body HTML</npl-section>"
+      "example": "<npl-section type=\"syntax\">\n  <pre><code>section := \"&lt;npl-section\" type \"&gt;\" body \"&lt;/npl-section&gt;\"</code></pre>\n</npl-section>"
     },
     {
       "name": "npl-thought",
@@ -1076,28 +1065,7 @@
           "description": "per the global attribute catalog (conventions.md §2)"
         }
       ],
-      "children": [
-        {
-          "name": "id",
-          "note": ""
-        },
-        {
-          "name": "ego",
-          "note": ""
-        },
-        {
-          "name": "mood",
-          "note": ""
-        },
-        {
-          "name": "super-ego",
-          "note": ""
-        },
-        {
-          "name": "collective",
-          "note": ""
-        }
-      ],
+      "children": [],
       "example": "<npl-vos phase=\"entry\">\n  <p data-vos=\"id\">raw impulse — what the first instinct wants to do</p>\n  <p data-vos=\"ego\">reality-tested approach — what is actually done and why</p>\n  <p data-vos=\"mood\">🔥 — energized by the profiling work</p>\n  <p data-vos=\"super-ego\">internalized standards — what should be upheld here</p>\n  <p data-vos=\"collective\">system-level observation from outside the persona</p>\n</npl-vos>"
     },
     {
@@ -1499,7 +1467,7 @@
             "false"
           ],
           "default": "true",
-          "description": "(optional): one of `true`, `false`; — csv only: `false` ⇒ the first row is data and headers synthesize `col-<n>`."
+          "description": "(optional): one of `true`, `false`; csv only: `false` ⇒ the first row is data and headers synthesize `col-<n>`."
         },
         {
           "name": "data-path",
@@ -1517,7 +1485,7 @@
             "no"
           ],
           "default": "",
-          "description": "(optional): one of `no`; — `no` ⇒ skip the in-memory fetch cache (one fetch per URL per page load by default)."
+          "description": "(optional): one of `no`; `no` ⇒ skip the in-memory fetch cache (one fetch per URL per page load by default)."
         },
         {
           "name": "id",
@@ -1669,11 +1637,11 @@
           "note": "`<statement>` + `<conclusion>`: required per fact."
         },
         {
-          "name": "sem-distractor",
-          "note": "`<sem-distractor>`: optional, quiz view only — explicit wrong candidate. Without one, sibling conclusions serve as distractors."
+          "name": "incorrect-statement",
+          "note": "`<incorrect-statement>`: optional, quiz view only — explicit wrong candidate. Without one, sibling conclusions serve as distractors."
         }
       ],
-      "example": "<sem-facts id=\"auth-facts\" view-as=\"flashcards\">\n  <sem-fact id=\"f-jwt\">\n    <statement>JWTs rotate per session</statement>\n    <conclusion>Short-lived access tokens; the refresh\n      grant issues a new pair.</conclusion>\n    <sem-distractor>Store tokens in localStorage.</sem-distractor>\n  </sem-fact>\n</sem-facts>",
+      "example": "<sem-facts id=\"auth-facts\" view-as=\"flashcards\">\n  <sem-fact id=\"f-jwt\">\n    <statement>JWTs rotate per session</statement>\n    <conclusion>Short-lived access tokens; the refresh\n      grant issues a new pair.</conclusion>\n    <incorrect-statement>Store tokens in localStorage.</incorrect-statement>\n  </sem-fact>\n</sem-facts>",
       "optionsIn": "sem-facts"
     },
     {
@@ -1705,7 +1673,7 @@
         }
       ],
       "children": [],
-      "example": "<sem-facts id=\"auth-facts\" view-as=\"flashcards\">\n  <sem-fact id=\"f-jwt\">\n    <statement>JWTs rotate per session</statement>\n    <conclusion>Short-lived access tokens; the refresh\n      grant issues a new pair.</conclusion>\n    <sem-distractor>Store tokens in localStorage.</sem-distractor>\n  </sem-fact>\n</sem-facts>"
+      "example": "<sem-facts id=\"auth-facts\" view-as=\"flashcards\">\n  <sem-fact id=\"f-jwt\">\n    <statement>JWTs rotate per session</statement>\n    <conclusion>Short-lived access tokens; the refresh\n      grant issues a new pair.</conclusion>\n    <incorrect-statement>Store tokens in localStorage.</incorrect-statement>\n  </sem-fact>\n</sem-facts>"
     },
     {
       "name": "sem-md",
@@ -1928,7 +1896,23 @@
           "type": "",
           "allowedValues": [],
           "default": null,
-          "description": ", `kind`, `tags` global."
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
         }
       ],
       "children": [],
@@ -2105,7 +2089,23 @@
           "type": "",
           "allowedValues": [],
           "default": null,
-          "description": ", `kind`, `tags` global."
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
         }
       ],
       "children": [],
@@ -2304,13 +2304,5 @@
       "example": "<sem-views id=\"deploy\">\n  <sem-view name=\"Helm\" active role=\"tabpanel\">content…</sem-view>\n  <sem-view name=\"ArgoCD\" role=\"tabpanel\">content…</sem-view>\n</sem-views>"
     }
   ],
-  "gaps": [
-    {
-      "tag": "npl-agent",
-      "missing": [
-        "summary",
-        "description"
-      ]
-    }
-  ]
+  "gaps": []
 }

@@ -17,8 +17,8 @@ same record.
 ## Authoring form
 
 ```html
-<sem-note variant="warning">body HTML</sem-note>
-<sem-note variant="tip" collapsed>body HTML</sem-note>
+<sem-note variant="warning">The migration job expects the MinIO port-forward on 127.0.0.1:9000 — start it before you apply.</sem-note>
+<sem-note variant="tip" collapsed>Snapshot the volume first; once the rotation job starts, the old keys are gone for good.</sem-note>
 ```
 
 Class-form alias (conventions Appendix A): `div.sem-note[data-variant]` › `div.sem-note-body`, same `collapsed`
@@ -42,7 +42,7 @@ that hides a collapsed body wraps it in `.sem-note-body` first.
 
 ## Rendered form
 
-- Enhanced: `<sem-note>` itself (Lit `SemNote` — minimal: variant icon,
+- Enhanced: `<sem-note>` itself (Lit `SemNote` — minimal: variant label,
   collapsed behavior). No shadow root; light DOM, content searchable.
 - JS-off: `:is(sem-note, .sem-note)` base in
   `themes/_vocabulary.css` — accent border + variant label via attribute
@@ -63,8 +63,9 @@ None.
 
 - `role="note"` present in DOM (authored or set on upgrade).
 - Variant by accent + the `variant` attribute; no aria-live.
-- Collapsed form: the teaser is a click target; the deep-link resolver
-  opens it for a hash inside.
+- Collapsed form: the teaser is a real button (click and keyboard
+  activation); the hash resolver opens the note for a target inside it
+  (`fallback/target`).
 
 ## Machine contract
 

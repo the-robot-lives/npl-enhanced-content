@@ -11,9 +11,13 @@
  * until its chunk ships.
  *
  * Class-form aliases (`.sem-note` etc.) are deliberately out of scope:
- * they are not tags, so they cannot trigger a download. Documents authored
- * in the alias form need the full bundle (semtext.js), whose vanilla
- * handlers own them.
+ * they are not tags, so this scan cannot see them. For `sem-*` that is the
+ * contract — documents authored in the alias form need the full bundle
+ * (semtext.js), whose vanilla handlers own them. The `npl-*` namespace
+ * keeps the alias contract one level up instead: npl-lazy's boot `prepare`
+ * pass rewrites `.npl-*` elements to tag form (src/shared/npl-alias.ts)
+ * before hydration, so this scan stays tag-shaped and it is the rewrite
+ * that triggers the chunk download.
  */
 
 export const VOCABULARY_TAG = /^(?:sem|npl)-[a-z0-9]+(?:-[a-z0-9]+)*$/;

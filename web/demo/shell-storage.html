@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · sem-shell storage (a shell that remembers)</title>
+<!-- sem:inline vocabulary -->
+<style>
+  body { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 .5rem; }
+  p  { margin: .6rem 0; }
+</style>
+<!-- sem:inline shell -->
+</head>
+<body>
+<h1>sem-shell — persistent storage</h1>
+<p>The same shell as <a href="shell.html">shell.html</a>, but the
+<code>local-storage</code> attribute persists the whole file tree in the
+browser. Create files, reload, and they are still here:
+<code>mkdir -p notes</code>, <code>touch notes/hello.txt</code>,
+<code>echo remember-me &gt; notes/todo.txt</code>, then reload the page and
+<code>ls notes</code>. <code>storage status</code> shows the backend and any
+failed writes; <code>storage reset</code> puts the factory documents back.
+Mounting is live too: <code>mount</code> lists what a page can attach
+(<code>local-storage</code> is wired here; an S3 bucket needs
+<code>https://</code> and CORS — see <code>man mount</code>).</p>
+
+<!-- The authored children ARE the zero-JS contract: a static transcript
+     with no input element. The upgrade replaces them (and the build's
+     .nojs.html variant ships exactly this as proof). -->
+<sem-shell id="shell-storage-demo" aria-label="SemText shell with persistent storage" local-storage>
+  <div class="sem-shell-frame">
+    <div class="sem-shell-transcript" role="log">
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>mkdir -p notes</div>
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>echo remember-me &gt; notes/todo.txt</div>
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>storage status</div>
+      <div class="sem-shell-line">local-storage: 0 failed writes</div>
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span># reload — the tree survives</div>
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>ls notes</div>
+      <div class="sem-shell-line">todo.txt</div>
+    </div>
+  </div>
+</sem-shell>
+</body>
+</html>

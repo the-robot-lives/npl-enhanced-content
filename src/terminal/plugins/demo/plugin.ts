@@ -16,6 +16,8 @@ import type { PluginManifest } from '../../terminal-core.js';
 import { demoCommands } from './commands.js';
 import readme from './files/README.md?raw';
 import quiz from './files/quiz.html?raw';
+import exampleDeck from './files/example-deck.sem.html?raw';
+import authNotes from './files/auth-notes.sem.html?raw';
 import tokenRotation from './files/token-rotation.html?raw';
 import welcome from './files/welcome.html?raw';
 
@@ -35,6 +37,8 @@ export const demoPlugin: PluginManifest = {
     { path: '/demo/welcome.html', content: welcome },
     { path: '/demo/token-rotation.html', content: tokenRotation },
     { path: '/demo/quiz.html', content: quiz },
+    { path: '/demo/example-deck.sem.html', content: exampleDeck },
+    { path: '/demo/auth-notes.sem.html', content: authNotes },
   ],
 };
 

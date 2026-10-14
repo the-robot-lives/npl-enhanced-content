@@ -32,8 +32,21 @@ export type SourceParse =
   | { ok: true; table: TableData }
   | { ok: false; error: string };
 
-/** Same delimiter-row shape the Markdown renderer accepts (GFM). */
-const DELIM = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
+/**
+ * Delimiter-row shape the Markdown renderer accepts (GFM): `:?-+:?` cells
+ * separated by `|`, with optional leading/trailing pipe and whitespace.
+ * Validated by splitting (not a regex with nested `\s*` groups): a page's
+ * table source is uncontrolled input and the nested form backtracks
+ * super-linearly on adversarial runs of spaces (CodeQL js/polynomial-redos).
+ */
+const DELIM_CELL = /^:?-+:?$/;
+function isDelimRow(s: string): boolean {
+  let t = s.trim();
+  if (t.startsWith('|')) t = t.slice(1);
+  if (t.endsWith('|')) t = t.slice(0, -1);
+  const parts = t.split('|');
+  return parts.length > 0 && parts.every((p) => DELIM_CELL.test(p.trim()));
+}
 const INTEGER = /^[+-]?\d+$/;
 /** ISO-8601 shaped: `YYYY-MM-DD` and `YYYY-MM-DDTHH:MM[:SS[.sss]][Z|±HH:MM]`. */
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?$/;
@@ -87,7 +100,7 @@ function cells(line: string): string[] {
  * are dropped. Header + delimiter with no body rows is a valid empty table.
  */
 export function parseGfmTable(src: string): SourceParse {
-  const lines = dedent(src).split('\n').map((l) => l.replace(/\s+$/, ''));
+  const lines = dedent(src).split('\n').map((l) => l.trimEnd());
   let i = 0;
   while (i < lines.length && !lines[i].trim()) i++;
   if (i >= lines.length) {
@@ -98,7 +111,7 @@ export function parseGfmTable(src: string): SourceParse {
     return { ok: false, error: 'not a table: the first line carries no "|" cell separator' };
   }
   const delim = lines[i + 1];
-  if (delim === undefined || !DELIM.test(delim)) {
+  if (delim === undefined || !isDelimRow(delim)) {
     return { ok: false, error: 'not a table: no delimiter row (| --- | --- |) follows the header' };
   }
   const columns = cells(head);

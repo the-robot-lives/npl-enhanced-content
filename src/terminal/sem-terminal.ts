@@ -1,4 +1,5 @@
 import { html, type TemplateResult } from 'lit';
+import { AnsiStateMachine, ansiSpans, type AnsiSpan } from './ansi/index.js';
 import { SemElement } from '../lit/base.js';
 import { TerminalCore, type ShellLine, type WindowAction } from './terminal-core.js';
 import {
@@ -20,7 +21,9 @@ import {
   type TuiAction,
   type TuiState,
 } from './tui.js';
-import { splitSgr } from './sh-highlight.js';
+import { completeLine } from './complete.js';
+import { attachLocalStorage } from './backends/local-storage.js';
+import { createS3Backend } from './backends/s3.js';
 
 /**
  * sem-terminal — the reusable terminal core: input, history, transcript,
@@ -47,7 +50,7 @@ import { splitSgr } from './sh-highlight.js';
  * styles the `.sem-shell-*` classes; no shadow root, no `static styles`.
  * Transcript lines render through Lit text bindings only (auto-escaped) —
  * ANSI color from commands like `bat`/`ls` becomes styled spans via
- * splitSgr(); no HTML is ever built from command output or user input.
+ * the streaming ANSI tokeniser; no HTML is ever built from command output or user input.
  *
  * Zero-JS contract: whatever is authored inside the element is the static
  * transcript (a role="log" div with past lines, NO input element); the
@@ -88,6 +91,8 @@ export class SemTerminal extends SemElement {
   #playbackHandle: PlaybackHandle | null = null;
   #playbackStopped = false;
   #hasScript = false;
+  /** onLine unsubscribe for the core's async line channel. */
+  #offLines: (() => void) | null = null;
 
   constructor() {
     super();
@@ -98,23 +103,66 @@ export class SemTerminal extends SemElement {
     this.playback = null;
     this.playing = false;
     this.tui = null;
+    this.core.mountKinds.set('s3', {
+      id: 's3',
+      help: 'S3 bucket over https (read-only unless the page sets a signer)',
+      create: (args: string[]) => createS3Backend(args, this.core.s3Signer ?? undefined),
+    });
   }
 
   connectedCallback(): void {
     super.connectedCallback();
     this.setAttribute('aria-label', 'Terminal');
+    this.#offLines?.();
+    this.#offLines = this.core.onLine((line) => this.appendLines([line]));
+    this.core.vfs.onError = (error) => {
+      this.appendLines([{ kind: 'stderr', text: `${error.backend}: ${error.path}: ${error.message}` }]);
+    };
     if (!this.#booted) {
       this.#booted = true;
       this.replaceChildren(); // the authored zero-JS transcript is replaced
       this.lines = [{ kind: 'stdout', text: 'sem-terminal — type help.' }];
       this.#loadPluginsAttribute();
+      this.#attachStorage();
       this.#maybeStartPlayback();
     }
   }
 
   disconnectedCallback(): void {
     this.#stopPlayback(false);
+    this.#offLines?.();
+    this.#offLines = null;
     super.disconnectedCallback();
+  }
+
+  /**
+   * The `local-storage` attribute: persist this shell's tree under
+   * `semtext:shell:v1:<key>`. Bare attribute → the element's id is the
+   * key; no id → one stderr warning, no persistence. Seeding vs restore
+   * waits for a microtask so plugins mounted in subclass callbacks land
+   * first; the factory state is kept for `storage reset`.
+   */
+  #attachStorage(): void {
+    const attribute = this.getAttribute('local-storage');
+    if (attribute === null) return;
+    const key = attribute === '' ? this.id : attribute;
+    if (key === '') {
+      this.appendLines([
+        { kind: 'stderr', text: 'local-storage: give this element an id (or local-storage="key") — persistence off' },
+      ]);
+      return;
+    }
+    const backend = attachLocalStorage(this.core.vfs, { key });
+    // Boot mounts re-seed storage (their flushes write the fresh tree);
+    // peek NOW, before any of that, so a reload restores the user's tree
+    // instead of the one the boot itself just seeded.
+    const stored = backend.peekStored();
+    queueMicrotask(() => {
+      const outcome = backend.restore(stored);
+      if (outcome === 'corrupt') {
+        this.appendLines([{ kind: 'stderr', text: 'local-storage: stored state was unreadable — re-seeded' }]);
+      }
+    });
   }
 
   /** Load every declared manifest URL; failures are isolated + recorded. */
@@ -307,11 +355,7 @@ export class SemTerminal extends SemElement {
     `;
   }
 
-  #ansiClass(code: string): string {
-    if (code === '1') return 'sem-ansi-b';
-    if (code === '2') return 'sem-ansi-dim';
-    return `sem-ansi-c${code}`;
-  }
+  #ansi = new AnsiStateMachine();
 
   #renderLine(line: ShellLine): TemplateResult {
     const cls =
@@ -324,15 +368,19 @@ export class SemTerminal extends SemElement {
             : line.kind === 'comment'
               ? 'sem-shell-line sem-shell-comment'
               : 'sem-shell-line';
-    const spans = splitSgr(line.text);
-    if (spans.length === 1 && spans[0]!.codes.length === 0) {
+    // stdout/stderr stream through the ANSI tokeniser — one machine per
+    // element, so attributes persist across lines like a real terminal.
+    // Every other kind is shell chrome: bypass the parser, render verbatim.
+    if (line.kind !== 'stdout' && line.kind !== 'stderr') {
       return html`<div class=${cls}>${line.text}</div>`;
     }
+    const spans = ansiSpans(line.text, this.#ansi);
     return html`<div class=${cls}>
-      ${spans.map((span) =>
-        span.codes.length === 0
-          ? html`${span.text}`
-          : html`<span class=${span.codes.map((code) => this.#ansiClass(code)).join(' ')}>${span.text}</span>`,
+      ${spans.map(
+        (span) =>
+          span.classes.length === 0 && span.style === ''
+            ? html`${span.text}`
+            : html`<span class=${span.classes.join(' ')} style=${span.style}>${span.text}</span>`,
       )}
     </div>`;
   }
@@ -372,6 +420,8 @@ export class SemTerminal extends SemElement {
     this.cwd = result.state.cwd;
     if (result.clear) {
       this.lines = [];
+      this.#ansi.reset();
+      this.#ansi.reset();
     } else {
       this.appendLines(result.lines);
     }
@@ -434,9 +484,30 @@ export class SemTerminal extends SemElement {
     } else if (event.key === 'ArrowDown') {
       event.preventDefault();
       this.#navigate(1);
+    } else if (event.key === 'Tab' && !event.shiftKey) {
+      const input = event.target as HTMLInputElement;
+      if (input.value === '') return; // empty line: Tab moves focus, as usual
+      event.preventDefault();
+      this.#complete(input);
     } else if (event.key === 'l' && event.ctrlKey && !event.altKey && !event.metaKey) {
       event.preventDefault();
       this.lines = [];
+    }
+  }
+
+  /**
+   * Tab completion: extend the input when one completion exists (or a
+   * longest common prefix applies); with several candidates and nothing
+   * common to add, print them once — capped at 8, then "… +N more".
+   */
+  #complete(input: HTMLInputElement): void {
+    const outcome = completeLine(input.value, this.core);
+    if (outcome.kind === 'none') return;
+    input.value = outcome.line;
+    if (outcome.kind === 'list') {
+      const shown = outcome.candidates.slice(0, 8);
+      const rest = outcome.candidates.length - shown.length;
+      this.appendLines([{ kind: 'comment', text: shown.join('  ') + (rest > 0 ? `  … +${rest} more` : '') }]);
     }
   }
 

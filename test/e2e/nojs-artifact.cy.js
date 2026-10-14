@@ -7,9 +7,9 @@
  * `dist/demo/<name>.nojs.html` with every <script> element removed, and this
  * spec asserts against that file.
  *
- * D12 (repaid): the `.sem-distractor` and inactive `.sem-view` hide rules in
+ * D12 (repaid): the `.incorrect-statement` and inactive `.sem-view` hide rules in
  * the vocabulary are gated on the one upgrade marker, so with no script in
- * the page both render — distractors labelled, views stacked under their
+ * the page both render — incorrect statements labelled, views stacked under their
  * names.
  */
 describe('no-JS artifact (dist/demo/*.nojs.html)', () => {
@@ -56,11 +56,11 @@ describe('no-JS artifact (dist/demo/*.nojs.html)', () => {
       cy.get('.sem-property').should('have.length', 5).each(($p) => cy.wrap($p).should('be.visible'));
     });
 
-    it('D12 — distractors render, labelled, and every view is stacked under its name', () => {
-      cy.get('.sem-distractor').should('have.length', 4).each(($d) => {
+    it('D12 — incorrect statements render, labelled, and every view is stacked under its name', () => {
+      cy.get('.incorrect-statement').should('have.length', 4).each(($d) => {
         cy.wrap($d).should('be.visible');
         const before = $d[0].ownerDocument.defaultView.getComputedStyle($d[0], '::before');
-        expect(before.content).to.contain('distractor');
+        expect(before.content).to.contain('incorrect statement');
       });
       cy.get('.sem-view').should('have.length', 2).each(($v) => {
         cy.wrap($v).should('be.visible');

@@ -8,7 +8,9 @@
 //   Scenario: subject, perspective and verdict gain their part classes; verdict stays authored
 //   Scenario: strengths and weaknesses render as two lists with item content verbatim
 //   Scenario: class-form parts (.npl-strengths / .npl-item) structure the same way
+//   Scenario: a class-form part on a native ul upgrades in place (never a nested list)
 //   Scenario: a prose list part is classed, never rewritten
+//   Scenario: a list part mixing items with loose prose is never rewritten (nothing dropped)
 //   Scenario: an empty critique generates nothing
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -87,6 +89,20 @@ describe('npl-critique', () => {
     expect(el.querySelector('p.npl-verdict.npl-critique-verdict')?.textContent).toBe('approved');
   });
 
+  it('a class-form part authored as a native ul upgrades in place — no nested list', async () => {
+    const el = await mount(
+      '<npl-critique>' +
+        '<ul class="npl-strengths"><span class="npl-item">bounded scope</span></ul>' +
+        '</npl-critique>',
+    );
+    const strengths = el.querySelector('ul.npl-strengths');
+    expect(strengths?.classList.contains('npl-critique-list')).toBe(true);
+    expect(strengths?.querySelectorAll('ul')).toHaveLength(0); // never double-nested
+    const li = strengths?.querySelector('li.npl-critique-item');
+    expect(li?.textContent).toBe('bounded scope');
+    expect(strengths?.querySelector('.npl-item')).toBeNull();
+  });
+
   it('a prose list part is classed, never rewritten', async () => {
     const el = await mount(
       '<npl-critique><strengths>reads well end to end</strengths></npl-critique>',
@@ -95,6 +111,19 @@ describe('npl-critique', () => {
     expect(strengths).not.toBeNull();
     expect(strengths?.querySelector('ul')).toBeNull();
     expect(strengths?.textContent).toBe('reads well end to end');
+  });
+
+  it('a list part mixing items with loose prose is left as authored — no content dropped', async () => {
+    const el = await mount(
+      '<npl-critique>' +
+        '<strengths>overall: <item>clear contract</item> (see the spec)</strengths>' +
+        '</npl-critique>',
+    );
+    const strengths = el.querySelector('strengths.npl-critique-strengths');
+    expect(strengths).not.toBeNull();
+    expect(strengths?.querySelector('ul')).toBeNull();
+    // every authored node survives
+    expect(strengths?.textContent).toBe('overall: clear contract (see the spec)');
   });
 
   it('an empty critique generates nothing', async () => {

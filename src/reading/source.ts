@@ -60,6 +60,13 @@ function clean(nodes: DocumentFragment): string {
   while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
   let indent = Infinity;
   lines.forEach((l) => {
+    // A line holding only a sentinel is the placeholder for verbatim
+    // preformatted content: pre lines are authored flush-left, so the
+    // placeholder sits at column 0 and must not drive the common indent.
+    // The sentinel payload is the keep-index digits only.
+    const bare = l.trim();
+    if (bare.length > 2 * mark.length && bare.startsWith(mark) && bare.endsWith(mark)
+      && /^\d+$/.test(bare.slice(mark.length, -mark.length))) return;
     if (l.trim()) indent = Math.min(indent, l.match(/^[ \t]*/)![0].length);
   });
   return lines.map((l) => l.slice(indent < Infinity ? indent : 0)).join('\n')

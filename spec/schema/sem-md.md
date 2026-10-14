@@ -138,7 +138,7 @@ same function after the parse)
 - `.sem-md-body` follows: the rendered HTML. Tables are real `<table>`
   elements with `<thead>`, `<th scope="col">` and `<tbody>`; the GFM
   alignment row is honoured per column (`style.textAlign` on every cell).
-  Links carry `rel="noopener"`.
+  Links carry `rel="noopener noreferrer"`.
 - `.sem-md-raw` follows: the normalised Markdown inside a `sem-code`
   (`data-lang="markdown"`, `data-controls="copy,wrap"`), built once. Its
   copy / wrap chrome is `sem-code`'s own: the md handler calls the same

@@ -4,8 +4,8 @@ import { defineNpl, nplParam } from './shared.js';
 
 /**
  * npl-declaration — display-only banner for an NPL declaration block: the
- * `⌜NPL@<version>⌝ ... ⌞NPL@⌟` (definition) and `⌜extend:NPL@⌝ ... ⌞NPL@⌟`
- * (extension) source forms. The banner text renders as a header; the authored
+ * `⌜NPL@<version>⌝ ... ⌞NPL@⌟` (definition) and `⌜extend:NPL@<version>⌝`
+ * ... ⌞NPL@⌟ (extension) source forms. The banner text renders as a header; the authored
  * children — the rules content — are the body and stay untouched (light DOM).
  *
  * Same pattern as npl-example (recipe: ./index.ts header):

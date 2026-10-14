@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Auth notes</title></head>
+<body>
+<sem-enhanced-document>
+  <h1>Auth notes</h1>
+  <p>Working notes on issuing and rotating the access/refresh pair &mdash;
+  the sections demo outline, toc, and the records view.</p>
+
+  <h2>Issuing tokens</h2>
+  <p>Sign-in returns two tokens with different jobs and lifetimes.</p>
+  <sem-properties>
+    <sem-property key="access token">Short-lived; travels on every request.</sem-property>
+    <sem-property key="refresh token">Long-lived; used once at the issuer to mint the next pair.</sem-property>
+    <sem-property key="storage">Refresh token server-side by family; access token in memory only.</sem-property>
+  </sem-properties>
+
+  <h3>Access tokens</h3>
+  <p>Stateless and audited by claim, not by lookup. Expiry is the whole
+  security story, so it is measured in minutes.</p>
+
+  <h3>Refresh tokens</h3>
+  <p>The only credential allowed to speak to the issuer after sign-in.
+  Single-use and rotated.</p>
+
+  <h2>Rotating the pair</h2>
+  <p>Redeem the refresh token, mark it consumed, issue the next pair. A
+  replayed token means a stolen family &mdash; revoke the whole family.</p>
+  <sem-code lang="text" filename="figure-1.txt">
+<pre><code>client                  issuer
+  |  -- refresh --&gt;      |
+  |                      |  mark old token consumed
+  |  &lt;-- new pair --     |
+  |                       |
+  |  -- old refresh --&gt;  |  replay! revoke family</code></pre>
+  </sem-code>
+
+  <h2>Lifetimes</h2>
+  <sem-table>
+    <table>
+      <caption>Token lifetimes</caption>
+      <thead><tr><th>Token</th><th>Default life</th><th>Stored where</th></tr></thead>
+      <tbody>
+        <tr><td>access</td><td>10 minutes</td><td>memory</td></tr>
+        <tr><td>refresh</td><td>30 days</td><td>server, by family</td></tr>
+      </tbody>
+    </table>
+  </sem-table>
+
+  <sem-note variant="tip">Try <code>semtext toc demo/auth-notes.sem.html</code>,
+  then <code>semtext render demo/auth-notes.sem.html</code> &mdash; same
+  sections, no UI.</sem-note>
+</sem-enhanced-document>
+</body>
+</html>

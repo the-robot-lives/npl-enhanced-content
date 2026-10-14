@@ -15,8 +15,9 @@
  * missing operand, `false` is 1, unknown commands are 127.
  */
 
-import type { CommandContext, CommandSpec } from '../../terminal-core.js';
+import type { CommandContext, CommandSpec, CompletionContext } from '../../terminal-core.js';
 import { highlightAnsi } from '../../sh-highlight.js';
+import { resolvePath } from '../../vfs.js';
 
 /* ------------------------------------------------------------------ *
  * shared helpers
@@ -76,6 +77,7 @@ const pwd: CommandSpec = {
 const cd: CommandSpec = {
   name: 'cd',
   usage: 'cd [dir | - | ~] — change directory (no arg: $HOME; -: previous dir)',
+  complete: completeDirs,
   run(ctx) {
     const state = ctx.state;
     const target = ctx.args[0];
@@ -708,6 +710,7 @@ const history: CommandSpec = {
 const which: CommandSpec = {
   name: 'which',
   usage: 'which NAME... — how a command name resolves (alias or built-in)',
+  complete: (ctx) => ctx.commands.filter((name) => name.startsWith(ctx.word)),
   run(ctx) {
     if (ctx.args.length === 0) {
       ctx.err('which: missing operand');
@@ -729,6 +732,8 @@ const which: CommandSpec = {
 };
 
 /* man — short manual pages for every command this plugin adds. */
+import { renderCardMan } from '../cards/commands.js';
+
 const MAN: Record<string, string[]> = {
   pwd: ['pwd — print the working directory', '', 'SYNOPSIS', '  pwd'],
   cd: [
@@ -795,16 +800,39 @@ const MAN: Record<string, string[]> = {
     'semtext — document operations over SemText files',
     '',
     'SYNOPSIS',
-    '  semtext render | tui | outline | filter | format | expand ...',
+    '  semtext render | toc | tui | outline | filter | format | expand ...',
     '',
     'See `semtext <sub> --help` for each subcommand.',
   ],
+  'render-card': renderCardMan,
   open: ['open — open a stored .html document in a new window', '', 'SYNOPSIS', '  open <file.html>'],
+  mkdir: ['mkdir — make directories', '', 'SYNOPSIS', '  mkdir [-p] dir...', '', '-p creates missing parents and never complains about existing ones.'],
+  rmdir: ['rmdir — remove empty directories', '', 'SYNOPSIS', '  rmdir dir...', '', 'Refuses anything but empty directories; files and non-empty dirs error.'],
+  touch: ['touch — create empty files', '', 'SYNOPSIS', '  touch file...', '', 'Existing files (and directories) pass unchanged.'],
+  rm: [
+    'rm — remove files and directories',
+    '',
+    'SYNOPSIS',
+    '  rm [-r | -R] [-f] file...',
+    '',
+    '-r removes directories with their contents; -f ignores missing files and',
+    'drops the missing-operand error. Removing the working directory is refused.',
+  ],
+  cp: [
+    'cp — copy files and directories',
+    '',
+    'SYNOPSIS',
+    '  cp [-r | -R] src... dest',
+    '',
+    'A directory dest copies each src INTO it (basename kept). Directories',
+    'need -r; copying a directory into itself is refused.',
+  ],
 };
 
 const man: CommandSpec = {
   name: 'man',
   usage: 'man COMMAND — the short manual page',
+  complete: (ctx) => ctx.commands.filter((name) => name.startsWith(ctx.word)),
   run(ctx) {
     const name = ctx.args[0];
     if (name === undefined) {
@@ -838,6 +866,163 @@ const falseCmd: CommandSpec = {
   },
 };
 
+/* ------------------------------------------------------------------ *
+ * mkdir · rmdir · touch · rm · cp — tree mutations
+ * ------------------------------------------------------------------ */
+
+const causeText = (cause: unknown): string => (cause instanceof Error ? cause.message : String(cause));
+
+const mkdirCmd: CommandSpec = {
+  name: 'mkdir',
+  usage: 'mkdir [-p] dir...',
+  run(ctx) {
+    const args = expandShorts(ctx.args);
+    const parents = args.includes('-p');
+    const operands = args.filter((a) => !a.startsWith('-'));
+    if (operands.length === 0) {
+      ctx.err('mkdir: missing operand');
+      return;
+    }
+    for (const operand of operands) {
+      const path = ctx.vfs.resolve(ctx.state.cwd, operand);
+      try {
+        ctx.vfs.mkdir(path, { parents });
+      } catch (cause) {
+        ctx.err(`mkdir: cannot create directory '${operand}': ${causeText(cause)}`);
+      }
+    }
+  },
+};
+
+const rmdirCmd: CommandSpec = {
+  name: 'rmdir',
+  usage: 'rmdir dir...',
+  run(ctx) {
+    if (ctx.args.length === 0) {
+      ctx.err('rmdir: missing operand');
+      return;
+    }
+    for (const operand of ctx.args) {
+      const path = ctx.vfs.resolve(ctx.state.cwd, operand);
+      try {
+        ctx.vfs.rmdir(path);
+      } catch (cause) {
+        ctx.err(`rmdir: failed to remove '${operand}': ${causeText(cause)}`);
+      }
+    }
+  },
+};
+
+const touchCmd: CommandSpec = {
+  name: 'touch',
+  usage: 'touch file...',
+  run(ctx) {
+    if (ctx.args.length === 0) {
+      ctx.err('touch: missing file operand');
+      return;
+    }
+    for (const operand of ctx.args) {
+      const path = ctx.vfs.resolve(ctx.state.cwd, operand);
+      if (ctx.vfs.nodeAt(path)) continue; // POSIX touch: existing nodes pass
+      try {
+        ctx.vfs.touch(path);
+      } catch (cause) {
+        ctx.err(`touch: cannot touch '${operand}': ${causeText(cause)}`);
+      }
+    }
+  },
+};
+
+const rmCmd: CommandSpec = {
+  name: 'rm',
+  usage: 'rm [-r | -R] [-f] file...',
+  run(ctx) {
+    const args = expandShorts(ctx.args);
+    let recursive = false;
+    let force = false;
+    const operands: string[] = [];
+    for (const a of args) {
+      if (a === '-r' || a === '-R' || a === '--recursive') recursive = true;
+      else if (a === '-f' || a === '--force') force = true;
+      else if (a === '-') continue;
+      else if (a.startsWith('-')) {
+        ctx.err(`rm: invalid option -- '${a}'`);
+        return;
+      } else operands.push(a);
+    }
+    if (operands.length === 0) {
+      if (!force) ctx.err('rm: missing operand'); // `rm -f` with nothing: exit 0, silent
+      return;
+    }
+    for (const operand of operands) {
+      const path = ctx.vfs.resolve(ctx.state.cwd, operand);
+      try {
+        ctx.vfs.rm(path, { recursive, force });
+      } catch (cause) {
+        ctx.err(`rm: cannot remove '${operand}': ${causeText(cause)}`);
+      }
+    }
+  },
+};
+
+const cpCmd: CommandSpec = {
+  name: 'cp',
+  usage: 'cp [-r | -R] src... dest',
+  run(ctx) {
+    const args = expandShorts(ctx.args);
+    let recursive = false;
+    const operands: string[] = [];
+    for (const a of args) {
+      if (a === '-r' || a === '-R' || a === '--recursive') recursive = true;
+      else if (!a.startsWith('-')) operands.push(a);
+      else {
+        ctx.err(`cp: invalid option -- '${a}'`);
+        return;
+      }
+    }
+    if (operands.length < 2) {
+      ctx.err(
+        operands.length === 0
+          ? 'cp: missing file operand'
+          : `cp: missing destination file operand after '${operands[0]}'`,
+      );
+      return;
+    }
+    const dest = operands[operands.length - 1];
+    const destPath = ctx.vfs.resolve(ctx.state.cwd, dest);
+    const destNode = ctx.vfs.nodeAt(destPath);
+    const sources = operands.slice(0, -1);
+    if (sources.length > 1 && (!destNode || destNode.kind !== 'dir')) {
+      ctx.err(`cp: target '${dest}' is not a directory`);
+      return;
+    }
+    for (const src of sources) {
+      const srcPath = ctx.vfs.resolve(ctx.state.cwd, src);
+      try {
+        ctx.vfs.copy(srcPath, destPath, { recursive });
+      } catch (cause) {
+        ctx.err(`cp: ${causeText(cause)}`);
+      }
+    }
+  },
+};
+
+/** Directory-only completions (cd); the engine supplies vfs + cwd. */
+/** Directory-only completions (cd); the engine supplies vfs + cwd + home. */
+function completeDirs(ctx: CompletionContext): string[] {
+  const slash = ctx.word.lastIndexOf('/');
+  const dirPart = slash === -1 ? '' : ctx.word.slice(0, slash + 1);
+  const rest = slash === -1 ? ctx.word : ctx.word.slice(slash + 1);
+  const expanded = dirPart.startsWith('~') ? ctx.home + dirPart.slice(1) : dirPart;
+  const base = resolvePath(ctx.cwd, expanded === '' ? '.' : expanded);
+  const out: string[] = [];
+  for (const node of ctx.vfs.list(base)) {
+    if (node.kind !== 'dir' || !node.name.startsWith(rest)) continue;
+    out.push(dirPart + node.name + '/');
+  }
+  return out.sort((a, b) => a.localeCompare(b));
+}
+
 export const posixCommands: CommandSpec[] = [
   pwd,
   cd,
@@ -859,5 +1044,10 @@ export const posixCommands: CommandSpec[] = [
   man,
   trueCmd,
   falseCmd,
+  mkdirCmd,
+  rmdirCmd,
+  touchCmd,
+  rmCmd,
+  cpCmd,
 ];
 export default posixCommands;

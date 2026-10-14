@@ -14,6 +14,8 @@
 //   Scenario: data-* spelling wins when both forms are authored
 //   Scenario: clicking toggles data-applied and dispatches npl-flags-change
 //   Scenario: the change event bubbles and composes to the document
+//   Scenario: the row is a focusable toggle button (role, tabindex, aria-pressed)
+//   Scenario: Enter and Space apply the flag like a click
 //
 //happy-dom never completes a Lit re-render cycle for these light-DOM
 //elements (attribute/property mutations post-upgrade patch nothing), so
@@ -130,5 +132,45 @@ describe('npl-flag', () => {
     expect(events).toHaveLength(1);
     expect(events[0].bubbles).toBe(true);
     expect(events[0].composed).toBe(true);
+  });
+
+  it('the row is a focusable toggle button (role, tabindex, aria-pressed)', async () => {
+    const el = flag();
+    await el.updateComplete;
+    expect(el.getAttribute('role')).toBe('button');
+    expect(el.getAttribute('tabindex')).toBe('0');
+    expect(el.getAttribute('aria-pressed')).toBe('false');
+    el.click();
+    await el.updateComplete;
+    expect(el.getAttribute('aria-pressed')).toBe('true');
+    el.click();
+    await el.updateComplete;
+    expect(el.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('a host-authored role or tabindex wins over the defaults', async () => {
+    const el = author('<npl-flag name="calm_factor" value="0.5" role="switch" tabindex="4"></npl-flag>');
+    await el.updateComplete;
+    expect(el.getAttribute('role')).toBe('switch');
+    expect(el.getAttribute('tabindex')).toBe('4');
+  });
+
+  it('Enter and Space apply the flag like a click', async () => {
+    const el = flag();
+    await el.updateComplete;
+    const events: CustomEvent[] = [];
+    el.addEventListener('npl-flags-change', (e) => events.push(e as CustomEvent));
+
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(el.hasAttribute('data-applied')).toBe(true);
+    expect(events[0]?.detail).toEqual({ name: 'calm_factor', value: '0.5', applied: true });
+
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+    expect(el.hasAttribute('data-applied')).toBe(false);
+    expect(events[1]?.detail).toEqual({ name: 'calm_factor', value: '0.5', applied: false });
+
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(el.hasAttribute('data-applied')).toBe(false);
+    expect(events).toHaveLength(2);
   });
 });

@@ -133,6 +133,51 @@ describe('joinBuckets', () => {
   });
 });
 
+describe('wireJoins (declarative materialization)', () => {
+  beforeEach(() => document.body.innerHTML = '');
+  afterEach(() => vi.restoreAllMocks());
+
+  const page = () => `
+    <sem-data-visualizer id="dv">
+      <sem-data-source data-name="Alpha">| id | who |
+|----|-----|
+| 1  | ace |</sem-data-source>
+      <sem-data-source data-name="Beta">| id | ttl |
+|----|-----|
+| 1  | 90  |</sem-data-source>
+      <sem-data-join data-name="alpha-beta" data-left="Alpha" data-right="Beta" data-on="id"></sem-data-join>
+      <sem-data-query id="q1">SELECT who, ttl FROM alpha-beta</sem-data-query>
+    </sem-data-visualizer>`;
+
+  it('refuses a join name that shadows a source bucket', () => {
+    document.body.innerHTML = page().replace('data-name="alpha-beta"', 'data-name="Alpha"');
+    const dv = document.getElementById('dv')!;
+    enhanceDataVisualizerElement(dv);
+    const err = dv.querySelector('sem-data-join .sem-data-error');
+    expect(err?.getAttribute('role')).toBe('alert');
+    expect(err?.textContent).toMatch(/collides with existing bucket "Alpha"/);
+  });
+
+  it('withdraws its own bucket and clears the ok state when a later run fails', async () => {
+    document.body.innerHTML = page();
+    const dv = document.getElementById('dv')!;
+    enhanceDataVisualizerElement(dv);
+    const j = dv.querySelector('sem-data-join')!;
+    expect(j.getAttribute('data-sem-join-state')).toBe('ok');
+    expect(dv.querySelectorAll('.sem-data-query-results tbody tr').length).toBe(1);
+    // the left bucket loses its key column — as a bad file/API re-load would
+    const { registerBucket } = await import('../../src/reading/data-query.js');
+    registerBucket(dv.querySelector('sem-data-source')!, 'Alpha', { columns: ['who'], rows: [['ace']] });
+    const err = dv.querySelector('sem-data-join .sem-data-error');
+    expect(err?.textContent).toMatch(/is not a column of bucket "Alpha"/);
+    expect(j.hasAttribute('data-sem-join-state')).toBe(false);
+    // the query re-ran against the withdrawn bucket — an alert, not stale rows
+    await vi.waitFor(() => {
+      expect(dv.querySelector('.sem-data-query-error')?.textContent).toMatch(/unknown bucket/);
+    });
+  });
+});
+
 describe('query chrome (the enhance)', () => {
   beforeEach(() => document.body.innerHTML = '');
   afterEach(() => vi.restoreAllMocks());

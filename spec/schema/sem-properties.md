@@ -28,15 +28,17 @@ glossary (term anchors get hover/focus preview popovers).
 
 Class-form alias (conventions Appendix A): `div.sem-properties[data-kind][data-view-as]` › `div.sem-property[data-key]`.
 
-- `key`: required, free text (the term). Property text = the value.
+- `key` (on each `sem-property`): required, free text (the term). The
+  property text is the value.
 - Compact sugar (conventions §3): `<sem-property>token ttl ::
   15m</sem-property>` is legal; **`key` wins** when both present.
   The fallback does NOT parse `::` — sugar authors must write `key`
   for correct rendering until a parser ships.
-- `kind` free token (`config`, `spec`, `env` …); `id`, `tags` global.
+- `kind` (optional): free token (`config`, `spec`, `env` …).
+- `id`, `tags` per the global attribute catalog (conventions.md §2).
 - ❓ Q2 resolved for v1: pure definition list, **no copy/search chrome**;
   revisit only if a consumer demands it.
-- `view-as="glossary"` (R/W1): the block is a glossary. Each property
+- `view-as="glossary"` (optional; R/W1): the block is a glossary. Each property
   should carry an `id`; prose elsewhere links a term with a plain anchor
   (`<a href="#g-jwt">JWT</a>`), optionally wrapping it in `<dfn>` at its
   defining use.

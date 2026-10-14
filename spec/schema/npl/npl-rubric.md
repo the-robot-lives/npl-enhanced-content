@@ -1,8 +1,13 @@
 # Schema — `npl-rubric`
 
-Display-only weighted scoring rubric (`src/lit/npl/npl-rubric.ts`). Source:
-NPL rubric blocks. Contract per conventions.md v0.6 and the namespace
-recipe in `src/lit/npl/index.ts`.
+Display-only weighted scoring rubric: one table of criteria, each with a
+weight and a score, plus an overall figure that is stated or computed from
+the weighted average. Source: NPL rubric blocks. The component renders the
+table and owns no state; a criterion whose weight or score is missing or
+non-numeric is marked, kept visible, and excluded from the average, and the
+overall figure is marked (stated) or (computed) (Lit `NplRubric`,
+`src/lit/npl/npl-rubric.ts`). Contract per conventions.md v0.6 and the
+namespace recipe in `src/lit/npl/index.ts`.
 
 ## Authoring form
 
@@ -46,8 +51,9 @@ either spelling (`.npl-criterion`, `.npl-overall-score`).
   row whose `.npl-rubric-overall-value` is the stated or computed figure
   with a visible `.npl-rubric-source` marker (`(stated)` / `(computed)`,
   mirrored on `data-source`). Computed figures render at full precision.
-  Once consumed, the authored criterion / overall-score children get
-  `hidden` so the table is the only statement of the rubric.
+  Once consumed, the authored criterion / overall-score children are
+  replaced by the table — the table is then the only statement of the
+  rubric.
 - JS-off: block box from the npl section of `themes/_vocabulary.css`
   (`npl-rubric, .npl-rubric { display: block; }`). Nothing hidden,
   nothing generated — attribute-only criteria read as whitespace, a

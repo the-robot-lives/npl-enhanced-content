@@ -42,6 +42,17 @@ export class NplFlags extends SemElement {
         `npl-flags: unknown preset "${preset}" — expected one of ${NPL_PRESETS.join('|')}`,
       );
     }
+    // chrome order: the generated preset badge leads the element, the authored
+    // `npl-flag` children and note text follow (npl-agent's rule). Light DOM
+    // skips LitElement's renderBefore adjustment (base.ts returns `this`), and
+    // the container can upgrade with its children already present (innerHTML,
+    // hydration, class-form markup), so enforce the position here. Checked
+    // against firstChild, not firstElementChild: a note-only body puts a text
+    // node ahead of the badge.
+    const badge = this.querySelector(':scope > .npl-flags-preset');
+    if (badge && badge !== this.firstChild) {
+      this.insertBefore(badge, this.firstChild);
+    }
     // dual-form contract: the data-* spelling mirrors the bare attribute,
     // so CSS/extraction read one form (deferred past parse, like sem-note).
     this.afterParse('preset', () => this.setAttribute('data-preset', preset));

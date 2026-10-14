@@ -1,0 +1,16 @@
+{
+  "//": "semtext-cards plugin, shipped form (src/terminal/PLUGINS.md). Structure: this manifest, the commands module (commands.js — compiled from commands.ts), and the files/ directory. `load.src` resolves against this manifest's URL; an absolute https (CDN) deployment MUST add load.integrity = \"sha256-<64 hex>\" or the loader refuses before fetching. File entries with `src` are fetched relative to this manifest; `content` would inline them instead. test/unit/terminal-cards-plugin.test.ts pins this file in sync with cards/plugin.ts.",
+  "name": "semtext-cards",
+  "version": "0.1.0",
+  "description": "render-card: framed terminal cards over the virtual file system",
+  "load": {
+    "src": "./commands.js",
+    "integrity": null
+  },
+  "files": [
+    { "path": "/demo/README.md", "src": "files/README.md" },
+    { "path": "/demo/render-demo.card", "src": "files/render-demo.card" },
+    { "path": "/demo/render-subsection.card", "src": "files/render-subsection.card" },
+    { "path": "/demo/render-toc.card", "src": "files/render-toc.card" }
+  ]
+}

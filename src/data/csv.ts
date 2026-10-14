@@ -7,17 +7,24 @@
  * table parser so views, inference, and rendering stay shared.
  */
 
+import { dedent } from './table.js';
 import type { SourceParse, TableData } from './table.js';
 
 /**
  * Parse one CSV document. In scope (RFC 4180): quoted fields, `""` escapes,
  * embedded commas and newlines, CRLF line endings. The first record is the
  * header unless `header` is false (then columns synthesize `col-<n>`).
- * Ragged rows pad/drop like the table parser: missing cells are empty,
- * extras dropped. An empty payload is a clear error.
+ * HTML-indented bodies parse like the table format: the common left margin
+ * is dedented and blank lines surrounding the payload are dropped (only
+ * when the document stays flush-started between quoted newlines — same
+ * rule the table parser's dedent follows). Ragged rows pad/drop like the
+ * table parser: missing cells are empty, extras dropped. An empty payload
+ * is a clear error.
  */
 export function parseCsv(src: string, header = true): SourceParse {
-  const records = splitRecords(src);
+  const records = splitRecords(dedent(src));
+  while (records.length > 1 && records[0].every((f) => f.trim() === '')) records.shift();
+  while (records.length > 1 && records[records.length - 1].every((f) => f.trim() === '')) records.pop();
   const blank = records.every((r) => r.every((f) => f.trim() === ''));
   if (records.length === 0 || blank) {
     return { ok: false, error: 'no data found: the csv payload is empty' };
