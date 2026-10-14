@@ -10,7 +10,8 @@
   sem-table spec drives the filter through its real input handler
   (cypress actionability misjudges the sticky chrome); conventions.html
   resynced to the normative conventions.md (table rows, heading ids, one
-  escaped class-form snippet) — → stage (#4).
+  escaped class-form snippet) — → stage (#4), → main (#5); deploy blocked
+  (registry secrets missing on the-robot-lives repo; see release report).
 - s3 backend: self-hosted oidc sign-in (authorization-code + PKCE, STS
   AssumeRoleWithWebIdentity), SigV4 request signing in-browser, temporary
   session store (sessionStorage by default) with silent pre-expiry
