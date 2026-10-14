@@ -180,19 +180,7 @@ describe('sem-md — edits', () => {
     expect(el.hasAttribute('data-sem-editing')).toBe(true);
   });
 
-  // fixme(desc-prose): BLOCKED on an element-side bug — src/md/element.ts
-  // `build()` wipes the element with `el.textContent = ''`, ejecting lit's
-  // light-DOM part markers; the re-render protocol's step-3
-  // `await el.updateComplete` then rejects and the controller's
-  // `void rerenderElement(...)` surfaces an unhandled rejection, failing the
-  // whole file. Patch (md/element.ts build): replace the wipe with a
-  // marker-preserving one —
-  //   for (const n of Array.from(el.childNodes)) {
-  //     if (n.nodeType === Node.COMMENT_NODE) continue; // lit part markers
-  //     el.removeChild(n);
-  //   }
-  // Flip this fixme back to `it` once that lands.
-  it.skip('text edit through the raw fence changes ONLY the markdown text node', async () => {
+  it('text edit through the raw fence changes ONLY the markdown text node', async () => {
     const { el, ctx, c } = make(MD_EXAMPLE);
     await flush(); // the element's own enhancement builds the raw fence
     const code = el.querySelector(':scope > .sem-md-raw code');
@@ -206,9 +194,7 @@ describe('sem-md — edits', () => {
     expect(ctx.doc.serialize()).toBe(MD_EXAMPLE);
   });
 
-  // fixme(desc-prose): same md/element.ts marker wipe as above — any op on
-  // the sem-md binding schedules a re-render whose step-3 update rejects.
-  it.skip('attribute edit changes ONLY that attribute; undo restores byte-exact', async () => {
+  it('attribute edit changes ONLY that attribute; undo restores byte-exact', async () => {
     const { ctx, c } = make(MD_EXAMPLE);
     ctx.doc.transaction('test', (tx) => {
       tx.push({ type: 'setAttr', node: c.binding.rootId, name: 'label', value: 'Renamed caption' });
@@ -280,19 +266,7 @@ describe('sem-browser — edits', () => {
   beforeEach(reset);
   afterEach(reset);
 
-  // fixme(desc-prose): BLOCKED on the same element-side lit-marker issue —
-  // sem-browser's #wire() re-homes authored children (AND lit's part
-  // markers) into the viewport; the re-render cleanup then removes the
-  // unstamped frame, ejecting the markers, and step 3's update rejects
-  // before descriptor.rerender can rebuild/stamp the frame. Patch
-  // (src/browser/sem-browser.ts #wire): skip comment nodes when re-homing —
-  //   for (const child of Array.from(this.childNodes)) {
-  //     if (child.nodeType === Node.COMMENT_NODE) continue; // lit markers
-  //     viewport.appendChild(child);
-  //   }
-  // (same guard in the src branch's hidden-fallback loop). Flip back to `it`
-  // once that lands.
-  it.skip('src link field accepts a relative path and writes ONLY that attribute', async () => {
+  it('src link field accepts a relative path and writes ONLY that attribute', async () => {
     const { ctx, c } = make(BROWSER_EXAMPLE);
     const r = setLink(ctx, c.binding, { attr: 'src' }, 'demo/other.sem.html');
     expect(r.ok).toBe(true);
@@ -315,8 +289,7 @@ describe('sem-browser — edits', () => {
     expect(ctx.doc.serialize()).toBe(BROWSER_EXAMPLE);
   });
 
-  // fixme(desc-prose): same sem-browser #wire() marker re-homing as above.
-  it.skip('no-src re-render keeps one copy of the fallback inside the viewport', async () => {
+  it('no-src re-render keeps one copy of the fallback inside the viewport', async () => {
     const { el, ctx, c } = make(BROWSER_NO_SRC);
     ctx.doc.transaction('test', (tx) => {
       tx.push({ type: 'setAttr', node: c.binding.rootId, name: 'label', value: 'renamed' });

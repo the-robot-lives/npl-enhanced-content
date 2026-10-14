@@ -409,17 +409,36 @@ for (const { name, spec } of TAGS) {
   });
 }
 
-// Blocked end-to-end coverage — flip on when the controller lane lands the
-// buildFromXml id-counter reseed (cross-lane request in the lane report):
-// the same add/remove flow as above, through the real +/− verb. Skipped
-// (not active) until that fix exists — an un-skipped run fails red because
-// addItem still returns false on the id collision.
-it.skip('addItem verb inserts at the list tail', async () => {
+// End-to-end coverage through the real +/− verb — the same add/remove flow
+// as the per-tag loop above. npl-cot's upgrade re-homes authored children
+// out of `:scope >`, so position is asserted via model children: the count
+// and the tail splice are read from the model, the DOM only proves the
+// re-projection grows by one.
+it('addItem verb inserts at the list tail', async () => {
   const entry = TAGS.find((t) => t.name === 'npl-cot')!;
-  const { el, ctx, c } = await edit(entry.spec.markup);
-  const before = ctx.doc.serialize();
+  // edit() runs synchronously (no await — one would yield a microtask and
+  // let the upgrade re-home the authored children before they are counted)
+  const { el, ctx, c } = edit(entry.spec.markup);
   const items = el.querySelectorAll(entry.spec.itemList!);
+  expect(items.length, 'npl-cot starts with items').toBeGreaterThan(0);
+  const lastId = modelIdFor(ctx, c.binding, items[items.length - 1] as HTMLElement);
+  expect(lastId, 'last item maps to the model').not.toBe(null);
+  const parent = ctx.doc.node(lastId!)!.parentId!;
+  const elementKids = () => ctx.doc.childrenOf(parent).filter((n) => n.kind === 'element');
+  const beforeIds = new Set(elementKids().map((n) => n.id));
+  const beforeCount = beforeIds.size;
+  const before = ctx.doc.serialize();
   expect(addItem(ctx, c.binding)).toBe(true);
+  const kids = elementKids();
+  expect(kids.length).toBe(beforeCount + 1);
+  const fresh = kids.find((n) => !beforeIds.has(n.id));
+  expect(fresh, 'a new element joined the model').toBeDefined();
+  expect(fresh!.id).not.toBe(lastId);
+  // at the tail of the ITEM LIST: the new node's immediate predecessor
+  // among the element siblings is the previous last item
+  const siblingIds = kids.map((n) => n.id);
+  expect(siblingIds[siblingIds.indexOf(fresh!.id) - 1]).toBe(lastId);
+  expect(ctx.doc.serializeSubtree(fresh!.id)).toMatch(/^<sem-step/);
   await flush();
   const grown = el.querySelectorAll(entry.spec.itemList!);
   expect(grown.length).toBe(items.length + 1);

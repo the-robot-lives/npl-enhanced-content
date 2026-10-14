@@ -31,9 +31,7 @@ import { GLOBAL_ATTR_NAMES, loadSchema } from '../../src/editor/schema/load-sche
 import { getDescriptor, hasHandDescriptor } from '../../src/editor/schema/registry.js';
 import type { SchemaTagSpec } from '../../src/editor/schema/types.js';
 import { tryParse } from '../../src/editor/model/document.js';
-import { seedIdCounter } from '../../src/editor/model/parse.js';
-import { rebuildSubtree } from '../../src/editor/safety/sanitize.js';
-import type { EditorNode, NodeId } from '../../src/editor/model/types.js';
+import type { NodeId } from '../../src/editor/model/types.js';
 import {
   attachEditor,
   createContext,
@@ -156,23 +154,6 @@ function looseBinding(ctx: EditorContext, el: HTMLElement): ElementBinding {
     editingSlot: null,
     controller: null,
   };
-}
-
-/** Strip snippet stop grammar — same rules as actions.stripTemplateStops. */
-function stripStops(xml: string): string {
-  return xml
-    .replace(/\$\{\d+\|([^|}]*)\|[^}]*\}/g, '$1')
-    .replace(/\$\{\d+:([^}]*)\}/g, '$1')
-    .replace(/\$\{\d+\}/g, '');
-}
-
-/** Largest numeric id in the subtree — the buildFromXml seed point. */
-function maxIdIn(n: EditorNode): number {
-  let max = Number(n.id.slice(1));
-  if (n.kind === 'element' || n.kind === 'document') {
-    for (const c of n.children) max = Math.max(max, maxIdIn(c));
-  }
-  return max;
 }
 
 beforeEach(() => {
@@ -331,22 +312,10 @@ const P2 = '<sem-profile id="operator" label="Operator" implies="reader"></sem-p
 
 describe('sem-audiences', () => {
   it('+ inserts the profile template as one op; neighbours byte-exact; undoable', () => {
-    // drive the §3.4 `+` op directly: the template rebuilt through the
-    // factories, inserted after the last item. addItem() itself is
-    // blocked by the buildFromXml id-collision bug (cross-lane report:
-    // parse() resets the shared counter, so the rebuild mints ids the
-    // live doc already owns whenever the template is smaller than the
-    // document — the controller lane owns the fix).
-    const { ctx } = modelSession(AUDIENCES_EXAMPLE);
-    const aud = ctx.doc.root.children[0]!;
-    const tpl = getDescriptor('sem-audiences')!.itemList!.template.xml;
-    const parsed = tryParse(stripStops(tpl));
-    if (!parsed.ok) throw new Error(`template parse failed: ${parsed.error.message}`);
-    const first = parsed.doc.root.children.find((c) => c.kind === 'element');
-    if (first === undefined || first.kind !== 'element') throw new Error('template has no element');
-    seedIdCounter(maxIdIn(ctx.doc.root) + 1); // the documented buildFromXml fix
-    const node = rebuildSubtree(ctx.doc, first);
-    ctx.doc.apply({ type: 'insertNode', parent: aud.id, index: 4, node });
+    // the real §3.4 `+` verb: template rebuilt through the factories,
+    // inserted after the last item as one op.
+    const { el, ctx } = modelSession(AUDIENCES_EXAMPLE);
+    expect(addItem(ctx, looseBinding(ctx, el))).toBe(true);
     const src = ctx.doc.serialize();
     expect(src.split('<sem-profile').length - 1).toBe(3);
     expect(src).toContain(P1);

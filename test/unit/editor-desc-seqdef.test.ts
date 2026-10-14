@@ -215,8 +215,7 @@ describe('sem-chronology', () => {
     expect(el.querySelectorAll(':scope > :is(sem-event, .sem-event)').length).toBe(0);
   });
 
-  // Restore when the cross-lane id-seed patch lands (see above).
-  it.skip('inserts after the last existing event (pending cross-lane id-seed patch)', () => {
+  it('inserts after the last existing event', () => {
     const { el, ctx } = rig(exampleOf('sem-chronology'));
     const bind = requireBinding(el);
     const before = elementChildren(ctx, bind.rootId).length;
@@ -306,7 +305,7 @@ describe('sem-procedure', () => {
     expect(ctx.doc.serialize()).toBe(baseline);
   });
 
-  it.skip('inserts after the last existing step (pending cross-lane id-seed patch)', () => {
+  it('inserts after the last existing step', () => {
     const { el, ctx } = rig(exampleOf('sem-procedure'));
     const bind = requireBinding(el);
     const before = elementChildren(ctx, bind.rootId).length;
@@ -390,7 +389,7 @@ describe('sem-properties', () => {
     expect(ctx.doc.serialize()).toBe(baseline);
   });
 
-  it.skip('inserts after the last existing property (pending cross-lane id-seed patch)', () => {
+  it('inserts after the last existing property', () => {
     const { el, ctx } = rig(exampleOf('sem-properties'));
     const bind = requireBinding(el);
     const before = elementChildren(ctx, bind.rootId).length;
@@ -457,7 +456,7 @@ describe('sem-references', () => {
     expect(ctx.doc.serialize()).toBe(baseline);
   });
 
-  it.skip('inserts after the last existing reference (pending cross-lane id-seed patch)', () => {
+  it('inserts after the last existing reference', () => {
     const { el, ctx } = rig(exampleOf('sem-references'), 'sem-references');
     const bind = requireBinding(el);
     const before = elementChildren(ctx, bind.rootId).length;
