@@ -76,9 +76,14 @@ async function attach(
 
 describe('boot decision', () => {
   it('boots on the DOM view until the canvas proves itself (§8.5a)', async () => {
-    const el = await attach({ id: 'boot-a', storage: new FakeStorage() });
-    expect(el.viewChoice).toBe('dom');
-    expect(el.canvasAvailable).toBe(false);
+    // r2-integrate: the canvas renderer attaches post-first-render (§8) and
+    // proves the canvas within the same boot, so a settled boot lands on the
+    // canvas default — and the proof is never persisted (§8.2).
+    const storage = new FakeStorage();
+    const el = await attach({ id: 'boot-a', storage });
+    expect(el.viewChoice).toBe('canvas');
+    expect(el.canvasAvailable).toBe(true);
+    expect(storage.map.size).toBe(0);
     el.remove();
   });
 
@@ -169,12 +174,14 @@ describe('session switch', () => {
     el.viewStorage = storage;
     el.viewDelegate = (choice) => applied.push(choice);
     document.body.appendChild(el);
-    await el.updateComplete;
+    await el.updateComplete; // boot: dom, then the post-render canvas proof
 
+    el.markCanvasUnavailable(); // simulate forced-colors / failed 2d (§8.5a)
+    applied.length = 0;
     el.semView.switchTo('canvas');
     expect(el.viewChoice).toBe('dom');
     expect(storage.map.size).toBe(0);
-    expect(applied).toEqual(['dom']); // boot only — the refused switch applies nothing
+    expect(applied).toEqual([]); // the refused switch applies nothing
     el.remove();
   });
 
@@ -206,10 +213,12 @@ describe('the integrator seam', () => {
     document.body.appendChild(el);
     await el.updateComplete;
 
-    expect(applied).toEqual(['dom']); // the boot application
-    el.markCanvasAvailable();
+    // Boot applies the DOM view (connectedCallback + the first-update
+    // `renderer` resolve); the post-render canvas proof flips it (§8).
+    expect(applied[0]).toBe('dom');
+    expect(applied).toContain('canvas');
     el.semView.switchTo('dom');
-    expect(applied).toEqual(['dom', 'canvas', 'dom']);
+    expect(applied[applied.length - 1]).toBe('dom');
     el.remove();
   });
 });
