@@ -2,6 +2,15 @@
 
 ## 2026-10-14
 
+- fix: e2e release-blockers — extraction ignores runtime-minted view ids
+  (`data-sem-minted-id`) so JS-on records equal the JS-off baseline; the
+  source-fence dedent skips sentinel placeholder lines (flush-left pre
+  content keeps its authored fence); the table filter gains
+  scroll-margin-top so focus-scroll clears the pinned reader bar; the
+  sem-table spec drives the filter through its real input handler
+  (cypress actionability misjudges the sticky chrome); conventions.html
+  resynced to the normative conventions.md (table rows, heading ids, one
+  escaped class-form snippet).
 - s3 backend: self-hosted oidc sign-in (authorization-code + PKCE, STS
   AssumeRoleWithWebIdentity), SigV4 request signing in-browser, temporary
   session store (sessionStorage by default) with silent pre-expiry
