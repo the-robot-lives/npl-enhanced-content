@@ -13,7 +13,7 @@ frontend:
   # CI owns this line. It is deliberately a flat single-line string: the
   # bump-chart job in .github/workflows/ci.yml seds this exact shape.
   # Never hand-edit it for a release.
-  image: ops.noizu.com/semtext.dev/web:sha-fd4a166
+  image: ops.noizu.com/semtext.dev/web:sha-d88485e
   port: 80
   resources:
     requests:
