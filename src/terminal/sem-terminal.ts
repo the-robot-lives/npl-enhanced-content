@@ -1,4 +1,4 @@
-import { html, type TemplateResult } from 'lit';
+import { html, type PropertyValues, type TemplateResult } from 'lit';
 import { AnsiStateMachine, ansiSpans, type AnsiSpan } from './ansi/index.js';
 import { SemElement } from '../lit/base.js';
 import { TerminalCore, type ShellLine, type WindowAction } from './terminal-core.js';
@@ -26,11 +26,29 @@ import { attachLocalStorage } from './backends/local-storage.js';
 import { createS3Backend } from './backends/s3.js';
 import { Screen, lineText } from './screen/screen.js';
 import { ScreenFeed } from './screen/feed.js';
+import { COLS_MAX, COLS_MIN, ROWS_MAX, ROWS_MIN } from './screen/types.js';
 import { AppRunner } from './app/runner.js';
 import { CookedLine, RawLine, abbreviateHome } from './line/discipline.js';
 import { TitleFeed } from './title/title-feed.js';
+import { TabModel } from './tabs/tabs-model.js';
 import { onEnvFeed } from './env/direnv.js';
 import { InputModel } from './input/index.js';
+import {
+  ContextMenuController,
+  MENU_DOM_CSS,
+  nullViewControl,
+  openPlainTranscript,
+  selectAllRange,
+  type DomMenuViewControl,
+  type MenuHost,
+} from './menu/index.js';
+import { createCanvasRenderer } from './render/canvas.js';
+import { DOMMirror } from './render/mirror.js';
+import { DEFAULT_ANSI16, screenView, type PaintScreen, type Rgb } from './render/screen-shape.js';
+import type { CanvasRenderer } from './render/canvas.js';
+import type { CellMetrics, ScreenRenderer } from './render/types.js';
+import { renderTabStrip, renderWindowTitlebar } from '../shared/window-chrome.js';
+import '../shared/sem-scroll.js'; // side-effect: register <sem-scroll> (§10)
 import type { KeyEvent } from './screen/types.js';
 import type { AppSpawnAction } from './terminal-core.js';
 
@@ -103,6 +121,30 @@ export class SemTerminal extends SemElement {
   /** onLine unsubscribe for the core's async line channel. */
   #offLines: (() => void) | null = null;
 
+  /* -- shell-v2 canvas paint path (CORE-V2 §8; integration of r2-canvas) -- */
+  /** The canvas driver; null until first attach (or after a forced detach). */
+  #renderer: (CanvasRenderer & ScreenRenderer) | null = null;
+  /** The renderer's read-side adapter over the screen (built once). */
+  #paintScreen: PaintScreen | null = null;
+  /** Standalone mirror when the factory itself refused (forced-colors). */
+  #mirrorOnly: DOMMirror | null = null;
+  /** True when the mirror is the visible view (§8.5 promotion). */
+  #domView = false;
+  /** Theme ANSI-16 RGB cache — invalidated whenever metrics change. */
+  #ansiCache: Array<Rgb | null> = [];
+
+  /* -- shell-v2 chrome (§11; osc-tabs XR-1/XR-3, env-direnv TAB_THEME) -- */
+  /** Tab model — ONE session this round; per-tab TerminalCore is §11.2/E3. */
+  readonly tabModel = new TabModel('shell');
+  /** TAB_TITLE/TAB_THEME from the direnv feed (§12 chrome vars). */
+  #tabTheme: string | null = null;
+  #offTitle: (() => void) | null = null;
+  #offTabs: (() => void) | null = null;
+
+  /* -- shell-v2 context menu (§8.5; dom-menu integrate patch) -- */
+  #browserPassthroughArmed = false;
+  #menu = new ContextMenuController(this.#menuHost());
+
   /* -- shell-v2 core-screen wiring (CORE-V2 §4–§8) -- */
   /** The screen: source of truth for scrollback, selection, alt apps. */
   readonly screen = new Screen({ cols: 80, rows: 24 });
@@ -150,13 +192,31 @@ export class SemTerminal extends SemElement {
       this.requestUpdate();
       return true;
     },
-    rowToAbsoluteLine: (row) => row + this.screen.viewportTop(),
-    metrics: () => ({ cols: this.screen.cols, rows: this.screen.rows, cellWidth: 8, cellHeight: 16 }),
+    // Mouse selection moves between frames — refresh so the drag paints.
+    rowToAbsoluteLine: (row) => {
+      this.requestUpdate();
+      return row + this.screen.viewportTop();
+    },
+    // Only valid post-attach (canvas request 7); the placeholder covers
+    // the pre-attach window (happy-dom, first frames).
+    metrics: () => {
+      const live = this.#renderer?.metrics();
+      if (live !== undefined && live.cols > 0) {
+        return { cols: live.cols, rows: live.rows, cellWidth: live.cellWidth, cellHeight: live.cellHeight };
+      }
+      return { cols: this.screen.cols, rows: this.screen.rows, cellWidth: 8, cellHeight: 16 };
+    },
     getLineText: (line) => {
       const l = this.screen.lineAt(line);
       return l === null ? '' : lineText(l);
     },
-    openContextMenu: () => {}, // chrome menu arrives with the canvas surface
+    openContextMenu: (anchor) => {
+      if (this.#browserPassthroughArmed) {
+        this.#browserPassthroughArmed = false;
+        return; // one-shot native-menu passthrough (§8.5c Browser menu…)
+      }
+      this.#menu.open(anchor);
+    },
   });
 
   constructor() {
@@ -169,6 +229,12 @@ export class SemTerminal extends SemElement {
     this.playing = false;
     this.tui = null;
     this.appLive = false;
+    // OSC tokens tap the chrome feeds BEFORE they apply (§11.1, XR-1) —
+    // replaces the old `titleFeed.consume(text)` per-line scrape.
+    this.#feed.onTokens = (tokens) => this.titleFeed.feed(tokens);
+    // Chrome state is external → re-render on its changes (§11.3).
+    this.#offTitle = this.titleFeed.subscribe(() => this.requestUpdate());
+    this.#offTabs = this.tabModel.subscribe(() => this.requestUpdate());
     this.core.mountKinds.set('s3', {
       id: 's3',
       help: 'S3 bucket over https (read-only unless the page sets a signer)',
@@ -181,12 +247,14 @@ export class SemTerminal extends SemElement {
     this.setAttribute('aria-label', 'Terminal');
     this.#offLines?.();
     this.#offLines = this.core.onLine((line) => this.appendLines([line]));
-    // .envrc chrome feeds — TAB_TITLE drives the tab title (§11.3);
-    // TAB_THEME is applied by the tab chrome (the osc-tabs lane's TabModel).
+    // .envrc chrome feeds — TAB_TITLE drives the title bar, TAB_THEME the
+    // tab strip theming hook (§11.3 / §12 chrome vars).
     this.#offEnv?.();
     this.#offEnv = onEnvFeed((feed) => {
       const title = feed.vars.TAB_TITLE;
       if (title !== undefined) this.titleFeed.setTitle(title);
+      const theme = feed.vars.TAB_THEME;
+      if (theme !== undefined) this.#applyTabTheme(theme);
     });
     this.core.vfs.onError = (error) => {
       this.appendLines([{ kind: 'stderr', text: `${error.backend}: ${error.path}: ${error.message}` }]);
@@ -199,15 +267,41 @@ export class SemTerminal extends SemElement {
       this.#attachStorage();
       this.#maybeStartPlayback();
     }
+    // The canvas surface needs a rendered frame first; reconnects re-run
+    // this and the guard makes it idempotent (§8 attach).
+    void this.updateComplete.then(() => this.#ensureRenderer());
+    this.#applyTabTheme();
+    this.#menu.attach();
+    this.#injectMenuCss();
   }
 
   disconnectedCallback(): void {
     this.#stopPlayback(false);
+    this.#menu.detach();
     this.#offLines?.();
     this.#offLines = null;
     this.#offEnv?.();
     this.#offEnv = null;
+    this.#offTitle?.();
+    this.#offTitle = null;
+    this.#offTabs?.();
+    this.#offTabs = null;
+    // Reconnect re-attaches: the guard + firstUpdated cover both paths.
+    this.#renderer?.detach();
+    this.#renderer = null;
+    this.#mirrorOnly?.detach();
+    this.#mirrorOnly = null;
+    this.#domView = false;
     super.disconnectedCallback();
+  }
+
+  protected firstUpdated(): void {
+    this.#ensureRenderer();
+  }
+
+  /** Drain the screen's damage batch after every render (§8: per frame). */
+  protected override updated(_changed: PropertyValues): void {
+    this.#drain();
   }
 
   /**
@@ -387,17 +481,40 @@ export class SemTerminal extends SemElement {
    * ---------------------------------------------------------------- */
 
   render(): TemplateResult {
+    const tabs = this.tabModel.tabs;
+    // Alt screen: no scrollback — total==visible hides the scrollbar (§10).
+    const total = this.screen.altScreen ? this.screen.rows : this.screen.totalLines();
     return html`
       <div class="sem-shell-frame" @click=${this.#focusInput} @keydown=${this.#onFrameKeydown}>
+        ${renderWindowTitlebar({ title: this.titleFeed.title || 'sem shell', tone: this.titleFeed.status.tone })}
+        ${tabs.length > 1
+          ? html`<div class="sem-term-tabs" @click=${this.#onTabStripClick}>
+              ${renderTabStrip({
+                tabs: tabs.map((tab) => ({ id: String(tab.id), title: tab.title, active: tab.id === this.tabModel.activeId })),
+                label: 'Shell tabs',
+                closable: true,
+              })}
+            </div>`
+          : null}
         ${this.#hasScript
           ? html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${this.#restartPlayback}>
               replay
             </button>`
           : null}
+        <div class="sem-term-surface">
+          <sem-scroll
+            class="sem-term-scrollbar"
+            .total=${total}
+            .visible=${this.screen.rows}
+            .offset=${this.screen.viewportTop()}
+            .onscrollto=${(row: number) => this.#onScrollTo(row)}
+          ></sem-scroll>
+        </div>
         <div class="sem-shell-transcript" role="log" aria-live="polite" aria-label="Shell transcript">
           ${this.lines.map((line) => this.#renderLine(line))}
         </div>
-        ${this.appLive ? this.#renderApp() : this.tui ? this.#renderTui() : this.#renderPrompt()}      </div>
+        ${this.appLive ? null : this.tui ? this.#renderTui() : this.#renderPrompt()}
+      </div>
     `;
   }
 
@@ -485,15 +602,242 @@ export class SemTerminal extends SemElement {
   }
 
   appendLines(newLines: ShellLine[]): void {
+    // Every shell-emitted kind streams onto the grid — the canvas is the
+    // paint path now (§8), so comments/status must live there too. ShellLine
+    // texts carry no separators: each line ends CRLF (LF alone moves the
+    // row but keeps the column).
     for (const line of newLines) {
-      // stdout/stderr (and the echoed cmd) are the ANSI-bearing streams —
-      // mirror them into the screen sink and the chrome title feed (§4.5).
-      if (line.kind === 'stdout' || line.kind === 'stderr' || line.kind === 'cmd') {
-        this.#feed.write(line.text);
-        this.titleFeed.consume(line.text);
-      }
+      this.#feed.write(`${line.text}\r\n`);
     }
     this.lines = [...this.lines, ...newLines];
+  }
+
+  /* ---------------------------------------------------------------- *
+   * canvas paint path (§8) — the r2-canvas integration
+   * ---------------------------------------------------------------- */
+
+  /** Attach the renderer once the surface exists; idempotent on reconnect. */
+  #ensureRenderer(): void {
+    if (this.#renderer !== null || this.#domView) return;
+    const surface = this.querySelector('.sem-term-surface');
+    if (!(surface instanceof HTMLElement)) return;
+    if (this.#paintScreen === null) {
+      this.#paintScreen = screenView(this.screen, {
+        truecolorAt: (slot) => this.#feed.truecolor.at(slot),
+        ansiRgb: (index) => this.#themeAnsi(index),
+      });
+    }
+    const result = createCanvasRenderer({
+      onUnavailable: () => {
+        // §8.5: the mirror IS the a11y tree; promote it to the view. The
+        // renderer mounts its own mirror at attach, so useDomView is all.
+        this.#domView = true;
+        this.#renderer?.useDomView();
+        this.dataset.paint = 'dom';
+        this.#markCanvasUnavailable();
+      },
+      onMetricsChange: (metrics) => this.#onMetrics(metrics),
+    });
+    if (!result.ok) {
+      this.#markCanvasUnavailable();
+      this.#startMirrorOnly(surface, result.reason);
+      return;
+    }
+    const renderer = result.renderer;
+    // Bridge sem-shell's §8.5 view preference onto the live renderer —
+    // BEFORE markCanvasAvailable re-resolves and applies the choice. An
+    // author-installed delegate (or the shell's test seam) wins untouched.
+    const shell = this as {
+      viewDelegate?: (choice: 'canvas' | 'dom') => void;
+      markCanvasAvailable?: () => void;
+    };
+    if (shell.viewDelegate == null) {
+      shell.viewDelegate = (choice) => {
+        if (choice === 'dom') renderer.useDomView();
+        else renderer.useCanvasView();
+      };
+    }
+    this.#renderer = renderer;
+    renderer.attach(this.#paintScreen, surface);
+    this.dataset.paint = 'canvas';
+    shell.markCanvasAvailable?.();
+    this.#onMetrics(renderer.metrics());
+  }
+
+  /** §8.5a: the shell (when present) learns the canvas proved available. */
+  #markCanvasAvailable(): void {
+    (this as { markCanvasAvailable?: () => void }).markCanvasAvailable?.();
+  }
+
+  #markCanvasUnavailable(): void {
+    (this as { markCanvasUnavailable?: () => void }).markCanvasUnavailable?.();
+  }
+
+  /**
+   * Factory refused (forced-colors): mount a standalone mirror as the
+   * visible view; #drain drives it directly.
+   */
+  #startMirrorOnly(surface: HTMLElement, reason: 'forced-colors' | 'no-2d-context'): void {
+    void reason; // the state attribute records it; the paint is the same
+    const view = this.ownerDocument?.defaultView ?? undefined;
+    const mirror = new DOMMirror({
+      schedule: (fn, ms) => {
+        if (view === undefined) {
+          fn();
+          return () => {};
+        }
+        const id = view.setTimeout(fn, ms);
+        return () => view.clearTimeout(id);
+      },
+      now: () => (view !== undefined && typeof view.performance?.now === 'function' ? view.performance.now() : Date.now()),
+    });
+    mirror.attach(this.#paintScreen ?? screenView(this.screen, {}), surface);
+    mirror.setVisible(true);
+    this.#mirrorOnly = mirror;
+    this.#domView = true;
+    this.dataset.paint = 'dom';
+  }
+
+  /** Metrics settled (attach, font load, zoom): refit the screen (§8.3). */
+  #onMetrics(metrics: CellMetrics): void {
+    this.#ansiCache = [];
+    if (metrics.cols <= 0 || metrics.rows <= 0) return;
+    const cols = Math.max(COLS_MIN, Math.min(COLS_MAX, metrics.cols));
+    const rows = Math.max(ROWS_MIN, Math.min(ROWS_MAX, metrics.rows));
+    if (cols !== this.screen.cols || rows !== this.screen.rows) {
+      this.screen.resize(cols, rows);
+      this.#runner.onScreenResized(cols, rows);
+    }
+    // Keep the surface exactly rows tall: auto-height pages (the demo
+    // cards) wrap the terminal in normal flow, and the canvas is 100% of
+    // the surface box. Guarded so the resize observer settles, not loops.
+    const surface = this.querySelector('.sem-term-surface');
+    if (surface instanceof HTMLElement) {
+      const height = Math.round(rows * metrics.cellHeight);
+      if (Math.abs(surface.clientHeight - height) > 1) surface.style.height = `${height}px`;
+    }
+    this.requestUpdate();
+  }
+
+  /** The batched damage repaint — one call per frame (§8 drain). */
+  #drain(): void {
+    if (this.#renderer === null && this.#mirrorOnly === null) return;
+    const damage = this.screen.takeDamage();
+    if (this.#renderer !== null) this.#renderer.drain(damage);
+    else this.#mirrorOnly?.drain(damage);
+  }
+
+  /** Theme ANSI-16 from the --sem-ansi-N tokens, cached until metrics move. */
+  #themeAnsi(index: number): Rgb | null {
+    const cached = this.#ansiCache[index];
+    if (cached !== undefined) return cached;
+    const view = this.ownerDocument?.defaultView;
+    let rgb: Rgb | null = null;
+    if (view !== null && view !== undefined && typeof view.getComputedStyle === 'function') {
+      rgb = parseRgbToken(view.getComputedStyle(this).getPropertyValue(`--sem-ansi-${index}`).trim());
+    }
+    this.#ansiCache[index] = rgb;
+    return rgb;
+  }
+
+  /** TAB_THEME (§12): frame attribute hook — theming styles stay in the lane's CSS block. */
+  #applyTabTheme(theme?: string): void {
+    if (theme !== undefined) this.#tabTheme = theme;
+    const frame = this.querySelector('.sem-shell-frame');
+    if (frame !== null) frame.setAttribute('data-sem-tab-theme', this.#tabTheme ?? 'default');
+  }
+
+  /** Scrollbar request (§10): move the viewport, drain follows in updated(). */
+  #onScrollTo(row: number): void {
+    this.screen.scrollTo(row);
+    this.requestUpdate();
+  }
+
+  /* ---------------------------------------------------------------- *
+   * context menu (§8.5c) — the dom-menu lane's MenuHost seams
+   * ---------------------------------------------------------------- */
+
+  /** sem-shell's view control when present; a null object otherwise. */
+  #shellView(): DomMenuViewControl {
+    return (this as { semView?: DomMenuViewControl }).semView ?? nullViewControl;
+  }
+
+  #menuHost(): MenuHost {
+    const self = this;
+    return {
+      copySelection: () => self.#input.copySelection(),
+      selectAll: () => {
+        const range = selectAllRange(self.screen.totalLines());
+        if (range === null) return;
+        self.#input.selection.begin(0, 0, false);
+        self.#input.selection.extend(range.end.line, range.end.col);
+        self.screen.setSelection(range);
+      },
+      pasteFromClipboard: () => {
+        void navigator.clipboard
+          ?.readText()
+          .then((text) => self.#input.handlePaste(text))
+          .catch(() => self.appendLines([{ kind: 'stderr', text: 'clipboard read refused' }]));
+      },
+      activateFind: () => self.#runner.app?.find?.(),
+      clearTerminal: () => self.#exec('clear'),
+      openTranscript: () => {
+        const view = self.ownerDocument?.defaultView;
+        if (view !== null && view !== undefined) openPlainTranscript(self.screen.extractText(null), view);
+      },
+      currentView: () => self.#shellView().current(),
+      switchView: (to) => self.#shellView().switchTo(to),
+      canvasAvailable: () => self.#shellView().canvasAvailable(),
+      clipboardReadAvailable: () => typeof navigator.clipboard?.readText === 'function',
+      findAvailable: () => self.#runner.app?.find !== undefined,
+      armBrowserPassthrough: () => {
+        self.#browserPassthroughArmed = true;
+      },
+      surface: () => self,
+    };
+  }
+
+  /** The menu's stylesheet: one <style> per document, guarded by marker. */
+  #injectMenuCss(): void {
+    const doc = this.ownerDocument;
+    if (doc === null || typeof doc.createElement !== 'function') return;
+    const styles = doc.querySelectorAll('style');
+    for (const style of styles) {
+      if (style.textContent?.includes('── shell-v2-dom-menu ──')) return;
+    }
+    const sheet = doc.createElement('style');
+    sheet.textContent = MENU_DOM_CSS;
+    doc.head?.appendChild(sheet);
+  }
+
+  /* ---------------------------------------------------------------- *
+   * tab strip (§11.3) — chrome + keys only; per-tab sessions are §11.2
+   * ---------------------------------------------------------------- */
+
+  /** Strip clicks: close buttons by data-tab-close, else activate the tab. */
+  #onTabStripClick(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    const close = target?.closest('[data-tab-close]');
+    if (close !== null) {
+      const id = Number((close as HTMLElement).getAttribute('data-tab-close'));
+      if (Number.isFinite(id)) this.#closeTab(id);
+      return;
+    }
+    const tab = target?.closest('[role="tab"]');
+    const id = tab === null || tab === undefined ? Number.NaN : Number((tab as HTMLElement).getAttribute('data-tab-id'));
+    if (Number.isFinite(id)) this.#activateTab(id);
+  }
+
+  #activateTab(id: number): void {
+    // One session this round: activation updates strip state only. The
+    // per-tab TerminalCore + shared VFS build-out is §11.2 (next epoch).
+    this.tabModel.activate(id);
+  }
+
+  #closeTab(id: number): void {
+    // Same single-session caveat: closing a tab never kills the session.
+    if (this.tabModel.count <= 1) return;
+    this.tabModel.close(id);
   }
 
   /* ---------------------------------------------------------------- *
@@ -586,6 +930,22 @@ export class SemTerminal extends SemElement {
    * Ctrl+C during an app interrupts it with exit 130 (§6.3).
    */
   #onFrameKeydown(event: KeyboardEvent): void {
+    // Tab keys (§11.3, XR-3) outrank everything, including the app ladder:
+    // Ctrl+PgUp/PgDn cycle, Alt+1..9 jump. Only meaningful past one tab.
+    if (this.tabModel.count > 1) {
+      const target = this.tabModel.keyToTarget({
+        key: event.key,
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+      });
+      if (target !== null) {
+        event.preventDefault();
+        this.#activateTab(target);
+        return;
+      }
+    }
     if (this.appLive) {
       if (event.key === 'c' && event.ctrlKey && !event.altKey && !event.metaKey) {
         event.preventDefault();
@@ -654,7 +1014,10 @@ export class SemTerminal extends SemElement {
   #spawnApp(app: import('./screen/types.js').App): void {
     if (!this.#runner.spawn(app)) return;
     this.appLive = true;
-    void this.updateComplete.then(() => this.#touchApp());
+    void this.updateComplete.then(() => {
+      this.#input.focus(); // the canvas has no native focus surface
+      this.#touchApp();
+    });
   }
 
   /** Runner exit callback: status line + `$?`, prompt restored (§6.2). */
@@ -668,32 +1031,18 @@ export class SemTerminal extends SemElement {
     void this.updateComplete.then(() => this.#inputEl()?.focus());
   }
 
-  /** The screen changed under the app — repaint the interim DOM grid. */
+  /** The screen changed under the app: repaint via drain + park the IME. */
   #touchApp(): void {
     this.requestUpdate();
-  }
-
-  /** Interim DOM renderer behind the ScreenRenderer seam (§8); the canvas
-   * driver replaces this paint when wired (DOM stays the a11y mirror). */
-  #renderApp(): TemplateResult {
-    const rows: TemplateResult[] = [];
-    for (let row = 0; row < this.screen.rows; row++) {
-      const line = this.screen.alternate.lines[row];
-      const text = line === undefined ? '' : lineText(line);
-      const cursorRow = this.screen.altScreen && this.screen.cursor.visible ? Math.max(0, Math.min(this.screen.cursor.line, this.screen.rows - 1)) : -1;
-      rows.push(
-        html`<div class="sem-app-row${row === cursorRow ? ' sem-app-cursor-row' : ''}" data-row=${row}>${text === '' ? ' ' : text}</div>`,
-      );
+    const metrics = this.#renderer?.metrics();
+    if (metrics === undefined || metrics.cellHeight <= 0) return;
+    if (this.screen.altScreen && this.screen.cursor.visible) {
+      // IME caret parking (canvas request 7): sit at the app's cursor cell.
+      // Alt rows are the full viewport; clamp guards the scroll edge case.
+      const row = Math.max(0, Math.min(this.screen.rows - 1, this.screen.cursor.line - this.screen.viewportTop()));
+      const col = Math.max(0, Math.min(this.screen.cols - 1, this.screen.cursor.col));
+      this.#input.moveCursorHint(col * metrics.cellWidth, row * metrics.cellHeight);
     }
-    return html`<div class="sem-app" role="application" aria-label="Full-screen application" @wheel=${this.#onAppWheel}>${rows}</div>`;
-  }
-
-  /** Alt-screen wheel: the app's view scrolls unless it wants mouse (§7.3). */
-  #onAppWheel(event: WheelEvent): void {
-    if (this.#runner.mouseReporting) return; // the app reports it instead
-    event.preventDefault();
-    this.screen.scrollBy(event.deltaY > 0 ? 1 : -1);
-    this.#touchApp();
   }
 
   /* ---------------------------------------------------------------- *
@@ -777,4 +1126,29 @@ SemElement.register('sem-terminal', SemTerminal);
 /** DOM KeyboardEvent → the normalized KeyEvent the discipline/app take (§7.1). */
 function toKeyEvent(event: KeyboardEvent): KeyEvent {
   return { key: event.key, ctrl: event.ctrlKey, alt: event.altKey, shift: event.shiftKey, meta: event.metaKey };
+}
+
+/**
+ * A `--sem-ansi-N` token → RGB for the canvas palette: `#rgb`, `#rrggbb`,
+ * `rgb(r g b)` / `rgb(r, g, b)` (computed styles may normalize either way).
+ * Anything else → null (the renderer falls back to its default set).
+ */
+function parseRgbToken(token: string): Rgb | null {
+  const value = token.trim();
+  if (value === '') return null;
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
+  if (hex !== null) {
+    const digits = hex[1] ?? '';
+    const expanded = digits.length === 3 ? digits.split('').map((c) => c + c).join('') : digits;
+    const n = Number.parseInt(expanded, 16);
+    return { r: (n >> 16) & 0xff, g: (n >> 8) & 0xff, b: n & 0xff };
+  }
+  const fn = /^rgba?\(\s*(\d{1,3})[ ,]+(\d{1,3})[ ,]+(\d{1,3})/.exec(value);
+  if (fn !== null) {
+    const r = Number(fn[1]);
+    const g = Number(fn[2]);
+    const b = Number(fn[3]);
+    if (r <= 255 && g <= 255 && b <= 255) return { r, g, b };
+  }
+  return null;
 }
