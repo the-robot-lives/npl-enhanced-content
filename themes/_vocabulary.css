@@ -1696,3 +1696,38 @@ sem-browser .sem-window-viewport:focus-visible {
   sem-browser .sem-window-viewport { height: auto; overflow: visible; }
 }
 /* ── end sem-browser ── */
+
+/* ── sem-shell (ansi dom) ── mirror of src/terminal/ansi/dom.ts ANSI_DOM_CSS; keep in sync ── */
+sem-terminal .sem-ansi-i, sem-shell .sem-ansi-i { font-style: italic; }
+sem-terminal .sem-ansi-u, sem-shell .sem-ansi-u { text-decoration: underline; }
+sem-terminal .sem-ansi-strike, sem-shell .sem-ansi-strike { text-decoration: line-through; }
+sem-terminal .sem-ansi-rev, sem-shell .sem-ansi-rev { filter: invert(1); }
+sem-terminal .sem-ansi-blink, sem-shell .sem-ansi-blink { animation: sem-ansi-blink 1.1s step-end infinite; }
+@keyframes sem-ansi-blink { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) {
+  sem-terminal .sem-ansi-blink, sem-shell .sem-ansi-blink { animation: none; }
+}
+sem-terminal .sem-ansi-c90, sem-shell .sem-ansi-c90 { color: #9aa5b1; }
+sem-terminal .sem-ansi-c91, sem-shell .sem-ansi-c91 { color: #ff8f7a; }
+sem-terminal .sem-ansi-c92, sem-shell .sem-ansi-c92 { color: #8fd6a0; }
+sem-terminal .sem-ansi-c93, sem-shell .sem-ansi-c93 { color: #e6c77a; }
+sem-terminal .sem-ansi-c94, sem-shell .sem-ansi-c94 { color: #7ab8e6; }
+sem-terminal .sem-ansi-c95, sem-shell .sem-ansi-c95 { color: #c79ae6; }
+sem-terminal .sem-ansi-c96, sem-shell .sem-ansi-c96 { color: #6fd3d3; }
+sem-terminal .sem-ansi-c97, sem-shell .sem-ansi-c97 { color: #f2f5f8; }
+sem-terminal .sem-ansi-bg40, sem-shell .sem-ansi-bg40 { background: rgba(107,114,128,.35); }
+sem-terminal .sem-ansi-bg41, sem-shell .sem-ansi-bg41 { background: rgba(255,143,122,.28); }
+sem-terminal .sem-ansi-bg42, sem-shell .sem-ansi-bg42 { background: rgba(143,214,160,.28); }
+sem-terminal .sem-ansi-bg43, sem-shell .sem-ansi-bg43 { background: rgba(230,199,122,.28); }
+sem-terminal .sem-ansi-bg44, sem-shell .sem-ansi-bg44 { background: rgba(122,184,230,.28); }
+sem-terminal .sem-ansi-bg45, sem-shell .sem-ansi-bg45 { background: rgba(199,154,230,.28); }
+sem-terminal .sem-ansi-bg46, sem-shell .sem-ansi-bg46 { background: rgba(111,211,211,.28); }
+sem-terminal .sem-ansi-bg47, sem-shell .sem-ansi-bg47 { background: rgba(214,221,230,.22); }
+sem-terminal .sem-ansi-bg100, sem-shell .sem-ansi-bg100 { background: rgba(107,114,128,.35); }
+sem-terminal .sem-ansi-bg101, sem-shell .sem-ansi-bg101 { background: rgba(255,143,122,.28); }
+sem-terminal .sem-ansi-bg102, sem-shell .sem-ansi-bg102 { background: rgba(143,214,160,.28); }
+sem-terminal .sem-ansi-bg103, sem-shell .sem-ansi-bg103 { background: rgba(230,199,122,.28); }
+sem-terminal .sem-ansi-bg104, sem-shell .sem-ansi-bg104 { background: rgba(122,184,230,.28); }
+sem-terminal .sem-ansi-bg105, sem-shell .sem-ansi-bg105 { background: rgba(199,154,230,.28); }
+sem-terminal .sem-ansi-bg106, sem-shell .sem-ansi-bg106 { background: rgba(111,211,211,.28); }
+sem-terminal .sem-ansi-bg107, sem-shell .sem-ansi-bg107 { background: rgba(214,221,230,.22); }

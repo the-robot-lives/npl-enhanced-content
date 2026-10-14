@@ -1,15 +1,16 @@
 # Schema — `npl-section`
 
 Generic typed section for NPL prompt-section blocks
-(`src/lit/npl/npl-section.ts`): display-only chrome over untouched
-authored content — a labelled header for known types, a warning box for
-unknown ones. Light DOM per the namespace recipe; content stays
-searchable/copyable.
+(`src/lit/npl/npl-section.ts`): display-only chrome — a labelled header
+for known types, a warning class for unknown ones. Light DOM per the
+namespace recipe; content stays searchable/copyable.
 
 ## Authoring form
 
 ```html
-<npl-section type="example">body HTML</npl-section>
+<npl-section type="syntax">
+  <pre><code>section := "&lt;npl-section" type "&gt;" body "&lt;/npl-section&gt;"</code></pre>
+</npl-section>
 ```
 
 Class-form alias (conventions Appendix A, npl namespace):
@@ -18,10 +19,12 @@ Class-form alias (conventions Appendix A, npl namespace):
 
 - `type`: string — required. One of the known section types: `alg`,
   `alg-pseudo`, `diagram`, `example`, `format`, `logic`, `note`,
-  `syntax`, `template`. A missing or unknown value is never fatal: the
-  section renders with the `npl-section-warning` class, its content
-  plain, plus one author-facing warning per offending value.
+  `syntax`, `template`.
 - `id`, `kind`, `tags` per the global attribute catalog.
+
+A missing or unknown value is never fatal: the section renders with the
+`npl-section-warning` class, its content plain, plus one author-facing
+warning per offending value.
 
 ## Rendered form
 
