@@ -30,8 +30,10 @@ The fence is authored in the markdown-output shape
 NPL block's own child tags — `.npl-poa-reasoning` / `.npl-poa-selected`
 are accepted as class-form spellings.
 
-Class-form alias (conventions Appendix A, npl namespace):
-`.npl-poa[data-direction]`.
+Class-form alias (conventions §2, the `data-*` alias spelling — Appendix A
+maps only the sem-* tier): `.npl-poa[data-direction]` — same dual-form
+contract as the bare attribute, `data-direction` winning when both are
+authored.
 
 - `direction`: `string` — default `lr`. One of `lr` | `td`; declares the
   intended flow and mirrors to `data-direction` (dual-form contract,
