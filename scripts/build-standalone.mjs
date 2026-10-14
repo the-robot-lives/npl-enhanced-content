@@ -210,6 +210,17 @@ if (existsSync(dataSrc)) {
   for (const f of readdirSync(dataSrc)) copyFileSync(resolve(dataSrc, f), resolve(dataOut, f));
   console.log(`\n  copied web/demo/data/** → dist/demo/data/ (${readdirSync(dataSrc).length} files)`);
 }
+
+// Demo start scripts: a `start-script="<path>"` shell fetches its demo-format
+// file at runtime (the landing page's contract), so dist/demo needs the
+// scripts served verbatim (web/demo/scripts/**).
+const scriptsSrc = resolve(root, 'web', 'demo', 'scripts');
+if (existsSync(scriptsSrc)) {
+  const scriptsOut = resolve(outDir, 'scripts');
+  mkdirSync(scriptsOut, { recursive: true });
+  for (const f of readdirSync(scriptsSrc)) copyFileSync(resolve(scriptsSrc, f), resolve(scriptsOut, f));
+  console.log(`  copied web/demo/scripts/** → dist/demo/scripts/ (${readdirSync(scriptsSrc).length} files)`);
+}
 console.log('');
 
 /* ---------------------------------------------------------------------------

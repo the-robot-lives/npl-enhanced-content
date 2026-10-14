@@ -1853,8 +1853,15 @@ sem-terminal .sem-term-surface, sem-shell .sem-term-surface {
 sem-terminal .sem-term-scrollbar, sem-shell .sem-term-scrollbar {
   display: block;
 }
-/* DOM view (dataset.paint="dom" or unpainted): transcript is the paint. */
-sem-terminal .sem-term-transcript {
+/* DOM view (dataset.paint="dom" or unpainted): transcript is the paint.
+   (r2.1 fix: the element's transcript class is .sem-shell-transcript —
+   the r2 sheet hid a .sem-term-transcript class nothing renders, so the
+   canvas-mode DOM transcript stayed in flow: a thousands-of-pixels block
+   inside the frame that scrolled the painted surface under the titlebar
+   and, with the r2.1 flex frame, squeezed the surface to zero.) */
+sem-terminal .sem-term-transcript,
+sem-terminal .sem-shell-transcript,
+sem-shell .sem-shell-transcript {
   display: block;
 }
 /* Canvas paint stands the round-1 transcript down — visually hidden but
@@ -1862,7 +1869,8 @@ sem-terminal .sem-term-transcript {
    The attribute is set only on a successful canvas attach, so the DOM
    fallback (no JS paint, forced-colors, failed 2d) keeps the transcript. */
 sem-terminal[data-paint="canvas"] .sem-term-transcript,
-sem-shell[data-paint="canvas"] .sem-term-transcript {
+sem-terminal[data-paint="canvas"] .sem-shell-transcript,
+sem-shell[data-paint="canvas"] .sem-shell-transcript {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1872,4 +1880,35 @@ sem-shell[data-paint="canvas"] .sem-term-transcript {
   clip: rect(0, 0, 0, 0);
   clip-path: inset(50%);
   border: 0;
+}
+
+/* ── shell-v2-canvas-frame (r2.1) ──
+   In canvas paint the terminal surface owns scrolling (sem-scroll); the
+   frame must not. As a plain block the frame scrolled its taller-than-
+   frame surface, sliding painted rows under the window titlebar — the
+   r2 "row-0 overprint" — and the first metrics measure read the canvas's
+   intrinsic bitmap height instead of a layout height, pinning the wrong
+   rows. So canvas mode lays out top-down: the element takes a definite
+   height (24rem — the frame's own cap; an author height overrides), the
+   frame fills it as a flex column, and the surface takes the space left
+   over from the titlebar/prompt. The first measure is then the real box,
+   the metrics loop is stable, and the paint never leaves the frame.
+   DOM mode keeps the round-1 auto-height, scrolling frame. */
+sem-terminal[data-paint="canvas"],
+sem-shell[data-paint="canvas"] {
+  height: 24rem;
+}
+sem-terminal[data-paint="canvas"] .sem-shell-frame,
+sem-shell[data-paint="canvas"] .sem-shell-frame {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  max-height: none;
+  box-sizing: border-box; /* padding + border live inside the 100% */
+}
+sem-terminal[data-paint="canvas"] .sem-term-surface,
+sem-shell[data-paint="canvas"] .sem-term-surface {
+  flex: 1 1 auto;
+  min-height: 0;
 }
