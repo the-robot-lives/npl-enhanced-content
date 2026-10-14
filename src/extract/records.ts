@@ -664,6 +664,14 @@ export function extractRecordPairs(root: Document | Element): RecordPair[] {
   const pairs: RecordPair[] = [];
   if (!start) return pairs;
 
+  // Authored identity only: the views enhancer mints panel ids for aria
+  // wiring and marks them (runtime state is always data-*); a minted id
+  // must never surface as a record id or JS-on extraction diverges from
+  // the authored page.
+  function authoredId(el: Element): string | null {
+    return el.hasAttribute('data-sem-minted-id') ? null : el.getAttribute('id');
+  }
+
   function visit(el: Element, parentIndex: number | null): void {
     if (isChrome(el)) return;
 
@@ -674,7 +682,7 @@ export function extractRecordPairs(root: Document | Element): RecordPair[] {
       const payload = payloadFor(type, el);
       const record: SemRecord = {
         type: type,
-        id: el.getAttribute('id'),
+        id: authoredId(el),
         kind: param(el, 'kind'),
         tags: tagList(el),
         audience: param(el, 'audience'),

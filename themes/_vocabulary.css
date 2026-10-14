@@ -618,7 +618,8 @@ mark.sem-code-line { display: inline-block; width: 100%; color: inherit;
   position: sticky; left: 0; background: var(--sem-surface); z-index: 2; }
 .sem-table-chrome:not(:has(input)):not(:has(.sem-table-status:not(:empty))) { display: none; }
 .sem-table-filter { font: inherit; color: var(--sem-fg); background: var(--sem-bg); border: 1px solid var(--sem-border);
-  border-radius: 6px; padding: .25rem .5rem; min-width: 12rem; }
+  border-radius: 6px; padding: .25rem .5rem; min-width: 12rem;
+  scroll-margin-top: calc(8px + var(--sem-reader-offset, 0px)); }
 .sem-table-status { min-height: 1em; }
 .sem-table-sort { all: unset; font: inherit; cursor: pointer; display: inline-block; padding-right: 1.1em; position: relative; }
 .sem-table-sort::after { content: "↕"; position: absolute; right: 0; opacity: .5; }
