@@ -33,10 +33,10 @@ something the persona cannot see).
 Class-form alias (conventions Appendix A, npl namespace):
 `.npl-vos[data-phase]` — same dual-form contract as the sem-* tier.
 
-- `phase`: string — default none. `entry` or `exit`; rendered as the
-  bracket label (`.npl-vos-phase`) and mirrored to `data-phase`
-  (dual-form contract; the mirror is deferred past parse via afterParse
-  so a sem-source snapshot never sees runtime writes).
+- `phase`: string — default none. One of `entry`, `exit`; rendered as
+  the bracket label and mirrored to data-phase (dual-form contract; the
+  mirror is deferred past parse via afterParse so a sem-source snapshot
+  never sees runtime writes).
 - `id`, `kind`, `tags` per the global attribute catalog.
 
 ## Rendered form

@@ -38,7 +38,9 @@ const PARTS =
  *     stays searchable and copyable (light DOM, no shadow root, no
  *     `static styles`);
  *   - a part with no items (plain prose bullets) is left exactly as
- *     authored — classed, never rewritten.
+ *     authored — classed, never rewritten; the same holds when a part
+ *     mixes its items with loose content, so authored nodes are never
+ *     discarded.
  *
  * Parameters: none beyond the global catalog (`id` rides it as the native
  * attribute), so there is nothing to mirror to `data-*` — the reactivity
@@ -91,6 +93,30 @@ export class NplCritique extends SemElement {
       if (!host) continue;
       const items = Array.from(host.querySelectorAll(ITEM));
       if (items.length === 0) continue; // prose form — leave as authored
+      // Never discard authored nodes: a part that mixes its items with
+      // loose content (text or stray elements) is treated as the prose
+      // form — the rewrite applies only when the content is exactly the
+      // item set (whitespace between items is fine).
+      const loose = Array.from(host.childNodes).some(
+        (node) =>
+          !items.includes(node as Element) &&
+          !(node.nodeType === Node.TEXT_NODE && !(node.textContent ?? '').trim()),
+      );
+      if (loose) continue;
+      // A part authored as a native list (ul/ol — the class form on real
+      // markup) upgrades in place: the host becomes the list, each item
+      // becomes the <li>. Nesting a generated list inside it would render
+      // a double-indented sublist.
+      if (host.tagName === 'UL' || host.tagName === 'OL') {
+        host.classList.add('npl-critique-list');
+        for (const item of items) {
+          const li = document.createElement('li');
+          li.className = 'npl-critique-item';
+          li.append(...Array.from(item.childNodes));
+          item.replaceWith(li);
+        }
+        continue;
+      }
       const list = document.createElement('ul');
       list.className = 'npl-critique-list';
       for (const item of items) {

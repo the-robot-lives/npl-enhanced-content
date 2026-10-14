@@ -1,6 +1,33 @@
 # Changelog
 
+## 2026-10-14
+
+- fix: e2e release-blockers — extraction ignores runtime-minted view ids
+  (`data-sem-minted-id`) so JS-on records equal the JS-off baseline; the
+  source-fence dedent skips sentinel placeholder lines (flush-left pre
+  content keeps its authored fence); the table filter gains
+  scroll-margin-top so focus-scroll clears the pinned reader bar; the
+  sem-table spec drives the filter through its real input handler
+  (cypress actionability misjudges the sticky chrome); conventions.html
+  resynced to the normative conventions.md (table rows, heading ids, one
+  escaped class-form snippet).
+- s3 backend: self-hosted oidc sign-in (authorization-code + PKCE, STS
+  AssumeRoleWithWebIdentity), SigV4 request signing in-browser, temporary
+  session store (sessionStorage by default) with silent pre-expiry
+  refresh, `mount --logout`, static credential flags refused. Vectors:
+  the AWS SigV4 doc example reproduced byte-for-byte; oidc suites cover
+  discovery/exchange/refresh/store/postMessage over stubbed fetch.
+
 Dated work log — newest first, one line per landed change.
+
+## 2026-10-14
+
+- feat(shell): epoch-1 shell lane — vfs mutations (`mkdir -p`, `rm -r/-f`, `rmdir`, `cp`, copy/rename as copy+rm on the wire), pure Tab-completion engine `src/terminal/complete.ts` (commands/paths/`~`/quoting, per-command hooks), storage backends `src/terminal/backends/` (local-storage with pre-boot payload peek so a reload restores the user's tree, s3 public/presign/signer, https-only, no credentials in URLs, capped hydration) with write-through flush errors surfaced once via `storageErrors`/`onError`; sem-terminal gains the ANSI hook (streaming `AnsiStateMachine` + `ansiSpans`, reset on clear/Ctrl+L) and `PLUGINS.md` gains the Tab-completion and storage-backend contracts. Cards plugin demo paths unified on `/demo/` (plugin, manifest, files, tests) so the landing start-script's `render-card demo/render-demo.card` resolves. Build: `sem:inline shell` marker (scripts/build-standalone.mjs) — shell/shell-storage/script demo pages were inlining the reader bundle (no upgrade at all); e2e `sem-shell.cy.js` (11: prompt/pipes/redirects/mkdir/cp/127, Tab, history, Escape takeover, storage reload+reset, no-JS transcript, s3 via cy.intercept) and the script-autostart Escape step (readonly inputs refuse cy.type; dispatch instead) both green.
+
+
+- spec!: the class form of `<incorrect-statement>` is the unprefixed `.incorrect-statement` (user decision, v0.7) — it matches the tag name exactly, superseding the `.sem-incorrect-statement` alias noted in the entry below; conventions Appendix A gains the explicit exception (and §2 names it), schema `classAliases`, extraction, vocabulary CSS selectors, demos, site page, viewer sample, unit fixture and e2e expectations updated; sem-facts schema example alias line updated in place (file carries concurrent edits, not committed here); elements.json sem-facts objects regenerated.
+
+- spec!: rename `sem-distractor` to `incorrect-statement` (breaking, no backward-compatible alias) — v0.7 conventions note; child tag of `sem-fact` is now unprefixed like `statement`/`conclusion`, class alias `.sem-incorrect-statement` (Appendix A rule: bare child parts map to `.sem-<part>`, per the `<highlight>` precedent), extraction field `distractors` → `incorrectStatements` on the `sem-fact` record, schema `semtext.schema.json` element key + `sem-fact.children` updated, no-JS label content `"distractor · "` → `"incorrect statement · "`, selector helper call sites move `sel('distractor')` → `part('incorrect-statement')`; demos, site page, viewer sample, terminal plugin demo, e2e/unit tests, fixtures, PROJ-SCHEMA, PRD, ROADMAP updated; elements.json regenerated. Quiz-decoy prose keeps the concept word "distractor" where it names the quiz role, not the element.
 
 ## 2026-10-13
 

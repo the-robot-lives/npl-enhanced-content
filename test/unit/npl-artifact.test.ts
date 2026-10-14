@@ -7,7 +7,8 @@
 //             as a <pre>, preserving authored inner nodes, in light DOM
 //   Scenario: absent type falls back to preformatted text
 //   Scenario: type="svg" moves the markup into an empty-sandbox iframe via
-//             srcdoc — never inlined — so no script runs
+//             srcdoc — never inlined — so no script runs; the iframe takes
+//             the title as accessible name and mirrors the svg's pixel size
 //   Scenario: data-type wins over bare type (dual-form contract) and the
 //             bare spelling mirrors to data-type
 //   Scenario: class-form alias (.npl-title / .npl-content) enhances alike
@@ -87,6 +88,12 @@ describe('npl-artifact', () => {
     expect((window as { pwned?: unknown }).pwned).toBeUndefined();
     // title still renders as a heading
     expect(el.querySelector('h3.npl-artifact-title')?.textContent).toBe('chart');
+    // accessible name: the heading text, not an untitled frame (axe frame-title)
+    expect(frame!.getAttribute('title')).toBe('chart');
+    // legacy chrome dropped; authored svg dimensions mirrored to the box
+    expect(frame!.getAttribute('frameborder')).toBe('0');
+    expect(frame!.getAttribute('width')).toBe('10');
+    expect(frame!.getAttribute('height')).toBe('10');
   });
 
   it('data-type wins over bare type; bare type mirrors to data-type', async () => {
@@ -99,6 +106,9 @@ describe('npl-artifact', () => {
 
     expect(a.querySelector('iframe.npl-artifact-svg')).not.toBeNull(); // data-type won
     expect(a.getAttribute('data-type')).toBe('svg'); // mirror did not clobber it
+    // authored svg declared no size — the frame stays unsized (UA default,
+    // theme-layer territory), not a fabricated box
+    expect(a.querySelector('iframe')?.hasAttribute('width')).toBe(false);
 
     expect(b.querySelector('pre.npl-artifact-content')).not.toBeNull();
     expect(b.getAttribute('data-type')).toBe('code'); // bare form mirrored

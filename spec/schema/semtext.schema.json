@@ -314,7 +314,7 @@
       "children": [
         "statement",
         "conclusion",
-        "sem-distractor"
+        "incorrect-statement"
       ],
       "childRules": [
         {
@@ -351,15 +351,15 @@
         "span.sem-conclusion"
       ]
     },
-    "sem-distractor": {
+    "incorrect-statement": {
       "source": "spec/schema/sem-facts.md",
       "record": false,
       "partOf": [
         "sem-fact"
       ],
       "classAliases": [
-        "div.sem-distractor",
-        "span.sem-distractor"
+        "div.incorrect-statement",
+        "span.incorrect-statement"
       ]
     },
     "highlight": {

@@ -281,3 +281,56 @@ describe('open', () => {
     expect(opened[0].url).toMatch(/^blob:/);
   });
 });
+
+describe('storage + Tab completion', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  const attachShell = async (id?: string): Promise<SemShell> => {
+    const el = document.createElement('sem-shell') as SemShell;
+    if (id) el.id = id;
+    el.setAttribute('local-storage', '');
+    document.body.appendChild(el);
+    await el.updateComplete;
+    return el;
+  };
+
+  it('local-storage without an id warns and stays off', async () => {
+    const el = await attachShell();
+    expect(el.lines.some((l) => l.kind === 'stderr' && l.text.includes('give this element an id'))).toBe(true);
+    expect(window.localStorage.length).toBe(0); // nothing was persisted
+  });
+
+  it('local-storage with an id persists edits into a fresh element', async () => {
+    const first = await attachShell('persist-probe');
+    type(first, 'echo remembered > /notes.txt');
+    await first.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0)); // the write-through flush
+    expect(window.localStorage.getItem('semtext:shell:v1:persist-probe')).not.toBeNull();
+
+    const second = await attachShell('persist-probe'); // a "reload"
+    await new Promise((resolve) => setTimeout(resolve, 0)); // the restore graft is queued
+    expect(second.core.vfs.read('/notes.txt')).toBe('remembered\n');
+  });
+
+  it('Tab completes through the element: extends, then lists', async () => {
+    const el = await attachShell('tab-probe');
+    const input = inputOf(el);
+    const lineCount = (): number => el.lines.length;
+
+    input.value = 'cat demo/wel';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    await el.updateComplete;
+    expect(input.value).toBe('cat demo/welcome.html '); // a single candidate extends + space
+    expect(el.lines.length).toBe(lineCount()); // ...quietly
+
+    input.value = 'cat demo/';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    await el.updateComplete;
+    const note = el.lines[el.lines.length - 1];
+    expect(note?.kind).toBe('comment'); // candidates listed as one comment line
+    expect(note?.text).toContain('token-rotation.html'); // listed inline
+    expect(note?.text).toContain('more'); // capped display above 8 candidates
+  });
+});

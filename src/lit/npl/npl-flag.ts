@@ -19,6 +19,11 @@ import { defineNpl, nplEmit, nplParam } from './shared.js';
  * Clicking the flag toggles `data-applied` on it and dispatches
  * `npl-flags-change` (bubbles + composed, via nplEmit) with detail
  * `{ name, value, applied }`.
+ *
+ * Accessibility: the row is the apply control — a toggle button. It is
+ * focusable (`tabindex="0"` unless the host authors one), exposed as
+ * `role="button"` with `aria-pressed` mirroring the applied state, and
+ * applied with `Enter` or `Space` as well as a pointer click.
  */
 const RANGES: ReadonlyArray<{ test: (name: string) => boolean; min?: number; max?: number }> = [
   { test: (n) => n.includes('freq'), min: 0, max: 1 },
@@ -56,13 +61,25 @@ export class NplFlag extends SemElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    // toggle-button a11y: host-authored role/tabindex win when present
+    if (!this.hasAttribute('role')) this.setAttribute('role', 'button');
+    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0');
     this.addEventListener('click', this.#onClick);
+    this.addEventListener('keydown', this.#onKeydown);
   }
 
   disconnectedCallback(): void {
+    this.removeEventListener('keydown', this.#onKeydown);
     this.removeEventListener('click', this.#onClick);
     super.disconnectedCallback();
   }
+
+  /** Enter/Space apply the flag, exactly like a click (toggle button). */
+  #onKeydown = (e: KeyboardEvent): void => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    this.#onClick();
+  };
 
   /** Toggle `data-applied`, announce the new state to the host app. */
   #onClick = (): void => {
@@ -78,6 +95,8 @@ export class NplFlag extends SemElement {
   updated(): void {
     const name = nplParam(this, 'name', this.name);
     if (!name) this.warn('npl-flag: no name authored — rendering an unnamed flag');
+    // applied state is announced on the host (the role="button" element)
+    this.setAttribute('aria-pressed', String(this.hasAttribute('data-applied')));
     // dual-form contract: the data-* spelling mirrors the bare attribute,
     // so CSS/extraction read one form (deferred past parse, like sem-note).
     this.afterParse('name', () => this.setAttribute('data-name', name));

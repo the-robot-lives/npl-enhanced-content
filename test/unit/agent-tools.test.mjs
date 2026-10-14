@@ -157,7 +157,7 @@ describe('outline + expand', () => {
     const facts = sec.children.find((n) => n.type === 'sem-facts');
     expect(facts.children.map((n) => n.id)).toEqual(['f-jwt', 'f-oidc']);
     // Collapsed = summaries only: no field payloads in the outline.
-    expect(JSON.stringify(facts)).not.toMatch(/"statement"|distractors/);
+    expect(JSON.stringify(facts)).not.toMatch(/"statement"|incorrectStatements/);
   });
 
   it('expands a section on demand (records + prose, lazily)', () => {

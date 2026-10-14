@@ -21,7 +21,10 @@ const extract = () => cy.document().then((doc) => clone(extractRecords(doc)));
 const firstCells = ($rows) => Array.from($rows, (r) => r.cells[0].textContent.trim());
 
 function assertTable(url, marker) {
-  beforeEach(() => cy.visit(url));
+  // The shipped theme scrolls smoothly under prefers-reduced-motion: no-preference;
+  // cypress's actionability sampling races that animation on deep controls, so the
+  // spec pins instant scrolling for its visits (product behavior is untouched).
+  beforeEach(() => cy.visit(url, { onBeforeLoad(win) { win.document.documentElement.style.scrollBehavior = 'auto'; } }));
 
   it('carries the upgrade marker for this page', () => {
     cy.get('#t-tokens').should('have.attr', marker);
@@ -123,13 +126,16 @@ function assertTable(url, marker) {
   it('filter hides non-matching rows with the native attribute and announces the count', () => {
     cy.get('#t-tokens .sem-table-filter').should('have.attr', 'aria-label', 'Filter rows');
     cy.get('#t-tokens .sem-table-filter').should('have.attr', 'type', 'search');
-    cy.get('#t-tokens .sem-table-filter').type('YES');
+    // The pinned sem-reader bar overlays the top of the viewport and cypress's
+    // actionability check misjudges the sticky chrome as covered by it; drive
+    // the filter through its real 'input' handler instead of typed keystrokes.
+    cy.get('#t-tokens .sem-table-filter').invoke('val', 'YES').trigger('input');
     cy.get('#t-tokens tbody tr[hidden]').should('have.length', 2);
     cy.get('#t-tokens tbody tr:not([hidden])').then(($r) => {
       expect(firstCells($r)).to.deep.equal(['refresh', 'session']);
     });
     cy.get('#t-tokens .sem-table-status').should('have.text', '2 of 4 rows');
-    cy.get('#t-tokens .sem-table-filter').clear();
+    cy.get('#t-tokens .sem-table-filter').invoke('val', '').trigger('input');
     cy.get('#t-tokens tbody tr[hidden]').should('have.length', 0);
     cy.get('#t-tokens .sem-table-status').should('have.text', '4 rows');
   });

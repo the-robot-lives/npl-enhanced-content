@@ -17,14 +17,21 @@ file/API load; zero-JS the authored text reads as pre-wrapped text.
 ## Authoring form
 
 ```html
-<sem-data-source data-name="Token lifetimes" data-format="table"
-                 data-views="core=token,max-uses; all=*" data-view="all">
-  | Token | Max uses | Lifetime | Rotates | Since      |
-  | :---- | -------: | :------- | :------ | :--------- |
-  | access | 200     | 15 min   | true    | 2026-01-05 |
-  | id     | 1000    | 1 hour   | false   | 2026-02-14 |
-</sem-data-source>
+<sem-data-visualizer>
+  <sem-data-source data-name="Token lifetimes" data-format="table"
+                   data-views="core=token,max-uses; all=*" data-view="all">
+    | Token | Max uses | Lifetime | Rotates | Since      |
+    | :---- | -------: | :------- | :------ | :--------- |
+    | access | 200     | 15 min   | true    | 2026-01-05 |
+    | id     | 1000    | 1 hour   | false   | 2026-02-14 |
+  </sem-data-source>
+</sem-data-visualizer>
 ```
+
+The `sem-data-visualizer` container is the unit of tier scanning: the
+enhanced table renders only for a source inside a container; a bare
+source, or any source with scripts disabled, shows the authored payload as
+pre-wrapped text.
 
 Class-form alias (conventions Appendix A): `.sem-data-source`. Parameters
 are read as `data-<name>` first, then bare `<name>` via the shared
@@ -85,7 +92,15 @@ one bare-by-brief name and reads `data-source` as its alias twin.
   (`role="alert"`) naming the cause — never a blank pane.
 - Cells and captions render via `textContent` only; JSON parses with
   `JSON.parse` — a payload can style nothing and run nothing.
-- The element carries `data-sem-upgraded` once wired.
+- The element carries `data-sem-upgraded` once wired. A successful
+  render shows the generated table alone: the authored payload text
+  must not echo above it. A failed render keeps the authored text
+  visible alongside the inline error; a pending load shows it with the
+  status region.
+- Mechanism (container/runtime contract): on success the authored
+  payload parks in a `.sem-data-raw` box that the theme hides while
+  `data-sem-upgraded` is set. The box stays in the DOM, so extraction
+  is unchanged; JS-off pages never contain it.
 
 ### JS-off
 

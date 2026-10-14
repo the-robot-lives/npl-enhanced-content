@@ -3,29 +3,32 @@
 Display-only banner for an NPL declaration block: the version/extension
 header of a rules document (`src/lit/npl/npl-declaration.ts`). The source
 forms are the NPL fences `⌜NPL@<version>⌝ … ⌞NPL@⌟` (definition) and
-`⌜extend:NPL@⌝ … ⌞NPL@⌟` (extension); the component renders the banner
-text the source spells, with the rules content as authored children.
+`⌜extend:NPL@<version>⌝ … ⌞NPL@⌟` (extension); the component renders the
+banner text the source spells, with the rules content as authored children.
 
 ## Authoring form
 
 ```html
-<npl-declaration version="0.6">rules content…</npl-declaration>
-<npl-declaration version="0.6" type="extension" extend-target="npl-core">extending rules…</npl-declaration>
+<npl-declaration version="0.6">Every response states its assumptions before its answer.</npl-declaration>
+<npl-declaration version="0.6" type="extension" extend-target="npl-core">This extension adds the session-ledger contract on top of npl-core.</npl-declaration>
 ```
 
 Class-form alias (conventions Appendix A, npl namespace):
 `.npl-declaration[data-version]`.
 
-- `version`: string — default `` (required; missing warns). Rendered in
-  the banner mark (`⌜NPL@<version>⌝`) and mirrored to `data-version`
-  (dual-form contract; the mirror is deferred past parse via afterParse
-  so a sem-source snapshot never sees runtime writes).
-- `type`: `definition` | `extension` — default `definition`. Selects the
-  banner mark (`⌜NPL@…⌝` vs `⌜extend:NPL@…⌝`) and mirrors the resolved
-  kind to `data-type`. Any other value falls back to `definition`.
-- `extend-target`: string — default `` (optional, extensions only).
-  Rendered by `.npl-declaration-target` beside the mark and mirrored to
-  `data-extend-target` (absent when unauthored).
+- `version`: string — required; a missing version warns and the banner
+  still renders, with the bare mark (`⌜NPL@⌝`). Rendered in the banner
+  mark (`⌜NPL@<version>⌝`) and mirrored to `data-version` (dual-form
+  contract; the mirror is deferred past parse via afterParse so a
+  sem-source snapshot never sees runtime writes).
+- `type`: string — default `definition`; one of `definition` |
+  `extension`. Selects the banner mark (`⌜NPL@…⌝` vs `⌜extend:NPL@…⌝`)
+  and mirrors the resolved kind to `data-type`. Any other value falls
+  back to `definition`.
+- `extend-target`: string — optional; the vocabulary an extension
+  extends, authored on `type="extension"` declarations. Rendered by
+  `.npl-declaration-target` beside the mark whenever authored and
+  mirrored to `data-extend-target` (absent when unauthored).
 - `id`, `kind`, `tags` per the global attribute catalog.
 
 ## Rendered form

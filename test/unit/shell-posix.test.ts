@@ -18,6 +18,13 @@
 //   Scenario: printf formats; env/export/unset/alias/history/which/man work
 //   Scenario: pipes carry stdout to stdin; redirects write and append files
 //   Scenario: $? reports the last status (true 0, false 1, missing 1, unknown 127)
+// Feature: tree mutations (mkdir · rmdir · touch · rm · cp)
+//   Scenario: mkdir makes a directory, -p the parents; duplicates error
+//   Scenario: touch creates empty files and leaves existing ones alone
+//   Scenario: rm removes files, -r/-R trees, -f silently; the root is refused
+//   Scenario: rmdir removes only empty directories
+//   Scenario: cp copies files into names and into dirs, -r for directories,
+//             refuses dir-into-itself and multi-source-onto-file
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TerminalCore, type ExecResult } from '../../src/terminal/terminal-core.js';
@@ -367,5 +374,104 @@ describe('pipes / redirects / $? / status lines', () => {
     expect(errs(core.execLine("echo 'unterminated"))).toEqual(['sh: unterminated quote']);
     expect(status(core.execLine("echo 'unterminated"))).toBe(2);
     expect(errs(core.execLine('echo a | | b')).join(' ')).toMatch(/syntax error/);
+  });
+});
+
+describe('mkdir / touch', () => {
+  it('mkdir makes a directory silently; a missing parent errors GNU-style; -p makes the chain', () => {
+    expect(out(core.execLine('mkdir /new'))).toEqual([]);
+    expect(core.vfs.nodeAt('/new')?.kind).toBe('dir');
+    expect(status(core.execLine('mkdir /new'))).toBe(1);
+    expect(errs(core.execLine('mkdir /new'))).toEqual([`mkdir: cannot create directory '/new': File exists`]);
+    expect(errs(core.execLine('mkdir /no/child'))).toEqual([
+      `mkdir: cannot create directory '/no/child': No such file or directory`,
+    ]);
+    expect(out(core.execLine('mkdir -p /deep/still/lower'))).toEqual([]);
+    expect(core.vfs.nodeAt('/deep/still/lower')?.kind).toBe('dir');
+    expect(errs(core.execLine('mkdir'))).toEqual(['mkdir: missing operand']);
+    expect(status(core.execLine('mkdir'))).toBe(1);
+  });
+
+  it('touch creates empty files and passes existing nodes unchanged', () => {
+    expect(out(core.execLine('touch /fresh.txt'))).toEqual([]);
+    expect(core.vfs.read('/fresh.txt')).toBe('');
+    expect(status(core.execLine('touch /fresh.txt'))).toBe(0); // re-touch is fine
+    expect(core.vfs.read('/README.md')).toBe('# Demo\nhello world\n'); // content untouched
+    core.execLine('cd /docs');
+    expect(out(core.execLine('touch a.txt b.txt'))).toEqual([]);
+    expect(core.vfs.read('/docs/a.txt')).toBe('');
+    expect(errs(core.execLine('touch /absent/x.txt'))).toEqual([`touch: cannot touch '/absent/x.txt': No such file or directory`]);
+    expect(errs(core.execLine('touch'))).toEqual(['touch: missing file operand']);
+  });
+});
+
+describe('rm / rmdir', () => {
+  it('rm removes files silently; a directory needs -r; clustered -rf works', () => {
+    expect(out(core.execLine('rm /docs/alpha.txt'))).toEqual([]);
+    expect(errs(core.execLine('cat /docs/alpha.txt'))).toEqual(['cat: /docs/alpha.txt: No such file or directory']);
+    expect(core.vfs.nodeAt('/docs/nested/deep.txt')).not.toBeNull();
+    expect(errs(core.execLine('rm /docs'))).toEqual([`rm: cannot remove '/docs': Is a directory`]);
+    expect(core.vfs.nodeAt('/docs')).not.toBeNull();
+    expect(out(core.execLine('rm -rf /docs'))).toEqual([]);
+    expect(core.vfs.nodeAt('/docs')).toBeNull();
+  });
+
+  it('rm reports missing files, is silent under -f, and refuses the root', () => {
+    expect(errs(core.execLine('rm /absent.txt'))).toEqual([`rm: cannot remove '/absent.txt': No such file or directory`]);
+    expect(status(core.execLine('rm /absent.txt'))).toBe(1);
+    expect(out(core.execLine('rm -f /absent.txt'))).toEqual([]);
+    expect(status(core.execLine('rm -f /absent.txt'))).toBe(0);
+    expect(errs(core.execLine('rm'))).toEqual(['rm: missing operand']);
+    expect(status(core.execLine('rm -f'))).toBe(0); // -f alone: silent success
+    expect(errs(core.execLine('rm /'))).toEqual([`rm: cannot remove '/': Device or resource busy`]);
+    expect(core.vfs.nodeAt('/README.md')).not.toBeNull(); // the tree is intact
+  });
+
+  it('rmdir removes only empty directories', () => {
+    core.execLine('mkdir /empty');
+    expect(out(core.execLine('rmdir /empty'))).toEqual([]);
+    expect(core.vfs.nodeAt('/empty')).toBeNull();
+    expect(errs(core.execLine('rmdir /docs'))).toEqual([`rmdir: failed to remove '/docs': Directory not empty`]);
+    expect(errs(core.execLine('rmdir /README.md'))).toEqual([`rmdir: failed to remove '/README.md': Not a directory`]);
+    expect(errs(core.execLine('rmdir /ghost'))).toEqual([`rmdir: failed to remove '/ghost': No such file or directory`]);
+  });
+});
+
+describe('cp', () => {
+  it('copies a file to a new name, into a dir keeping the basename, and overwrites files', () => {
+    expect(out(core.execLine('cp /docs/alpha.txt /docs/gamma.txt'))).toEqual([]);
+    expect(core.vfs.read('/docs/gamma.txt')).toBe('one\ntwo\nthree\n');
+    expect(out(core.execLine('cp /README.md /docs/nested'))).toEqual([]);
+    expect(core.vfs.read('/docs/nested/README.md')).toBe('# Demo\nhello world\n');
+    core.execLine('echo updated > /docs/gamma.txt');
+    expect(out(core.execLine('cp /docs/alpha.txt /docs/gamma.txt'))).toEqual([]);
+    expect(core.vfs.read('/docs/gamma.txt')).toBe('one\ntwo\nthree\n');
+  });
+
+  it('-r copies trees; without it dirs are omitted with GNU wording', () => {
+    expect(errs(core.execLine('cp /docs /backup'))).toEqual(["cp: omitting directory '/docs'"]);
+    expect(core.vfs.nodeAt('/backup')).toBeNull();
+    expect(out(core.execLine('cp -r /docs /backup'))).toEqual([]);
+    expect(core.vfs.read('/backup/nested/deep.txt')).toBe('bottom\n');
+    expect(core.vfs.read('/backup/beta.txt')).toBe('ONE\n\nfour\n');
+  });
+
+  it('several sources need a directory target; a dir is not copied into itself', () => {
+    expect(errs(core.execLine('cp /README.md /page.html /docs/alpha.txt'))).toEqual([
+      "cp: target '/docs/alpha.txt' is not a directory",
+    ]);
+    expect(out(core.execLine('cp /README.md /page.html /docs/nested'))).toEqual([]);
+    expect(core.vfs.nodeAt('/docs/nested/README.md')?.kind).toBe('file');
+    expect(core.vfs.nodeAt('/docs/nested/page.html')?.kind).toBe('file');
+    expect(errs(core.execLine('cp -r /docs /docs/nested/loop'))).toEqual([
+      "cp: cannot copy a directory into itself, '/docs' -> '/docs/nested/loop'",
+    ]);
+  });
+
+  it('argues about missing operands and missing sources', () => {
+    expect(errs(core.execLine('cp'))).toEqual(['cp: missing file operand']);
+    expect(errs(core.execLine('cp /README.md'))).toEqual(["cp: missing destination file operand after '/README.md'"]);
+    expect(errs(core.execLine('cp /ghost.txt /out.txt'))).toEqual(['cp: No such file or directory']);
+    expect(core.vfs.nodeAt('/out.txt')).toBeNull();
   });
 });

@@ -2,11 +2,11 @@
 
 Contract per conventions.md v0.6 and the namespace recipe in
 `src/lit/npl/index.ts`. Source block: the NPL synthetic-hormones pump
-(NoizuPromptLingo `conventions/pumps.yaml`, `synthetic-hormones`) — seven
-biochemical-analog hormones (Momentum MTM, Tension TNS, Curiosity CRS,
-Confidence CNF, Affinity AFN, Fatigue FTG, Restlessness RST) drawn as
-bars with delta arrows and threshold alerts. Display-only: no events,
-no network, no timers.
+(NoizuPromptLingo `conventions/pumps.yaml`, `synthetic-hormones`).
+Seven biochemical-analog hormones — Momentum MTM, Tension TNS,
+Curiosity CRS, Confidence CNF, Affinity AFN, Fatigue FTG, Restlessness
+RST — drawn as bars with delta arrows and threshold alerts.
+Display-only: no events, no network, no timers.
 
 ## Authoring form
 
@@ -14,6 +14,7 @@ no network, no timers.
 <npl-hormones variant="panel">
   <panel>
     <h name="Momentum"     symbol="MTM" value="6"   delta="+2" trigger="Tests passed first try"></h>
+    <h name="Tension"      symbol="TNS" value="3"   delta="0"  trigger="Complexity"></h>
     <h name="Restlessness" symbol="RST" value="8.5" delta="-1" trigger="Strategy failed"></h>
   </panel>
   <state>Productive tension</state>

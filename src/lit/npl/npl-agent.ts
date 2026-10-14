@@ -15,7 +15,9 @@ import { defineNpl, nplParam } from './shared.js';
  * Follows the namespace recipe (src/lit/npl/index.ts header):
  *   - extend SemElement — light DOM (no shadow root, no static styles);
  *   - reactive `static properties` mirrored to the `data-*` spelling in
- *     `updated()` via afterParse (deferred past parse, like npl-example);
+ *     `updated()` via afterParse (deferred past parse, like npl-example).
+ *     The mirror writes the *resolved* value, so an authored `data-*`
+ *     spelling is never clobbered by the bare one (conventions §2);
  *   - render() for display-only output — one generated chrome element
  *     (`.npl-agent-header`); no events, no keys, no network;
  *   - `defineNpl('npl-agent', NplAgent);` as the file's last line.
@@ -47,17 +49,22 @@ export class NplAgent extends SemElement {
     // `this` from createRenderRoot), and an element can connect before its
     // children exist (upgrade pre-parse, innerHTML on a live document), so
     // enforce the position here — where render AND children have happened.
+    // The check is against firstChild, not firstElementChild: a text-only
+    // body leaves a text node ahead of the header, and firstElementChild
+    // would still match the header while a stray text node precedes it.
     // Only the div moves; lit's text parts keep updating it in place.
     const header = this.querySelector(':scope > .npl-agent-header');
-    if (header && header !== this.firstElementChild) {
+    if (header && header !== this.firstChild) {
       this.insertBefore(header, this.firstChild);
     }
-    // dual-form contract: the data-* spellings mirror the bare attributes,
-    // so CSS/extraction read one form (deferred past parse, like npl-example).
-    this.afterParse('name', () => this.setAttribute('data-name', this.name));
-    this.afterParse('type', () => this.setAttribute('data-type', this.type));
-    this.afterParse('version', () => this.setAttribute('data-version', this.version));
-    this.afterParse('extends', () => this.setAttribute('data-extends', this.extends));
+    // dual-form contract: the data-* spellings mirror the *resolved* values,
+    // so an authored `data-*` spelling is never overwritten by the bare one
+    // (conventions §2: `data-*` wins when both are present; npl-section's
+    // idiom). Deferred past parse, like npl-example.
+    this.afterParse('name', () => this.setAttribute('data-name', nplParam(this, 'name', this.name)));
+    this.afterParse('type', () => this.setAttribute('data-type', nplParam(this, 'type', this.type)));
+    this.afterParse('version', () => this.setAttribute('data-version', nplParam(this, 'version', this.version)));
+    this.afterParse('extends', () => this.setAttribute('data-extends', nplParam(this, 'extends', this.extends)));
   }
 
   render() {

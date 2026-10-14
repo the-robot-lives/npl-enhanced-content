@@ -5,7 +5,7 @@
 //          with bare attributes (spec/conventions.md §1, §5), exactly as it
 //          wires the class-form alias (Appendix A)
 //   Scenario: bare parameters are mirrored to their data-* twin, data-* wins
-//   Scenario: sem-facts quiz on <sem-fact><statement>/<conclusion>/<sem-distractor>
+//   Scenario: sem-facts quiz on <sem-fact><statement>/<conclusion>/<incorrect-statement>
 //   Scenario: sem-details quiz occludes <highlight>
 //   Scenario: sem-note[collapsed] wraps its bare content and adds a summary
 //   Scenario: sem-views builds a tab bar from <sem-view name>
@@ -20,7 +20,7 @@ const DOC = `
 <sem-enhanced-document>
   <sem-note id="n" variant="tip" collapsed>Shuffle <strong>before</strong> each review.</sem-note>
   <sem-facts id="deck" view-as="quiz" data-sem-seed="7">
-    <sem-fact id="f1"><statement>A</statement><conclusion>a</conclusion><sem-distractor>x</sem-distractor></sem-fact>
+    <sem-fact id="f1"><statement>A</statement><conclusion>a</conclusion><incorrect-statement>x</incorrect-statement></sem-fact>
     <sem-fact id="f2"><statement>B</statement><conclusion>b</conclusion></sem-fact>
   </sem-facts>
   <sem-details id="dt" view-as="quiz"><sem-detail>The <highlight>token</highlight> rotates.</sem-detail></sem-details>
@@ -46,7 +46,7 @@ describe('fallback core on the tag form', () => {
     expect(document.getElementById('both')!.getAttribute('data-variant')).toBe('warning');
   });
 
-  it('wires a quiz deck: chrome, options from conclusions and distractors', () => {
+  it('wires a quiz deck: chrome, options from conclusions and incorrect statements', () => {
     const deck = document.getElementById('deck')!;
     expect(deck.hasAttribute('data-sem-upgraded')).toBe(true);
     expect(deck.querySelector(':scope > .sem-facts-chrome')).not.toBeNull();

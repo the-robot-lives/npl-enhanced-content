@@ -1,0 +1,59 @@
+// @vitest-environment happy-dom
+// Unit spec — npl-lazy's alias route (src/lazy/npl.ts + shared/npl-alias.ts)
+//
+// Feature: a class-form alias triggers its chunk under the lazy loader
+//   Scenario: a boot-time `.npl-flag` div is rewritten to tag form and its
+//             chunk download is attempted (the stub manifest's chunk 404s
+//             under the runner, so the failure note proves BOTH the trigger
+//             and the degradation contract: authored prose survives)
+//   Scenario: an alias inserted after boot upgrades through the observer path
+//   Scenario: a `.npl-*` class outside the manifest is never rewritten
+
+import { describe, it, expect, beforeAll } from 'vitest';
+
+const tick = () => new Promise((resolve) => setTimeout(resolve, 8));
+
+describe('npl-lazy — class-form alias route', () => {
+  beforeAll(async () => {
+    document.body.innerHTML =
+      '<div class="npl-flag" data-kind="concept">aliased flag</div>' +
+      '<div class="npl-notshipped">stays prose</div>';
+    await import('../../src/lazy/npl.js');
+    await tick();
+  });
+
+  it('rewrote the manifest-known alias to tag form at boot', () => {
+    const el = document.querySelector('npl-flag')!;
+    expect(el).toBeTruthy();
+    expect(el.hasAttribute('data-npl-alias')).toBe(true);
+    expect(el.getAttribute('data-kind')).toBe('concept');
+  });
+
+  it('the rewritten alias triggered the chunk load — failure degrades to prose + alert', () => {
+    const el = document.querySelector('npl-flag')!;
+    expect(el.getAttribute('data-sem-lazy-error')).toBe('npl-flag');
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('npl-flag');
+    // degradation contract: the authored text is still there, readable
+    expect(el.textContent).toContain('aliased flag');
+  });
+
+  it('leaves a class outside the manifest as authored prose', () => {
+    const el = document.querySelector('.npl-notshipped')!;
+    expect(el.localName).toBe('div');
+    expect(el.hasAttribute('data-npl-alias')).toBe(false);
+  });
+
+  it('upgrades an alias inserted after boot through the observer path', async () => {
+    const wrap = document.createElement('section');
+    wrap.innerHTML = '<div class="npl-flag" data-kind="caveat">late flag</div>';
+    document.body.appendChild(wrap);
+    await tick();
+    const late = wrap.querySelector('npl-flag');
+    expect(late).toBeTruthy();
+    expect(late!.hasAttribute('data-npl-alias')).toBe(true);
+    expect(wrap.querySelector('div.npl-flag')).toBeNull();
+    // the late element failed fast against the cached-failed chunk
+    expect(late!.getAttribute('data-sem-lazy-error')).toBe('npl-flag');
+    expect(late!.textContent).toContain('late flag');
+  });
+});

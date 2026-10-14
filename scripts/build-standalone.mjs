@@ -20,6 +20,10 @@
  * Markers (HTML comments, so a source page stays valid HTML on its own):
  *
  *   <!-- sem:inline bundle -->                     dist/semtext.js
+ *   <!-- sem:inline shell -->                      dist/semtext-js-shell.js (the
+ *                                                   sem-shell demo pages — the
+ *                                                   reader bundle has no
+ *                                                   <sem-shell> in it)
  *   <!-- sem:inline theme <name> -->               themes/<name>.css
  *   <!-- sem:inline vocabulary -->                 dist/semtext.css (the built
  *                                                   vocabulary — identical to
@@ -101,6 +105,8 @@ function expand(kind, arg) {
   switch (kind) {
     case 'bundle':
       return `<script>\n${readOrDie(resolve(root, 'dist/semtext.js'), 'bundle')}\n</script>`;
+    case 'shell':
+      return `<script>\n${readOrDie(resolve(root, 'dist/semtext-js-shell.js'), 'shell')}\n</script>`;
     case 'theme': {
       if (!arg) throw new Error('marker "theme" requires a theme name');
       return `<style data-sem-theme-source="${arg}">\n${readOrDie(resolve(root, 'themes', `${arg}.css`), 'theme')}\n</style>`;
@@ -133,6 +139,7 @@ function expand(kind, arg) {
  *  measure against instead of hardcoding a number. */
 const SIZE_SOURCES = {
   bundle: 'dist/semtext.js',
+  shell: 'dist/semtext-js-shell.js',
 };
 
 /** Measure a built script's real size (and gzip size) so page copy states

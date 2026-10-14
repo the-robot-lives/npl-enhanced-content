@@ -36,9 +36,17 @@ export class NplMood extends SemElement {
   }
 
   updated(): void {
-    // dual-form contract: the data-* spelling mirrors the bare attribute,
-    // so CSS/extraction read one form (deferred past parse, like sem-note).
-    this.afterParse('mood', () => this.setAttribute('data-mood', this.mood));
+    // dual-form contract: mirror the EFFECTIVE mood (data-* wins) to
+    // `data-mood` so CSS/extraction read one form, deferred past parse like
+    // sem-note. Read it back through nplParam rather than the `mood`
+    // property: the property tracks only the bare attribute, so the
+    // class-form `data-mood` authoring would otherwise be overwritten with
+    // the empty constructor default (and a later re-render would blank the
+    // chip). The guard leaves an already-correct `data-mood` untouched.
+    const mood = nplParam(this, 'mood', this.mood);
+    this.afterParse('mood', () => {
+      if (this.getAttribute('data-mood') !== mood) this.setAttribute('data-mood', mood);
+    });
     this.#buildDetail();
   }
 

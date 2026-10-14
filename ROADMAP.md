@@ -73,19 +73,19 @@ guardrail discipline they document.
 
 | Artifact | Budget | Measured (2026-10-13) |
 |---|---|---|
-| `semtext.js` (one bundle) | **126 KB** | 124.1 raw / 39.4 gzipped |
-| `npl.js` | **48 KB** | 46.2 raw / 14.5 gzipped |
-| `semtext-agent.js` | **24 KB** | 20.3 raw / 7.3 gzipped |
-| `semtext-js-shell.js` | **96 KB** | 74.8 raw / 26.2 gzipped |
-| `semtext-lazy.js` (loader) | **8 KB** | 3.0 raw / 1.4 gzipped |
-| `npl-lazy.js` (loader) | **8 KB** | 3.0 raw / 1.4 gzipped |
+| `semtext.js` (one bundle) | **144 KB** (raised from 126 — user decision 2026-10-14) | 132.3 raw / 41.9 gzipped — in budget |
+| `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
+| `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
+| `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
+| `semtext-lazy.js` (loader) | **8 KB** | 3.3 raw / 1.6 gzipped (2026-10-14) |
+| `npl-lazy.js` (loader) | **8 KB** | 4.0 raw / 1.8 gzipped (2026-10-14) |
 
 Retired artifacts (spec v0.5, tag-form canonical, PR #30) — their handlers now
 share the single bundle budget:
 
 | Artifact | Budget | Measured |
 |---|---|---|
-| `semtext-fallback.js` | 14 KB | 13.0 |
+| `semtext-fallback.js` | 64 KB (raised from 14 KB — tier-2 fallback budget, user decision 2026-10-14; the shipped copy is a frozen legacy artifact) | 13.0 |
 | `semtext-reading.js` | 19.5 KB | 19.4 — at the line |
 | `semtext.js` (Lit only) | 56 KB | 49.5 |
 | `semtext-extract.js` | 12 KB | 9.7 |
@@ -120,6 +120,18 @@ Data-visualizer phase 6 (2026-10-13) raised reading 55 → 61 KB (measured 59.5)
 85 → 91 KB (measured 89.7): the full-page modal viewer and the deep links —
 the Expand/Copy-link chrome, dialog teleport/focus trap, hash parse/apply
 (`src/reading/data-modal.ts`, `src/data/deeplink.ts`, spec §10).
+
+Shell budget (2026-10-14, docs/terminal/CORE-V2.md) raised the `semtext-js-shell.js`
+budget 96 → 256 KB raw (user decision): Epoch 2 folds the screen model, line
+discipline, input model, app API, and the canvas driver — the one rendering path,
+bundled, no separate chunk (see CORE-V2 §8.2/§8.4) — into the single file://-safe
+IIFE. Measured today: 74.8 raw / 26.2 gzipped.
+
+Core bundle budget (2026-10-14) raised `semtext.js` 126 → 144 KB raw (user
+decision): the docs-overhaul content (spec v0.7 reference/tag review, sem-shell,
+sem-browser, npl class form) measured 132.3 raw / 41.9 gzipped — inside the
+new line. Any future bump still goes through this section and
+`scripts/build.mjs` together.
 
 
 ## History (recorded decisions — preserved)
@@ -244,7 +256,7 @@ Every row: what it costs, what it costs *per change*, and the written trigger to
 | D9 | `"type": "module"` vs the `.` export mapping to an IIFE bundle with no ESM/CJS exports | build-format decision | consumers hit a silent/confusing import failure | ✅ repaid — the `.` export is dropped rather than faked. The export map is subpaths that each name the artifact they map to (`semtext/lit`, `semtext/fallback`, `semtext/extract`, `semtext/themes/*`), and `package.json` documents the real format: classic IIFE scripts that install a global and export nothing, consumed via `<script src>` / CDN or as a side-effect import. A dual ESM entry stays available as a later choice, but the manifest no longer promises named imports it cannot deliver | delivery |
 | D11 | `web/demo/standalone-lit.html` inlined a hand-pasted copy of `dist/semtext.js`, so Lit-tier cypress assertions green-lit a frozen artifact | build automation | a Lit regression can land fully green; the gap is invisible and unbounded in time | ✅ repaid (`scripts/build-standalone.mjs` substitutes the freshly built bundle; cypress runs against `dist/demo/`) | correctness |
 | D13 | `sem-note[collapsed]` anti-flash rule gated on `:not([data-sem-upgraded])` — with the bundle absent the body stayed `display:none` with no summary | one selector (`:defined`) | every element that adds a pre-upgrade anti-flash rule inherits the bug | ✅ repaid — found by the new scripts-stripped artifact, which is the whole reason it exists | degradation |
-| D12 | Ungated `display:none` in the vocabulary hides `.sem-distractor` and inactive `.sem-view` in the scripts-stripped no-JS artifact | CSS gating | every new hide-rule inherits the pattern; the no-JS degradation promise stays partly unmet | ✅ repaid **R/W0** — every hide rule gated on `:is([data-sem-fallback],[data-sem-upgraded])`; `sem-views` marks its container; both tiers stamp `<html>`; `nojs-artifact.cy.js` expectations flipped | degradation |
+| D12 | Ungated `display:none` in the vocabulary hides `.incorrect-statement` and inactive `.sem-view` in the script-stripped no-JS artifact | CSS gating | every new hide-rule inherits the pattern; the no-JS degradation promise stays partly unmet | ✅ repaid **R/W0** — every hide rule gated on `:is([data-sem-fallback],[data-sem-upgraded])`; `sem-views` marks its container; both tiers stamp `<html>`; `nojs-artifact.cy.js` expectations flipped | degradation |
 | D10 | Theme CSS ships no `sem-*:not(:defined)` base — custom-element documents render unstyled before/without the Lit upgrade | one CSS block in `themes/_vocabulary.css` | every element added in element form inherits the defect | ✅ repaid **R/W0** — every vocabulary selector is `:is(sem-x, .sem-x)`; the site page's local `sem-note` restatement deleted | correctness, degradation |
 | D14 | Audience qualifier forward-declared with no schema; `lit/base.ts` read `data-sem-audience` while extraction read `data-audience` | schema + handler + one attribute rename | two spellings in flight; a Lit element and the extractor disagree about the same document | ✅ repaid **R/W0** — `spec/schema/sem-audiences.md`, `src/fallback/audience.ts`, `data-audience` canonical everywhere | correctness |
 | D15 | Fallback derived reveal summaries as "first eight words + …" while extraction used the schema's 60-char rule | share one function | reader and machine see different summaries for the same reveal | ✅ repaid **R/W0** — `src/shared/summary.ts` | correctness |

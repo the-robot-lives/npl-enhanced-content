@@ -16,6 +16,7 @@ is the normative source of the BDD spec `test/unit/npl-intent.test.ts`.
   <npl-intent-assumptions>
     <npl-intent-assumption confidence="high">SigNoz keeps serving uptime queries.</npl-intent-assumption>
     <npl-intent-assumption data-confidence="medium">The chart repo stays ArgoCD-watched.</npl-intent-assumption>
+    <npl-intent-assumption>ArgoCD auto-syncs from the chart repo.</npl-intent-assumption>
   </npl-intent-assumptions>
 </npl-intent>
 ```
@@ -25,12 +26,16 @@ both spellings — `npl-intent-assumptions` / `.npl-intent-assumptions` etc.
 — with the `data-*` form winning on parameters, same dual-form contract
 as the sem-* tier.
 
-Children, in order: `npl-intent-overview` (the goal), `npl-intent-scope`,
-`npl-intent-outcomes`, `npl-intent-assumptions` (the grid). The grid holds
-rows `npl-intent-assumption`, each carrying its statement as authored text
-plus an optional parameter:
+The four sections appear in authored order; each is optional, and a block
+with none of them gets no chrome.
 
-- `confidence`: string — default `—`. Rendered into the grid's second
+- `npl-intent-overview` — the goal: what the effort is trying to do.
+- `npl-intent-scope` — what is in and out of scope.
+- `npl-intent-outcomes` — what success looks like.
+- `npl-intent-assumptions` — the assumptions grid.
+- `npl-intent-assumption` — one assumption row inside the grid; its
+  statement is the authored text, plus one optional parameter,
+  `confidence`: string — default `—`. Rendered into the grid's second
   column; either spelling, `data-confidence` wins.
 
 `id`, `kind`, `tags` per the global attribute catalog — no bullet needed;

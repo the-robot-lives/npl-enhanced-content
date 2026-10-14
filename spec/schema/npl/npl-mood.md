@@ -6,19 +6,21 @@ and approach annotations ride optional children.
 
 ## Authoring form
 
+Full form — the mood plus its optional tone, context and approach detail:
+
 ```html
 <npl-mood mood="🙂 wistful">
   <div class="npl-mood-tone">restrained, unhurried</div>
   <div class="npl-mood-context">draft reply to a cold opener</div>
   <div class="npl-mood-approach">ask one concrete question</div>
 </npl-mood>
-```
 
-Self-closing form is valid with no children at all:
-
-```html
 <npl-mood mood="🔥 sharp"/>
 ```
+
+The second block is the self-closing form — valid with no children at all
+(a lone emoji is valid); the chip stands alone and no detail panel is
+generated.
 
 Class-form alias (conventions Appendix A, npl namespace):
 `.npl-mood[data-mood]` — same dual-form contract as the sem-* tier,

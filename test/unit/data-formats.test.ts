@@ -38,6 +38,14 @@ describe('parseCsv', () => {
     expect(r.table.rows).toEqual([['1', '2']]);
   });
 
+  it('parses an HTML-indented body like the table format does', () => {
+    const r = parseCsv('\n    a,b\n    1,2\n    3,4\n  ');
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.table.columns).toEqual(['a', 'b']);
+    expect(r.table.rows).toEqual([['1', '2'], ['3', '4']]);
+  });
+
   it('synthesizes col-n headers when data-header="false"', () => {
     const r = parseCsv('1,2\n3,4', false);
     expect(r.ok).toBe(true);

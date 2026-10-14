@@ -52,12 +52,20 @@ Children (all optional; missing parts are simply absent in the render):
     `.npl-critique-strengths` / `.npl-critique-weaknesses`) into
     `<ul class="npl-critique-list">` with one
     `<li class="npl-critique-item">` per authored item — item content
-    moved verbatim, so inner markup (`<em>`, links) survives;
+    moved verbatim, so inner markup (`<em>`, links) survives. A part
+    authored as a native `ul`/`ol` (class form on real markup) upgrades
+    in place instead — the host becomes the list, its items become the
+    `<li>`s — so a real list is never double-nested;
   - a list part authored as plain prose (no `item`/`li` children) is left
-    as authored — classed, never rewritten.
-- JS-off: the block box from the npl section of `themes/_vocabulary.css`
-  (`npl-critique, .npl-critique { display: block; }`). Nothing hidden,
-  nothing generated — authored text reads as plain prose.
+    as authored — classed, never rewritten. The same holds when a part
+    mixes its items with loose content (prose or stray elements outside
+    the item contract): the rewrite applies only when the part's content
+    is exactly its item set, so an authored node is never discarded.
+- JS-off: the block box from the npl section of `themes/_vocabulary.css`.
+  The vocabulary also styles the five part tags (and their `.npl-`
+  aliases) directly — part labels, list markers, the verdict highlight —
+  so the structured reading holds with the script off. Nothing hidden,
+  nothing the component generates; authored text stays fully visible.
 
 ## Events
 

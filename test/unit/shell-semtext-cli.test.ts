@@ -31,7 +31,7 @@ describe('formatDoc', () => {
     const text = formatDoc(quiz, 'text');
     expect(text).toContain('sem-progress: coverage :: 70%');
     expect(text).toContain('Tokens rotate on every exchange :: Reuse retires the presented token');
-    expect(text).toContain('distractors: Static tokens are safer');
+    expect(text).toContain('incorrectStatements: Static tokens are safer');
   });
 
   it('json is the canonical SemRecord[]', () => {
