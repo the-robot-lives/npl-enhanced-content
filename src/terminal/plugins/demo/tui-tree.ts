@@ -150,8 +150,13 @@ export function buildTuiTree(html: string): { title: string; roots: TuiNode[] } 
   const counters = [0, 0, 0, 0, 0, 0];
   let order = 0;
 
-  const walk = (el: Element, startLevel: number, inStructural: boolean, parent: TuiNode[]): number => {
-    let headingLevel = startLevel;
+  // Headings are siblings in the DOM but nest synthetically in the
+  // outline: an h3 lands under the open h2, an h2 pops back to the h1.
+  // The stack carries the open heading levels; DOM recursion only has to
+  // descend through containers (divs, section wrappers, sem-documents).
+  const stack: { level: number; children: TuiNode[] }[] = [{ level: 0, children: roots }];
+
+  const walk = (el: Element, inStructural: boolean): void => {
     for (const child of el.children) {
       const tag = child.tagName.toLowerCase();
       const heading = /^h([1-6])$/.exec(tag);
@@ -160,6 +165,7 @@ export function buildTuiTree(html: string): { title: string; roots: TuiNode[] } 
         counters[level - 1]! += 1;
         for (let i = level; i < counters.length; i++) counters[i] = 0;
         const number = sectionNumber(counters, level);
+        while (stack.length > 1 && stack[stack.length - 1]!.level >= level) stack.pop();
         const node: TuiNode = {
           id: child.getAttribute('id') ?? number,
           kind: 'section',
@@ -170,21 +176,20 @@ export function buildTuiTree(html: string): { title: string; roots: TuiNode[] } 
           meta: '',
           children: [],
         };
-        parent.push(node);
-        headingLevel = walk(child, level, inStructural, node.children);
+        stack[stack.length - 1]!.children.push(node);
+        stack.push({ level, children: node.children });
       } else if (!inStructural && (STRUCTURAL.has(tag) || LEAF_RECORDS.has(tag))) {
         order += 1;
-        parent.push(blockNode(child, order));
+        stack[stack.length - 1]!.children.push(blockNode(child, order));
         // Structural containers swallow deeper structure: their records
         // render as the block's body, not as sibling rows.
-        if (STRUCTURAL.has(tag)) walk(child, headingLevel, true, []);
+        if (STRUCTURAL.has(tag)) walk(child, true);
       } else {
-        headingLevel = walk(child, headingLevel, inStructural, parent);
+        walk(child, inStructural);
       }
     }
-    return headingLevel;
   };
 
-  walk(doc.body, 0, false, roots);
+  walk(doc.body, false);
   return { title, roots };
 }

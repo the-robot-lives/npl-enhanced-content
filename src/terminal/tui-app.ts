@@ -149,7 +149,8 @@ export function createTuiApp(roots: TuiNode[], title: string): App {
     const focusable = state.rows.filter((row) => row.focusable).length;
     const right = `${SGR_DIM}${tuiTreePosition(state)} of ${focusable} rows${SGR_RESET}`;
     const left = `${SGR_BOLD}semtext tui — ${title}${SGR_RESET}`;
-    const pad = Math.max(1, rows - plainLength(left).length - plainLength(right).length);
+    // one spare cell: the writer must never sit on the pending-wrap margin
+    const pad = Math.max(1, rows - plainLength(left).length - plainLength(right).length - 1);
     return clampCells(`${left}${' '.repeat(pad)}${right}`, rows);
   }
 
@@ -219,11 +220,11 @@ export function createTuiApp(roots: TuiNode[], title: string): App {
         if (delta === 0) return;
         const height = treeRows();
         top = Math.max(0, Math.min(top + delta, Math.max(0, state.rows.length - height)));
-        // Focus follows the view: keep the cursor on a visible row.
-        const view = window();
-        const visible = view.filter((entry) => entry.row.focusable);
-        if (visible.length > 0 && !visible.some((entry) => entry.row.node.id === state.cursor)) {
-          state.cursor = visible[0]!.row.node.id;
+        // Focus follows the view — BEFORE any re-windowing, or
+        // ensureVisible pulls the top back to the cursor row.
+        const visible = state.rows.slice(top, top + height).filter((row) => row.focusable);
+        if (visible.length > 0 && !visible.some((row) => row.node.id === state.cursor)) {
+          state.cursor = visible[0]!.node.id;
         }
         afterChange();
         return;
