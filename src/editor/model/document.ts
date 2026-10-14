@@ -66,12 +66,29 @@ export class EditorDocumentImpl implements EditorDocument {
   private undoStack: UndoEntry[] = [];
   private redoStack: UndoEntry[] = [];
   private txCounter = 0;
+  /** Per-document allocator (root fix for the buildFromXml id collision):
+   *  every doc mints its own ids past its tree's max, so a template parse
+   *  (which resets the shared module counter for deterministic parse ids)
+   *  can never cause `createElement` to re-mint an id this doc owns. */
+  private nextId = 1;
 
   constructor(source: string, root: DocumentNode, issues: ParseIssue[]) {
     this.source = source;
     this.root = root;
     this.issues = issues;
     indexSubtree(root, this.nodes);
+    let max = 0;
+    const walk = (n: DocumentNode | EditorNode): void => {
+      const v = Number.parseInt(n.id.slice(1), 10);
+      if (Number.isFinite(v) && v > max) max = v;
+      if ('children' in n) for (const c of n.children) walk(c as DocumentNode | EditorNode);
+    };
+    walk(root);
+    this.nextId = max + 1;
+  }
+
+  private allocDocNodeId(): NodeId {
+    return `n${this.nextId++}`;
   }
 
   // ── reads ──
@@ -235,7 +252,7 @@ export class EditorDocumentImpl implements EditorDocument {
     const children = spec.children ?? [];
     const el: ElementNode = {
       kind: 'element',
-      id: allocNodeId(),
+      id: this.allocDocNodeId(),
       parentId: null,
       range: { start: 0, end: 0 },
       name: spec.tag,
@@ -259,7 +276,7 @@ export class EditorDocumentImpl implements EditorDocument {
   createText(value: string, mode: 'normal' | 'raw' = 'normal'): TextNode {
     return {
       kind: 'text',
-      id: allocNodeId(),
+      id: this.allocDocNodeId(),
       parentId: null,
       range: { start: 0, end: 0 },
       value,
