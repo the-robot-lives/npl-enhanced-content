@@ -386,20 +386,20 @@ function buildNote(el: Element): Payload {
 function buildFact(el: Element): Payload {
   let statement = partText(el, 'sem-statement', 'statement');
   let conclusion = partText(el, 'sem-conclusion', 'conclusion');
-  const distractors: string[] = [];
-  const ds = parts(el, 'sem-distractor', 'sem-distractor');
+  const incorrectStatements: string[] = [];
+  const ds = parts(el, 'incorrect-statement', 'incorrect-statement');
   for (let i = 0; i < ds.length; i++) {
-    distractors.push(norm(collectText(ds[i], isChrome)));
+    incorrectStatements.push(norm(collectText(ds[i], isChrome)));
   }
 
   if (statement === null && conclusion === null) {
-    // Compact form: `statement :: conclusion`, distractors excluded.
+    // Compact form: `statement :: conclusion`, incorrect statements excluded.
     const raw = norm(
       collectText(el, function (child) {
         return (
           isChrome(child) ||
-          hasClass(child, 'sem-distractor') ||
-          tagOf(child) === 'sem-distractor'
+          hasClass(child, 'incorrect-statement') ||
+          tagOf(child) === 'incorrect-statement'
         );
       })
     );
@@ -415,7 +415,7 @@ function buildFact(el: Element): Payload {
   const fields: Record<string, unknown> = {
     statement: statement || '',
     conclusion: conclusion || '',
-    distractors: distractors,
+    incorrectStatements: incorrectStatements,
     highlights: highlightsIn(el)
   };
   const text = conclusion ? statement + ' :: ' + conclusion : statement || '';
@@ -642,13 +642,35 @@ function rootElement(root: Document | Element): Element | null {
 }
 
 /**
- * Extract the canonical record array from a document or a root element,
- * in document order. Pure: the DOM is not modified.
+ * One extracted record paired with the element that minted it.
+ *
+ * `SemRecord` is deliberately address-free (spec/extraction.md): tools that
+ * need the source element — agent outline/expand, editor splicing — use
+ * `extractRecordPairs`, which carries the element alongside the exact same
+ * records in the exact same order. The record shape itself never grows an
+ * element reference.
  */
-export function extractRecords(root: Document | Element): SemRecord[] {
+export interface RecordPair {
+  el: Element;
+  record: SemRecord;
+}
+
+/**
+ * Extract records paired with their minting elements, in document order.
+ * Same purity guarantee as `extractRecords`: the DOM is not modified.
+ */
+export function extractRecordPairs(root: Document | Element): RecordPair[] {
   const start = rootElement(root);
-  const out: SemRecord[] = [];
-  if (!start) return out;
+  const pairs: RecordPair[] = [];
+  if (!start) return pairs;
+
+  // Authored identity only: the views enhancer mints panel ids for aria
+  // wiring and marks them (runtime state is always data-*); a minted id
+  // must never surface as a record id or JS-on extraction diverges from
+  // the authored page.
+  function authoredId(el: Element): string | null {
+    return el.hasAttribute('data-sem-minted-id') ? null : el.getAttribute('id');
+  }
 
   function visit(el: Element, parentIndex: number | null): void {
     if (isChrome(el)) return;
@@ -660,16 +682,16 @@ export function extractRecords(root: Document | Element): SemRecord[] {
       const payload = payloadFor(type, el);
       const record: SemRecord = {
         type: type,
-        id: el.getAttribute('id'),
+        id: authoredId(el),
         kind: param(el, 'kind'),
         tags: tagList(el),
         audience: param(el, 'audience'),
         parent: parentIndex,
         fields: payload.fields,
         text: payload.text,
-        sourceOrder: out.length
+        sourceOrder: pairs.length
       };
-      out.push(record);
+      pairs.push({ el: el, record: record });
       index = record.sourceOrder;
     }
 
@@ -684,7 +706,17 @@ export function extractRecords(root: Document | Element): SemRecord[] {
     const kids = start.children;
     for (let i = 0; i < kids.length; i++) visit(kids[i], null);
   }
-  return out;
+  return pairs;
+}
+
+/**
+ * Extract the canonical record array from a document or a root element,
+ * in document order. Pure: the DOM is not modified.
+ */
+export function extractRecords(root: Document | Element): SemRecord[] {
+  return extractRecordPairs(root).map(function (p) {
+    return p.record;
+  });
 }
 
 /* ------------------------------------------------------------------ *
@@ -695,8 +727,12 @@ function depthOf(records: SemRecord[], record: SemRecord): number {
   let d = 0;
   let p = record.parent;
   while (p !== null && d < 32) {
+    // A parent outside the given array (a subset render, one standalone
+    // record) simply stops the walk: depth is best-effort there.
+    const up = records[p];
+    if (!up) break;
     d++;
-    p = records[p].parent;
+    p = up.parent;
   }
   return d;
 }
@@ -713,7 +749,7 @@ function annotate(record: SemRecord): string {
 const TEXTUAL_FIELDS: Record<string, string[]> = {
   'sem-agent': ['bio', 'instructions'],
   'sem-note': ['variant'],
-  'sem-fact': ['distractors'],
+  'sem-fact': ['incorrectStatements'],
   'sem-detail': ['highlights'],
   'sem-step': ['status'],
   'sem-progress': ['rawValue'],

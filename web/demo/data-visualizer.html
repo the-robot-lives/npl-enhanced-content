@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · data visualizer showcase</title>
+
+<!-- sem:inline theme minimal-tech-light -->
+<!-- sem:inline vocabulary -->
+
+<style>
+  .sem-enhanced-document { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.01em; margin: 0 0 .5rem; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 2.25rem 0 .5rem; }
+  p  { margin: .6rem 0; }
+</style>
+
+<!-- The reading bundle carries the whole data-visualizer implementation
+     (sources, loaders, joins, query chrome). -->
+<!-- sem:inline bundle -->
+</head>
+
+<body>
+<div class="sem-enhanced-document">
+  <h1>Data visualizer — showcase</h1>
+  <p>Every phase of <code>spec/data-visualizer.md</code> on one page: inline
+  payloads (markdown table, CSV, YAML with a declared structure), relative
+  file loads, a declarative join on a named key column, a view that filters
+  columns, and the editable default query.</p>
+
+  <h2>Inline markdown table</h2>
+  <sem-data-visualizer>
+    <sem-data-source data-name="Releases">
+      | version | date       |
+      |---------|------------|
+      | 0.4.0   | 2026-09-30 |
+      | 0.5.0   | 2026-10-06 |
+      | 0.5.1   | 2026-10-13 |
+    </sem-data-source>
+  </sem-data-visualizer>
+
+  <h2>Inline CSV</h2>
+  <sem-data-visualizer>
+    <sem-data-source data-name="Pipelines" data-format="csv">pipeline,status,duration_s
+deploy,passed,512
+nightly,passed,4210
+docs,passed,96</sem-data-source>
+  </sem-data-visualizer>
+
+  <h2>Inline YAML with a declared structure (OpenAPI-style)</h2>
+  <sem-data-visualizer>
+    <sem-data-source data-name="Users" data-format="yaml" data-type="yaml-schema">schema:
+  type: array
+  items:
+    type: object
+    required:
+      - id
+      - email
+    properties:
+      id:
+        type: integer
+      email:
+        type: string
+      name:
+        type: string
+      address:
+        type: object
+        properties:
+          city:
+            type: string
+          postcode:
+            type: string
+data:
+  - id: 1
+    email: ada@example.com
+    name: Ada
+    address:
+      city: London
+      postcode: E1
+  - id: 2
+    email: grace@example.com
+    name: Grace
+    address:
+      city: New York
+      postcode: 10001</sem-data-source>
+  </sem-data-visualizer>
+
+  <h2>A view that filters columns</h2>
+  <p>Two declared views; the second keeps only the operator columns. Its
+  container id (<code>fleet-views</code>) makes it deep-linkable
+  (spec/data-visualizer.md §10): the Expand and Copy-link chrome mints
+  <code>#dv=fleet-views&view=…</code> links, and the modal reopens from
+  links minted inside it.</p>
+  <sem-data-visualizer id="fleet-views">
+    <sem-data-source data-name="Fleet" data-views="all=*; operators=name, replicas" data-view="all">| name   | region | port | replicas |
+|--------|--------|------|----------|
+| auth   | eu     | 8080 | 3        |
+| billing| us     | 8443 | 2        |
+| pages  | ap     | 3000 | 2        |
+| search | eu     | 9200 | 5        |</sem-data-source>
+  </sem-data-visualizer>
+
+  <h2>Relative files, a declarative join, and the editable default query</h2>
+  <p>One visualizer, the whole phase 4 + 5 story: two buckets fetched from
+  files next to this page (CSV and YAML), a join composing them on the named
+  key column, and the editable default query reading the joined bucket —
+  edit it and re-run (button, Ctrl/Cmd+Enter, or just keep typing; it
+  re-runs as you type). The container id (<code>ops-combined</code>) makes
+  the edited query deep-linkable too (<code>#dv=ops-combined&q=…</code>).</p>
+  <sem-data-visualizer id="ops-combined">
+    <sem-data-source data-name="Services" source="data/services.csv"></sem-data-source>
+    <sem-data-source data-name="Regions" source="data/regions.yaml"></sem-data-source>
+    <sem-data-join data-name="Service Regions" data-left="Services" data-right="Regions" data-on="region"></sem-data-join>
+    <sem-data-query>SELECT name, port, zone, latency_ms FROM service-regions ORDER BY latency_ms DESC</sem-data-query>
+  </sem-data-visualizer>
+</div>
+</body>
+</html>

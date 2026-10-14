@@ -1,8 +1,17 @@
 # Schema — `sem-progress`
 
-Contract per conventions.md v0.5. BDD source of truth for
+Contract per conventions.md v0.6. BDD source of truth for
 `test/e2e/sem-progress.cy.js`. Changes here precede spec changes
 precede code.
+
+## Scope semantics
+
+A completion meter — one scalar completion assertion. `value` is
+required, canonical unit 0..1: out-of-range values clamp for rendering
+while the raw attribute stays untouched; `label` is optional (default
+`progress`). The runtime builds a meter (track + fill +
+`label :: N%`); JS-off the value reads as text via CSS `attr()` — no
+fake bar. `status="done"` ⇔ value 1 by convention.
 
 ## Authoring form
 
@@ -13,22 +22,22 @@ precede code.
 
 Class-form alias (conventions Appendix A): `div.sem-progress[data-value][data-label]`.
 
-- `value`: **required, canonical unit 0..1.** Out-of-range values
+- `value`: number — required, canonical unit 0..1. Out-of-range values
   clamp for rendering; the raw attr stays untouched (machine readers
   see the author's value, the render shows the clamp).
-- `label`: optional; default `progress`.
+- `label`: optional meter caption; default `progress`.
+- `status="done"`: optional completion state — pairs with value 1 and
+  renders the full/accent state (same catalog as `sem-step`).
 - `id`, `kind`, `tags` global.
-- Status semantics pair naturally: `status="done"` renders the
-  full/accent state (same catalog as `sem-step`).
 
 ## Rendered form
 
-- Fallback JS builds a meter: track bar + fill width `value*100%` +
-  text `label :: 62%` (percentage, rounded).
+- The runtime builds a meter: track bar + fill width
+  `value*100%` + text `label :: 62%` (percentage, rounded).
 - JS-off: **text-only via CSS** — `content: attr(label) " :: "
   attr(value)` (either spelling) rendered in the element (no fake bar,
   no lie).
-- Lit milestone may animate fill transitions; static for now.
+- Fill transitions may animate in a later milestone; static for now.
 
 ## Events
 
@@ -43,6 +52,6 @@ None.
 
 ## Machine contract
 
-- One scalar completion assertion: `label ∈ [0,1]`. Embedded docs use
+- One scalar completion assertion: `value ∈ [0,1]`. Embedded docs use
   it for checklist/pipeline state (pairs with `sem-procedure`
   statuses); `status="done"` ⇔ value 1 by convention.

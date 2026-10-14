@@ -40,10 +40,10 @@ describe('sem-progress', () => {
   });
 
   // US-601 gating — the JS-off attr() caption must not stack on top of the
-  // fallback text once a tier drives the element (no duplicate text).
-  it('JS-off attr() caption is suppressed when the fallback tier drives', () => {
+  // rendered text once the runtime drives the element (no duplicate text).
+  it('JS-off attr() caption is suppressed when the runtime drives', () => {
     cy.get('#p-coverage').should(($p) => {
-      expect($p[0]).to.have.attr('data-sem-fallback');
+      expect($p[0]).to.have.attr('data-sem-upgraded');
       const before = $p[0].ownerDocument.defaultView.getComputedStyle($p[0], '::before');
       expect(before.content).to.equal('none');
     });

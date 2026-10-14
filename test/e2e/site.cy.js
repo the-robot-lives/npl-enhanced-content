@@ -1,8 +1,8 @@
 // BDD spec — semtext.dev landing page · source: web/site/index.html
 //
 // The page is itself a SemText document, so these assertions double as a
-// smoke test that the vocabulary still works when a page composes it: the
-// class tier (facts, views, procedure, properties, reveal), the Lit tier
+// smoke test that the vocabulary still works when a page composes it: class
+// aliases (facts, views, procedure, properties, reveal), Lit elements
 // (sem-note) and extraction all run in one document here.
 //
 // Feature: the marketing page renders, its view-as toggle re-renders the
@@ -10,7 +10,7 @@
 //   Scenario: the page renders its hero and sections
 //   Scenario: the view-as toggle switches the deck between list, flashcards and quiz
 //   Scenario: extraction is invariant across every view
-//   Scenario: the Lit tier upgrades the notes and the fallback tier wires the tabs
+//   Scenario: Lit claims the notes and the vanilla pass wires the tabs
 //   Scenario: the Reading section mounts every R/W0 + R/W1 example live
 //   Scenario: glossary previews, code chrome, reference backlinks behave
 //   Scenario: audience picker links filter with native hidden
@@ -40,17 +40,17 @@ describe('semtext.dev landing page', () => {
     cy.get('#try-deck .sem-fact').should('have.length', 4);
   });
 
-  it('states the real semtext-extract.js size in the artifacts list, not a stale hardcoded number', () => {
-    // web/site/index.html injects this via `<!-- sem:inline size-mg extract -->`
+  it('states the real semtext.js size in the artifacts list, not a stale hardcoded number', () => {
+    // web/site/index.html injects this via `<!-- sem:inline size-mg bundle -->`
     // at build time (scripts/build-standalone.mjs). Fetch the script over
     // HTTP from vite preview (the same server + dist/ root the page itself
     // loads scripts from) rather than reading the dist file off disk —
     // that way the assertion measures the artifact actually served, and
     // can't pass against a stale or separately-deployed disk copy that
     // happens to sit next to a mismatched preview build.
-    cy.request({ url: '/semtext-extract.js', encoding: 'binary' }).then((res) => {
+    cy.request({ url: '/semtext.js', encoding: 'binary' }).then((res) => {
       cy.task('gzipSize', res.body).then(({ kb, gzipKb }) => {
-        cy.get('.sem-property[data-key="semtext-extract.js"]').invoke('text').then((text) => {
+        cy.get('.sem-property[data-key="semtext.js"]').invoke('text').then((text) => {
           const m = text.match(/([\d.]+)\s*KB minified,\s*([\d.]+)\s*KB gzipped/);
           expect(m, 'artifact entry states a "N.N KB minified, N.N KB gzipped" size').to.not.equal(null);
           expect(parseFloat(m[1]), 'raw size').to.be.closeTo(kb, 0.1);
@@ -97,7 +97,7 @@ describe('semtext.dev landing page', () => {
     // Lit tier claims the notes
     cy.get('sem-note[data-sem-upgraded]').should('have.length', 3);
     cy.get('sem-note[data-variant="warning"]').should('have.attr', 'role', 'note');
-    // fallback tier wires the tabs and the disclosures
+    // the vanilla pass wires the tabs and the disclosures
     cy.get('#readers .sem-views-tabs button').should('have.length', 3);
     cy.get('.sem-reveal details').should('have.length', 3);
     // content stays in the light DOM
@@ -117,13 +117,13 @@ describe('semtext.dev landing page', () => {
   });
 
   describe('Reading section (R/W0 + R/W1 live examples)', () => {
-    it('mounts every example with its authored roles and tier markers', () => {
+    it('mounts every example with its authored roles and the upgrade marker', () => {
       cy.get('#rd-margin').should('have.attr', 'data-view-as', 'margin').and('be.visible');
-      cy.get('#rd-glossary').should('have.attr', 'data-sem-fallback');
+      cy.get('#rd-glossary').should('have.attr', 'data-sem-upgraded');
       cy.get('#rd-history').should('have.attr', 'role', 'list');
       cy.get('#rd-history .sem-event').should('have.length', 4);
-      cy.get('#rd-code').should('have.attr', 'data-sem-fallback');
-      cy.get('#rd-refs').should('have.attr', 'data-sem-fallback');
+      cy.get('#rd-code').should('have.attr', 'data-sem-upgraded');
+      cy.get('#rd-refs').should('have.attr', 'data-sem-upgraded');
       cy.get('#rd-audiences .sem-profile').should('have.length', 2);
     });
 
@@ -162,14 +162,14 @@ describe('semtext.dev landing page', () => {
     });
 
     it('the sem-source example flips to its authored markup and back', () => {
-      cy.get('#rd-source').should('have.attr', 'data-sem-fallback');
+      cy.get('#rd-source').should('have.attr', 'data-sem-upgraded');
       cy.get('#rd-source > .sem-source-chrome .sem-source-label').should('have.text', 'A note and a runbook');
       cy.get('#rd-src-steps').should('be.visible');
       cy.get('#rd-source [data-act="source"]').click();
       cy.get('#rd-src-steps').should('not.be.visible');
       cy.get('#rd-source .sem-source-fence code').invoke('text').then((t) => {
         expect(t).to.contain('<div class="sem-procedure" id="rd-src-steps" data-kind="runbook" role="list">');
-        expect(t).not.to.match(/sem-note-summary|data-sem-fallback/);
+        expect(t).not.to.match(/sem-note-summary|data-sem-upgraded/);
       });
       cy.get('#rd-source .sem-source-fence [data-act="copy"]').should('exist');
       cy.get('#rd-source [data-act="html"]').click();
@@ -186,7 +186,7 @@ describe('semtext.dev landing page', () => {
 
     it('the reading bar is the first child of the document, outlining every h2', () => {
       cy.get('main.sem-enhanced-document > :first-child').should('have.id', 'pg-reader');
-      cy.get('#pg-reader').should('have.attr', 'data-sem-fallback');
+      cy.get('#pg-reader').should('have.attr', 'data-sem-upgraded');
       cy.get('#pg-reader > .sem-reader-chrome').should('have.attr', 'role', 'region');
       cy.get('#pg-reader .sem-reader-toggle').click();
       // every h2 outside a view panel — the site's panels only carry h3s, so the
@@ -229,62 +229,60 @@ describe('semtext.dev landing page', () => {
     });
 
     it('the artifacts table sorts numerically, filters, and still extracts in authored order', () => {
-      cy.get('#rd-table').should('have.attr', 'data-sem-fallback');
+      cy.get('#rd-table').should('have.attr', 'data-sem-upgraded');
       cy.get('#rd-table th').eq(1).find('button').click();
       cy.get('#rd-table th').eq(1).should('have.attr', 'aria-sort', 'ascending');
+      // the five-artifact table collapsed with the bundle: one artifact row
       cy.get('#rd-table tbody tr').then(($r) => {
-        expect(Array.from($r, (r) => r.cells[0].textContent)).to.deep.equal(
-          ['semtext-md.js', 'semtext-extract.js', 'semtext-fallback.js', 'semtext-reading.js', 'semtext.js']);
+        expect(Array.from($r, (r) => r.cells[0].textContent)).to.deep.equal(['semtext.js']);
       });
-      cy.get('#rd-table .sem-table-filter').type('fallback');
-      cy.get('#rd-table tbody tr[hidden]').should('have.length', 4);
-      cy.get('#rd-table .sem-table-status').should('have.text', '1 of 5 rows, sorted by Minified, ascending');
+      cy.get('#rd-table .sem-table-filter').type('semtext');
+      cy.get('#rd-table .sem-table-status').should('have.text', '1 of 1 rows, sorted by Minified, ascending');
       cy.window().then((win) => {
-        const t = win.SemTextExtract.extractRecords(win.document).find((r) => r.id === 'rd-table');
+        const t = win.SemText.extractRecords(win.document).find((r) => r.id === 'rd-table');
         expect(t.type).to.equal('sem-table');
         expect(t.fields.columns).to.deep.equal(['Artifact', 'Minified', 'Gzipped', 'Global']);
-        expect(t.fields.rows.map((row) => row[0])).to.deep.equal(
-          ['semtext.js', 'semtext-fallback.js', 'semtext-reading.js', 'semtext-extract.js', 'semtext-md.js']);
+        expect(t.fields.rows.map((row) => row[0])).to.deep.equal(['semtext.js']);
       });
     });
 
     it('JS-off: the reader is empty and the table is plain', () => {
-      cy.visit('/site/index.html', { onBeforeLoad(win) { win.__semJsOff = true; } });
+      cy.visit('/site/index.nojs.html');
       cy.get('.sem-reader-chrome, .sem-table-chrome, .sem-table-sort').should('not.exist');
       cy.get('#pg-reader').then(($r) => expect($r[0].getBoundingClientRect().height).to.equal(0));
-      cy.get('#rd-table tbody tr').should('have.length', 5);
+      cy.get('#rd-table tbody tr').should('have.length', 1);
       cy.get('#rd-table th').should('not.have.attr', 'aria-sort');
     });
 
     it('the Markdown example renders its table, flips to the source and back, and extracts the source', () => {
-      cy.get('#rd-md').should('have.attr', 'data-sem-fallback');
+      cy.get('#rd-md').should('have.attr', 'data-sem-upgraded');
       cy.get('#rd-md > .sem-md-chrome .sem-md-label').should('have.text', 'Who renders sem-md');
       cy.get('#rd-md .sem-md-body thead th[scope="col"]').should('have.length', 3);
-      cy.get('#rd-md .sem-md-body tbody tr').should('have.length', 3);
+      cy.get('#rd-md .sem-md-body tbody tr').should('have.length', 2);
       cy.get('#rd-md .sem-md-body p strong').should('have.text', 'one');
       cy.get('#rd-md [data-act="toggle"]').click();
       cy.get('#rd-md .sem-md-body').should('not.be.visible');
-      cy.get('#rd-md .sem-md-raw code').invoke('text').then((t) => expect(t).to.match(/^\| Tier {5}\| Script/));
+      cy.get('#rd-md .sem-md-raw code').invoke('text').then((t) => expect(t).to.match(/^\| State {4}\| Script/));
       cy.get('#rd-md .sem-md-raw .sem-code-chrome [data-act="copy"]').should('exist');
       cy.get('#rd-md [data-act="toggle"]').click();
       cy.get('#rd-md .sem-md-body').should('be.visible');
       cy.window().then((win) => {
-        const r = win.SemTextExtract.extractRecords(win.document).find((x) => x.id === 'rd-md');
+        const r = win.SemText.extractRecords(win.document).find((x) => x.id === 'rd-md');
         expect(r.type).to.equal('sem-md');
-        expect(r.fields.source).to.match(/^\| Tier {5}\| Script/);
+        expect(r.fields.source).to.match(/^\| State {4}\| Script/);
         expect(r.fields.source).not.to.match(/Copy|Markdown\n/);
       });
     });
 
     it('JS-off: the Markdown example is its pre-wrapped source', () => {
-      cy.visit('/site/index.html', { onBeforeLoad(win) { win.__semJsOff = true; } });
+      cy.visit('/site/index.nojs.html');
       cy.get('.sem-md-chrome, .sem-md-body, .sem-md-raw').should('not.exist');
       cy.get('#rd-md').should('be.visible').invoke('text').then((t) => expect(t).to.contain('| :------- |'));
       cy.get('#rd-md table').should('not.exist');
     });
 
     it('JS-off: the Reading section hides nothing and grows no chrome', () => {
-      cy.visit('/site/index.html', { onBeforeLoad(win) { win.__semJsOff = true; } });
+      cy.visit('/site/index.nojs.html');
       cy.get('.sem-code-chrome, .sem-references-backlinks, .sem-popover, .sem-properties-ref, .sem-source-chrome, .sem-source-fence, .sem-source-raw')
         .should('not.exist');
       cy.get('#rd-src-steps').should('be.visible');

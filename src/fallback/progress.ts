@@ -19,7 +19,7 @@ export function enhanceProgress(scope: ParentNode): void {
     // Mark what was wired (tier handoff): the JS-off attr() caption in the
     // vocabulary is gated on the element marker, so without it the meter
     // would read twice — caption + fallback text.
-    p.setAttribute('data-sem-fallback', '');
+    p.setAttribute('data-sem-upgraded', '');
     const track = document.createElement('span');
     track.className = 'sem-progress-track';
     const fill = document.createElement('span');

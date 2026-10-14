@@ -1,6 +1,6 @@
 # Schema — `sem-references` / `sem-reference`
 
-Contract per conventions.md v0.5. BDD source of truth for
+Contract per conventions.md v0.6. BDD source of truth for
 `test/e2e/sem-references.cy.js`. Changes here precede spec changes
 precede code.
 
@@ -33,11 +33,14 @@ Parameters are read as `data-<name>` first, then bare `<name>`.
 
 - `kind`: `footnotes` | `bibliography` (free token; these two get
   distinct styling). Optional.
-- `sem-reference`:
-  - `id` (required): the citation target.
-  - `href` (optional): external location.
-  - `cite` (optional): short citation label (`RFC 6749`).
-  - Text = the reference's description.
+- `sem-reference`: the citable entry; its text is the reference's
+  description.
+- `id` (required; on each `sem-reference`): the citation target — the
+  global `id`.
+- `href` (optional; on each `sem-reference`): external location
+  (`data-href` in the class form).
+- `cite` (optional; on each `sem-reference`): short citation label
+  (`RFC 6749`).
 - Inline citation: any `<a href="#<reference-id>">` outside the references
   container. Its text is the author's (`[1]`, `¹`, a name) — the vocabulary
   does not renumber authored citation text.
@@ -52,7 +55,9 @@ Parameters are read as `data-<name>` first, then bare `<name>`.
 - `kind="bibliography"` uses a hanging indent; `kind="footnotes"` a
   compact list.
 
-### Fallback (reading bundle)
+### Enhanced (reading handler, `src/reading/references.ts`; the Lit
+component `SemReferences` claims `data-sem-upgraded` at connect and runs
+the same function once its `sem-reference` children exist)
 
 - Every citing anchor gets the runtime class `.sem-references-ref` and a
   hover / focus **preview popover** (`src/shared/popover.ts`) showing the
@@ -62,13 +67,8 @@ Parameters are read as `data-<name>` first, then bare `<name>`.
   that anchor (which is given an id when it has none).
 - A reference with `data-href` gets `.sem-references-link`, an external
   link to it, appended.
-- The container carries `data-sem-fallback` once wired.
-
-### Upgraded (Lit `SemReferences`)
-
-- Thin wrapper: claims `data-sem-upgraded`, clears `data-sem-fallback`,
-  then calls the bundle's enhance function once its `sem-reference`
-  children exist. Idempotent per anchor and per reference.
+- The container carries `data-sem-upgraded` once wired (idempotent per
+  anchor and per reference).
 
 ### JS-off
 

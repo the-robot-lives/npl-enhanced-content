@@ -2,10 +2,10 @@
  * md/element — sem-md: chrome, rendered body, raw fence, toggle and copy.
  *
  * Spec: spec/schema/sem-md.md. Idempotent per element: chrome already
- * present means nothing is built again, which lets the Lit wrapper call
- * this after the bundle may already have run (or vice versa). The tier
- * marker is NOT set here — the bundle's document scan stamps
- * `data-sem-fallback`, the Lit wrapper stamps `data-sem-upgraded`.
+ * present means nothing is built again, which lets the Lit component call
+ * this after the bundle scan may already have run (or vice versa). The
+ * marker is NOT set here — the calling layer (bundle scan or component)
+ * stamps `data-sem-upgraded`.
  *
  * The element's text is consumed: after enhancement it holds exactly the
  * chrome, the rendered `.sem-md-body` and the `.sem-md-raw` fence whose

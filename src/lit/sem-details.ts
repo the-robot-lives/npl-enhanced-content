@@ -39,6 +39,9 @@ export class SemDetails extends SemElement {
         span.className = 'sem-highlight sem-revealed';
         span.removeAttribute('role');
         span.removeAttribute('tabindex');
+        // revealed text is no longer a control: the reveal label must not
+        // override its accessible name (schema A11y contract)
+        span.removeAttribute('aria-label');
       };
       span.addEventListener('click', reveal);
       span.addEventListener('keydown', (e) => {

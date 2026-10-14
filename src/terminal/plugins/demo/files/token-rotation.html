@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Token Rotation</title></head>
+<body>
+<sem-enhanced-document>
+  <h1>Token Rotation</h1>
+  <p>Every session mints a short-lived JWT and rotates the refresh token per use.</p>
+  <sem-properties kind="glossary" view-as="glossary">
+    <sem-property key="JWT">JSON Web Token — a signed, self-describing bearer token.</sem-property>
+    <sem-property key="PKCE">Proof Key for Code Exchange — binds an authorization code to the client.</sem-property>
+    <sem-property key="refresh token">A long-lived grant exchanged for a new access token; retired on every use.</sem-property>
+  </sem-properties>
+  <h2>Rotation</h2>
+  <sem-note variant="tip">Rotation in five lines.</sem-note>
+  <sem-code lang="ts" filename="src/rotate.ts">
+<pre><code>export function rotate(pair: Pair): Pair {
+  const next = mint();
+  retire(pair.refresh);
+  return next;
+}</code></pre>
+  </sem-code>
+  <sem-chronology kind="release-history" view-as="timeline">
+    <sem-event when="2026-03-02" status="done">v0.1 tagged — fallback tier ships.</sem-event>
+    <sem-event when="2026-06">Reading-experience waves land one PR at a time.</sem-event>
+  </sem-chronology>
+  <sem-references kind="bibliography">
+    <sem-reference href="https://www.rfc-editor.org/rfc/rfc6749" cite="RFC 6749">The OAuth 2.0 Authorization Framework.</sem-reference>
+  </sem-references>
+  <sem-table kind="lifetimes" controls="sort">
+    <table>
+      <caption>Token lifetimes</caption>
+      <thead><tr><th>Token</th><th>Lifetime</th><th>Rotates</th></tr></thead>
+      <tbody>
+        <tr><td>access</td><td>15 min</td><td>no</td></tr>
+        <tr><td>refresh</td><td>30 days</td><td>yes</td></tr>
+      </tbody>
+    </table>
+  </sem-table>
+</sem-enhanced-document>
+</body>
+</html>

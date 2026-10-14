@@ -9,6 +9,8 @@ name: Nightly
 # cache warm. It also runs the full unit + e2e suite (unsharded) against main.
 
 on:
+  push:
+    branches: [stage]
   schedule:
     - cron: "17 7 * * *"
   workflow_dispatch:

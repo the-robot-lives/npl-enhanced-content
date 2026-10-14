@@ -5,22 +5,25 @@
 //          upgrade supersedes the fallback behavior
 //   Scenario: list view (default) — all facts visible, no chrome
 //   Scenario: flashcards — one card at a time, flip reveals conclusion
+//   Scenario: flashcards — one tab stop on the current card; Enter/Space
+//             flip it, aria-expanded tracks, focus ring visible
 //   Scenario: flashcards — meter uses .sem-facts-meter, wraps around
 //   Scenario: quiz — conclusion hidden until correct selection, scored
 //   Scenario: quiz — wrong pick marked, counts as answered
 //   Scenario: D1 — .sem-progress element and facts meter coexist
 //   Scenario: JS-off — all conclusions visible in every view
-//   Scenario: Lit upgrade — <sem-facts> owns behavior, no fallback marker
+//   Scenario: Lit element form — <sem-facts> owns behavior, same marker
 
 describe('sem-facts', () => {
   describe('v0.4 class baseline (web/demo/index.html)', () => {
     beforeEach(() => cy.visit('/demo/index.html'));
 
-    it('list view (default): all facts visible, no chrome, no fallback marker', () => {
+    it('list view (default): all facts visible, no chrome, claimed by the runtime', () => {
       cy.get('#facts-list .sem-fact').should('have.length', 2);
       cy.get('#facts-list .sem-fact .sem-conclusion').should('be.visible');
       cy.get('#facts-list .sem-facts-chrome').should('not.exist');
-      cy.get('#facts-list').should('not.have.attr', 'data-sem-fallback');
+      // list view stays unclaimed — only flashcards/quiz decks get chrome
+      cy.get('#facts-list').should('not.have.attr', 'data-sem-upgraded');
     });
 
     it('flashcards: one card at a time, flip reveals conclusion', () => {
@@ -70,27 +73,24 @@ describe('sem-facts', () => {
     });
 
     it('JS-off: every view degrades to readable list, no occlusion', () => {
-      cy.visit('/demo/index.html', {
-        onBeforeLoad(win) { win.__semJsOff = true; }
-      });
+      cy.visit('/demo/index.nojs.html');
       cy.get('.sem-facts[data-view-as="flashcards"] .sem-fact .sem-conclusion')
         .should('be.visible');
       cy.get('.sem-facts[data-view-as="quiz"] .sem-fact .sem-conclusion')
         .should('be.visible');
       cy.get('.sem-facts .sem-facts-chrome').should('not.exist');
-      cy.get('.sem-facts[data-sem-fallback]').should('not.exist');
+      cy.get('.sem-facts[data-sem-upgraded]').should('not.exist');
     });
   });
 
   describe('Lit upgrade (web/demo/standalone-lit.html)', () => {
     beforeEach(() => cy.visit('/demo/standalone-lit.html'));
 
-    it('registers and upgrades sem-facts (Lit ran, no fallback marker)', () => {
+    it('registers and upgrades sem-facts (component claims the one marker)', () => {
       cy.window().then((win) => {
         expect(win.customElements.get('sem-facts')).to.exist;
       });
       cy.get('main sem-facts').should('have.attr', 'data-sem-upgraded');
-      cy.get('main sem-facts').should('not.have.attr', 'data-sem-fallback');
     });
 
     it('flashcards: one current card, flip reveals conclusion', () => {
@@ -100,6 +100,30 @@ describe('sem-facts', () => {
       cy.get(fc + '.sem-current').click();
       cy.get(fc + '.sem-current.sem-flipped .sem-conclusion').should('be.visible');
       cy.get(fc + '.sem-facts-meter').should('contain', '1/2');
+    });
+
+    it('flashcards: keyboard flips — one tab stop, Enter/Space, aria-expanded', () => {
+      const fc = 'sem-facts[data-view-as="flashcards"] ';
+      // the deck keeps one stop in the tab order: the current card alone
+      cy.get(fc + '.sem-fact.sem-current')
+        .should('have.attr', 'tabindex', '0')
+        .and('have.attr', 'aria-expanded', 'false');
+      cy.get(fc + '.sem-fact:not(.sem-current)').then(($rest) => {
+        $rest.each((_, f) => expect(f.getAttribute('tabindex')).to.equal('-1'));
+      });
+      // Enter flips the focused card; aria-expanded tracks the reveal
+      cy.get(fc + '.sem-current').focus().type('{enter}');
+      cy.get(fc + '.sem-current.sem-flipped')
+        .should('have.attr', 'aria-expanded', 'true');
+      cy.get(fc + '.sem-current .sem-conclusion').should('be.visible');
+      // Space flips back
+      cy.get(fc + '.sem-current').focus().type(' ');
+      cy.get(fc + '.sem-current:not(.sem-flipped)')
+        .should('have.attr', 'aria-expanded', 'false');
+      // moving the deck resets the flip and moves the single stop
+      cy.get(fc + '[data-act="next"]').click();
+      cy.get(fc + '.sem-current').should('have.attr', 'tabindex', '0');
+      cy.get(fc + '.sem-current.sem-flipped').should('not.exist');
     });
 
     it('quiz: conclusion hidden, correct pick scores', () => {

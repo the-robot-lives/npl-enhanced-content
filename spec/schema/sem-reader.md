@@ -1,13 +1,13 @@
 # Schema — `sem-reader`
 
-Contract per conventions.md v0.5. BDD source of truth for
+Contract per conventions.md v0.6. BDD source of truth for
 `test/e2e/sem-reader.cy.js`. Changes here precede spec changes precede code.
 
 ## Scope semantics
 
 The reading chrome of a long document: an outline, a reading-progress bar,
-and the reader-side controls a browser can offer that a printed page cannot
-— focus mode, type size and face, colour scheme, print, audience. It is
+and the reader-side controls a printed page cannot offer — focus mode,
+type size and face, colour scheme, print, audience. It is
 **chrome, not content**: it mints no record, its outline is derived from
 the document's headings, and a document without it loses nothing a machine
 could read. It exists as one element (rather than one per control) because
@@ -26,24 +26,26 @@ One per document, a direct child of the root wrapper.
 Class-form alias (conventions Appendix A): `div.sem-reader[data-controls][data-outline-depth]`. Parameters are read
 as `data-<name>` first, then bare `<name>`.
 
-- `controls` (optional): comma flags, in any order, from `outline`,
-  `progress`, `focus`, `type`, `color`, `print`, `audience`. Default
-  `outline,progress`. Unknown flags (including `theme`, reserved for R/W3)
-  are ignored. Controls render in the **canonical order** above, not in
-  attribute order.
-- `outline-depth` (optional): deepest heading level in the generated
-  outline, `2`–`6`; default `3`. The outline always starts at `h2` — `h1`
-  is the document title.
+- `controls`: optional. Comma flags, in any order, one of `outline`,
+  `progress`, `focus`, `type`, `color`, `print`, `audience` — default
+  `outline,progress`; unknown flags, including the theme flag reserved for
+  R/W3, are ignored. Controls render in the **canonical order** above, not
+  in attribute order.
+- `outline-depth`: integer — optional. Deepest heading level in the
+  generated outline, `2`–`6`; default `3`. The outline always starts at
+  `h2` — `h1` is the document title.
 - Child (optional): an authored `<nav aria-label="Contents">`. When
   present it is the outline, **used verbatim** — no ids are assigned, no
   list is generated, nothing inside it is rewritten. This is the JS-off
   table of contents.
 - `id`, `kind`, `tags`, `audience` per the global catalog; `audience` on the
-  reader itself is honoured by the audience fallback like any element.
+  reader itself is honoured by the audience handler like any element.
 
 ## Rendered form
 
-### Fallback (reading bundle, `dist/semtext-reading.js`)
+### Enhanced (reading handler, `src/reading/reader.ts`; the Lit
+component `SemReader` claims `data-sem-upgraded` at connect and runs the
+same function after the parse)
 
 - `.sem-reader-chrome` is inserted as the element's first child:
   `role="region"`, `aria-label="Reading controls"`. Inside it, in canonical
@@ -58,12 +60,11 @@ as `data-<name>` first, then bare `<name>`.
     present — an id on a record would change extraction); such a heading
     is left out of the outline. Headings inside a closed `sem-reveal` or
     an inactive `sem-view` **are included**: an outline link is a plain
-    `#id` anchor, and the fallback core's deep-link resolver
+    `#id` anchor, and the core deep-link resolver
     (`src/fallback/target.ts`) answers the `hashchange` by opening what
-    encloses the heading. This depends on the **core fallback bundle**
-    (`dist/semtext-fallback.js`) being present: a document that loads only
-    the reading bundle has dead links to headings inside closed
-    disclosures, so ship both or author the nav without them. The panel starts closed (`hidden`). While the
+    encloses the heading. Both handlers live in the one bundle, so the
+    links always resolve.
+    The panel starts closed (`hidden`). While the
     document scrolls, the anchor whose heading is the topmost one in view
     carries `aria-current="location"` (IntersectionObserver over the
     targets in **document order**, whatever order an authored nav lists
@@ -89,12 +90,12 @@ as `data-<name>` first, then bare `<name>`.
     block mirroring its `prefers-color-scheme` block, and its media block
     yields to `[data-color-mode="light"]`.
   - **print** — `button[data-act="print"]` calling `window.print()`.
-    `beforeprint` disclosure is the fallback core's job (R/W0).
+    `beforeprint` disclosure is the core handler's job (R/W0).
   - **audience** — `select.sem-reader-audience[aria-label="Audience"]`
     listing every profile declared in the document's `sem-audiences` block
     (label, else id) under a leading `Everyone` option, reflecting and
     writing the `sem-audience` hash parameter through `shared/state`. The
-    audience fallback (`src/fallback/audience.ts`) applies it on
+    audience handler (`src/fallback/audience.ts`) applies it on
     `hashchange`; the reader never sets `hidden` itself. The control is
     **not rendered** when the document declares no profiles.
 - **Persistence.** `focus`, `type`, `font` and `color` are written to
@@ -111,15 +112,8 @@ as `data-<name>` first, then bare `<name>`.
   on in-document targets and for the `top` of sticky table headers, so
   nothing lands underneath the bar.
 - Every listener and observer is recorded; `disposeReaderElement`
-  releases them (the Lit wrapper calls it on disconnect). Chrome stays.
-- The element carries `data-sem-fallback` once wired.
-
-### Upgraded (Lit `SemReader`)
-
-- Thin wrapper: claims `data-sem-upgraded`, clears `data-sem-fallback`,
-  and once the document has finished parsing calls the same enhance
-  function the bundle uses. Idempotent on the chrome's presence, so a page
-  that runs both scripts renders one chrome.
+  releases them (the component calls it on disconnect). Chrome stays.
+- The element carries `data-sem-upgraded` once wired.
 
 ### JS-off
 

@@ -17,14 +17,9 @@
   p  { margin: .6rem 0; }
 </style>
 
-<!-- All three scripts on one page: the fallback core, the reading bundle
-     and the Lit bundle. Elements the Lit bundle upgraded are skipped by the
-     reading bundle's scan; the wrapper enhances them itself. -->
-<!-- sem:inline fallback -->
-<!-- sem:inline reading -->
-<!-- sem:inline md -->
-<!-- Lit 3 bundle: thin wrappers that claim the upgrade marker and call the
-     same enhance functions the reading bundle uses. -->
+<!-- The one bundle: Lit elements claim their own upgrade; the vanilla
+     handlers cover every element no component defines and every class-alias
+     spelling. One script, one marker (data-sem-upgraded). -->
 <!-- sem:inline bundle -->
 </head>
 
@@ -214,6 +209,25 @@
       </tbody>
     </table>
   </sem-table>
+
+  <h2 id="data-h">Data — inline markdown table source</h2>
+  <!-- sem-data-visualizer (spec/data-visualizer.md, phase 1): the source body
+       is a Markdown table. The tier infers the column schema (Token string,
+       Max uses integer + nullable, Lifetime string, Rotates boolean,
+       Since date + nullable), exposes it as application/json in
+       .sem-data-schema, applies data-views/data-view column selection and
+       wires per-column sort. Switch data-view="core" to show two columns. -->
+  <sem-data-visualizer id="dv-tokens">
+    <sem-data-source data-name="Token lifetimes" data-format="table"
+                     data-views="core=token,max-uses; all=*" data-view="all">
+      | Token   | Max uses | Lifetime | Rotates | Since      |
+      | :------ | -------: | :------- | :------ | :--------- |
+      | access  | 200      | 15 min   | true    | 2026-01-05 |
+      | refresh |          | 30 days  | true    | 2026-01-05 |
+      | id      | 1000     | 1 hour   | false   | 2026-02-14 |
+      | session | 10       | 12 hours | true    |            |
+    </sem-data-source>
+  </sem-data-visualizer>
 
   <h2>Disclosures</h2>
   <!-- Class form on both pages: the reveal and views fallbacks (core) drive

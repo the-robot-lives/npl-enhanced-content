@@ -5,12 +5,12 @@
 //          and loads the shipped bundles by <script src>; it is written in
 //          the canonical tag form (custom elements, bare attributes; the
 //          class-form alias appears only inside listings); the vocabulary it
-//          uses mounts on the enhanced tier; the scripts-stripped artifact
+//          uses mounts under the one bundle; the scripts-stripped artifact
 //          reads whole; and extraction is identical JS-off and JS-on
 //   Scenario: the source carries no inline <style> and no inline <script> body
 //   Scenario: the body is pure tag form — no class="sem-… outside sem-code / sem-md listings
 //   Scenario: every linked stylesheet and script resolves (200)
-//   Scenario: the reader and every used element mount on the enhanced tier
+//   Scenario: the reader and every used element mount under the one bundle
 //   Scenario: the .nojs artifact ships no script and hides nothing
 //   Scenario: INVARIANT — records are identical JS-off and JS-on, before and after interaction
 //   Scenario: the page renders at 1280 and 390 without horizontal overflow (screenshots)
@@ -20,22 +20,19 @@
 import { stripComments } from '../../scripts/standalone-lib.mjs';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
-// Records come from the SHIPPED extractor (dist/semtext-extract.js), which
-// the spec page loads itself. The .nojs artifact carries no script, so the
-// same bundle is injected after load there — extraction never writes, and
-// the vocabulary's tier markers are set by other bundles, not this one.
-const loadExtractor = () =>
+// Records come from the SHIPPED bundle (dist/semtext.js), which the spec
+// page loads itself. The .nojs artifact carries no script, so the same
+// bundle is fetched and evaluated after load there — extraction never
+// writes, and the upgrade marker is set by the page's own runtime, not by
+// this injected copy on the nojs side.
+const loadBundle = () =>
   cy.window().then((win) => {
-    if (win.SemTextExtract) return;
-    return new Cypress.Promise((ok, fail) => {
-      const s = win.document.createElement('script');
-      s.src = '/semtext-extract.js';
-      s.onload = ok;
-      s.onerror = () => fail(new Error('dist/semtext-extract.js did not load'));
-      win.document.head.appendChild(s);
+    if (win.SemText) return;
+    return cy.request({ url: '/semtext.js', encoding: 'binary' }).then((res) => {
+      win.eval(res.body);
     });
   });
-const records = () => loadExtractor().then(() => cy.window().then((win) => clone(win.SemTextExtract.extractRecords(win.document))));
+const records = () => loadBundle().then(() => cy.window().then((win) => clone(win.SemText.extractRecords(win.document))));
 
 // GitHub-style slug of a Markdown heading, so the .md outline anchors and the
 // HTML ids can be compared mechanically.
@@ -46,7 +43,7 @@ const PAGES = [
     url: '/spec/conventions.html',
     nojs: '/spec/conventions.nojs.html',
     name: 'conventions',
-    // element → the chrome / marker that proves the enhanced tier mounted it
+    // element → the chrome / marker that proves the runtime mounted it
     mounts: [
       ['#rd', '#rd > .sem-reader-chrome[role="region"]'],
       ['sem-source', 'sem-source > .sem-source-chrome[role="group"]'],
@@ -58,7 +55,7 @@ const PAGES = [
       ['sem-code', 'sem-code > .sem-code-chrome'],
       ['sem-table[controls]', 'sem-table th .sem-table-sort'],
       ['sem-references', 'sem-references .sem-references-backlinks'],
-      ['sem-md', 'sem-md[data-sem-fallback], sem-md[data-sem-upgraded]'],
+      ['sem-md', 'sem-md[data-sem-upgraded]'],
       ['sem-md#md-attributes', 'sem-md#md-attributes > .sem-md-body > table th[scope="col"]'],
       ['sem-note[collapsed]', 'sem-note[collapsed] > .sem-note-summary'],
     ],
@@ -88,7 +85,7 @@ PAGES.forEach((page) => {
       cy.request(page.url).its('body').then((html) => {
         expect(inlineStyles(html), 'inline <style> elements').to.equal(0);
         expect(inlineScripts(html), 'inline <script> bodies').to.equal(0);
-        expect(html).to.match(/<link[^>]+_vocabulary\.css/);
+        expect(html).to.match(/<link[^>]+\/semtext\.css/);
         expect(html).to.match(/<link[^>]+minimal-tech-light\.css/);
       });
     });
@@ -165,28 +162,30 @@ PAGES.forEach((page) => {
     it('is shipped to dist/spec/ with rewritten asset paths and a themes copy', () => {
       cy.request(page.url).its('body').then((html) => {
         expect(html).not.to.contain('../dist/');
-        expect(html).to.match(/<script src="\.\.\/semtext-fallback\.js">/);
-        expect(html).to.match(/<link rel="stylesheet" href="\.\.\/themes\/_vocabulary\.css">/);
+        expect(html).to.match(/<script[^>]* src="\.\.\/semtext\.js">/);
+        expect(html).to.match(/<link rel="stylesheet" href="\.\.\/semtext\.css">/);
+        expect(html).to.match(/<link rel="stylesheet" href="\.\.\/themes\/semtext-theme-minimal-tech-light\.css">/);
         // escaped examples are text, not tags: the rewrite must not touch them
-        expect(html).to.contain('href="semtext/themes/minimal-tech-light.css"');
+        expect(html).to.contain('href="semtext/themes/semtext-theme-minimal-tech-light.css"');
       });
-      cy.request('/themes/_vocabulary.css').its('status').should('eq', 200);
+      cy.request('/semtext.css').its('status').should('eq', 200);
+      cy.request('/themes/semtext-theme-minimal-tech-light.css').its('status').should('eq', 200);
       cy.request('/spec/spec.css').its('status').should('eq', 200);
     });
 
     it('every linked stylesheet and script resolves', () => {
       cy.request(page.url).its('body').then((html) => {
         const urls = assetUrls(html, page.url);
-        expect(urls.length, 'linked assets').to.be.greaterThan(4);
+        expect(urls.length, 'linked assets').to.be.greaterThan(3);
         urls.forEach((u) => cy.request(u).its('status').should('eq', 200));
       });
     });
 
-    it('is a SemText document whose reader and every used element mount on the enhanced tier', () => {
+    it('is a SemText document whose reader and every used element mount under the one bundle', () => {
       cy.visit(page.url);
       cy.get('sem-enhanced-document[role="main"]').should('have.length', 1);
       cy.get('sem-enhanced-document > :first-child').should('match', 'sem-reader');
-      cy.get('html').should('have.attr', 'data-sem-fallback');
+      cy.get('html').should('have.attr', 'data-sem-upgraded');
       page.mounts.forEach(([element, proof]) => {
         cy.get(element).should('have.length.greaterThan', 0);
         cy.get(proof).should('have.length.greaterThan', 0);
@@ -207,7 +206,7 @@ PAGES.forEach((page) => {
         expect(t).to.contain('<sem-facts id="x-facts" view-as="flashcards"');
         expect(t).to.contain('<statement>');
         // as authored: no mirrored data-* twin, no chrome, no runtime state
-        expect(t).not.to.match(/sem-facts-chrome|sem-current|data-sem-fallback|data-view-as/);
+        expect(t).not.to.match(/sem-facts-chrome|sem-current|data-sem-upgraded|data-view-as/);
       });
       cy.get('#s-facts [data-act="html"]').click();
       cy.get('#s-facts > .sem-source-fence').should('not.be.visible');
@@ -218,11 +217,11 @@ PAGES.forEach((page) => {
         cy.request(page.nojs).its('body').should('not.match', /<script/i);
       });
 
-      it('hides nothing — no tier marker, every body, conclusion, distractor, view and highlight visible', () => {
+      it('hides nothing — no upgrade marker, every body, conclusion, incorrect statement, view and highlight visible', () => {
         cy.visit(page.nojs);
-        cy.get('[data-sem-fallback], [data-sem-upgraded]').should('not.exist');
+        cy.get('[data-sem-upgraded]').should('not.exist');
         cy.get('.sem-reader-chrome, .sem-source-chrome, .sem-source-fence, .sem-facts-chrome, .sem-views-tabs, .sem-code-chrome, .sem-table-chrome, .sem-occluded').should('not.exist');
-        ['sem-note[collapsed]', 'sem-fact conclusion', 'sem-distractor', 'sem-view', 'sem-reveal', 'highlight', 'sem-step', 'sem-property', 'sem-event', 'sem-code pre', 'sem-table table', 'sem-reference', '[audience]', 'sem-md']
+        ['sem-note[collapsed]', 'sem-fact conclusion', 'incorrect-statement', 'sem-view', 'sem-reveal', 'highlight', 'sem-step', 'sem-property', 'sem-event', 'sem-code pre', 'sem-table table', 'sem-reference', '[audience]', 'sem-md']
           .forEach((sel) => cy.get(sel).should('have.length.greaterThan', 0).each(($el) => cy.wrap($el).should('be.visible')));
         // the source wrapper is transparent: its rendered children are in flow
         cy.get('sem-source > :not(.sem-source-chrome, .sem-source-fence, script)').each(($el) => cy.wrap($el).should('be.visible'));

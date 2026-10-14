@@ -1,0 +1,71 @@
+/* viewer/viewer.css — boot-loader chrome (trusted surface). Minimal by
+ * design: the chrome must stay visually distinct from the rendered
+ * document, and the provenance banner must remain readable over it. */
+
+:root { color-scheme: light dark; }
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: CanvasText;
+  background: Canvas;
+}
+
+#viewer-chrome {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  padding: .5rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+  font-size: .85rem;
+}
+
+#viewer-brand { font-weight: 700; letter-spacing: .02em; }
+
+#provenance { color: color-mix(in srgb, CanvasText 60%, transparent);
+  overflow-wrap: anywhere; }
+
+#viewer-status { margin: .5rem 1rem; font-size: .85rem; opacity: .75; }
+
+#viewer-error {
+  margin: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #b3261e;
+  border-radius: 10px;
+  max-width: 42rem;
+}
+#viewer-error [data-error-title] { margin: 0 0 .25rem; font-weight: 700; }
+#viewer-error [data-error-code] { margin: .5rem 0 0;
+  font-family: ui-monospace, monospace; font-size: .8rem; opacity: .7; }
+
+#viewer-consent {
+  margin: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid color-mix(in srgb, CanvasText 30%, transparent);
+  border-radius: 10px;
+  max-width: 42rem;
+}
+#viewer-consent h2 { margin: 0 0 .5rem; font-size: 1rem; }
+#consent-hosts { font-family: ui-monospace, monospace; font-size: .85rem; }
+#consent-note { font-size: .85rem; opacity: .75; }
+#viewer-consent button { margin-right: .5rem; cursor: pointer; }
+
+#viewer-security {
+  margin: 1rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid #b3261e;
+  border-radius: 10px;
+  background: color-mix(in srgb, #b3261e 8%, Canvas);
+  max-width: 42rem;
+  font-weight: 600;
+}
+
+#jail-mount iframe {
+  display: block;
+  width: 100%;
+  min-height: 12rem;
+  border: 0;
+}

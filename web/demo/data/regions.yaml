@@ -1,0 +1,10 @@
+# Regions the fleet deploys to — plain YAML sequence of mappings.
+- region: eu
+  zone: eu-west-1
+  latency_ms: 24
+- region: us
+  zone: us-east-1
+  latency_ms: 81
+- region: ap
+  zone: ap-south-1
+  latency_ms: 132

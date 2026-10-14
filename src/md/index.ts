@@ -1,41 +1,31 @@
 /**
- * SemText — Markdown bundle entry point (`dist/semtext-md.js`, global
- * `SemTextMd`).
+ * SemText — Markdown renderer (one-bundle surface, spec v0.6).
  *
- * Renders `sem-md` blocks (spec/schema/sem-md.md). Its own bundle rather
- * than part of the reading bundle so a document with no Markdown never
- * pays for the parser: same rules as the other vanilla tiers — no Lit,
- * classic IIFE, no fetch, runs standalone in a file:// document, marks what
- * it wired with `data-sem-fallback`. `<!-- sem:inline md -->` inlines it
- * (scripts/build-standalone.mjs).
- *
- * TIER HANDOFF. An element that already carries `data-sem-upgraded` is
- * skipped here: the Lit wrapper (src/lit/sem-md.ts) imports the same
- * enhance function and calls it itself. The function is idempotent on DOM
- * state (the chrome's presence), so either script may run first.
- *
- * SIZE BUDGET: 8 KB minified (ROADMAP R/W2.2); printed by scripts/build.mjs.
+ * Renders `sem-md` blocks (spec/schema/sem-md.md). No longer ships alone:
+ * `src/index.ts` imports it into `dist/semtext.js` — the former standalone
+ * `semtext-md.js` is retired, so every document carries the renderer
+ * whether or not it has Markdown (the cost is inside the one bundle
+ * budget). The handler marks what it wired with `data-sem-upgraded` and
+ * skips elements that already carry it: the Lit component
+ * (src/lit/sem-md.ts) imports the same enhance function and calls it
+ * itself. The function is idempotent on DOM state (the chrome's
+ * presence), so either caller may run first. HISTORY: the former
+ * bundle's 8/8.5 KB budgets are recorded in ROADMAP.md.
  */
 
 import { MD, enhanceMdElement } from './element.js';
-
-declare global {
-  interface Window {
-    __semJsOff?: boolean;
-  }
-}
 
 export function enhanceMd(scope: ParentNode): void {
   scope.querySelectorAll(MD).forEach((el) => {
     if (el.hasAttribute('data-sem-upgraded')) return;
     enhanceMdElement(el);
-    if (el.querySelector(':scope > .sem-md-chrome')) el.setAttribute('data-sem-fallback', '');
+    if (el.querySelector(':scope > .sem-md-chrome')) el.setAttribute('data-sem-upgraded', '');
   });
 }
 
 /** Run the Markdown handler over a scope. Only the element marker is
- *  stamped: the root `data-sem-fallback` would switch on the vocabulary's
- *  root-gated hide rules for elements this script does not manage. */
+ *  stamped: a root stamp is the bundle-level enhance's job
+ *  (src/index.ts), not this handler's. */
 export function enhance(scope: ParentNode = document): void {
   enhanceMd(scope);
 }
@@ -43,16 +33,3 @@ export function enhance(scope: ParentNode = document): void {
 export { enhanceMdElement };
 export { normalizeMd } from '../shared/mdsource.js';
 export { parseBlocks, safeUrl } from './parse.js';
-
-function init(): void {
-  if (typeof window !== 'undefined' && window.__semJsOff) return;
-  enhance(document);
-}
-
-if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-}

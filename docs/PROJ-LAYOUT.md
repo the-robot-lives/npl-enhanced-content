@@ -40,8 +40,8 @@ semtext/
 │   │   ├── sem-references.ts
 │   │   ├── sem-source.ts              # rendered/source wrapper (W2.1)
 │   │   └── sem-table.ts
-│   ├── fallback/                    # Vanilla tier — NO Lit dependency → dist/semtext-fallback.js
-│   │   ├── index.ts
+│   ├── fallback/                    # Vanilla core handlers — NO Lit dependency → bundled into dist/semtext.js
+│   │   ├── index.ts                   # handler registry + enhance() (core runs FIRST in the bundle)
 │   │   ├── audience.ts                # profile-gated visibility (native `hidden`)
 │   │   ├── details.ts
 │   │   ├── facts.ts
@@ -49,10 +49,10 @@ semtext/
 │   │   ├── progress.ts
 │   │   ├── properties.ts
 │   │   ├── reveal.ts
-│   │   ├── source.ts                  # sem-source markup snapshot (registered FIRST)
-│   │   ├── target.ts                  # deep-link resolver + print disclosure (registered last)
+│   │   ├── source.ts                  # sem-source markup snapshot (runs FIRST)
+│   │   ├── target.ts                  # deep-link resolver + print disclosure (runs last)
 │   │   └── views.ts
-│   ├── reading/                     # Prose-reading tier — NO Lit → dist/semtext-reading.js (R/W1+W2)
+│   ├── reading/                     # Prose-reading handlers — NO Lit → bundled into dist/semtext.js (R/W1+W2)
 │   │   ├── index.ts                   # document scan; skips [data-sem-upgraded]; reader runs last
 │   │   ├── code.ts                    # sem-code chrome, marks, copy, wrap
 │   │   ├── glossary.ts                # sem-properties view-as=glossary previews
@@ -60,11 +60,11 @@ semtext/
 │   │   ├── references.ts              # citation previews, backlinks
 │   │   ├── source.ts                  # sem-source chrome + sem-code fence (W2.1)
 │   │   └── table.ts                   # sem-table sort/filter, source-index stamp (R/W2)
-│   ├── md/                          # Markdown tier — NO Lit → dist/semtext-md.js (R/W2.2)
-│   │   ├── index.ts                   # document scan; borrows sem-code's fence chrome from the reading global
+│   ├── md/                          # Markdown renderer — NO Lit → bundled into dist/semtext.js (R/W2.2)
+│   │   ├── index.ts                   # document scan; shares sem-code's fence chrome
 │   │   ├── element.ts                 # sem-md chrome, rendered body, raw fence, toggle, copy
 │   │   └── parse.ts                   # hand-written GFM subset → DOM (createElement/textContent only)
-│   ├── extract/                     # Record extraction → dist/semtext-extract.js
+│   ├── extract/                     # Record extraction → exported from dist/semtext.js
 │   │   ├── index.ts
 │   │   └── records.ts
 │   └── shared/                      # Tier-agnostic helpers used by both tiers
@@ -152,7 +152,7 @@ semtext/
 
 ## Build Outputs (gitignored, not documented above)
 
-- `dist/semtext.js` · `dist/semtext-fallback.js` · `dist/semtext-reading.js` · `dist/semtext-extract.js` · `dist/semtext-md.js` — five independent IIFE classic scripts
+- `dist/semtext.js` — the one IIFE classic script (Lit elements + vanilla handlers + extraction; global `SemText`); `dist/semtext.css` — the built vocabulary; `dist/themes/semtext-theme-<name>.css` — the themes
 - `dist/demo/<name>.html` and `dist/demo/<name>.nojs.html` — inlined single-file documents
 - `dist/site/index.html` — the marketing page
 - `test/screenshots/` · `test/videos/` — cypress artifacts, generated at test time

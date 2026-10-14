@@ -33,19 +33,17 @@
   h2 { @apply text-lg font-semibold mt-8 mb-2; }
 </style>
 
-<!-- sem-fallback: vanilla interactivity, no Lit and no external resources.
-     Source lives in src/fallback/**; the built IIFE (dist/semtext-fallback.js)
-     is substituted here by scripts/build-standalone.mjs. -->
-<!-- sem:inline fallback -->
-<!-- Reading bundle: sem-source chrome + fence (and the sem-code it renders). -->
-<!-- sem:inline reading -->
+<!-- The one bundle: Lit elements + vanilla handlers + extraction (spec v0.6).
+     Source lives in src/**; the built IIFE (dist/semtext.js) is substituted
+     here by scripts/build-standalone.mjs. -->
+<!-- sem:inline bundle -->
 </head>
 
 <body>
 <div class="sem-enhanced-document">
 
   <h1>Auth Patterns — Sample SemText Document</h1>
-  <p>Demonstrates the <!-- sem:inline spec-version --> class-based vocabulary: inline CSS + Tailwind refinement + vanilla fallback handler. Open this file directly in any browser. Every section below sits in a <code>sem-source</code> wrapper: <em>Source</em> shows the section's markup as parsed, before any enhancement.</p>
+  <p>Demonstrates the <!-- sem:inline spec-version --> class-based vocabulary: inline CSS + Tailwind refinement + the one bundle. Open this file directly in any browser. Every section below sits in a <code>sem-source</code> wrapper: <em>Source</em> shows the section's markup as parsed, before any enhancement.</p>
 
   <div class="sem-agent">
     <div class="sem-agent-name">Auth Guide</div>
@@ -70,7 +68,7 @@
     <div class="sem-fact" id="f-scope">
       <div class="sem-statement">Long-lived tokens are an anti-pattern</div>
       <div class="sem-conclusion">Scope capabilities tightly instead of extending lifetime.</div>
-      <div class="sem-distractor">Store tokens in localStorage for durability.</div>
+      <div class="incorrect-statement">Store tokens in localStorage for durability.</div>
     </div>
   </div>
   </div>
@@ -95,13 +93,13 @@
     <div class="sem-fact" id="f-oidc">
       <div class="sem-statement">The OIDC token travels in which header?</div>
       <div class="sem-conclusion">Authorization</div>
-      <div class="sem-distractor">Cookie</div>
-      <div class="sem-distractor">X-Auth-Token</div>
+      <div class="incorrect-statement">Cookie</div>
+      <div class="incorrect-statement">X-Auth-Token</div>
     </div>
     <div class="sem-fact" id="f-pkce">
       <div class="sem-statement">PKCE protects which flow?</div>
       <div class="sem-conclusion">Authorization code flow</div>
-      <div class="sem-distractor">Client credentials flow</div>
+      <div class="incorrect-statement">Client credentials flow</div>
     </div>
   </div>
   </div>
@@ -211,7 +209,7 @@
        survive the section dedent, and a raw-text child holding the escape
        sequence. Plain HTML only: mints nothing. -->
   <div class="sem-source" id="s-fidelity" data-label="Fidelity fixtures">
-    <p id="s-fid-text">The marker text data-sem-fallback="" is prose here, not an attribute.</p>
+    <p id="s-fid-text">The marker text data-sem-upgraded="" is prose here, not an attribute.</p>
     <pre id="s-fid-pre"><code>top
       keep six
   keep two</code></pre>

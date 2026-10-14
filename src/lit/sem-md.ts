@@ -20,7 +20,6 @@ export class SemMd extends SemElement {
     this.afterParse('enhance', () => {
       enhanceMdElement(this, enhanceCodeElement);
       this.setAttribute('data-sem-upgraded', '');
-      this.removeAttribute('data-sem-fallback');
     });
   }
 }

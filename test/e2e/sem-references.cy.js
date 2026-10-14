@@ -1,13 +1,13 @@
 // BDD spec — sem-references / sem-reference · source: spec/schema/sem-references.md
 //
 // Feature: a numbered reference list; plain-anchor citations get previews
-//          and backlinks in both script tiers; JS-off it is a numbered list
-//   Scenario: CSS numbering, authored roles, tier marker
+//          and backlinks whenever the bundle runs; JS-off it is a numbered list
+//   Scenario: CSS numbering, authored roles, upgrade marker
 //   Scenario: citing anchors get the runtime class; anchors keep navigating
 //   Scenario: backlinks — one per citation, labelled, targeting the citation
 //   Scenario: external link rendered for href-bearing references only
 //   Scenario: preview popover on focus and hover; Esc closes; aria-describedby
-//   Scenario: upgraded tier — one backlinks block, same behaviour
+//   Scenario: element form — one backlinks block, same behaviour
 //   Scenario: JS-off — numbered list, no chrome, no popover
 
 const cs = (el, pseudo) => el.ownerDocument.defaultView.getComputedStyle(el, pseudo);
@@ -16,10 +16,9 @@ const RFC = 'https://www.rfc-editor.org/rfc/rfc6749';
 function assertReferences(url, marker) {
   beforeEach(() => cy.visit(url));
 
-  it('numbers entries by CSS counter, keeps authored roles, carries the tier marker', () => {
+  it('numbers entries by CSS counter, keeps authored roles, carries the upgrade marker', () => {
     cy.get('#refs').should('have.attr', 'role', 'list');
-    cy.get('#refs').should('have.attr', marker.present);
-    cy.get('#refs').should('not.have.attr', marker.absent);
+    cy.get('#refs').should('have.attr', marker);
     cy.get('#r-rfc').should('have.attr', 'role', 'listitem');
     cy.get('#r-rfc').then(($r) => expect(cs($r[0], '::before').content).to.match(/counter\(/));
   });
@@ -106,16 +105,16 @@ function assertReferences(url, marker) {
 }
 
 describe('sem-references', () => {
-  describe('fallback tier — /demo/reading.html', () => {
-    assertReferences('/demo/reading.html', { present: 'data-sem-fallback', absent: 'data-sem-upgraded' });
+  describe('class form — /demo/reading.html', () => {
+    assertReferences('/demo/reading.html', 'data-sem-upgraded');
   });
 
-  describe('upgraded tier — /demo/reading-lit.html', () => {
+  describe('element form — /demo/reading-lit.html', () => {
     it('registers the custom element', () => {
       cy.visit('/demo/reading-lit.html');
       cy.window().then((win) => expect(win.customElements.get('sem-references')).to.exist);
     });
-    assertReferences('/demo/reading-lit.html', { present: 'data-sem-upgraded', absent: 'data-sem-fallback' });
+    assertReferences('/demo/reading-lit.html', 'data-sem-upgraded');
   });
 
   describe('JS-off', () => {

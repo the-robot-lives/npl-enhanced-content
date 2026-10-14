@@ -134,7 +134,7 @@ code, pre, kbd, samp {
 
 /* --- focus --------------------------------------------------------------- */
 /* The vocabulary CSS declares no focus styling, so the page supplies it once
-   for everything focusable, including the chrome the fallback generates. */
+   for everything focusable, including the chrome the bundle generates. */
 
 :focus-visible {
   outline: 2px solid var(--sem-accent);
@@ -291,13 +291,13 @@ section { padding-block: var(--pg-space) 0; }
 .sem-code-chrome button { font: inherit; font-size: var(--pg-t--1); }
 :not(pre) > code.pg-plain { background: none; padding: 0; }
 
-/* --- Lit tier ------------------------------------------------------------- */
+/* --- The bundle ----------------------------------------------------------- */
 /* themes/_vocabulary.css styles both authoring forms from one rule
    (`:is(sem-note, .sem-note)`, D10), so the `<sem-note>` elements below need
    no page-local restatement. */
 
 /* --- vocabulary adjustments ---------------------------------------------- */
-/* The reveal fallback moves the body into a native <details> and synthesises
+/* The reveal handler moves the body into a native <details> and synthesises
    a <summary> from data-summary. themes/_vocabulary.css also prints that same
    string via ::before, which is what keeps the question visible with JS off —
    but it duplicates the text once the <details> exists. Suppress the ::before
@@ -318,7 +318,7 @@ section { padding-block: var(--pg-space) 0; }
    "degrades to stacked readable views JS-off", so this is a vocabulary gap
    and the fix belongs upstream in _vocabulary.css. Compensated here because
    this page must not ship a section a reader cannot finish.
-   The tab bar only exists once the fallback has run, so :has() on it is the
+   The tab bar only exists once the script has run, so :has() on it is the
    same enhancement gate the other rules use. */
 .sem-views:not(:has(.sem-views-tabs)) .sem-view {
   display: block; border-top: 1px solid var(--sem-border);
@@ -353,24 +353,15 @@ section { padding-block: var(--pg-space) 0; }
 }
 </style>
 
-<!-- Behaviour. All three artifacts are inlined from dist/ at build time, so
+<!-- Behaviour. The one bundle is inlined from dist/ at build time, so
      the shipped page is self-contained and works from file:// with no
      network — which is the same guarantee every SemText document makes.
 
-     CDN SWAP POINT: once cdn.semtext.dev exists, replace the five markers
-     below with
-         <script src="https://cdn.semtext.dev/<version>/semtext-fallback.js"></script>
-         <script src="https://cdn.semtext.dev/<version>/semtext-reading.js"></script>
+     CDN SWAP POINT: once cdn.semtext.dev exists, replace the marker below with
          <script src="https://cdn.semtext.dev/<version>/semtext.js"></script>
-         <script src="https://cdn.semtext.dev/<version>/semtext-extract.js"></script>
-         <script src="https://cdn.semtext.dev/<version>/semtext-md.js"></script>
      and nothing else on this page changes. The CDN does not exist yet, so
      the page ships self-contained today. -->
-<!-- sem:inline fallback -->
-<!-- sem:inline reading -->
 <!-- sem:inline bundle -->
-<!-- sem:inline extract -->
-<!-- sem:inline md -->
 </head>
 
 <body>
@@ -406,8 +397,8 @@ section { padding-block: var(--pg-space) 0; }
     <p class="pg-lede">
       SemText is a semantic text format: a single XHTML file that a language
       model reads and writes the way it reads and writes Markdown today. The
-      difference is what the text can say. A fact, a step, a caveat, a
-      distractor, a term and its definition are each written as what they
+      difference is what the text can say. A fact, a step, a caveat, an
+      incorrect statement, a term and its definition are each written as what they
       <em>are</em> — a class and a few attributes on a plain element — so the
       structure is in the text itself, not inferred from it.
     </p>
@@ -470,7 +461,7 @@ section { padding-block: var(--pg-space) 0; }
             The same file read as XHTML. Attributes qualify every datum:
             <code>data-kind</code> says what a thing is,
             <code>data-status</code> says where it stands,
-            <code>.sem-conclusion</code> and <code>.sem-distractor</code>
+            <code>.sem-conclusion</code> and <code>.incorrect-statement</code>
             distinguish an answer from a decoy. A model does not have to infer
             the structure, because the structure is written down.
           </p>
@@ -520,22 +511,22 @@ section { padding-block: var(--pg-space) 0; }
             <div class="sem-fact" id="f-view-as" data-kind="rule">
               <div class="sem-statement"><code>view-as</code> is a parameter, not an identity</div>
               <div class="sem-conclusion">A fact is a fact in every view; the attribute only selects a rendering.</div>
-              <div class="sem-distractor">Each view is a different element type.</div>
+              <div class="incorrect-statement">Each view is a different element type.</div>
             </div>
             <div class="sem-fact" id="f-light-dom" data-kind="rule">
               <div class="sem-statement">Components render into light DOM</div>
               <div class="sem-conclusion">Content stays in the page, so find-in-page, copy and plain CSS all still reach it.</div>
-              <div class="sem-distractor">Content moves into a shadow root for encapsulation.</div>
+              <div class="incorrect-statement">Content moves into a shadow root for encapsulation.</div>
             </div>
             <div class="sem-fact" id="f-invariant" data-kind="rule">
               <div class="sem-statement">Extraction reads the authored document</div>
               <div class="sem-conclusion">Generated chrome is skipped, so records do not depend on the view on screen.</div>
-              <div class="sem-distractor">Extraction reads whatever is currently rendered.</div>
+              <div class="incorrect-statement">Extraction reads whatever is currently rendered.</div>
             </div>
             <div class="sem-fact" id="f-no-build" data-kind="rule">
               <div class="sem-statement">Authoring needs no build step</div>
               <div class="sem-conclusion">Two stylesheets and one script tag in a plain HTML file.</div>
-              <div class="sem-distractor">A bundler compiles the vocabulary down to HTML.</div>
+              <div class="incorrect-statement">A bundler compiles the vocabulary down to HTML.</div>
             </div>
           </div>
         </div>
@@ -545,15 +536,15 @@ section { padding-block: var(--pg-space) 0; }
           <pre class="pg-records" id="try-records" tabindex="0" role="region"
                aria-label="Records extracted from the facts deck">sem-facts (#try-deck kind=capability)
   sem-fact (#f-view-as kind=rule): view-as is a parameter, not an identity :: A fact is a fact in every view; the attribute only selects a rendering.
-    distractors: Each view is a different element type.
+    incorrectStatements: Each view is a different element type.
   sem-fact (#f-light-dom kind=rule): Components render into light DOM :: Content stays in the page, so find-in-page, copy and plain CSS all still reach it.
-    distractors: Content moves into a shadow root for encapsulation.
+    incorrectStatements: Content moves into a shadow root for encapsulation.
   sem-fact (#f-invariant kind=rule): Extraction reads the authored document :: Generated chrome is skipped, so records do not depend on the view on screen.
-    distractors: Extraction reads whatever is currently rendered.
+    incorrectStatements: Extraction reads whatever is currently rendered.
   sem-fact (#f-no-build kind=rule): Authoring needs no build step :: Two stylesheets and one script tag in a plain HTML file.
-    distractors: A bundler compiles the vocabulary down to HTML.</pre>
+    incorrectStatements: A bundler compiles the vocabulary down to HTML.</pre>
           <p class="pg-status" id="try-invariance" aria-live="polite">
-            Output of <code>SemTextExtract.extractText()</code> over the deck
+            Output of <code>SemText.extractText()</code> over the deck
             above, authored into the page so it is here with scripts off too.
           </p>
         </div>
@@ -565,17 +556,17 @@ section { padding-block: var(--pg-space) 0; }
   <section id="tiers" aria-labelledby="tiers-h">
     <div class="pg-col"><div class="pg-narrow">
       <p class="pg-eyebrow">Degradation</p>
-      <h2 id="tiers-h">Three tiers, and the bottom one is the contract.</h2>
+      <h2 id="tiers-h">Two states, and the bottom one is the contract.</h2>
       <p>
-        Every hide rule in the vocabulary CSS is gated on an enhancement
-        marker that only a script sets. With no script, nothing is hidden and
-        the document reads as prose. Each tier above that adds behaviour
-        without moving content.
+        Every hide rule in the vocabulary CSS is gated on one enhancement
+        marker, <code>data-sem-upgraded</code>, that only a script sets. With
+        no script, nothing is hidden and the document reads as prose. The
+        script adds behaviour without moving content.
       </p>
 
       <div class="sem-facts" id="tier-facts" data-kind="architecture">
         <div class="sem-fact" id="f-tier-1" data-kind="tier">
-          <div class="sem-statement">Tier 1 — CSS only</div>
+          <div class="sem-statement">State 1 — CSS only</div>
           <div class="sem-conclusion">
             Two stylesheets render every element readably. Quiz answers, collapsed
             notes and inactive views all stay on the page, because the rules that
@@ -583,26 +574,19 @@ section { padding-block: var(--pg-space) 0; }
           </div>
         </div>
         <div class="sem-fact" id="f-tier-2" data-kind="tier">
-          <div class="sem-statement">Tier 2 — the fallback script</div>
+          <div class="sem-statement">State 2 — the one bundle</div>
           <div class="sem-conclusion">
-            About 7 KB of vanilla JavaScript wires flashcards, quizzes, tabs,
-            disclosure and meters. No dependencies, no network, no build. It is
-            the tier a file you email still has.
-          </div>
-        </div>
-        <div class="sem-fact" id="f-tier-3" data-kind="tier">
-          <div class="sem-statement">Tier 3 — Lit components</div>
-          <div class="sem-conclusion">
-            When the component bundle loads, elements claim
-            <code>data-sem-upgraded</code>, drop the fallback marker and take
-            over in place. Content is never re-parented into a shadow root.
+            <code>semtext.js</code> carries everything scripted: the Lit
+            components, the vanilla handlers for the elements no component
+            defines, and extraction. No dependencies, no network beyond the one
+            file. It is the tier a file you email still has.
           </div>
         </div>
       </div>
 
       <p class="pg-caption">
         The notes further down this page are <code>&lt;sem-note&gt;</code> custom
-        elements running tier 3. The deck above is running tier 2.
+        elements; the deck above is wired by the same bundle's vanilla handlers.
       </p>
     </div></div>
   </section>
@@ -643,8 +627,8 @@ section { padding-block: var(--pg-space) 0; }
       </p>
       <div class="sem-properties" id="rd-glossary" data-kind="glossary" data-view-as="glossary" role="group" aria-labelledby="rd-glossary-h">
         <div class="sem-property" id="rd-g-record" data-key="record" role="definition" aria-label="record">One entry in the array extraction returns: a type, an id, qualifiers, a payload of fields and a one-line text.</div>
-        <div class="sem-property" id="rd-g-tier" data-key="tier" role="definition" aria-label="tier">Which script, if any, is driving the document: none (CSS only), the fallback bundle, or the Lit components.</div>
-        <div class="sem-property" id="rd-g-marker" data-key="tier marker" role="definition" aria-label="tier marker">The <code>data-sem-fallback</code> or <code>data-sem-upgraded</code> attribute a script sets on what it wired; every hide rule is gated on one of them.</div>
+        <div class="sem-property" id="rd-g-tier" data-key="tier" role="definition" aria-label="tier">Which state the document is in: unscripted (CSS only) or driven by the one bundle.</div>
+        <div class="sem-property" id="rd-g-marker" data-key="tier marker" role="definition" aria-label="tier marker">The <code>data-sem-upgraded</code> attribute the script sets on what it wired (and on <code>&lt;html&gt;</code>); every hide rule is gated on it.</div>
       </div>
       <p>
         Because every hide rule is gated on a
@@ -666,8 +650,8 @@ section { padding-block: var(--pg-space) 0; }
       </p>
       <div class="sem-chronology" id="rd-history" data-kind="release-history" data-view-as="timeline" role="list" aria-labelledby="rd-chron-h">
         <div class="sem-event" id="rd-e-spec" role="listitem" data-when="2026-01" data-status="done"><time datetime="2026-01">Jan 2026</time> Format spec v0 and the Tier-0 schemas.</div>
-        <div class="sem-event" id="rd-e-fallback" role="listitem" data-when="2026-03" data-status="done"><time datetime="2026-03">Mar 2026</time> Fallback tier, extraction contract, scripts-stripped artifact.</div>
-        <div class="sem-event" id="rd-e-reading" role="listitem" data-when="2026-09" data-status="current"><time datetime="2026-09">Sep 2026</time> Reading experience: foundations, then the prose elements on this page.</div>
+        <div class="sem-event" id="rd-e-fallback" role="listitem" data-when="2026-03" data-status="done"><time datetime="2026-03">Mar 2026</time> Extraction contract, scripts-stripped artifact.</div>
+        <div class="sem-event" id="rd-e-reading" role="listitem" data-when="2026-09" data-status="current"><time datetime="2026-09">Sep 2026</time> Reading experience, then the one-bundle surface (v0.6): one script, one marker.</div>
         <div class="sem-event" id="rd-e-themes" role="listitem" data-when="2026-Q4">Theme pipeline and the reader chrome.</div>
       </div>
 
@@ -676,7 +660,7 @@ section { padding-block: var(--pg-space) 0; }
         <code>sem-code</code> wraps one <code>&lt;pre&gt;&lt;code&gt;</code> and
         carries what the listing cannot: a filename, a language and a set of
         marked lines. The chrome (copy, wrap, a <code>role="status"</code>
-        region) is added by the reading bundle; the listing text stays
+        region) is added by the bundle; the listing text stays
         byte-identical, and extraction reports it verbatim rather than
         whitespace-collapsed.
       </p>
@@ -693,7 +677,7 @@ section { padding-block: var(--pg-space) 0; }
         A <code>sem-audiences</code> block declares the profiles a document
         knows; any element may carry <code>data-audience</code>. The active
         profile comes from the <code>sem-audience</code> hash parameter, so a
-        link is a picker. The fallback sets native <code>hidden</code> on what
+        link is a picker. The script sets native <code>hidden</code> on what
         is not for the reader; nothing is removed, and extraction never looks
         at <code>hidden</code>, so a filtered document still extracts whole.
       </p>
@@ -719,7 +703,7 @@ section { padding-block: var(--pg-space) 0; }
       <h3 id="rd-links-h">Deep links, print, motion</h3>
       <p>
         A <code>#id</code> hash resolves through disclosure state: the
-        fallback opens the enclosing reveal, note, view or flashcard and marks
+        script opens the enclosing reveal, note, view or flashcard and marks
         the target for a moment. <a href="#q-markdown" id="rd-deep-link">This
         link</a> opens a collapsed question further down the page. On
         <code>beforeprint</code> every reveal is opened and the chrome is
@@ -757,14 +741,10 @@ section { padding-block: var(--pg-space) 0; }
       </p>
       <div class="sem-table" id="rd-table" data-kind="artifacts" data-controls="sort,filter" data-sticky aria-labelledby="rd-table-h">
         <table>
-          <caption>Shipped scripts, measured by the build</caption>
+          <caption>The shipped script, measured by the build</caption>
           <thead><tr><th scope="col">Artifact</th><th scope="col">Minified</th><th scope="col">Gzipped</th><th scope="col">Global</th></tr></thead>
           <tbody>
             <tr><td>semtext.js</td><td data-value="<!-- sem:inline size-kb bundle -->"><!-- sem:inline size-kb bundle --> KB</td><td data-value="<!-- sem:inline size-gzkb bundle -->"><!-- sem:inline size-gzkb bundle --> KB</td><td>SemText</td></tr>
-            <tr><td>semtext-fallback.js</td><td data-value="<!-- sem:inline size-kb fallback -->"><!-- sem:inline size-kb fallback --> KB</td><td data-value="<!-- sem:inline size-gzkb fallback -->"><!-- sem:inline size-gzkb fallback --> KB</td><td>SemTextFallback</td></tr>
-            <tr><td>semtext-reading.js</td><td data-value="<!-- sem:inline size-kb reading -->"><!-- sem:inline size-kb reading --> KB</td><td data-value="<!-- sem:inline size-gzkb reading -->"><!-- sem:inline size-gzkb reading --> KB</td><td>SemTextReading</td></tr>
-            <tr><td>semtext-extract.js</td><td data-value="<!-- sem:inline size-kb extract -->"><!-- sem:inline size-kb extract --> KB</td><td data-value="<!-- sem:inline size-gzkb extract -->"><!-- sem:inline size-gzkb extract --> KB</td><td>SemTextExtract</td></tr>
-            <tr><td>semtext-md.js</td><td data-value="<!-- sem:inline size-kb md -->"><!-- sem:inline size-kb md --> KB</td><td data-value="<!-- sem:inline size-gzkb md -->"><!-- sem:inline size-gzkb md --> KB</td><td>SemTextMd</td></tr>
           </tbody>
         </table>
       </div>
@@ -773,10 +753,10 @@ section { padding-block: var(--pg-space) 0; }
       <p>
         <code>sem-source</code> wraps a section and lets the reader flip it
         between the rendered result and the markup that produced it. The
-        core fallback copies each wrapper's <code>innerHTML</code> into an
+        script copies each wrapper's children into an
         inert <code>text/plain</code> script before any other handler runs,
-        so the fence shows the section as parsed, before any chrome went in, not the DOM after the
-        chrome went in; the reading bundle renders that copy through a
+        so the fence shows the section as parsed, before any chrome went in; the
+        bundle renders that copy through a
         <code>sem-code</code> (copy, wrap) on the first switch. The wrapper
         mints nothing and its children extract as if it were absent.
       </p>
@@ -801,23 +781,22 @@ section { padding-block: var(--pg-space) 0; }
         a link with a <code>javascript:</code> URL loses its href. The
         normalised source is kept in a <code>sem-code</code> fence behind
         the toggle, and that fence is what extraction reads back as the
-        record. It ships as its own script, <code>semtext-md.js</code>, so a
-        document with no Markdown never loads the parser.
+        record. It ships inside the one bundle (v0.6): every document carries the
+        parser, so a page can add Markdown without a second script.
       </p>
       <div class="sem-md" id="rd-md" data-label="Who renders sem-md" aria-labelledby="rd-md-h">
-        | Tier     | Script            | Renders `sem-md` as              |
+        | State    | Script            | Renders `sem-md` as              |
         | :------- | :---------------- | :------------------------------- |
         | none     | —                 | the source, pre-wrapped          |
-        | fallback | `semtext-md.js`   | rendered HTML plus a raw fence   |
-        | upgraded | `semtext.js`      | the same, from the Lit wrapper   |
+        | scripted | `semtext.js`      | rendered HTML plus a raw fence   |
 
-        Both scripted tiers call **one** enhance function; the *tier marker* is the only difference.
+        The Lit component and the bundle scan call **one** enhance function; who ran first is the only difference.
       </div>
 
       <h3 id="rd-refs-h">References</h3>
       <p>
         <code>sem-references</code> numbers its entries with a CSS counter in
-        every tier. Citations in prose are plain anchors; the reading bundle
+        every tier. Citations in prose are plain anchors; the bundle
         adds a preview on each, a backlink per citation on each entry, and an
         external link where an entry has an <code>href</code>. In print the
         href is written out inside the block, never at the citation<a href="#rd-r-print" id="rd-cite-2">[2]</a>.
@@ -847,9 +826,9 @@ section { padding-block: var(--pg-space) 0; }
 &lt;head&gt;
   &lt;meta charset="utf-8"&gt;
   &lt;title&gt;Auth notes&lt;/title&gt;
-  &lt;link rel="stylesheet" href="semtext/themes/_vocabulary.css"&gt;
-  &lt;link rel="stylesheet" href="semtext/themes/minimal-tech-light.css"&gt;
-  &lt;script src="semtext/semtext-fallback.js"&gt;&lt;/script&gt;
+  &lt;link rel="stylesheet" href="semtext/semtext.css"&gt;
+  &lt;link rel="stylesheet" href="semtext/themes/semtext-theme-minimal-tech-light.css"&gt;
+  &lt;script defer src="semtext/semtext.js"&gt;&lt;/script&gt;
 &lt;/head&gt;
 &lt;body&gt;
 &lt;sem-enhanced-document&gt;
@@ -864,7 +843,7 @@ section { padding-block: var(--pg-space) 0; }
     &lt;sem-fact id="f-jwt" kind="concept"&gt;
       &lt;statement&gt;JWTs rotate per session&lt;/statement&gt;
       &lt;conclusion&gt;Short-lived access tokens; the refresh grant issues a new pair.&lt;/conclusion&gt;
-      &lt;sem-distractor&gt;Store the token in localStorage for durability.&lt;/sem-distractor&gt;
+      &lt;incorrect-statement&gt;Store the token in localStorage for durability.&lt;/incorrect-statement&gt;
     &lt;/sem-fact&gt;
   &lt;/sem-facts&gt;
 
@@ -882,21 +861,22 @@ section { padding-block: var(--pg-space) 0; }
       <sem-procedure id="start-procedure" kind="quickstart" role="list"
            aria-labelledby="start-steps">
         <sem-step role="listitem">
-          Copy <code>themes/_vocabulary.css</code> and one theme file next to
-          your document, and set <code>data-sem-theme</code> on
+          Copy <code>semtext.css</code> and one theme file
+          (<code>themes/semtext-theme-&lt;name&gt;.css</code>) next to your
+          document, and set <code>data-sem-theme</code> on
           <code>&lt;html&gt;</code> to that theme's name.
         </sem-step>
         <sem-step role="listitem">
-          Add <code>semtext-fallback.js</code>. Link it, or paste it inline for
-          a document you intend to send as a single file.
+          Add <code>semtext.js</code>, deferred. Paste it inline for a document
+          you intend to send as a single file.
         </sem-step>
         <sem-step role="listitem">
           Write the content with <code>sem-*</code> elements where interactivity
           or machine-readability pays. Ordinary HTML stays ordinary HTML.
         </sem-step>
         <sem-step role="listitem">
-          Optional: add <code>semtext.js</code> for the Lit tier, and
-          <code>semtext-extract.js</code> where a tool needs the records.
+          Optional: call <code>SemText.extractRecords</code> where a tool needs
+          the records — extraction ships in the same bundle.
         </sem-step>
       </sem-procedure>
     </div>
@@ -908,21 +888,16 @@ section { padding-block: var(--pg-space) 0; }
       <p class="pg-eyebrow">Surface</p>
       <h2 id="surface-h">Everything that ships.</h2>
       <p class="pg-narrow">
-        Five independent classic scripts, each installing one global, plus two
-        stylesheets. They are separate on purpose: the fallback tier has to run
-        in a document that never loads Lit, a document with no listings or
-        references need not carry the reading bundle, and one with no Markdown
-        need not carry the parser.
+        One classic script installing one global, plus two stylesheets. The
+        former per-tier scripts (fallback, reading, extract, md) are retired as
+        of spec v0.6: everything they installed is a name on the one
+        <code>SemText</code> global, and no smaller script falls back to.
       </p>
 
       <div class="sem-properties" data-kind="artifacts" role="group"
            aria-label="Shipped artifacts">
-        <div class="sem-property" data-key="semtext.js" role="definition" aria-label="semtext.js"><span>Lit 3 components · global <code>SemText</code> · <!-- sem:inline size-mg bundle --></span></div>
-        <div class="sem-property" data-key="semtext-fallback.js" role="definition" aria-label="semtext-fallback.js"><span>Vanilla interactivity, no dependencies · global <code>SemTextFallback</code> · <!-- sem:inline size-mg fallback --></span></div>
-        <div class="sem-property" data-key="semtext-reading.js" role="definition" aria-label="semtext-reading.js"><span>Code chrome, reference and glossary previews, the reader bar, table sort and filter · global <code>SemTextReading</code> · <!-- sem:inline size-mg reading --></span></div>
-        <div class="sem-property" data-key="semtext-extract.js" role="definition" aria-label="semtext-extract.js"><span>DOM to records and annotated text · global <code>SemTextExtract</code> · <!-- sem:inline size-mg extract --></span></div>
-        <div class="sem-property" data-key="semtext-md.js" role="definition" aria-label="semtext-md.js"><span>The <code>sem-md</code> Markdown renderer · global <code>SemTextMd</code> · <!-- sem:inline size-mg md --></span></div>
-        <div class="sem-property" data-key="_vocabulary.css" role="definition" aria-label="_vocabulary.css"><span>Structure for the <code>sem-*</code> classes. Reads <code>--sem-*</code> tokens, declares none.</span></div>
+        <div class="sem-property" data-key="semtext.js" role="definition" aria-label="semtext.js"><span>Lit 3 components, vanilla interactivity, extraction — global <code>SemText</code> · <!-- sem:inline size-mg bundle --></span></div>
+        <div class="sem-property" data-key="semtext.css" role="definition" aria-label="semtext.css"><span>Structure for the <code>sem-*</code> elements. Reads <code>--sem-*</code> tokens, declares none.</span></div>
         <div class="sem-property" data-key="theme css" role="definition" aria-label="theme css"><span>Token values only, plus a <code>prefers-color-scheme</code> block. A new theme is a copy with new values.</span></div>
       </div>
 
@@ -986,7 +961,7 @@ section { padding-block: var(--pg-space) 0; }
         <div class="sem-note-body">
           There is no React in the dependency tree and there is not going to be
           one. Lit 3 is the only runtime dependency, and it is optional — the
-          fallback tier has none.
+          vanilla handlers have none.
         </div>
       </sem-note>
 
@@ -1048,7 +1023,7 @@ section { padding-block: var(--pg-space) 0; }
  *   1. The view-as toggle. `enhanceFacts` reads data-view-as once and wires
  *      chrome into the deck, so switching views means restoring the authored
  *      markup and re-running the handler. The pristine markup is captured
- *      here, during parse, before the fallback's DOMContentLoaded handler has
+ *      here, during parse, before the bundle's DOMContentLoaded init has
  *      touched anything.
  *
  *   2. Re-running extraction after each switch, against the LIVE deck —
@@ -1073,8 +1048,8 @@ section { padding-block: var(--pg-space) 0; }
   var baseline = null;
 
   function extract() {
-    if (!window.SemTextExtract || !records) return;
-    var text = window.SemTextExtract.extractText(deck);
+    if (!window.SemText || !records) return;
+    var text = window.SemText.extractText(deck);
     records.textContent = text;
     if (baseline === null) {
       baseline = text;
@@ -1087,8 +1062,8 @@ section { padding-block: var(--pg-space) 0; }
   }
 
   /* Flashcard flip is bound to a click on the .sem-fact <div>, with no role,
-     no tabindex and no key handler — so with the fallback tier alone the flip
-     is mouse-only (WCAG 2.1.1). The gap is in src/fallback/facts.ts and the
+     no tabindex and no key handler — so with the vanilla handler alone the
+     flip is mouse-only (WCAG 2.1.1). The gap is in src/fallback/facts.ts and the
      fix belongs there; this closes it for this page so the demo is not the
      one interaction a keyboard user cannot reach. */
   function makeCardsKeyboardOperable() {
@@ -1106,9 +1081,9 @@ section { padding-block: var(--pg-space) 0; }
 
   function setView(mode) {
     deck.innerHTML = pristine;
-    deck.removeAttribute('data-sem-fallback');
+    deck.removeAttribute('data-sem-upgraded');
     deck.setAttribute('data-view-as', mode);
-    if (window.SemTextFallback) window.SemTextFallback.enhanceFacts(scope);
+    if (window.SemText) window.SemText.enhanceFacts(scope);
     if (mode === 'flashcards') makeCardsKeyboardOperable();
     if (current) current.textContent = mode;
     Array.prototype.forEach.call(toggle.querySelectorAll('button'), function (b) {
@@ -1123,8 +1098,8 @@ section { padding-block: var(--pg-space) 0; }
     setView(button.getAttribute('data-view'));
   });
 
-  /* Registered after the fallback's own listener (declared in <head>), so the
-     first extraction sees a fully enhanced document. */
+  /* Registered during parse; the bundle's deferred init re-runs the handlers
+     at DOMContentLoaded, after this first extraction of the authored deck. */
   document.addEventListener('DOMContentLoaded', extract);
 })();
 </script>

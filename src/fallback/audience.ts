@@ -21,13 +21,25 @@ const WRAPPER = 'sem-enhanced-document, .sem-enhanced-document';
 
 export function enhanceAudience(scope: ParentNode): void {
   const html = document.documentElement;
-  const wrapper = document.querySelector(WRAPPER);
+  // A pane-scoped call (a host embedding examples) reads the profile block
+  // from its own scope when it declares one — two examples may each carry
+  // the same profile ids, and a document-wide read would double-count them —
+  // and falls back to the document's block when it declares none. A document
+  // call reads the document, as before.
+  const isDocument = scope === document;
+  const root: Document | DocumentFragment | Element =
+    isDocument || scope.querySelector('sem-audiences, .sem-audiences') === null
+      ? document
+      : (scope as DocumentFragment | Element);
+  const wrapper = isDocument
+    ? document.querySelector(WRAPPER)
+    : (scope.querySelector(WRAPPER) ?? document.querySelector(WRAPPER));
   // The author's default, captured once: after the first apply, the html
   // attribute holds the resolved profile, not the default.
   const authored =
     (wrapper && (wrapper.getAttribute('data-audience') || wrapper.getAttribute('audience'))) ||
     html.getAttribute('data-audience');
-  const closure = closureFor(document);
+  const closure = closureFor(root);
 
   const apply = (): void => {
     const active = getParam('sem-audience') || authored || null;

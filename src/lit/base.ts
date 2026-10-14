@@ -31,16 +31,17 @@ export class SemElement extends LitElement {
   }
 
   /**
-   * Fallback→upgrade handoff. The vanilla inline handler marks what it wired
-   * with `data-sem-fallback`; the upgraded element takes ownership by claiming
-   * `data-sem-upgraded` and clearing that marker. CSS hide-rules key off both.
+   * Upgrade claim. The element claims `data-sem-upgraded` at connect —
+   * before the bundle scan reaches it where possible — and the vanilla
+   * handlers skip anything already claimed. One marker, one runtime:
+   * every CSS hide-rule gates on it, and `<html>` carries it too for
+   * hide rules that have no per-element host.
    */
   connectedCallback(): void {
     super.connectedCallback();
     this.setAttribute('data-sem-upgraded', '');
-    this.removeAttribute('data-sem-fallback');
     // Document-level marker: hide rules that have no per-element host
-    // (`.sem-distractor` in a list-view deck) gate on the root instead.
+    // (`.incorrect-statement` in a list-view deck) gate on the root instead.
     this.ownerDocument?.documentElement?.setAttribute('data-sem-upgraded', '');
   }
 

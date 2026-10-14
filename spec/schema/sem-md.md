@@ -1,6 +1,6 @@
 # Schema — `sem-md`
 
-Contract per conventions.md v0.5. BDD source of truth for
+Contract per conventions.md v0.6. BDD source of truth for
 `test/e2e/sem-md.cy.js`. Changes here precede spec changes precede code.
 
 ## Scope semantics
@@ -125,7 +125,9 @@ highlighter keys on it.
 
 ## Rendered form
 
-### Fallback (Markdown bundle, `dist/semtext-md.js`)
+### Enhanced (md handler, `src/md/element.ts`; the Lit
+component `SemMd` claims `data-sem-upgraded` at connect and runs the
+same function after the parse)
 
 - `.sem-md-chrome` is inserted as the element's **first child**: the label
   (`.sem-md-label`, when authored), then the controls in `data-controls`
@@ -136,15 +138,13 @@ highlighter keys on it.
 - `.sem-md-body` follows: the rendered HTML. Tables are real `<table>`
   elements with `<thead>`, `<th scope="col">` and `<tbody>`; the GFM
   alignment row is honoured per column (`style.textAlign` on every cell).
-  Links carry `rel="noopener"`.
+  Links carry `rel="noopener noreferrer"`.
 - `.sem-md-raw` follows: the normalised Markdown inside a `sem-code`
   (`data-lang="markdown"`, `data-controls="copy,wrap"`), built once. Its
-  copy / wrap chrome is `sem-code`'s own: the Markdown bundle borrows the
-  reading bundle's `enhanceCodeElement` through its global when that
-  script is on the page (the Lit wrapper imports it), so the listing code
-  is never bundled twice. Without the reading bundle the fence is a plain
-  `sem-code` (CSS caption, no buttons); the chrome's copy button still
-  copies the source.
+  copy / wrap chrome is `sem-code`'s own: the md handler calls the same
+  `enhanceCodeElement` the reading handler uses (one bundle, one
+  import), so the listing code is never duplicated and the fence gets
+  working copy and wrap buttons.
 - The authored text nodes are consumed: after enhancement the element
   holds exactly chrome, body and raw fence. The normalised source lives in
   the fence's `<code>`, byte-identical to what the parser saw.
@@ -155,20 +155,10 @@ highlighter keys on it.
 - Copy writes the normalised Markdown to the clipboard (Clipboard API,
   falling back to `execCommand('copy')`); the status region announces
   `Copied`. When neither mechanism exists the copy button is not rendered.
-- The element carries `data-sem-fallback` once wired. The bundle skips any
-  element already carrying `data-sem-upgraded`. The bundle stamps **only
-  the element**, never `<html>`: a root tier marker would switch on the
-  vocabulary's root-gated hide rules for elements this script does not
-  manage (`web/demo/md-only.html` proves a lone Markdown bundle hides
-  nothing else).
-
-### Upgraded (Lit `SemMd`)
-
-- Thin wrapper: on connect, claims `data-sem-upgraded` and clears
-  `data-sem-fallback`; once the document has finished parsing (the content
-  is text, so there is no child element to wait for) it calls the same
-  enhance function the bundle uses. Idempotent on DOM state: chrome already
-  present means nothing is built twice, whichever script ran first.
+- The element carries `data-sem-upgraded` once wired. The md handler
+  itself stamps **only the element**, never `<html>` — the bundle as a
+  whole stamps `<html>` when its full enhance pass runs
+  (`SemText.enhance`).
 
 ### JS-off
 

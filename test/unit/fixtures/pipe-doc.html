@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Pipe fixture — SemText CLI</title>
+</head>
+<body>
+<div class="sem-enhanced-document">
+  <h1 id="h-getting-started">Getting started</h1>
+  <p>An authored introduction paragraph.</p>
+
+  <div class="sem-facts" data-view-as="flashcards">
+    <div class="sem-fact" id="f-markup">
+      <div class="sem-statement">SemText is XHTML-first</div>
+      <div class="sem-conclusion">One file reads as a page, a record set and plain text.</div>
+    </div>
+    <div class="sem-fact" id="f-pipes" data-kind="note">
+      <div class="sem-statement">Pipelines stay plain</div>
+      <div class="sem-conclusion">Commands write markup or text to stdout, nothing else.</div>
+      <div class="incorrect-statement">Output must be JSON at all times.</div>
+    </div>
+  </div>
+
+  <h2 id="h-details">Details</h2>
+  <div class="sem-note" id="n-install" data-variant="tip">Install dependencies with npm install.</div>
+  <div class="sem-note" id="n-warning" data-variant="warning">Never parse rendered HTML when authored markup exists.</div>
+</div>
+</body>
+</html>

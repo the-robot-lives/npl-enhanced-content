@@ -2,10 +2,10 @@
  * reading/code — sem-code chrome, line marks, copy and wrap.
  *
  * Spec: spec/schema/sem-code.md. Idempotent per element: chrome already
- * present means nothing is added again, which is what lets the Lit wrapper
- * call this after the bundle may already have run (or vice versa). The
- * tier marker is NOT set here — the bundle's document scan stamps
- * `data-sem-fallback`, the Lit wrapper stamps `data-sem-upgraded`.
+ * present means nothing is added again, which is what lets the Lit
+ * component call this after the bundle scan may already have run (or vice
+ * versa). The marker is NOT set here — the calling layer (bundle scan or
+ * component) stamps `data-sem-upgraded`.
  *
  * Line wrapping keeps the `<code>` text byte-identical: lines become spans
  * with `\n` text nodes between them, so extraction's verbatim `source`

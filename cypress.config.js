@@ -4,6 +4,10 @@ export default {
   e2e: {
     baseUrl: 'http://localhost:4173',
     specPattern: 'test/e2e/**/*.cy.js',
+    // Extension specs need the unpacked extension loaded into Chrome — the
+    // app e2e run must stay extension-free. (The M2 extension canary is a
+    // Chrome-for-Testing script: test/e2e/extension-raw-banner.mjs.)
+    excludeSpecPattern: 'test/e2e/extension-*.cy.js',
     supportFile: 'test/support/e2e.js',
     screenshotsFolder: 'test/screenshots',
     videosFolder: 'test/videos',

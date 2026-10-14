@@ -15,7 +15,6 @@ export class SemTable extends SemElement {
     void this.whenChildrenReady(':scope > table').then(() => {
       enhanceTableElement(this);
       this.setAttribute('data-sem-upgraded', '');
-      this.removeAttribute('data-sem-fallback');
     });
   }
 }

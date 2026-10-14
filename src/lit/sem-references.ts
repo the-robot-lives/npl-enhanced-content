@@ -15,7 +15,6 @@ export class SemReferences extends SemElement {
     void this.whenChildrenReady(':scope > :is(sem-reference, .sem-reference)').then(() => {
       enhanceReferencesElement(this);
       this.setAttribute('data-sem-upgraded', '');
-      this.removeAttribute('data-sem-fallback');
     });
   }
 }

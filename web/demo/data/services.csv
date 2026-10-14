@@ -1,0 +1,5 @@
+name,region,port,replicas
+auth,eu,8080,3
+billing,us,8443,2
+pages,ap,3000,2
+search,eu,9200,5

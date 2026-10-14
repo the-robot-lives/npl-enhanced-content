@@ -29,6 +29,6 @@ export function enhanceReveal(scope: ParentNode): void {
     // Mark what was wired (tier handoff): the vocabulary suppresses the
     // JS-off `data-summary` ::before caption once a script built the
     // <details>, whose <summary> carries the same string.
-    r.setAttribute('data-sem-fallback', '');
+    r.setAttribute('data-sem-upgraded', '');
   });
 }

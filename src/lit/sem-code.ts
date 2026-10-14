@@ -19,7 +19,6 @@ export class SemCode extends SemElement {
     void this.whenChildrenReady(':scope > pre').then(() => {
       enhanceCodeElement(this);
       this.setAttribute('data-sem-upgraded', '');
-      this.removeAttribute('data-sem-fallback');
     });
   }
 }

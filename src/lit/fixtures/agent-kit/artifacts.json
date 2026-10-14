@@ -1,0 +1,97 @@
+{
+  "artifacts": [
+    {
+      "id": "artifact-md-001",
+      "title": "Run summary — repo audit",
+      "type": "markdown",
+      "active-version": "v3",
+      "versions": [
+        {
+          "id": "v1",
+          "label": "First pass",
+          "createdAt": "2026-10-12T09:14:00Z",
+          "content": "## Run summary\nAgent **repo-audit** finished in 4m 12s.\n\n- 3 findings, 1 blocking\n- Next: open tickets\n\n<script>alert('pwn')</script>\n<img src=x onerror=\"alert(1)\">"
+        },
+        {
+          "id": "v2",
+          "label": "Add findings",
+          "createdAt": "2026-10-12T11:40:00Z",
+          "content": "## Run summary\nAgent **repo-audit** finished in 4m 12s.\n\n1. *Stale lockfile* — regenerate\n2. Missing CHANGELOG entry\n3. `npm audit` clean"
+        },
+        {
+          "id": "v3",
+          "label": "Final",
+          "createdAt": "2026-10-13T08:05:00Z",
+          "content": "## Run summary\nAgent **repo-audit** finished in 4m 12s — **1 blocking finding resolved**.\n\n- Lockfile regenerated\n- CHANGELOG appended\n- Next run scheduled for tonight"
+        }
+      ]
+    },
+    {
+      "id": "artifact-json-001",
+      "title": "Quality gate config",
+      "type": "json",
+      "active-version": "v2",
+      "versions": [
+        {
+          "id": "v1",
+          "label": "Draft",
+          "createdAt": "2026-10-12T13:00:00Z",
+          "content": "{\"gate\":\"draft\",\"thresholds\":{\"coverage\":60,\"maxComplexity\":15}}"
+        },
+        {
+          "id": "v2",
+          "label": "Strict",
+          "createdAt": "2026-10-12T15:30:00Z",
+          "content": "{\n  \"gate\": \"strict\",\n  \"thresholds\": {\n    \"coverage\": 80,\n    \"maxComplexity\": 10,\n    \"maxWarnings\": 0\n  },\n  \"blockOn\": [\"coverage\", \"maxWarnings\"]\n}"
+        }
+      ]
+    },
+    {
+      "id": "artifact-diff-001",
+      "title": "Patch — auth timeout",
+      "type": "diff",
+      "active-version": "v2",
+      "versions": [
+        {
+          "id": "v1",
+          "label": "Raise timeout",
+          "createdAt": "2026-10-12T16:10:00Z",
+          "content": "@@ -12,7 +12,7 @@\n   const client = new AuthClient({\n-    timeoutMs: 5_000,\n+    timeoutMs: 15_000,\n     retries: 2\n   });"
+        },
+        {
+          "id": "v2",
+          "label": "Add backoff",
+          "createdAt": "2026-10-12T17:45:00Z",
+          "content": "@@ -12,8 +12,10 @@\n   const client = new AuthClient({\n-    timeoutMs: 5_000,\n+    timeoutMs: 15_000,\n     retries: 2\n+    backoff: \"exponential\",\n+    maxBackoffMs: 30_000\n   });"
+        }
+      ]
+    },
+    {
+      "id": "artifact-code-001",
+      "title": "Retry helper",
+      "type": "code",
+      "language": "typescript",
+      "active-version": "v3",
+      "versions": [
+        {
+          "id": "v1",
+          "label": "Sketch",
+          "createdAt": "2026-10-12T18:20:00Z",
+          "content": "export async function retry<T>(fn: () => Promise<T>, n: number): Promise<T> {\n  for (let i = 0; i < n; i++) {\n    try { return await fn(); } catch { /* again */ }\n  }\n  throw new Error('retries exhausted');\n}"
+        },
+        {
+          "id": "v2",
+          "label": "Delay",
+          "createdAt": "2026-10-12T19:05:00Z",
+          "content": "const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));\n\nexport async function retry<T>(fn: () => Promise<T>, n: number, backoffMs = 250): Promise<T> {\n  for (let i = 0; i < n; i++) {\n    try { return await fn(); } catch { await wait(backoffMs * 2 ** i); }\n  }\n  throw new Error('retries exhausted');\n}"
+        },
+        {
+          "id": "v3",
+          "label": "Typed errors",
+          "createdAt": "2026-10-13T07:50:00Z",
+          "content": "const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));\n\nexport async function retry<T>(fn: () => Promise<T>, n: number, backoffMs = 250): Promise<T> {\n  let last: unknown;\n  for (let i = 0; i < n; i++) {\n    try { return await fn(); } catch (e) { last = e; await wait(backoffMs * 2 ** i); }\n  }\n  throw new Error(`retries exhausted: ${String(last)}`);\n}"
+        }
+      ]
+    }
+  ]
+}

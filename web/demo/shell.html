@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · sem-shell (the demo file system, in a terminal)</title>
+<!-- sem:inline vocabulary -->
+<style>
+  body { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 .5rem; }
+  p  { margin: .6rem 0; }
+</style>
+<!-- sem:inline shell -->
+</head>
+<body>
+<h1>sem-shell</h1>
+<p>An interactive shell over a small in-memory file system of SemText
+documents — the <code>&lt;sem-terminal&gt;</code> core configured with the
+bundled <code>posix-sh</code> and <code>semtext-demo</code> plugins (see
+<code>src/terminal/PLUGINS.md</code>). Try <code>ls -l</code>,
+<code>bat demo/welcome.html</code>,
+<code>semtext render demo/token-rotation.html</code>,
+<code>semtext tui demo/token-rotation.html</code>,
+<code>grep -rn Rotation demo/</code>,
+<code>open demo/welcome.html</code>. Pipes and redirects work
+(<code>cat demo/quiz.html | grep -c sem-fact</code>); so do
+<code>export</code>, <code>alias</code>, <code>history</code> and
+<code>$?</code>. Arrows recall history; Ctrl+L clears; <code>help</code>
+lists everything; <code>man ls</code> explains one command.</p>
+<p>On open the shell <em>demos itself</em>: the <code>script</code>
+attribute types a short tour. <strong>Escape stops the script and hands
+you the terminal</strong>; the <code>replay</code> button restarts it.
+With <code>prefers-reduced-motion</code> the whole tour runs instantly.
+With JavaScript off, the static transcript below is the whole story.</p>
+
+<!-- The authored children ARE the zero-JS contract: a static transcript
+     with no input element. The upgrade replaces them (and the build's
+     .nojs.html variant ships exactly this as proof). -->
+<sem-shell aria-label="SemText shell" script='[
+ {"type":"comment","text":"A short tour — press Escape any time to take over."},
+ {"type":"type","text":"help","delayMs":35},{"type":"key","key":"Enter"},
+ {"type":"wait","ms":900},
+ {"type":"type","text":"ls -l"},{"type":"key","key":"Enter"},
+ {"type":"wait","ms":800},
+ {"type":"type","text":"cd demo"},{"type":"key","key":"Enter"},
+ {"type":"type","text":"pwd"},{"type":"key","key":"Enter"},
+ {"type":"wait","ms":600},
+ {"type":"comment","text":"What a machine reads — the text render:"},
+ {"type":"type","text":"semtext render token-rotation.html"},{"type":"key","key":"Enter"},
+ {"type":"wait","ms":1400},
+ {"type":"comment","text":"The same records as flashcards:"},
+ {"type":"type","text":"semtext tui token-rotation.html"},{"type":"key","key":"Enter"},
+ {"type":"wait","ms":900},
+ {"type":"key","key":"ArrowDown"},{"type":"key","key":"Enter"},{"type":"wait","ms":1100},
+ {"type":"key","key":"ArrowDown"},{"type":"key","key":"Enter"},{"type":"wait","ms":1100},
+ {"type":"key","key":"q"},
+ {"type":"wait","ms":500},
+ {"type":"comment","text":"Your turn — try grep -rn Rotation . or open welcome.html."},
+ {"type":"type","text":"grep -rn Rotation ."},{"type":"key","key":"Enter"}
+]'>
+  <div class="sem-shell-frame">
+    <div class="sem-shell-transcript" role="log">
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>help</div>
+      <div class="sem-shell-line">commands:</div>
+      <div class="sem-shell-line">  alias [name=value...] — define or list command aliases</div>
+      <div class="sem-shell-line">  bat [--plain] [-l lang] [--color=when] [file...] — cat with highlighting (html, text)</div>
+      <div class="sem-shell-line">  cat [-n] [file...] — print files (- or no file: piped input)</div>
+      <div class="sem-shell-line">  cd [dir | - | ~] — change directory (no arg: $HOME; -: previous dir)</div>
+      <div class="sem-shell-line">  clear — wipe the transcript (also Ctrl+L)</div>
+      <div class="sem-shell-line">  cp [-r | -R] src... dest</div>
+      <div class="sem-shell-line">  echo [-n] [word...] — print words with $VAR expanded</div>
+      <div class="sem-shell-line">  env — print the environment</div>
+      <div class="sem-shell-line">  export [NAME=value...] — set environment variables (bare: print them)</div>
+      <div class="sem-shell-line">  false — do nothing, unsuccessfully</div>
+      <div class="sem-shell-line">  grep [-nicr] PATTERN [file...] — matching lines (-r: walk the file system)</div>
+      <div class="sem-shell-line">  head [-n N | -N] [file...] — first N lines (default 10)</div>
+      <div class="sem-shell-line">  help — list commands</div>
+      <div class="sem-shell-line">  history — the lines this shell has run, numbered</div>
+      <div class="sem-shell-line">  ls [-1aRh] [--color[=when]] [path...] — list entries (dirs carry /)</div>
+      <div class="sem-shell-line">  man COMMAND — the short manual page</div>
+      <div class="sem-shell-line">  mkdir [-p] dir...</div>
+      <div class="sem-shell-line">  mount [kind …] — list storage backends, or mount one (`mount s3 &lt;url&gt; &lt;mountpoint&gt;`)</div>
+      <div class="sem-shell-line">  open &lt;file.html&gt; — open a document in a new window (noopener)</div>
+      <div class="sem-shell-line">  printf FORMAT [args...] — %s %d %% with \n \t \\ escapes</div>
+      <div class="sem-shell-line">  pwd — print the working directory</div>
+      <div class="sem-shell-line">  render-card &lt;file.card&gt;... [-] [--theme &lt;id&gt;] [--width &lt;n&gt;] [--list-themes]</div>
+      <div class="sem-shell-line">  rm [-r | -R] [-f] file...</div>
+      <div class="sem-shell-line">  rmdir dir...</div>
+      <div class="sem-shell-line">  semtext &lt;sub&gt; [file] — render | toc | tui | outline | filter | format | expand</div>
+      <div class="sem-shell-line">  storage [status|reset] — storage status, or reset persisted state</div>
+      <div class="sem-shell-line">  tail [-n N | -N] [-f] [file...] — last N lines (-f: simulated, prints and returns)</div>
+      <div class="sem-shell-line">  touch file...</div>
+      <div class="sem-shell-line">  true — do nothing, successfully</div>
+      <div class="sem-shell-line">  umount &lt;mountpoint&gt; — detach a storage backend</div>
+      <div class="sem-shell-line">  unset NAME... — remove environment variables</div>
+      <div class="sem-shell-line">  wc [-l | -w | -c] [file...] — count lines, words, bytes</div>
+      <div class="sem-shell-line">  which NAME... — how a command name resolves (alias or built-in)</div>
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>ls -l</div>
+      <div class="sem-shell-line">drwxr-xr-x  2        -  [01;34mdemo/[0m</div>
+      <div class="sem-shell-line">-rw-r--r--  1      545  README.md</div>
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>cd demo</div>
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>pwd</div>
+      <div class="sem-shell-line">/demo</div>
+      <div class="sem-shell-line sem-shell-comment">What a machine reads — the text render:</div>
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>semtext render token-rotation.html</div>
+      <div class="sem-shell-line"># semtext render — token-rotation.html</div>
+      <div class="sem-shell-line"># embeds: (none)</div>
+      <div class="sem-shell-line"># records:</div>
+      <div class="sem-shell-line">sem-properties (kind=glossary)</div>
+      <div class="sem-shell-line">  sem-property: JWT :: JSON Web Token — a signed, self-describing bearer token.</div>
+      <div class="sem-shell-line">  sem-property: PKCE :: Proof Key for Code Exchange — binds an authorization code to the client.</div>
+      <div class="sem-shell-line">  sem-property: refresh token :: A long-lived grant exchanged for a new access token; retired on every use.</div>
+      <div class="sem-shell-line">sem-note: Rotation in five lines.</div>
+      <div class="sem-shell-line">  variant: tip</div>
+      <div class="sem-shell-line">sem-code</div>
+      <div class="sem-shell-line">  lang: ts</div>
+      <div class="sem-shell-line">  filename: src/rotate.ts</div>
+      <div class="sem-shell-line">  source:</div>
+      <div class="sem-shell-line">    export function rotate(pair: Pair): Pair {</div>
+      <div class="sem-shell-line">      const next = mint();</div>
+      <div class="sem-shell-line">      retire(pair.refresh);</div>
+      <div class="sem-shell-line">      return next;</div>
+      <div class="sem-shell-line">    }</div>
+      <div class="sem-shell-line">sem-chronology (kind=release-history)</div>
+      <div class="sem-shell-line">  sem-event: v0.1 tagged — fallback tier ships.</div>
+      <div class="sem-shell-line">    when: 2026-03-02</div>
+      <div class="sem-shell-line">    status: done</div>
+      <div class="sem-shell-line">  sem-event: Reading-experience waves land one PR at a time.</div>
+      <div class="sem-shell-line">    when: 2026-06</div>
+      <div class="sem-shell-line">sem-references (kind=bibliography)</div>
+      <div class="sem-shell-line">  sem-reference: The OAuth 2.0 Authorization Framework.</div>
+      <div class="sem-shell-line">    href: https://www.rfc-editor.org/rfc/rfc6749</div>
+      <div class="sem-shell-line">    cite: RFC 6749</div>
+      <div class="sem-shell-line">sem-table (kind=lifetimes): Token lifetimes</div>
+      <div class="sem-shell-line">  columns: Token | Lifetime | Rotates</div>
+      <div class="sem-shell-line">    access | 15 min | no</div>
+      <div class="sem-shell-line">    refresh | 30 days | yes</div>
+      <div class="sem-shell-line"># skeleton:</div>
+      <div class="sem-shell-line">h1 Token Rotation</div>
+      <div class="sem-shell-line">  sem-properties glossary</div>
+      <div class="sem-shell-line">  h2 Rotation</div>
+      <div class="sem-shell-line">    sem-note tip</div>
+      <div class="sem-shell-line">    sem-code src/rotate.ts</div>
+      <div class="sem-shell-line">    sem-chronology release-history</div>
+      <div class="sem-shell-line">    sem-references bibliography</div>
+      <div class="sem-shell-line">    sem-table lifetimes</div>
+      <div class="sem-shell-line sem-shell-comment">The same records as flashcards:</div>
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>semtext tui token-rotation.html</div>
+      <div class="sem-shell-line">tui: Token Rotation — 9 cards (j/k move, Enter expands, / filters, q closes)</div>
+      <div class="sem-shell-line sem-shell-comment">Your turn — try grep -rn Rotation . or open welcome.html.</div>
+      <div class="sem-shell-line sem-shell-cmd"><span class="sem-shell-ps1">$ </span>grep -rn Rotation .</div>
+      <div class="sem-shell-line">token-rotation.html:3:&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;title&gt;Token Rotation&lt;/title&gt;&lt;/head&gt;</div>
+      <div class="sem-shell-line">token-rotation.html:6:  &lt;h1&gt;Token Rotation&lt;/h1&gt;</div>
+      <div class="sem-shell-line">token-rotation.html:13:  &lt;h2&gt;Rotation&lt;/h2&gt;</div>
+      <div class="sem-shell-line">token-rotation.html:14:  &lt;sem-note variant="tip"&gt;Rotation in five lines.&lt;/sem-note&gt;</div>
+    </div>
+  </div>
+</sem-shell>
+</body>
+</html>

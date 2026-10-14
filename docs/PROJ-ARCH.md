@@ -2,13 +2,14 @@
 
 ## Overview
 
-SemText (draft spec **v0.5**) is an XHTML-first semantic markup vocabulary
+SemText (draft spec **v0.6**) is an XHTML-first semantic markup vocabulary
 for NPL (Noizu Prompt Lingua): **one document, three readings** — a styled
 interactive page in the browser, a structural record for LLM agents, and
 plain text via DOM extraction. The document itself is the data; there is no
 preprocessing layer. Zero React: Lit 3 web components act as thin
-enhancement wrappers over a zero-JS fallback tier that is the architectural
-contract.
+enhancement wrappers over vanilla handlers that also drive everything no
+component defines; with JavaScript off the document degrades to plain prose
+— that degradation is the architectural contract.
 
 The repo is **spec-first**: tier-0 specs in `spec/` precede implementation
 (`spec/` → `spec/schema/` → `src/` → cypress e2e).
@@ -19,27 +20,25 @@ The repo is **spec-first**: tier-0 specs in `spec/` precede implementation
 
 ```mermaid
 graph LR
-    A[Author] -->|writes tag-form XHTML| D["SemText document<br/>(spec v0.5, one source of truth)"]
-    D -->|"JS-off"| F["Theme + vocabulary CSS<br/>(attribute labels, presentable)"]
-    D -->|"fallback tier"| FB["semtext-fallback.js<br/>(vanilla, full interactivity, no Lit)"]
-    FB -->|"reading tier"| RD["semtext-reading.js<br/>(reader chrome, mints nothing)"]
-    RD -->|"upgrade"| LIT["semtext.js<br/>(Lit 3, in-place, light DOM)"]
-    D --> X["semtext-extract.js<br/>E(D)=E(R(D))=E(I(R(D)))"]
+    A[Author] -->|writes tag-form XHTML| D["SemText document<br/>(spec v0.6, one source of truth)"]
+    D -->|"JS-off"| F["Theme + vocabulary CSS<br/>(plain prose, nothing hidden)"]
+    D -->|"one bundle"| S["semtext.js<br/>(Lit 3 elements + vanilla handlers<br/>+ extraction; global SemText)"]
+    S --> X["SemText.extractRecords / extractText<br/>E(D)=E(R(D))=E(I(R(D)))"]
     X --> AG["LLM/agent: structural records"]
     X --> TX["Terminal: annotated text"]
     B["scripts/build.mjs + build-standalone.mjs"] -->|"dist/ + .nojs.html"| H["Image → CI-bot helm bump → ArgoCD"]
 ```
 
-## Bundle Tiers
+## The One Bundle
 
-Five independent IIFE scripts, built by `scripts/build.mjs`, layering over
-the same document: **fallback** (`semtext-fallback.js` — the contract tier,
-works with JS off), **reading** (`semtext-reading.js` — prose chrome), **full**
-(`semtext.js` — Lit upgrade), **md** (`semtext-md.js`), **extract**
-(`semtext-extract.js`). Each carries a minified size budget enforced in CI
-via `build:strict` (56 / 14 / 19.5 / 8.5 / 12 KB).
+One IIFE script, built by `scripts/build.mjs`: `semtext.js` (global
+`SemText`) carries the Lit custom elements, the vanilla handlers (core
+snapshot pass first, prose reading last, Markdown between), and extraction.
+It carries a minified size budget enforced in CI via `build:strict`
+(96 KB; per-artifact history in ROADMAP.md). Stylesheets ship unbuilt:
+`dist/semtext.css` (the vocabulary) and `dist/themes/semtext-theme-<name>.css`.
 
-→ *See [arch/bundles.md](arch/bundles.md) for the tier table and budgets*
+→ *See [arch/bundles.md](arch/bundles.md) for the artifact table and budgets*
 
 ## Extraction Invariant
 
@@ -54,20 +53,23 @@ guarantee: defined over the authored projection, enforced by
 
 ## Element Vocabulary Model
 
-Tag form canonical (v0.5; class form = Appendix A alias), 16 per-element
-schemas under `spec/schema/`. Styling is tier-gated: selectors use the dual
-spelling `:is(sem-x, .sem-x)`, and scripts stamp `data-sem-fallback` /
-`data-sem-upgraded` markers so hide rules render only on the JS-off tier,
-which stays text-only (plain `attr()` labels).
+Tag form canonical (v0.5 re-baseline; class form = Appendix A alias), 41
+per-element schemas under `spec/schema/` (20 `sem-*` + 21 `npl-*`, including
+the four `sem-data-*` visualizer schemas). Styling is script-gated: selectors
+use the dual spelling `:is(sem-x, .sem-x)`, and the script stamps one
+`data-sem-upgraded` marker (element and `<html>`); every hide rule keys on
+it, so with no script nothing is hidden and the document reads as plain
+prose.
 
 → *See [arch/vocabulary.md](arch/vocabulary.md) for gating and the degradation ladder*
 
 ## Build & Distribution
 
-`scripts/build.mjs` compiles the five bundles; `scripts/build-standalone.mjs`
+`scripts/build.mjs` compiles the one bundle and copies the stylesheets;
+`scripts/build-standalone.mjs`
 produces the distributable pages — genuine `.nojs.html` variants and
-`sem:inline` markers that inject bundles, themes, measured sizes, and version
-labels from `package.json` (`specVersion` v0.5) plus the checkout SHA. Two
+`sem:inline` markers that inject the bundle, themes, measured sizes, and version
+labels from `package.json` (`specVersion` v0.6) plus the checkout SHA. Two
 portable forms: folder (relative assets) and single-file (all inlined).
 
 → *See [arch/build-deploy.md](arch/build-deploy.md) for forms and hard rules*

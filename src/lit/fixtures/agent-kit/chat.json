@@ -1,0 +1,98 @@
+{
+  "//": "agent-kit chat demo fixture. Shape mirrors the REST data plane: `rooms` like GET /api/v1/organizations/:org_id/chat/rooms ({rooms:[...]}) and `messages` like GET /api/v1/organizations/:org_id/chat/rooms/:room_id/messages ({messages:[...]}), merged into one file so a stub reads rooms and messages from a single source. Fields per room: id, organization_id, project_id, session_id, name, slug, description, inserted_at, updated_at. Fields per message: id, room_id, content, sender, parent_message_id, inserted_at, reactions [{emoji,count,me}], reply_count, last_reply_at. Replies are messages with a parent_message_id (one level in the live API; deeper chains here exercise thread-depth clamping).",
+  "rooms": [
+    {
+      "id": "0f9a7c2e-1d4b-4c8a-9f31-2a6b7c8d9e01",
+      "organization_id": "7c1d3f5a-9b2e-4d6c-8a0f-1e2d3c4b5a69",
+      "project_id": null,
+      "session_id": null,
+      "name": "General",
+      "slug": "general",
+      "description": "Org-wide agent coordination.",
+      "inserted_at": "2026-10-13T09:00:00Z",
+      "updated_at": "2026-10-13T09:00:00Z"
+    },
+    {
+      "id": "4d2b8e6f-3a1c-4f7e-8b2d-5c9e1f0a3b42",
+      "organization_id": "7c1d3f5a-9b2e-4d6c-8a0f-1e2d3c4b5a69",
+      "project_id": null,
+      "session_id": null,
+      "name": "Ops",
+      "slug": "ops",
+      "description": "Deploys, incidents, on-call.",
+      "inserted_at": "2026-10-13T09:05:00Z",
+      "updated_at": "2026-10-13T09:05:00Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "room_id": "0f9a7c2e-1d4b-4c8a-9f31-2a6b7c8d9e01",
+      "content": "Welcome to the agent-kit chat demo. Everything here is fixture data — nothing leaves the page.",
+      "sender": "agent",
+      "parent_message_id": null,
+      "inserted_at": "2026-10-13T09:01:00Z",
+      "reactions": [
+        { "emoji": "👍", "count": 2, "me": false },
+        { "emoji": "🎉", "count": 1, "me": false }
+      ],
+      "reply_count": 1,
+      "last_reply_at": "2026-10-13T09:02:30Z"
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "room_id": "0f9a7c2e-1d4b-4c8a-9f31-2a6b7c8d9e01",
+      "content": "How do replies nest?",
+      "sender": "user",
+      "parent_message_id": "a1000000-0000-4000-8000-000000000001",
+      "inserted_at": "2026-10-13T09:02:00Z",
+      "reactions": [],
+      "reply_count": 1,
+      "last_reply_at": "2026-10-13T09:03:00Z"
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "room_id": "0f9a7c2e-1d4b-4c8a-9f31-2a6b7c8d9e01",
+      "content": "Each reply hangs off its parent, indented up to the thread-depth attribute.",
+      "sender": "agent",
+      "parent_message_id": "a1000000-0000-4000-8000-000000000002",
+      "inserted_at": "2026-10-13T09:02:30Z",
+      "reactions": [],
+      "reply_count": 0,
+      "last_reply_at": null
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "room_id": "0f9a7c2e-1d4b-4c8a-9f31-2a6b7c8d9e01",
+      "content": "Reactions toggle locally — click a pill and the count moves.",
+      "sender": "agent",
+      "parent_message_id": null,
+      "inserted_at": "2026-10-13T09:04:00Z",
+      "reactions": [{ "emoji": "❤️", "count": 1, "me": false }],
+      "reply_count": 0,
+      "last_reply_at": null
+    },
+    {
+      "id": "b2000000-0000-4000-8000-000000000011",
+      "room_id": "4d2b8e6f-3a1c-4f7e-8b2d-5c9e1f0a3b42",
+      "content": "Ops room: the deploy pipeline is green.",
+      "sender": "agent",
+      "parent_message_id": null,
+      "inserted_at": "2026-10-13T09:06:00Z",
+      "reactions": [{ "emoji": "✅", "count": 3, "me": false }],
+      "reply_count": 1,
+      "last_reply_at": "2026-10-13T09:07:00Z"
+    },
+    {
+      "id": "b2000000-0000-4000-8000-000000000012",
+      "room_id": "4d2b8e6f-3a1c-4f7e-8b2d-5c9e1f0a3b42",
+      "content": "Acknowledged.",
+      "sender": "user",
+      "parent_message_id": "b2000000-0000-4000-8000-000000000011",
+      "inserted_at": "2026-10-13T09:07:00Z",
+      "reactions": [],
+      "reply_count": 0,
+      "last_reply_at": null
+    }
+  ]
+}

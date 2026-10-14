@@ -19,7 +19,7 @@ import { extractRecords } from '../../src/extract/records';
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
 describe('sem-audiences', () => {
-  describe('fallback tier (web/demo/index.html)', () => {
+  describe('class baseline (web/demo/index.html)', () => {
     it('no active profile: positive spec hidden, negated spec visible', () => {
       cy.visit('/demo/index.html');
       cy.get('#n-op').should('not.be.visible').and('have.attr', 'hidden');

@@ -1,11 +1,11 @@
 /**
  * fallback/note — `sem-note[collapsed]` summary toggle (either authoring form).
  *
- * Marks the note with `data-sem-fallback` (the CSS hide-rule for the body is
- * gated on that marker, so a note stays fully readable when this script never
+ * Marks the note with `data-sem-upgraded` (the CSS hide-rule for the body is
+ * gated on that marker, so a note stays fully readable when the script never
  * runs) and inserts a ten-word teaser that expands on click. A tag-form note
  * carries its body as bare content; it is wrapped in `.sem-note-body` here
- * so the same hide rule applies. Lit-upgraded notes are left to the Lit tier.
+ * so the same hide rule applies. Lit-upgraded notes are skipped.
  */
 
 import { sel } from '../shared/sel.js';
@@ -20,7 +20,7 @@ export function enhanceNote(scope: ParentNode): void {
       while (n.firstChild) body.appendChild(n.firstChild);
       n.appendChild(body);
     }
-    n.setAttribute('data-sem-fallback', '');
+    n.setAttribute('data-sem-upgraded', '');
     const sum = document.createElement('div');
     sum.className = 'sem-note-summary';
     sum.textContent = (body.textContent || '').trim().split(/\s+/).slice(0, 10).join(' ') + ' …';

@@ -1,8 +1,28 @@
 # Schema — `sem-procedure` / `sem-step`
 
-Contract per conventions.md v0.5. BDD source of truth for
+Contract per conventions.md v0.6. BDD source of truth for
 `test/e2e/sem-procedure.cy.js`. Changes here precede spec changes
 precede code.
+
+An ordered, status-annotated procedure.
+
+Children: one `sem-step` per instruction, each carrying a `status`
+attribute. A step's `status` is its lifecycle annotation — `done` |
+`current` | `todo` default | `blocked`; DOM order is execution order —
+no step-number attribute, ordinals are positional and rendered with CSS
+counters. Status sugar (`✅/→/❌`) is display-only: `status` is
+canonical. Zero-JS element — pure CSS rendering. `kind` is a free token
+(`runbook`, `recipe`, `migration` …).
+
+## Scope semantics
+
+An ordered, status-annotated procedure. Each `sem-step` is one
+instruction and `status` is its lifecycle annotation (`done` |
+`current` | `todo` default | `blocked`); DOM order is execution order —
+no step-number attribute, ordinals are positional and rendered with CSS
+counters. Status sugar (`✅/→/❌`) is display-only: `status` is
+canonical. Zero-JS element — pure CSS rendering. `kind` is a free token
+(`runbook`, `recipe`, `migration` …).
 
 ## Authoring form
 

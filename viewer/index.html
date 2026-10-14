@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" data-viewer-state="idle">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText viewer</title>
+<!-- Boot-loader CSP (design §4.3). The page is same-origin, so 'self' is
+     meaningful here. connect-src mirrors the fetch allowlist; frames may
+     only be the jail. Trusted Types enforced: this page uses no HTML sinks. -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com https://gist.githubusercontent.com; frame-src 'self'; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'">
+<link rel="stylesheet" href="./viewer.css">
+<script type="module" src="./viewer-boot.mjs"></script>
+</head>
+<body>
+<header id="viewer-chrome">
+  <span id="viewer-brand">SemText viewer</span>
+  <span id="provenance" data-provenance></span>
+</header>
+
+<p id="viewer-status" role="status" aria-live="polite"></p>
+
+<section id="viewer-error" data-error hidden></section>
+
+<section id="viewer-consent" data-consent hidden>
+  <h2>Remote resources on this document</h2>
+  <ul id="consent-hosts"></ul>
+  <p id="consent-note"></p>
+  <button type="button" id="consent-allow-once">Allow once</button>
+  <button type="button" id="consent-allow-always">Always allow for this host</button>
+  <button type="button" id="consent-block">Block</button>
+</section>
+
+<section id="viewer-security" data-security hidden></section>
+
+<div id="jail-mount" data-jail-mount></div>
+
+<noscript><p>The viewer needs JavaScript; the document itself degrades to plain prose without it.</p></noscript>
+</body>
+</html>

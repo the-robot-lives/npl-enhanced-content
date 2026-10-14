@@ -22,6 +22,9 @@ export function enhanceDetails(scope: ParentNode): void {
         span.className = 'sem-highlight sem-revealed';
         span.removeAttribute('role');
         span.removeAttribute('tabindex');
+        // same DOM as the Lit tier: revealed text is no longer a control,
+        // so the reveal label must not override its accessible name
+        span.removeAttribute('aria-label');
       };
       span.addEventListener('click', reveal);
       span.addEventListener('keydown', (e) => {

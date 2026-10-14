@@ -1,23 +1,17 @@
 /**
- * SemText — reading bundle entry point (`dist/semtext-reading.js`,
- * global `SemTextReading`).
+ * SemText — prose-reading handlers (one-bundle surface, spec v0.6).
  *
- * The prose-reading behaviours that would not fit the fallback core's
- * 12 KB budget: sem-code chrome, sem-references previews and backlinks,
- * glossary-mode sem-properties previews, and (R/W2) the sem-reader chrome
- * and sem-table sort/filter. Same rules as the core: no Lit,
- * classic IIFE, no fetch, runs standalone in a file:// document, marks
- * what it wired with `data-sem-fallback`. `<!-- sem:inline reading -->`
- * inlines it (scripts/build-standalone.mjs).
- *
- * TIER HANDOFF. An element that already carries `data-sem-upgraded` is
- * skipped here: the Lit wrapper (src/lit/sem-code.ts etc.) imports the
- * same per-element enhance function and calls it itself. The per-element
- * functions are idempotent on DOM state, not on a marker, so either
- * script may run first.
- *
- * SIZE BUDGET: 14 KB minified (ROADMAP R/W2: 8 KB in W1, raised for
- * sem-reader + sem-table); printed by scripts/build.mjs.
+ * sem-code chrome, sem-references previews and backlinks, glossary-mode
+ * sem-properties previews, and (R/W2) the sem-reader chrome and sem-table
+ * sort/filter. The handlers no longer ship alone: `src/index.ts` imports
+ * them into `dist/semtext.js` — the former standalone
+ * `semtext-reading.js` is retired. Each handler marks what it wired with
+ * `data-sem-upgraded` and skips elements that already carry it: the Lit
+ * component (src/lit/sem-code.ts etc.) imports the same per-element
+ * enhance function and calls it itself. The per-element functions are
+ * idempotent on DOM state, not on a marker, so either caller may run
+ * first. HISTORY: the former bundle's 14/19.5 KB budgets are recorded in
+ * ROADMAP.md; the handlers share the single bundle budget now.
  */
 
 import { CODE, enhanceCodeElement } from './code.js';
@@ -26,12 +20,7 @@ import { PROPERTIES, enhanceGlossaryElement } from './glossary.js';
 import { READER, enhanceReaderElement, disposeReaderElement } from './reader.js';
 import { TABLE, enhanceTableElement } from './table.js';
 import { SOURCE, enhanceSourceElement } from './source.js';
-
-declare global {
-  interface Window {
-    __semJsOff?: boolean;
-  }
-}
+import { DATA_SOURCE, DATA_VISUALIZER, enhanceDataVisualizerElement } from './data.js';
 
 const upgraded = (el: Element): boolean => el.hasAttribute('data-sem-upgraded');
 
@@ -39,7 +28,7 @@ export function enhanceCode(scope: ParentNode): void {
   scope.querySelectorAll(CODE).forEach((el) => {
     if (upgraded(el)) return;
     enhanceCodeElement(el);
-    if (el.querySelector(':scope > .sem-code-chrome')) el.setAttribute('data-sem-fallback', '');
+    if (el.querySelector(':scope > .sem-code-chrome')) el.setAttribute('data-sem-upgraded', '');
   });
 }
 
@@ -47,14 +36,14 @@ export function enhanceReferences(scope: ParentNode): void {
   scope.querySelectorAll(REFERENCES).forEach((el) => {
     if (upgraded(el)) return;
     enhanceReferencesElement(el);
-    el.setAttribute('data-sem-fallback', '');
+    el.setAttribute('data-sem-upgraded', '');
   });
 }
 
 export function enhanceGlossary(scope: ParentNode): void {
   scope.querySelectorAll(PROPERTIES).forEach((el) => {
     if (upgraded(el)) return;
-    if (enhanceGlossaryElement(el)) el.setAttribute('data-sem-fallback', '');
+    if (enhanceGlossaryElement(el)) el.setAttribute('data-sem-upgraded', '');
   });
 }
 
@@ -62,7 +51,7 @@ export function enhanceTable(scope: ParentNode): void {
   scope.querySelectorAll(TABLE).forEach((el) => {
     if (upgraded(el)) return;
     enhanceTableElement(el);
-    if (el.querySelector(':scope > .sem-table-chrome')) el.setAttribute('data-sem-fallback', '');
+    if (el.querySelector(':scope > .sem-table-chrome')) el.setAttribute('data-sem-upgraded', '');
   });
 }
 
@@ -70,7 +59,17 @@ export function enhanceSource(scope: ParentNode): void {
   scope.querySelectorAll(SOURCE).forEach((el) => {
     if (upgraded(el)) return;
     enhanceSourceElement(el);
-    if (el.querySelector(':scope > .sem-source-chrome')) el.setAttribute('data-sem-fallback', '');
+    if (el.querySelector(':scope > .sem-source-chrome')) el.setAttribute('data-sem-upgraded', '');
+  });
+}
+
+export function enhanceData(scope: ParentNode): void {
+  scope.querySelectorAll(DATA_VISUALIZER).forEach((el) => {
+    if (upgraded(el)) return;
+    enhanceDataVisualizerElement(el);
+    if (el.querySelector(':scope > ' + DATA_SOURCE + ' > :is(.sem-data-body, .sem-data-error, .sem-data-pending)')) {
+      el.setAttribute('data-sem-upgraded', '');
+    }
   });
 }
 
@@ -79,29 +78,16 @@ export function enhanceReader(scope: ParentNode): void {
   scope.querySelectorAll(READER).forEach((el) => {
     if (upgraded(el)) return;
     enhanceReaderElement(el);
-    if (el.querySelector(':scope > .sem-reader-chrome')) el.setAttribute('data-sem-fallback', '');
+    if (el.querySelector(':scope > .sem-reader-chrome')) el.setAttribute('data-sem-upgraded', '');
   });
 }
 
-export const handlers = [enhanceCode, enhanceReferences, enhanceGlossary, enhanceTable, enhanceSource, enhanceReader];
+export const handlers = [enhanceCode, enhanceReferences, enhanceGlossary, enhanceTable, enhanceData, enhanceSource, enhanceReader];
 
 /** Run every reading handler over a scope. */
 export function enhance(scope: ParentNode = document): void {
-  if (scope === document) document.documentElement.setAttribute('data-sem-fallback', '');
+  if (scope === document) document.documentElement.setAttribute('data-sem-upgraded', '');
   for (const handler of handlers) handler(scope);
 }
 
-export { enhanceCodeElement, enhanceReferencesElement, enhanceGlossaryElement, enhanceTableElement, enhanceSourceElement, enhanceReaderElement, disposeReaderElement };
-
-function init(): void {
-  if (typeof window !== 'undefined' && window.__semJsOff) return;
-  enhance(document);
-}
-
-if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-}
+export { enhanceCodeElement, enhanceReferencesElement, enhanceGlossaryElement, enhanceTableElement, enhanceDataVisualizerElement, enhanceSourceElement, enhanceReaderElement, disposeReaderElement };

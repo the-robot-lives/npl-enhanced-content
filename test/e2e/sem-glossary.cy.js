@@ -6,8 +6,8 @@
 //   Scenario: glossary anchors get the runtime class; other anchors do not
 //   Scenario: preview shows key and value on focus/hover, closes on Esc
 //   Scenario: <dfn> renders as a term
-//   Scenario: tier marker on the glossary block only
-//   Scenario: upgraded tier — same behaviour, handoff markers
+//   Scenario: upgrade marker on the glossary block only
+//   Scenario: element form — same behaviour, claimed by the component
 //   Scenario: JS-off — definition list, no preview, keys via CSS
 
 const cs = (el, pseudo) => el.ownerDocument.defaultView.getComputedStyle(el, pseudo);
@@ -15,10 +15,9 @@ const cs = (el, pseudo) => el.ownerDocument.defaultView.getComputedStyle(el, pse
 function assertGlossary(url, marker) {
   beforeEach(() => cy.visit(url));
 
-  it('marks the glossary block, not the plain properties block', () => {
-    cy.get('#glossary').should('have.attr', marker.present);
-    cy.get('#glossary').should('not.have.attr', marker.absent);
-    cy.get('#config').should('not.have.attr', 'data-sem-fallback');
+  it('marks the glossary block; the plain properties block gets no glossary treatment', () => {
+    cy.get('#glossary').should('have.attr', marker);
+    cy.get('#config a.sem-properties-ref').should('not.exist');
   });
 
   it('stamps anchors that target a glossary term; leaves other anchors alone', () => {
@@ -56,16 +55,16 @@ function assertGlossary(url, marker) {
 }
 
 describe('sem-properties view-as="glossary"', () => {
-  describe('fallback tier — /demo/reading.html', () => {
-    assertGlossary('/demo/reading.html', { present: 'data-sem-fallback', absent: 'data-sem-upgraded' });
+  describe('class form — /demo/reading.html', () => {
+    assertGlossary('/demo/reading.html', 'data-sem-upgraded');
   });
 
-  describe('upgraded tier — /demo/reading-lit.html', () => {
+  describe('element form — /demo/reading-lit.html', () => {
     it('registers the custom element', () => {
       cy.visit('/demo/reading-lit.html');
       cy.window().then((win) => expect(win.customElements.get('sem-properties')).to.exist);
     });
-    assertGlossary('/demo/reading-lit.html', { present: 'data-sem-upgraded', absent: 'data-sem-fallback' });
+    assertGlossary('/demo/reading-lit.html', 'data-sem-upgraded');
   });
 
   describe('JS-off', () => {

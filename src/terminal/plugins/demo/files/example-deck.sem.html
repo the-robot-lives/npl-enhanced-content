@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>The deck</title></head>
+<body>
+<sem-enhanced-document>
+  <h1>The deck</h1>
+  <p>The landing page's four facts as one document &mdash; one source,
+  three renderings.</p>
+  <sem-facts view-as="flashcards">
+    <sem-fact>
+      <statement>view-as is a parameter, not an identity.</statement>
+      <conclusion>The same facts render as cards, prose, or a table without rewriting the document.</conclusion>
+      <incorrect-statement>Each view needs its own hand-maintained copy of the content.</incorrect-statement>
+    </sem-fact>
+    <sem-fact>
+      <statement>Components render into light DOM.</statement>
+      <conclusion>Reader styles, extensions, and print see the real elements.</conclusion>
+      <incorrect-statement>Web components require Shadow DOM encapsulation to work.</incorrect-statement>
+    </sem-fact>
+    <sem-fact>
+      <statement>Extraction reads the authored document.</statement>
+      <conclusion>What you wrote is what the CLI outputs contain.</conclusion>
+      <incorrect-statement>A separate pipeline re-parses the page into structured data.</incorrect-statement>
+    </sem-fact>
+    <sem-fact>
+      <statement>Authoring needs no build step.</statement>
+      <conclusion>Drop an .html file in the set and every view already serves it.</conclusion>
+      <incorrect-statement>New content must pass through a bundler before it is readable.</incorrect-statement>
+    </sem-fact>
+  </sem-facts>
+</sem-enhanced-document>
+</body>
+</html>

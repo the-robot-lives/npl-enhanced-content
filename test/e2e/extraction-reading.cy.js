@@ -73,8 +73,10 @@ const ROWS = [
   ['session', '12 hours', 'yes']
 ];
 
+// JS-off = the built scripts-stripped artifact (the __semJsOff kill-switch
+// hook is retired with the multi-bundle days).
 const visitJsOff = (url = '/demo/reading.html') =>
-  cy.visit(url, { onBeforeLoad(win) { win.__semJsOff = true; } });
+  cy.visit(url.replace(/\.html$/, '.nojs.html'));
 
 const visitWithViews = (chronologyMode, propertiesMode) =>
   cy.visit('/demo/reading.html', {

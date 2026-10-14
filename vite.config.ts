@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 
 /**
@@ -25,6 +26,19 @@ export default defineConfig({
   // floored) — raise it as unit coverage grows; see docs/TEST-HEALTH.md.
   test: {
     include: ['test/unit/**/*.test.{ts,mjs,js}'],
+    alias: {
+      // The lazy loaders' tag→chunk manifests are injected virtually by the
+      // build (scripts/build.mjs, one plugin per namespace). The build
+      // never reads these files; under vitest the entry specs get stubs
+      // (test/unit/fixtures/*.stub.ts) whose chunks 404, so the entries'
+      // wiring specs exercise the failure-reporting path.
+      'virtual:semtext-manifest': fileURLToPath(
+        new URL('./test/unit/fixtures/lazy-manifest.stub.ts', import.meta.url),
+      ),
+      'virtual:npl-manifest': fileURLToPath(
+        new URL('./test/unit/fixtures/npl-manifest.stub.ts', import.meta.url),
+      ),
+    },
     coverage: {
       provider: 'v8',
       include: ['src/**', 'scripts/**', 'bin/**'],

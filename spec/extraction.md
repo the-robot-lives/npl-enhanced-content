@@ -1,6 +1,6 @@
 # Schema — extraction (DOM → records → annotated text)
 
-Contract per conventions.md v0.5 §8 ("Machine-readability contract"). BDD
+Contract per conventions.md v0.6 §8 ("Machine-readability contract"). BDD
 source of truth for `test/e2e/extraction.cy.js`. Reference
 implementation: `src/extract/records.ts`. Changes here precede spec changes
 precede code.
@@ -82,7 +82,7 @@ interface SemRecord {
    `sem-reader` is chrome and mints nothing (rule 7); `sem-source` is a
    transparent wrapper and mints nothing (rule 8).
 2. **Parts are not records.** `.sem-statement`, `.sem-conclusion`,
-   `.sem-distractor`, `.sem-highlight`, `.sem-note-body`, and the
+   `.incorrect-statement`, `.sem-highlight`, `.sem-note-body`, and the
    `.sem-agent-*` children are fields of their owning record, never entries
    of their own.
 3. **The root wrapper is scope, not content.** `.sem-enhanced-document`
@@ -95,7 +95,7 @@ interface SemRecord {
    `.sem-facts-meter`, `.sem-quiz-options`, `.sem-views-tabs`,
    `.sem-note-summary`, `.sem-progress-track`, `.sem-progress-fill`,
    `.sem-code-chrome`, `.sem-code-status`, `.sem-references-backlinks`,
-   `.sem-references-link`, `.sem-popover` (the reading bundle's preview
+   `.sem-references-link`, `.sem-popover` (the script's preview
    surface, appended to `<body>`), `.sem-reader-chrome`,
    `.sem-reader-outline`, `.sem-reader-progress`, `.sem-table-chrome`,
    `.sem-table-status`, `.sem-table-filter`, `.sem-source-chrome`,
@@ -105,15 +105,15 @@ interface SemRecord {
    `source`, never content of its own), `.sem-md-raw` (the source fence,
    the `sem-code` inside it included; §4 reads `source` from it on
    purpose), and the
-   `<summary>` the reveal fallback synthesizes inside its `<details>`. An
+   `<summary>` the reveal component synthesizes inside its `<details>`. An
    authored `<details>`/`<summary>` elsewhere in the document is ordinary
    content and is not skipped.
 5. **Extraction never writes.** No attribute is set or removed, no node is
    inserted, moved, or deleted, no event is dispatched. Running extraction
    against a live interactive page leaves that page byte-identical.
 6. **Both authoring forms are accepted.** Parameters are read as
-   `data-<name>` first (the class-form alias, and the spelling the tiers
-   mirror bare attributes to at runtime), then as a bare `<name>` attribute
+   `data-<name>` first (the class-form alias, and the spelling the script
+   mirrors bare attributes to at runtime), then as a bare `<name>` attribute
    (the canonical tag form). A document may mix forms; a consumer should
    not have to know which one a document was written in — the same
    document yields the same records either way.
@@ -146,7 +146,7 @@ Missing children yield `""`. `text` = `name`.
 present, otherwise the note's own prose.
 
 `collapsed` is **not** extracted. It is initial disclosure state, and the
-fallback removes the attribute when the reader opens the note (see §5).
+component removes the attribute when the reader opens the note (see §5).
 
 ### `sem-facts` / `sem-fact`
 
@@ -154,7 +154,7 @@ fallback removes the attribute when the reader opens the note (see §5).
 `tags` for citation and grouping.
 
 `sem-fact` yields
-`fields: { statement, conclusion, distractors: string[], highlights: string[] }`.
+`fields: { statement, conclusion, incorrectStatements: string[], highlights: string[] }`.
 
 - `statement` / `conclusion` from `.sem-statement` / `<statement>` and
   `.sem-conclusion` / `<conclusion>`.
@@ -162,7 +162,7 @@ fallback removes the attribute when the reader opens the note (see §5).
   text is split on the first `::`, left → `statement`, right → `conclusion`.
   With no `::`, the whole text is the `statement` and `conclusion` is `""`.
   Children always win over the compact form (conventions §3).
-- `distractors` are extracted **as distractors and never as claims**, which
+- `incorrectStatements` are extracted **as distractors and never as claims**, which
   is exactly what `spec/schema/sem-facts.md` requires: they appear in their
   own array, never in `text`, never as a `conclusion`.
 - `highlights` are the fact's recall prompts, in either the authored
@@ -170,7 +170,7 @@ fallback removes the attribute when the reader opens the note (see §5).
 - `text` = `statement :: conclusion` when both exist, otherwise `statement`.
 
 Implicit distractors — the sibling conclusions the quiz view borrows when a
-fact has no `.sem-distractor` child — are a **rendering** decision and are not
+fact has no `<incorrect-statement>` child — are a **rendering** decision and are not
 extracted. They are already in the output as other facts' conclusions.
 
 ### `sem-details` / `sem-detail`
@@ -214,13 +214,13 @@ extracted — the consumer computes it from the step records.
 - `key` = `data-key` / `key`; `value` = the property's own text.
 - When `data-key` is absent, the compact `term :: value` sugar is parsed.
   `data-key` wins when both are present. **Extraction parses `::` here even
-  though the v0.4 fallback does not** — conventions §3 declares the sugar
+  though the v0.4 handler did not** — conventions §3 declares the sugar
   legal, and a machine reader that dropped the key would silently lose the
   subject of the assertion. The divergence is intentional and one-directional
   (extraction is more permissive than render).
 - Duplicate keys within one container are an authoring error. Extraction
   reports both records faithfully and does not deduplicate; diagnosing the
-  duplicate is the fallback's job (console warning) and the linter's.
+  duplicate is the script's job (console warning) and the linter's.
 
 ### `sem-views` / `sem-view`
 
@@ -243,13 +243,13 @@ deep links cite.
 - Otherwise it is **derived** (`summarySource: "derived"`) from the body:
   the leading run of the normalized body text, at most 60 characters, cut at
   the last word boundary, with no ellipsis. The derivation is a pure function
-  of the body, which is what lets it survive the fallback's `<details>`
+  of the body, which is what lets it survive the component's `<details>`
   rewrite unchanged.
-- The body is read from `.sem-reveal-body` when the fallback has wrapped the
+- The body is read from `.sem-reveal-body` when the script has wrapped the
   reveal, and from the element itself otherwise. Both yield the same text.
 - `collapsed` is not extracted (§5).
 
-**Divergence closed.** The v0.4 fallback used to derive its `<summary>` as
+**Divergence closed.** The v0.4 handler used to derive its `<summary>` as
 the first eight words plus `" …"` while extraction implemented the schema's
 60-character rule. Both now call `deriveSummary` in `src/shared/summary.ts`,
 so the label a reader sees is the `summary` a machine receives. The
@@ -268,7 +268,7 @@ present; `text` = `label :: N%` with `N` the rounded clamped percentage.
   attribute stays as written, so a machine reader must be able to see
   `1.4` and know the author asserted something out of range.
 - `text` is **derived from the attributes, never read from the DOM**. The
-  fallback overwrites the element's text content when it builds the meter,
+  The component overwrites the element's text content when it builds the meter,
   so reading `textContent` here would break the §5 invariant outright. This
   is the one record whose text is not a reading of the element's children,
   and the reason is recorded here so no one "fixes" it later.
@@ -292,7 +292,7 @@ normalised single-line form of `source`.
 - `source` is **verbatim** — the `<code>` (else `<pre>`) text with
   whitespace intact. This is the second recorded exception to the
   normalised-text rule (after `sem-progress`): a listing whose indentation
-  was collapsed would be a different program. The reading bundle's line
+  was collapsed would be a different program. The script's line
   spans and `<mark>` are read through; `\n` text nodes between them keep
   the text byte-identical, which is what the §5 invariant relies on.
 - `marks` is the parsed `data-mark` grammar (`2,4-5` → `[2,4,5]`),
@@ -341,10 +341,10 @@ runtime class.
 caption (`""` when absent).
 
 - `caption` from the authored `<caption>`; `columns` from the `<thead>`
-  cells, read *through* the reading bundle's `button.sem-table-sort`
+  cells, read *through* the script's `button.sem-table-sort`
   wrapper (a wrapper, not chrome).
 - `rows` are the `<tbody>` rows in **authored order**: sorted by the
-  `data-sem-source-index` the reading bundle stamps once at enhancement,
+  `data-sem-source-index` the script stamps once at enhancement,
   DOM order when the stamp is absent (JS-off). A row carrying `hidden`
   (filtered out) is still a row.
 - The inner `<table>` mints no plain record even when it carries `kind`
@@ -381,7 +381,7 @@ HTML cannot express.
 > regardless of `view-as`.**
 
 Formally, for any document `D`, where `E` is extraction, `R(D)` is `D` after
-the fallback handler (or the Lit upgrade) has run, `I(D)` is `D` after any
+the script has run, `I(D)` is `D` after any
 sequence of user interactions the vocabulary supports, and `V(D, m)` is `D`
 with any container's `view-as` set to any legal mode `m`:
 
@@ -399,19 +399,19 @@ the human consumer saw.
 Three rules make it hold, and each is a rule about what extraction refuses to
 look at.
 
-**(a) Generated chrome is skipped** (§3.4). Everything the fallback adds is
+**(a) Generated chrome is skipped** (§3.4). Everything the script adds is
 enumerated and excluded by class.
 
 **(b) Runtime state classes and attributes are ignored.** `.sem-current`,
 `.sem-flipped`, `.sem-answered`, `.sem-wrong-pick`, `.sem-revealed`,
 `.sem-target` (the transient deep-link marker), `.sem-references-ref`,
-`.sem-properties-ref`, `data-sem-fallback`, `data-sem-upgraded`,
+`.sem-properties-ref`, `data-sem-upgraded`,
 `data-answered`, `data-wrap`, `aria-sort`, `data-sem-source-index`,
 `aria-current` on outline links, `data-sem-mode` / `data-sem-type` /
 `data-sem-font` / `data-color-mode` and the inline `--sem-reader-offset`
 style on `<html>`, the runtime heading ids the reader assigns, `aria-describedby` set by the preview, the
-`id` the reading bundle assigns to an id-less citing anchor, and the
-`hidden` attribute the audience fallback sets are session facts, not
+`id` the script assigns to an id-less citing anchor, and the
+`hidden` attribute the audience handler sets are session facts, not
 document facts. Extraction matches on vocabulary classes only and never
 consults visibility.
 
@@ -419,7 +419,7 @@ consults visibility.
 above is about what extraction refuses to *look at*; this one is about
 authored nodes that *move*. Sorting a `sem-table` re-appends `<tbody>`
 rows, so `I(R(D))` has a different DOM order from `D`. The invariant
-still holds because the reading bundle stamps every row
+still holds because the script stamps every row
 `data-sem-source-index` before its first sort and `buildTable` orders
 rows by that stamp, never by position. This is the only element whose
 runtime reorders authored content; a second one would need its own
@@ -432,13 +432,13 @@ attributes describe initial *display* state and are rewritten at runtime:
 | Attribute | Who mutates it | Why it is excluded |
 | :-- | :-- | :-- |
 | `data-view-as` | author; the `sem-source` toggle rewrites it (`html` / `source`), the `sem-md` toggle (`rendered` / `raw`) | Presentation parameter by definition (conventions §2: "identity unchanged"). Including it would make `E(V(D, m)) ≠ E(D)` by construction and contradict every schema's "`view-as` never changes extraction". |
-| `data-active` | fallback normalizes it onto the first view; every tab click moves it | Reports which tab a reader is looking at. Not a property of the document. |
-| `collapsed` | fallback removes it when the reader expands a note | Initial disclosure state. Not a property of the document. |
+| `data-active` | the component normalizes it onto the first view; every tab click moves it | Reports which tab a reader is looking at. Not a property of the document. |
+| `collapsed` | the component removes it when the reader expands a note | Initial disclosure state. Not a property of the document. |
 
 The cost is real and worth naming: a consumer cannot learn from extraction
 which view an author intended to show first. That is correct. `data-active`
 is a *state marker*, not a semantic claim, and it is not durable enough to
-carry one — the fallback overwrites it before the reader touches anything. An
+carry one — the component overwrites it before the reader touches anything. An
 author who needs to mark a semantically primary perspective should say so
 with a durable qualifier (`kind`, `tags`) on the view, which extraction does
 report. This is a gap in the vocabulary, not a gap in extraction.
@@ -457,7 +457,7 @@ Line form, indented by containment depth:
 ```
 
 Array-valued fields join with ` | `. Only fields that carry meaning a reader
-would lose otherwise are emitted (a fact's distractors, a detail's
+would lose otherwise are emitted (a fact's incorrect statements, a detail's
 highlights, a step's status, a progress element's raw value, a reveal's
 summary, a note's variant, an agent's bio and instructions, a view's name,
 an event's `when` / `until` / `status`, a code listing's `lang` and
@@ -479,7 +479,7 @@ Declared here in v0.4 as a forward declaration; closed by
   resolved boolean. `null` when absent.
 - **Audience never removes a record from canonical extraction.** Filtering by
   audience is a consumer operation performed on the extracted array, never a
-  suppression performed during extraction. The fallback's `hidden` attribute
+  suppression performed during extraction. The handler's `hidden` attribute
   is invisible to extraction (§5b); an extractor that dropped off-audience
   records would produce different output for different readers, which is
   the same failure mode as extracting the rendered document (§1).
@@ -507,7 +507,7 @@ Input:
     <sem-fact id="f-jwt" kind="concept">
       <statement>JWTs rotate per session</statement>
       <conclusion>Short-lived access; refresh issues a new pair.</conclusion>
-      <sem-distractor>Store them in localStorage.</sem-distractor>
+      <incorrect-statement>Store them in localStorage.</incorrect-statement>
     </sem-fact>
   </sem-facts>
   <sem-progress id="p-cov" value="1.4" label="coverage"></sem-progress>
@@ -534,7 +534,7 @@ Output:
     "fields": {
       "statement": "JWTs rotate per session",
       "conclusion": "Short-lived access; refresh issues a new pair.",
-      "distractors": ["Store them in localStorage."],
+      "incorrectStatements": ["Store them in localStorage."],
       "highlights": []
     },
     "text": "JWTs rotate per session :: Short-lived access; refresh issues a new pair.",
@@ -553,13 +553,13 @@ Rendered as annotated plain text:
 h2 (kind=section tags=auth|tokens): Token handling
 sem-facts (#auth-facts)
   sem-fact (#f-jwt kind=concept): JWTs rotate per session :: Short-lived access; refresh issues a new pair.
-    distractors: Store them in localStorage.
+    incorrectStatements: Store them in localStorage.
 sem-progress (#p-cov): coverage :: 100%
   rawValue: 1.4
 ```
 
 Note what did not appear: `view-as="quiz"` (presentation), the
-`.sem-quiz-options` the fallback would build (chrome), and the clamped-vs-raw
+`.sem-quiz-options` the component would build (chrome), and the clamped-vs-raw
 distinction collapsing (both `value` and `rawValue` are reported).
 
 ## 9. Machine contract

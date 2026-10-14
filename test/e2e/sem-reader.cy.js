@@ -1,8 +1,8 @@
 // BDD spec — sem-reader · source: spec/schema/sem-reader.md
 //
 // Feature: one reading-chrome host per document — outline, progress,
-//          focus, type, colour, print and audience controls — fallback
-//          (reading bundle) and Lit tiers behave identically; JS-off it is
+//          focus, type, colour, print and audience controls — one bundle,
+//          identical over the class alias and the element form; JS-off it is
 //          the authored contents nav or nothing
 //   Scenario: chrome is the first child, a labelled region, controls in canonical order
 //   Scenario: generated outline — one link per h2/h3, runtime ids, closed until toggled
@@ -35,9 +35,8 @@ function controlKeys($chrome) {
 function assertReader(url, marker) {
   beforeEach(() => cy.visit(url, { onBeforeLoad(win) { cy.stub(win, 'print').as('print'); } }));
 
-  it('carries the tier marker for this page', () => {
-    cy.get('#rd').should('have.attr', marker.present);
-    cy.get('#rd').should('not.have.attr', marker.absent);
+  it('carries the upgrade marker for this page', () => {
+    cy.get('#rd').should('have.attr', marker);
   });
 
   it('renders one chrome region as the first child, controls in canonical order', () => {
@@ -214,8 +213,8 @@ function assertReader(url, marker) {
 }
 
 describe('sem-reader', () => {
-  describe('fallback tier — /demo/reading.html (generated outline)', () => {
-    assertReader('/demo/reading.html', { present: 'data-sem-fallback', absent: 'data-sem-upgraded' });
+  describe('class form — /demo/reading.html (generated outline)', () => {
+    assertReader('/demo/reading.html', 'data-sem-upgraded');
 
     it('generates one link per h2/h3 in the wrapper, assigning runtime ids', () => {
       cy.get('#rd nav.sem-reader-outline[aria-label="Contents"]').should('have.length', 1);
@@ -250,12 +249,12 @@ describe('sem-reader', () => {
     });
   });
 
-  describe('upgraded tier — /demo/reading-lit.html (authored nav)', () => {
+  describe('element form — /demo/reading-lit.html (authored nav)', () => {
     it('registers the custom element', () => {
       cy.visit('/demo/reading-lit.html');
       cy.window().then((win) => expect(win.customElements.get('sem-reader')).to.exist);
     });
-    assertReader('/demo/reading-lit.html', { present: 'data-sem-upgraded', absent: 'data-sem-fallback' });
+    assertReader('/demo/reading-lit.html', 'data-sem-upgraded');
 
     it('uses the authored <nav aria-label="Contents"> verbatim', () => {
       cy.get('#rd > nav#toc').should('exist');

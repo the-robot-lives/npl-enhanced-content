@@ -1,7 +1,7 @@
 // BDD spec — sem-reveal · source: spec/schema/sem-reveal.md
 //
 // Feature: sem-reveal discloses body under a summary, native details
-//          semantics after fallback wrap, fully visible JS-off
+//          semantics once the runtime wraps it, fully visible JS-off
 //   Scenario: data-summary becomes the toggle label; body hidden when collapsed
 //   Scenario: clicking summary reveals body
 //   Scenario: first-line summary derived when data-summary absent
@@ -26,12 +26,12 @@ describe('sem-reveal', () => {
       .should('contain', 'Refresh tokens rotate per use');
   });
 
-  // Tier gating — once the fallback built the <details>, its <summary>
+  // Marker gating — once the runtime built the <details>, its <summary>
   // carries the data-summary string; the JS-off ::before caption is
   // suppressed so the label does not read twice.
   it('JS-off ::before caption is suppressed once the details are built', () => {
     cy.get('#r-storage').should(($r) => {
-      expect($r[0]).to.have.attr('data-sem-fallback');
+      expect($r[0]).to.have.attr('data-sem-upgraded');
       const before = $r[0].ownerDocument.defaultView.getComputedStyle($r[0], '::before');
       expect(before.content).to.equal('none');
     });

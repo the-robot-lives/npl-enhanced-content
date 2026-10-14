@@ -72,8 +72,15 @@ export function specAssetRefs(html) {
 }
 
 /** Rewrite a spec page for dist/spec/: `../dist/` becomes `../`, because the
- *  copied page sits beside the bundles' parent instead of the repo root.
- *  Only real tags are touched; an escaped example in a listing is text. */
+ *  copied page sits beside the bundles' parent instead of the repo root; the
+ *  source-side theme names map to the SHIPPED artifact names (spec v0.6: the
+ *  vocabulary is dist/semtext.css, named themes carry the `semtext-theme-`
+ *  prefix). Only real tags are touched; an escaped example in a listing is
+ *  text. */
 export function rewriteSpecPage(html) {
-  return html.replace(/(<(?:link|script)\b[^>]*?\b(?:href|src)=["'])\.\.\/dist\//gi, '$1../');
+  return html
+    .replace(/(<link\b[^>]*?\bhref=["'])\.\.\/themes\/_vocabulary\.css(["'])/gi, '$1../semtext.css$2')
+    .replace(/(<link\b[^>]*?\bhref=["'])\.\.\/themes\/([\w.-]+\.css)(["'])/gi,
+      (m, pre, name, post) => (name.startsWith('semtext-theme-') ? m : `${pre}../themes/semtext-theme-${name}${post}`))
+    .replace(/(<(?:link|script)\b[^>]*?\b(?:href|src)=["'])\.\.\/dist\//gi, '$1../');
 }

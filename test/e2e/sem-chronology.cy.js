@@ -1,8 +1,8 @@
 // BDD spec — sem-chronology / sem-event · source: spec/schema/sem-chronology.md
 //
 // Feature: an ordered, dated event list renders as a CSS-only timeline in
-//          both authoring forms, with no script and no tier marker
-//   Scenario: authored roles, DOM order, no tier marker (class form)
+//          both authoring forms, with no script claim and no marker
+//   Scenario: authored roles, DOM order, no upgrade marker (class form)
 //   Scenario: date label — <time> child wins, else attr(data-when)
 //   Scenario: status glyph beside colour
 //   Scenario: view-as="list" drops the rail, keeps every event
@@ -12,9 +12,8 @@
 const cs = (el, pseudo) => el.ownerDocument.defaultView.getComputedStyle(el, pseudo);
 
 function assertChronology(root) {
-  it('authored roles and DOM order; no tier marker', () => {
+  it('authored roles and DOM order; no upgrade marker', () => {
     cy.get(root + '#history').should('have.attr', 'role', 'list');
-    cy.get(root + '#history').should('not.have.attr', 'data-sem-fallback');
     cy.get(root + '#history').should('not.have.attr', 'data-sem-upgraded');
     cy.get(root + '#history > *').should('have.length', 3).each(($e) => {
       cy.wrap($e).should('have.attr', 'role', 'listitem');

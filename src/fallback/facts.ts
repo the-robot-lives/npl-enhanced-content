@@ -4,7 +4,7 @@
  * Extracted verbatim from the inline IIFE that used to live in
  * web/demo/index.html (D5: the same logic had drifted into a second hand-written
  * copy inside the Lit elements). Behavior is a tested contract — DOM shape,
- * class names, `data-sem-fallback`, and meter text are all asserted by
+ * class names, `data-sem-upgraded`, and meter text are all asserted by
  * test/e2e/sem-facts.cy.js and must not change.
  *
  * The one deliberate divergence from the original inline source: option order
@@ -26,7 +26,7 @@ export function enhanceFacts(scope: ParentNode): void {
     const view = root.getAttribute('data-view-as') || 'list';
     const items = Array.from(root.querySelectorAll<HTMLElement>(FACT));
     if (view === 'list' || items.length === 0) return;
-    root.setAttribute('data-sem-fallback', '');
+    root.setAttribute('data-sem-upgraded', '');
 
     const rand = randomFor(root);
 
@@ -44,7 +44,7 @@ export function enhanceFacts(scope: ParentNode): void {
 
     function optionsFor(item: Element): { text: string; correct: boolean }[] {
       const correct = item.querySelector(CONCLUSION);
-      const distractors = Array.from(item.querySelectorAll(sel('distractor')));
+      const distractors = Array.from(item.querySelectorAll(part('incorrect-statement')));
       const others = items
         .filter((f) => f !== item)
         .map((f) => f.querySelector(CONCLUSION))

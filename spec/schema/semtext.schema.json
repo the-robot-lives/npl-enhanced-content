@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://semtext.noizu.com/schemas/semtext.schema.json",
   "title": "SemText document schema",
-  "description": "Machine-readable contract for SemText documents, derived from spec/conventions.md (v0.5) and the per-element prose contracts in spec/schema/*.md. The prose files are normative; this file is the enforcement layer that semtext-validate reads. Changes here precede spec changes precede code, same as the prose contracts.",
+  "description": "Machine-readable contract for SemText documents, derived from spec/conventions.md (v0.6) and the per-element prose contracts in spec/schema/*.md. The prose files are normative; this file is the enforcement layer that semtext-validate reads. Changes here precede spec changes precede code, same as the prose contracts.",
   "x-semtext": {
-    "specVersion": "0.5",
+    "specVersion": "0.6",
     "document": {
       "root": {
         "tag": "sem-enhanced-document",
@@ -17,15 +17,14 @@
       },
       "tierMarkers": {
         "attributes": [
-          "data-sem-fallback",
           "data-sem-upgraded"
         ],
         "severity": "warning",
-        "description": "Runtime-written markers (conventions.md §4); authored occurrences suggest a stale export or a hand-edited render."
+        "description": "Runtime-written marker (conventions.md §4); authored occurrences suggest a stale export or a hand-edited render."
       },
       "generatedChrome": {
         "severity": "warning",
-        "description": "Elements the tiers generate at runtime must not appear in authored source.",
+        "description": "Elements the script generates at runtime must not appear in authored source.",
         "elements": [
           "sem-facts-chrome",
           "sem-facts-meter",
@@ -315,7 +314,7 @@
       "children": [
         "statement",
         "conclusion",
-        "sem-distractor"
+        "incorrect-statement"
       ],
       "childRules": [
         {
@@ -352,15 +351,15 @@
         "span.sem-conclusion"
       ]
     },
-    "sem-distractor": {
+    "incorrect-statement": {
       "source": "spec/schema/sem-facts.md",
       "record": false,
       "partOf": [
         "sem-fact"
       ],
       "classAliases": [
-        "div.sem-distractor",
-        "span.sem-distractor"
+        "div.incorrect-statement",
+        "span.incorrect-statement"
       ]
     },
     "highlight": {
@@ -678,6 +677,71 @@
           "severity": "error"
         }
       ]
+    },
+    "sem-data-visualizer": {
+      "source": "spec/data-visualizer.md",
+      "record": false,
+      "attributes": {}
+    },
+    "sem-data-source": {
+      "source": "spec/data-visualizer.md",
+      "record": true,
+      "attributes": {
+        "name": {
+          "note": "data-name alias spelling; renders as the table caption"
+        },
+        "format": {
+          "type": "token",
+          "values": [
+            "table",
+            "csv",
+            "yaml",
+            "json",
+            "sql"
+          ],
+          "default": "table",
+          "severityOnUnknown": "error"
+        },
+        "type": {
+          "type": "token",
+          "values": [
+            "rows",
+            "yaml-schema"
+          ],
+          "note": "structure declaration; absent = infer (phase 3)"
+        },
+        "source": {},
+        "views": {
+          "note": "name=colspec; ... — named views (phase 1: parsing + default)"
+        },
+        "view": {
+          "note": "default view name"
+        }
+      }
+    },
+    "sem-data-join": {
+      "source": "spec/data-visualizer.md",
+      "record": false,
+      "attributes": {
+        "name": {
+          "note": "the joined bucket's registered name"
+        },
+        "left": {
+          "note": "left bucket reference (§5 resolution)"
+        },
+        "right": {
+          "note": "right bucket reference"
+        },
+        "on": {
+          "note": "the named key column, present in both buckets"
+        }
+      }
+    },
+    "sem-data-query": {
+      "source": "spec/data-visualizer.md",
+      "record": true,
+      "attributes": {},
+      "note": "text body is the default §8 query; the chrome is rendered by the reading bundle"
     }
   }
 }

@@ -4,14 +4,16 @@
 
 Two scripts, one command each:
 
-- **`scripts/build.mjs`** — compiles the five IIFE bundles from `src/`
-  (entries and budgets: see [bundles.md](bundles.md)).
+- **`scripts/build.mjs`** — compiles the one Lit IIFE bundle (`dist/semtext.js`)
+  and copies the vocabulary base + themes (`dist/semtext.css`,
+  `dist/themes/semtext-theme-<name>.css`); entries and budgets:
+  see [bundles.md](bundles.md).
 - **`scripts/build-standalone.mjs`** — turns the page sources in `web/` into
   the distributable site: copies each page, emits a genuine **`.nojs.html`**
   variant of every page (all `<script>` elements stripped), and expands
-  `<!-- sem:inline … -->` markers — bundles, theme/vocabulary CSS, measured
+  `<!-- sem:inline … -->` markers — the bundle, theme/vocabulary CSS, measured
   size labels, and version labels sourced from `package.json`
-  (`specVersion` → "v0.5", `version` → "0.1.0") plus the short checkout SHA.
+  (`specVersion` → "v0.6", `version` → "0.1.0") plus the short checkout SHA.
   Pages self-label; no size or version is hardcoded in copy.
 
 `npm run build` before `npm test`: Cypress runs against the built pages in
@@ -22,8 +24,8 @@ Two scripts, one command each:
 **Folder** (page + relative `semtext/` assets) and **single-file** (all CSS +
 JS inlined in `<head>` via the `sem:inline` markers). Neither form carries
 page-local CSS/JS beyond a small layout layer. Hard rules: no ES-module
-scripts in portable docs, no runtime fetch, fallback always embedded or
-linked.
+scripts in portable docs, no runtime fetch; `semtext.js` is always linked or
+embedded in full — there is no smaller script to fall back to.
 
 ## Shipping (CI single workflow, `.github/workflows/ci.yml`)
 

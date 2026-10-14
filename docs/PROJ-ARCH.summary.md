@@ -1,21 +1,21 @@
 # Project Architecture — Summary
 
-SemText (spec draft v0.5): XHTML-first semantic markup vocabulary — one
+SemText (spec draft v0.6): XHTML-first semantic markup vocabulary — one
 document, three readings (styled interactive page / structural record for
-LLM agents / extracted plain text). Zero React; Lit components are thin
-wrappers over a zero-JS fallback tier. Spec-first repo.
+LLM agents / extracted plain text). Zero React; one Lit bundle over vanilla
+handlers; JS-off degrades to plain prose. Spec-first repo.
 
 ## Architecture
 
-- **Bundle tiers** — five IIFE scripts layering over one document: fallback
-  (contract tier, works JS-off), reading (prose chrome), full (Lit upgrade),
-  md, extract. Minified size budgets CI-enforced via `build:strict`.
+- **The one bundle** — `dist/semtext.js` (global `SemText`): Lit elements +
+  vanilla handlers + extraction, one CI-enforced size budget via
+  `build:strict`; stylesheets ship unbuilt (`semtext.css`, `themes/`).
 - **Extraction invariant** — `E(D) = E(R(D)) = E(I(R(D)))`; every interactive
   layer is chrome and mints nothing; enforced by e2e, contract in
   `spec/extraction.md` §5.
 - **Vocabulary model** — tag form canonical (class form = Appendix A alias);
-  dual-spelling selectors and `data-sem-fallback`/`data-sem-upgraded` tier
-  markers gate styling per tier; JS-off tier is text-only via `attr()`.
+  dual-spelling selectors and the single `data-sem-upgraded` marker gate
+  styling; with no script nothing is hidden (plain prose).
 - **Build & distribution** — `build.mjs` (bundles) + `build-standalone.mjs`
   (pages, `.nojs.html` variants, `sem:inline` version/size markers); folder
   and single-file portable forms.

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" data-sem-theme="plain-prose">
+<head>
+<meta charset="utf-8">
+<title>SemText viewer sample — hello</title>
+<link rel="stylesheet" href="/dist/semtext.css">
+<style>
+  body { margin: 0; padding: 2rem 1rem; font-family: system-ui, sans-serif;
+         line-height: 1.6; max-width: 48rem; margin: 0 auto; }
+  sem-note { display: block; border-left: 4px solid #4a6fa5; border-radius: 8px;
+             padding: .75rem 1rem; margin: 1rem 0; background: rgba(74,111,165,.08); }
+  sem-note[data-variant="warning"] { border-color: #b8860b; }
+  sem-facts .sem-fact { border: 1px solid #ccc; border-radius: 12px;
+                        padding: 1rem; margin: .75rem 0; }
+</style>
+</head>
+<body>
+<sem-enhanced-document>
+  <h1>Hello from the render jail</h1>
+  <p>This sample document is fetched by the boot loader with
+     <code>credentials: 'omit'</code> and rendered inside a sandboxed frame
+     (<code>allow-scripts</code> only — opaque origin, no cookies, no
+     top navigation). The only scripts here are the viewer's trusted
+     bundles; this file carries none.</p>
+
+  <sem-note variant="tip">
+    <div class="sem-note-body">If this note is upgraded, the Lit bundle ran:
+       the element carries <code>role="note"</code> and
+       <code>data-sem-upgraded</code>.</div>
+  </sem-note>
+
+  <h2>Flashcards</h2>
+  <sem-facts data-view-as="flashcards">
+    <div class="sem-fact">
+      <div class="sem-statement">Where does untrusted HTML get parsed?</div>
+      <div class="sem-conclusion">Inside the jail only — DOMParser there, never in the boot loader.</div>
+    </div>
+    <div class="sem-fact">
+      <div class="sem-statement">What can a rendered document reach?</div>
+      <div class="sem-conclusion">Nothing: opaque origin, no storage, no cookies, no APIs.</div>
+    </div>
+  </sem-facts>
+
+  <h2>Quiz</h2>
+  <sem-facts data-view-as="quiz">
+    <div class="sem-fact">
+      <div class="sem-statement">Which sandbox token is present on the jail iframe?</div>
+      <div class="sem-conclusion">allow-scripts</div>
+      <div class="incorrect-statement">allow-same-origin</div>
+      <div class="incorrect-statement">allow-top-navigation</div>
+    </div>
+  </sem-facts>
+</sem-enhanced-document>
+</body>
+</html>

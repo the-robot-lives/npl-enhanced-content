@@ -127,7 +127,7 @@ describe('element and attribute contracts', () => {
   });
 
   it('runtime tier markers in authored source are a warning', () => {
-    const src = `<sem-enhanced-document><sem-note id="n" data-sem-fallback="1">x</sem-note></sem-enhanced-document>`;
+    const src = `<sem-enhanced-document><sem-note id="n" data-sem-upgraded="1">x</sem-note></sem-enhanced-document>`;
     const r = validateSource(src, schema);
     expect(rules(r)).toContain('tier-marker');
     expect(errorsOf(r)).toEqual([]);

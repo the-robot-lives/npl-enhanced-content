@@ -35,8 +35,9 @@ const DOCKERFILE = path.join(ROOT, 'Dockerfile');
 // cross-check without failing it.
 const REQUIRED_DIST_PATHS = [
   SPEC_PAGE,
-  path.join(ROOT, 'dist/themes/_vocabulary.css'),
+  path.join(ROOT, 'dist/semtext.css'),
   path.join(ROOT, 'dist/semtext.js'),
+  path.join(ROOT, 'dist/themes/semtext-theme-minimal-tech-light.css'),
   path.join(ROOT, 'dist/site/index.html'),
   path.join(ROOT, 'dist/demo'),
 ];

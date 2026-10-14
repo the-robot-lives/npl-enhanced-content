@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText render jail</title>
+<!-- Jail CSP (design §4.3), tuned for D2: remote PASSIVE resources only,
+     script only from the viewer origin. The origin is spelled out because
+     this frame is sandboxed (no allow-same-origin) — its origin is opaque
+     and 'self' is unreliable in opaque-origin documents. Local M1 host is
+     localhost:4190; a deployment swaps the named host (viewer.semtext.dev).
+     NOT enforced here: require-trusted-types-for — the trusted bundle still
+     assigns innerHTML with plain strings (src/lit/sem-facts.ts); a bundle
+     change is a prerequisite for jail-side Trusted Types (M1 deviation,
+     recorded in the M1 report). The sandbox attribute on the embedding
+     iframe remains the primary guarantee. -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src http://localhost:4190; style-src http://localhost:4190 'unsafe-inline' https:; img-src https: data:; font-src https:; connect-src http://localhost:4190; base-uri 'none'; form-action 'none'">
+<!-- The trusted bundle first (classic, parse-blocking): the global
+     SemText must exist when jail-boot.mjs (module, deferred) runs. -->
+<script src="/dist/semtext.js"></script>
+<script type="module" src="./jail-boot.mjs"></script>
+</head>
+<body>
+</body>
+</html>

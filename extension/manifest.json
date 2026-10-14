@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "SemText viewer",
+  "version": "0.2.0",
+  "description": "Render SemText .html documents from GitHub raw views in a sandboxed render jail.",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://raw.githubusercontent.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": [
+    "https://raw.githubusercontent.com/*"
+  ],
+  "permissions": [
+    "storage"
+  ],
+  "sandbox": {
+    "pages": ["jail.html"]
+  },
+  "content_security_policy": {
+    "sandbox": "sandbox allow-scripts; default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https:; img-src https: data:; font-src https:; connect-src 'self'; base-uri 'none'; form-action 'none'"
+  }
+}

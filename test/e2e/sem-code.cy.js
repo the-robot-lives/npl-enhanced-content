@@ -1,15 +1,15 @@
 // BDD spec — sem-code · source: spec/schema/sem-code.md
 //
 // Feature: a verbatim listing with provenance chrome, marked lines, copy
-//          and wrap controls — fallback (reading bundle) and Lit tiers
-//          behave identically; JS-off it is a plain <pre>
+//          and wrap controls — the one bundle behaves identically over the
+//          class alias and the element form; JS-off it is a plain <pre>
 //   Scenario: chrome is the first child — filename, lang badge, controls in order
 //   Scenario: lines wrapped, marked lines are <mark>, text byte-identical
 //   Scenario: copy writes the listing and announces via the status region
 //   Scenario: wrap toggles data-wrap and reflects aria-pressed
 //   Scenario: an overflowing <pre> is focusable and labelled
 //   Scenario: default controls = copy only
-//   Scenario: upgraded tier — one chrome, same behaviour, handoff markers
+//   Scenario: element form — one chrome, same behaviour, claimed marker
 //   Scenario: JS-off — no chrome, no line spans, caption via CSS
 
 const SOURCE =
@@ -32,9 +32,9 @@ const visitWithClipboard = (url) =>
 function assertCode(url, marker) {
   beforeEach(() => visitWithClipboard(url));
 
-  it('carries the tier marker for this page', () => {
+  it('carries the upgrade marker for this page', () => {
     cy.get('#c-rotate').should('have.attr', marker.present);
-    cy.get('#c-rotate').should('not.have.attr', marker.absent);
+    if (marker.absent) cy.get('#c-rotate').should('not.have.attr', marker.absent);
   });
 
   it('renders exactly one chrome as the first child, in controls order', () => {
@@ -87,16 +87,16 @@ function assertCode(url, marker) {
 }
 
 describe('sem-code', () => {
-  describe('fallback tier — /demo/reading.html', () => {
-    assertCode('/demo/reading.html', { present: 'data-sem-fallback', absent: 'data-sem-upgraded' });
+  describe('class form — /demo/reading.html', () => {
+    assertCode('/demo/reading.html', { present: 'data-sem-upgraded', absent: null });
   });
 
-  describe('upgraded tier — /demo/reading-lit.html', () => {
+  describe('element form — /demo/reading-lit.html', () => {
     it('registers the custom element', () => {
       cy.visit('/demo/reading-lit.html');
       cy.window().then((win) => expect(win.customElements.get('sem-code')).to.exist);
     });
-    assertCode('/demo/reading-lit.html', { present: 'data-sem-upgraded', absent: 'data-sem-fallback' });
+    assertCode('/demo/reading-lit.html', { present: 'data-sem-upgraded', absent: null });
   });
 
   describe('JS-off', () => {

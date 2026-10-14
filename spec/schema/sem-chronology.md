@@ -1,6 +1,6 @@
 # Schema — `sem-chronology` / `sem-event`
 
-Contract per conventions.md v0.5. BDD source of truth for
+Contract per conventions.md v0.6. BDD source of truth for
 `test/e2e/sem-chronology.cy.js`. Changes here precede spec changes
 precede code.
 
@@ -17,7 +17,7 @@ list and never changes what an event means.
 ```html
 <sem-chronology kind="release-history" view-as="timeline" role="list">
   <sem-event role="listitem" when="2026-03-02" status="done">
-    <time datetime="2026-03-02">2 Mar 2026</time> v0.1 tagged — fallback tier ships.
+    <time datetime="2026-03-02">2 Mar 2026</time> v0.1 tagged — Lit bundle ships.
   </sem-event>
   <sem-event role="listitem" when="2026-06" until="2026-08" status="current">
     <time datetime="2026-06">Jun–Aug 2026</time> Reading-experience waves.
@@ -35,7 +35,7 @@ Parameters are read as `data-<name>` first, then bare `<name>`.
 - `status` (optional): `done | current | todo | blocked` — same
   vocabulary as `sem-step`. Absent means unannotated, **not** `todo`: an
   event is a record of something that happened, not a task.
-- **Recommended first child `<time datetime>`**: the human-readable date.
+- Recommended first child `<time datetime>`: the human-readable date.
   When present it is the date the reader sees; when absent the CSS renders
   `when` verbatim as the date label (`:not(:has(time))`).
 - `view-as`: `timeline` (default) | `list`. Unknown values render as
@@ -47,8 +47,8 @@ Parameters are read as `data-<name>` first, then bare `<name>`.
 
 - **Zero-JS element.** Pure CSS, pattern `sem-procedure`: a vertical rail
   with one marker per event, the date label above the body, status tint on
-  the marker (`done` correct-colour, `current` accent, `blocked` wrong-
-  colour, unannotated border-colour).
+  the marker (`done` correct-colour, `current` accent, `todo` muted-colour,
+  `blocked` wrong-colour, unannotated border-colour).
 - `view-as="list"`: no rail; events render as a plain stacked list with the
   date label inline.
 - The `<time>` child is the label when present; otherwise `::before`

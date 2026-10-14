@@ -1,16 +1,16 @@
 // BDD spec — sem-source · source: spec/schema/sem-source.md
 //
 // Feature: a transparent wrapper whose reader can flip a section between
-//          its rendered form and the literal authored markup — fallback
-//          (core snapshot + reading bundle) and Lit tiers behave identically;
-//          JS-off it is the rendered content and nothing else
+//          its rendered form and the literal authored markup — one bundle,
+//          identical over the class alias and the element form; JS-off it is
+//          the rendered content and nothing else
 //   Scenario: chrome is the first child — group, label, Rendered/Source with aria-pressed
 //   Scenario: Source shows the authored markup (known substring) and no runtime chrome
 //   Scenario: the fence is a sem-code with copy + wrap; copy writes the markup
 //   Scenario: Rendered restores the content; the fence is built once
 //   Scenario: an authored view-as="source" starts in source mode
 //   Scenario: the snapshot script is inert text/plain
-//   Scenario: upgraded tier — same behaviour, handoff markers
+//   Scenario: element form — same behaviour, the component claims the marker
 //   Scenario: focus stays on the activated button; print shows the rendered children
 //   Scenario: audience `hidden`, nested wrappers, missing snapshot (warns), deep link into source mode
 //   Scenario: JS-off — rendered content, no chrome, no fence, nothing hidden
@@ -30,9 +30,8 @@ const visitWithClipboard = (url) =>
 function assertSource(url, id, marker, authored) {
   beforeEach(() => visitWithClipboard(url));
 
-  it('carries the tier marker for this page', () => {
-    cy.get(id).should('have.attr', marker.present);
-    cy.get(id).should('not.have.attr', marker.absent);
+  it('carries the upgrade marker for this page', () => {
+    cy.get(id).should('have.attr', marker);
   });
 
   it('renders one chrome as the first child: a labelled group with Rendered | Source', () => {
@@ -58,7 +57,7 @@ function assertSource(url, id, marker, authored) {
     cy.get(`${id} > .sem-source-fence`).should('be.visible');
     cy.get(`${id} > .sem-source-fence > .sem-code`)
       .should('have.attr', 'data-lang', 'html')
-      .and('have.attr', 'data-sem-fallback');
+      .and('have.attr', 'data-sem-upgraded');
     cy.get(`${id} > .sem-source-fence code`).invoke('text').then((t) => {
       expect(t).to.contain(authored);
       // the markup is the document as written: no runtime chrome, no state
@@ -112,9 +111,9 @@ function assertSource(url, id, marker, authored) {
 }
 
 describe('sem-source', () => {
-  describe('fallback tier — /demo/index.html (class form)', () => {
+  describe('class form — /demo/index.html', () => {
     assertSource('/demo/index.html', '#s-flash',
-      { present: 'data-sem-fallback', absent: 'data-sem-upgraded' },
+      'data-sem-upgraded',
       '<div class="sem-facts" data-view-as="flashcards">');
 
     it('an authored data-view-as="source" starts in source mode', () => {
@@ -185,7 +184,7 @@ describe('sem-source', () => {
         el.id = 's-nosnap';
         el.innerHTML = '<p>late</p>';
         win.document.querySelector('.sem-enhanced-document').appendChild(el);
-        win.SemTextReading.enhanceSourceElement(el);
+        win.SemText.enhanceSourceElement(el);
       });
       cy.get('@warn').should('have.been.calledWithMatch', /sem-source: no snapshot/);
       cy.get('#s-nosnap [data-act="source"]').click();
@@ -199,9 +198,9 @@ describe('sem-source', () => {
         return cy.get('#s-fidelity .sem-source-fence code').invoke('text');
       };
 
-      it('prose that looks like a tier marker is left alone', () => {
+      it('prose that looks like the upgrade marker is left alone', () => {
         fence().then((t) => {
-          expect(t).to.contain('text data-sem-fallback="" is prose');
+          expect(t).to.contain('text data-sem-upgraded="" is prose');
           expect(t).to.contain('<p id="s-fid-text">');
         });
       });
@@ -245,13 +244,13 @@ describe('sem-source', () => {
     });
   });
 
-  describe('upgraded tier — /demo/reading-lit.html (element form)', () => {
+  describe('element form — /demo/reading-lit.html', () => {
     it('registers the custom element', () => {
       cy.visit('/demo/reading-lit.html');
       cy.window().then((win) => expect(win.customElements.get('sem-source')).to.exist);
     });
     assertSource('/demo/reading-lit.html', '#s-lit',
-      { present: 'data-sem-upgraded', absent: 'data-sem-fallback' },
+      'data-sem-upgraded',
       '<sem-code');
 
     it('the fence shows a Lit-upgraded note as authored: no role, no data-variant, no reflected default', () => {

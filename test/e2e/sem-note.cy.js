@@ -1,6 +1,7 @@
 // BDD spec — v0.4 class-based baseline · source: conventions.md v0.4, web/demo/index.html
 // Fixture serves the repo root; run any static server on port 4173.
-// The JS-off scenario uses the demo's `__semJsOff` kill-switch hook.
+// The JS-off scenario visits the built `.nojs.html` artifact (scripts stripped
+// at build time) — the kill-switch hook of the multi-bundle days is gone.
 //
 // Feature: the class-based baseline document renders and behaves with zero
 //          external resources beyond Tailwind CDN
@@ -53,9 +54,7 @@ describe('v0.4 baseline (web/demo/index.html)', () => {
   });
 
   it('JS-off: content fully readable, no occlusion', () => {
-    cy.visit('/demo/index.html', {
-      onBeforeLoad(win) { win.__semJsOff = true; }
-    });
+    cy.visit('/demo/index.nojs.html');
     cy.get('.sem-fact .sem-statement').should('be.visible');
     cy.get('.sem-fact .sem-conclusion').should('be.visible');
     cy.get('.sem-highlight').should('be.visible');

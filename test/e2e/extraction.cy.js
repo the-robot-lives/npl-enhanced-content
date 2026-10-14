@@ -7,7 +7,7 @@
 //   Scenario: one record per authored element, in document order
 //   Scenario: field mapping — sem-agent metadata
 //   Scenario: field mapping — sem-note variant and body
-//   Scenario: field mapping — sem-fact statement/conclusion/distractors
+//   Scenario: field mapping — sem-fact statement/conclusion/incorrectStatements
 //   Scenario: field mapping — sem-detail highlights (authored and occluded)
 //   Scenario: field mapping — sem-step status and positional ordinal
 //   Scenario: field mapping — sem-property data-key and value
@@ -65,12 +65,9 @@ const EXPECTED_TYPES = [
   'sem-note'
 ];
 
-const visitJsOff = () =>
-  cy.visit('/demo/index.html', {
-    onBeforeLoad(win) {
-      win.__semJsOff = true;
-    }
-  });
+// The built scripts-stripped artifact is the genuine JS-off surface; the
+// former __semJsOff kill-switch hook is retired with the multi-bundle days.
+const visitJsOff = () => cy.visit('/demo/index.nojs.html');
 
 /**
  * Visit with the fallback active but every container's view-as rewritten
@@ -157,14 +154,14 @@ describe('extraction', () => {
       });
     });
 
-    it('sem-fact: statement, conclusion, distractors kept out of the claim', () => {
+    it('sem-fact: statement, conclusion, incorrectStatements kept out of the claim', () => {
       extract().then((records) => {
         const jwt = byId(records, 'f-jwt');
         expect(jwt.fields.statement).to.equal('JWTs rotate per session');
         expect(jwt.fields.conclusion).to.equal(
           'Short-lived access tokens; the refresh grant issues a new pair.'
         );
-        expect(jwt.fields.distractors).to.deep.equal([]);
+        expect(jwt.fields.incorrectStatements).to.deep.equal([]);
         expect(jwt.text).to.equal(
           'JWTs rotate per session :: Short-lived access tokens; ' +
             'the refresh grant issues a new pair.'
@@ -172,8 +169,8 @@ describe('extraction', () => {
 
         const oidc = byId(records, 'f-oidc');
         expect(oidc.fields.conclusion).to.equal('Authorization');
-        expect(oidc.fields.distractors).to.deep.equal(['Cookie', 'X-Auth-Token']);
-        // Distractors are non-assertive: never in text, never a conclusion.
+        expect(oidc.fields.incorrectStatements).to.deep.equal(['Cookie', 'X-Auth-Token']);
+        // Incorrect statements are non-assertive: never in text, never a conclusion.
         expect(oidc.text).not.to.contain('Cookie');
       });
     });
@@ -318,7 +315,7 @@ describe('extraction', () => {
           '<sem-fact id="v3-f" kind="concept">' +
           '<statement>JWTs rotate per session</statement>' +
           '<conclusion>Short-lived access.</conclusion>' +
-          '<sem-distractor>localStorage.</sem-distractor>' +
+          '<incorrect-statement>localStorage.</incorrect-statement>' +
           '</sem-fact></sem-facts>' +
           '<sem-progress value="0.5" label="done"></sem-progress>';
         const records = extractRecords(root);
@@ -330,7 +327,7 @@ describe('extraction', () => {
         expect(records[1].kind).to.equal('concept');
         expect(records[1].fields.statement).to.equal('JWTs rotate per session');
         expect(records[1].fields.conclusion).to.equal('Short-lived access.');
-        expect(records[1].fields.distractors).to.deep.equal(['localStorage.']);
+        expect(records[1].fields.incorrectStatements).to.deep.equal(['localStorage.']);
         expect(records[2].fields.value).to.equal(0.5);
         expect(records[2].text).to.equal('done :: 50%');
       });

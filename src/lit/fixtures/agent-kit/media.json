@@ -1,0 +1,8 @@
+[
+  {"src":"https://picsum.photos/seed/arch-diagram/800/600","caption":"Architecture diagram — service mesh topology","mime":"image/jpeg"},
+  {"src":"https://picsum.photos/seed/deploy-shot/800/600","caption":"Deployment screenshot — ArgoCD sync dashboard","mime":"image/png"},
+  {"src":"https://picsum.photos/seed/build-log/800/600","caption":"CI build log — all checks green","mime":"image/png"},
+  {"src":"https://picsum.photos/seed/monitor-dash/800/600","caption":"Monitoring dashboard — request latency heatmap","mime":"image/webp"},
+  {"src":"https://www.w3schools.com/html/mov_bbb.mp4","caption":"Demo reel — agent workflow recording","mime":"video/mp4"},
+  {"src":"https://picsum.photos/seed/ticket-board/800/600","caption":"Ticket board — agents self-assigning tasks","mime":"image/gif"}
+]

@@ -1,6 +1,6 @@
 # Schema — `sem-code`
 
-Contract per conventions.md v0.5. BDD source of truth for
+Contract per conventions.md v0.6. BDD source of truth for
 `test/e2e/sem-code.cy.js`. Changes here precede spec changes precede code.
 
 ## Scope semantics
@@ -27,9 +27,27 @@ Class-form alias (conventions Appendix A): `div.sem-code[data-lang][data-filenam
 with the same `<pre><code>` child. Parameters are read as `data-<name>`
 first, then bare `<name>`.
 
+Every attribute is optional: the authoring forms below are all the same
+element, chosen to suit the listing.
+
+```html
+<!-- smallest valid listing: default controls (copy only), no chrome labels -->
+<sem-code><pre><code>npm run build</code></pre></sem-code>
+
+<!-- the defaults soften for a listing wider than the pane -->
+<sem-code lang="sh"><pre><code>curl -sS … | jq -r '.access_token'</code></pre></sem-code>
+
+<!-- start soft-wrapped; the Wrap control renders pressed -->
+<sem-code lang="json" filename="config.json" wrap controls="copy,wrap">
+<pre><code>{ "retry": { "attempts": 5 } }</code></pre>
+</sem-code>
+```
+
 - Child: **exactly one `<pre>`**, conventionally wrapping one `<code>`. The
   listing is the `<code>`'s text (the `<pre>`'s when no `<code>` is
-  authored).
+  authored). A `<code>` that already holds element children (author-side
+  highlighting) is left as authored — no line spans or `<mark>` are
+  generated over it.
 - `lang` (optional): language token, rendered as a badge.
 - `filename` (optional): provenance label.
 - `mark` (optional): emphasised lines, 1-based, comma list of numbers
@@ -41,7 +59,9 @@ first, then bare `<name>`.
 
 ## Rendered form
 
-### Fallback (reading bundle, `dist/semtext-reading.js`)
+### Enhanced (reading handler, `src/reading/code.ts`; the Lit
+component `SemCode` claims `data-sem-upgraded` at connect and runs the
+same function once its `<pre>` child exists)
 
 - `.sem-code-chrome` is inserted as the element's **first child**: filename
   (`.sem-code-filename`), language badge (`.sem-code-lang`), then the
@@ -61,15 +81,9 @@ first, then bare `<name>`.
   `aria-pressed`.
 - The `<pre>` receives `tabindex="0"` when it overflows horizontally, so a
   keyboard reader can scroll it.
-- The element carries `data-sem-fallback` once wired.
-
-### Upgraded (Lit `SemCode`)
-
-- Thin wrapper: on connect, claims `data-sem-upgraded` and clears
-  `data-sem-fallback`; once its `<pre>` child exists it calls the same
-  enhance function the bundle uses. The function is idempotent — chrome
-  already present means nothing is added twice — so a document that runs
-  both scripts, in either order, renders one chrome.
+- The element carries `data-sem-upgraded` once wired (the enhance
+  function is idempotent — chrome already present means nothing is added
+  twice).
 
 ### JS-off
 

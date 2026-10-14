@@ -20,7 +20,6 @@ export class SemReader extends SemElement {
     const go = (): void => {
       enhanceReaderElement(this);
       this.setAttribute('data-sem-upgraded', '');
-      this.removeAttribute('data-sem-fallback');
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true });
     else go();

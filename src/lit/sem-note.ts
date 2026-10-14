@@ -4,7 +4,7 @@ import { SemElement } from './base.js';
  * sem-note — Lit upgrade of the callout (tag form or class alias).
  * Light DOM per PRD §4 rule 5: content stays searchable/copyable;
  * Lit owns behavior (collapsed toggle, variant reaction), not markup.
- * Handoff contract (data-sem-upgraded / data-sem-fallback) comes from SemElement.
+ * Handoff contract (data-sem-upgraded) comes from SemElement.
  */
 export class SemNote extends SemElement {
   static properties = {
@@ -58,9 +58,15 @@ export class SemNote extends SemElement {
       while (this.firstChild) body.appendChild(this.firstChild);
       this.appendChild(body);
     }
-    const sum = document.createElement('div');
+    // a real button: click plus keyboard activation, with the UA control
+    // chrome stripped by the theme so it still reads as the teaser it is
+    const sum = document.createElement('button');
+    sum.type = 'button';
     sum.className = 'sem-note-summary';
-    sum.textContent = this.#bodyText().split(/\s+/).slice(0, 10).join(' ') + ' …';
+    sum.setAttribute('aria-expanded', 'false');
+    const text = this.#bodyText();
+    sum.textContent =
+      (text ? text.split(/\s+/).slice(0, 10).join(' ') : this.variant) + ' …';
     this.insertBefore(sum, body);
   }
 
@@ -84,8 +90,14 @@ export class SemNote extends SemElement {
 
   #onSummaryClick(e: Event): void {
     const t = e.target;
-    if (t instanceof Element && t.classList.contains('sem-note-summary')) {
-      this.collapsed = false;
+    if (!(t instanceof Element) || !t.classList.contains('sem-note-summary')) return;
+    const body = this.querySelector('.sem-note-body');
+    this.collapsed = false;
+    // the teaser removes itself in `updated()`; keep keyboard users anchored
+    // on the body they just opened instead of dropping focus to <body>
+    if (body) {
+      body.setAttribute('tabindex', '-1');
+      void this.updateComplete.then(() => (body as HTMLElement).focus());
     }
   }
 }

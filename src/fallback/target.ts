@@ -33,7 +33,7 @@ const REVEAL = sel('reveal');
 const SOURCE = sel('source') + '[data-view-as="source"]';
 const OPENERS =
   sel('note') + '[collapsed], ' + VIEW + ':not([data-active]), ' +
-  sel('facts') + ':is([data-sem-fallback], [data-sem-upgraded]) > ' + sel('fact') + ':not(.sem-current)';
+  sel('facts') + '[data-sem-upgraded] > ' + sel('fact') + ':not(.sem-current)';
 
 let timer = 0;
 

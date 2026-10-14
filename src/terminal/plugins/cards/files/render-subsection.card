@@ -1,0 +1,11 @@
+# render-card demo — a heavier frame for a how-to card.
+name: render-subsection
+title: One section at a time
+theme: double
+description: |
+  A SemText document renders whole, or one section at a time:
+
+    semtext render demo/auth-notes.sem.html --section fetch-queue
+
+  `semtext toc demo/auth-notes.sem.html` lists the sections and
+  subsections first — with the ids and numbers that --section takes.

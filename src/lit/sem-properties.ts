@@ -16,7 +16,6 @@ export class SemProperties extends SemElement {
     void this.whenChildrenReady(':scope > :is(sem-property, .sem-property)').then(() => {
       enhanceGlossaryElement(this);
       this.setAttribute('data-sem-upgraded', '');
-      this.removeAttribute('data-sem-fallback');
     });
   }
 }

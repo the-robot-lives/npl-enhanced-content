@@ -39,9 +39,8 @@ function clean(nodes: DocumentFragment): string {
   const tpl = document.createElement('template');
   tpl.content.appendChild(nodes.cloneNode(true));
   const root = tpl.content;
-  root.querySelectorAll('[data-sem-upgraded], [data-sem-fallback]').forEach((e) => {
+  root.querySelectorAll('[data-sem-upgraded]').forEach((e) => {
     e.removeAttribute('data-sem-upgraded');
-    e.removeAttribute('data-sem-fallback');
   });
   const keep: string[] = [];
   // Sentinel: a C0 control (U+0001–U+001F) absent from the text; bounded
@@ -61,6 +60,13 @@ function clean(nodes: DocumentFragment): string {
   while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
   let indent = Infinity;
   lines.forEach((l) => {
+    // A line holding only a sentinel is the placeholder for verbatim
+    // preformatted content: pre lines are authored flush-left, so the
+    // placeholder sits at column 0 and must not drive the common indent.
+    // The sentinel payload is the keep-index digits only.
+    const bare = l.trim();
+    if (bare.length > 2 * mark.length && bare.startsWith(mark) && bare.endsWith(mark)
+      && /^\d+$/.test(bare.slice(mark.length, -mark.length))) return;
     if (l.trim()) indent = Math.min(indent, l.match(/^[ \t]*/)![0].length);
   });
   return lines.map((l) => l.slice(indent < Infinity ? indent : 0)).join('\n')
@@ -122,7 +128,7 @@ export function enhanceSourceElement(el: Element): void {
     fence.appendChild(code);
     el.appendChild(fence);
     enhanceCodeElement(code);
-    code.setAttribute('data-sem-fallback', '');
+    code.setAttribute('data-sem-upgraded', '');
   };
   const mode = (m: string): void => {
     if (m == 'source') build();

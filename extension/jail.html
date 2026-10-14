@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText render jail</title>
+<!-- Render jail (extension sandboxed page, design §4.3/§4.4). Declared under
+     manifest "sandbox.pages": Chrome applies the sandbox CSP from
+     content_security_policy.sandbox (passive remote resources only, script
+     from this package, connect-src confined to the extension origin) and
+     such pages cannot call chrome.* APIs — the invariants are enforced by
+     the browser, twice (opaque origin + sandboxed page). No meta CSP here:
+     a meta policy can only tighten, and the hosted jail's meta names its
+     own dev origin, which would break this frame. The embedding iframe in
+     viewer-boot.mjs keeps sandbox="allow-scripts" (opaque origin). -->
+<!-- Trusted bundle first (classic, parse-blocking): the global SemText must
+     exist when jail-boot.mjs (module, deferred) runs. Copied from the
+     feat/lit-only-bundle build by scripts/build-extension.mjs — MV3 forbids
+     remote code (design §4.1). -->
+<script src="./vendor/semtext.js"></script>
+<script type="module" src="./vendor/jail-boot.mjs"></script>
+</head>
+<body>
+</body>
+</html>

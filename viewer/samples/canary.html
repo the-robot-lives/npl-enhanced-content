@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" data-sem-theme="plain-prose">
+<head>
+<meta charset="utf-8">
+<title>SemText viewer canary — attack corpus</title>
+<!-- Attack canary (design §9 M1). Every construct below must be inert:
+     the strip pass removes it before adoption, and the jail never runs
+     document scripts. If ANY canary payload executes, it postMessages the
+     boot loader with an unknown type, tripping the security banner. -->
+<base href="https://rebase.example.net/">
+<meta http-equiv="refresh" content="0;url=https://rebase.example.net/moved">
+<script>
+  parent.postMessage({ type: 'canary:script-ran' }, '*');
+  document.addEventListener('DOMContentLoaded', function () {
+    parent.postMessage({ type: 'canary:script-domcontentloaded' }, '*');
+  });
+</script>
+<style>
+  @import url("https://fonts.example.net/canary.css");
+  body { padding: 2rem; font-family: system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<sem-enhanced-document>
+  <h1>Canary document</h1>
+  <p id="canary-marker">If you can read this, the document body rendered after
+     the strip pass removed every attack payload below.</p>
+
+  <img src="https://beacons.example.net/pixel.png" alt="consent-prompt beacon"
+       onerror="parent.postMessage({type:'canary:onerror-ran'}, '*')"
+       onload="parent.postMessage({type:'canary:onload-ran'}, '*')">
+
+  <a id="canary-js-link" href="javascript:parent.postMessage({type:'canary:js-url-ran'}, '*')">javascript: link</a>
+  <a id="canary-vbs-link" href="vbscript:msgbox">vbscript: link</a>
+  <a id="canary-data-link" href="data:text/html,<script>parent.postMessage({type:'canary:data-url-ran'},'*')</script>">data:text/html link</a>
+
+  <iframe srcdoc="&lt;script&gt;parent.postMessage({type:'canary:srcdoc-ran'},'*')&lt;/script&gt;"></iframe>
+  <frame src="https://beacons.example.net/frame"></frame>
+  <object data="https://beacons.example.net/object.swf"></object>
+  <embed src="https://beacons.example.net/embed.swf">
+  <applet code="Beacon"></applet>
+
+  <template>
+    <script>parent.postMessage({type:'canary:template-script-ran'}, '*');</script>
+    <img src="https://beacons.example.net/template.png" alt="template beacon"
+         onerror="parent.postMessage({type:'canary:template-onerror-ran'}, '*')">
+  </template>
+
+  <sem-note variant="warning">
+    <div class="sem-note-body">The consent prompt should list exactly two
+      hosts: beacons.example.net (images) and fonts.example.net (@import).</div>
+  </sem-note>
+</sem-enhanced-document>
+</body>
+</html>

@@ -20,7 +20,7 @@
 //   Scenario: print — rendered body only, whatever the view
 //   Scenario: alone (md bundle only) — element marked, root not; fence gains chrome on re-entry;
 //             pathological input (10k `*`, 5000 `>`, 40-deep list) renders in bounded time
-//   Scenario: upgraded tier — one chrome, same behaviour, handoff markers
+//   Scenario: element form — one chrome, same behaviour, handoff markers
 //   Scenario: JS-off — no chrome, the raw Markdown visible as pre-wrapped text
 
 const TABLE_SOURCE =
@@ -45,9 +45,8 @@ const visitWithClipboard = (url) =>
 function assertMd(url, marker) {
   beforeEach(() => visitWithClipboard(url));
 
-  it('carries the tier marker for this page', () => {
-    cy.get('#m-table').should('have.attr', marker.present);
-    cy.get('#m-table').should('not.have.attr', marker.absent);
+  it('carries the upgrade marker for this page', () => {
+    cy.get('#m-table').should('have.attr', marker);
   });
 
   it('renders exactly one chrome as the first child: label, toggle, copy, status', () => {
@@ -228,16 +227,16 @@ const emulate = (params) =>
     Cypress.automation('remote:debugger:protocol', { command: 'Emulation.setEmulatedMedia', params }));
 
 describe('sem-md', () => {
-  describe('fallback tier — /demo/reading.html', () => {
-    assertMd('/demo/reading.html', { present: 'data-sem-fallback', absent: 'data-sem-upgraded' });
+  describe('class form — /demo/reading.html', () => {
+    assertMd('/demo/reading.html', 'data-sem-upgraded');
   });
 
-  describe('upgraded tier — /demo/reading-lit.html', () => {
+  describe('element form — /demo/reading-lit.html', () => {
     it('registers the custom element', () => {
       cy.visit('/demo/reading-lit.html');
       cy.window().then((win) => expect(win.customElements.get('sem-md')).to.exist);
     });
-    assertMd('/demo/reading-lit.html', { present: 'data-sem-upgraded', absent: 'data-sem-fallback' });
+    assertMd('/demo/reading-lit.html', 'data-sem-upgraded');
   });
 
   describe('print', () => {
@@ -254,27 +253,21 @@ describe('sem-md', () => {
     });
   });
 
-  describe('alone — /demo/md-only.html (no core, no reading bundle)', () => {
+  describe('everywhere — /demo/md-only.html (the one bundle carries md into every document)', () => {
     beforeEach(() => cy.visit('/demo/md-only.html'));
 
-    it('marks the element, not the root; the fence is a plain sem-code until a reading bundle appears', () => {
-      cy.get('#mo-table').should('have.attr', 'data-sem-fallback');
-      cy.get('html').should('not.have.attr', 'data-sem-fallback');
-      cy.get('#decoy').should('be.visible');
+    it('marks the element and the root; the raw fence ships with its chrome', () => {
+      cy.get('#mo-table').should('have.attr', 'data-sem-upgraded');
+      cy.get('html').should('have.attr', 'data-sem-upgraded');
+      // the deck is a plain list — no handler claims it — but the root marker
+      // is document-wide, so the quiz decoy hides all the same (D12)
+      cy.get('#decoy').should('not.be.visible');
       cy.get('#mo-table .sem-md-body tbody td').first().should('have.text', '1');
       cy.get('#mo-table .sem-md-raw .sem-code[data-lang="markdown"]').should('exist');
-      cy.get('#mo-table .sem-md-raw .sem-code-chrome').should('not.exist');
-      cy.window().then((win) => {
-        win.SemTextReading = {
-          enhanceCodeElement(fence) {
-            if (fence.querySelector(':scope > .sem-code-chrome')) return;
-            const c = win.document.createElement('div');
-            c.className = 'sem-code-chrome';
-            fence.insertBefore(c, fence.firstChild);
-          }
-        };
-        win.SemTextMd.enhance(win.document);
-      });
+      cy.get('#mo-table .sem-md-raw .sem-code > .sem-code-chrome').should('have.length', 1);
+      cy.get('#mo-table > .sem-md-chrome').should('have.length', 1);
+      // a host re-run is idempotent: no duplicate chrome appears
+      cy.window().then((win) => win.SemText.enhanceMdDocument(win.document));
       cy.get('#mo-table .sem-md-raw .sem-code > .sem-code-chrome').should('have.length', 1);
       cy.get('#mo-table > .sem-md-chrome').should('have.length', 1);
     });
@@ -295,7 +288,7 @@ describe('sem-md', () => {
         make('p-nl', '[nl](<java\nscript:alert(1)>) ![nlimg](<java\nscript:alert(1)>)');
         make('p-surrogate', '[lone](docs/\ud800.html) after');
         const t0 = win.performance.now();
-        win.SemTextMd.enhance(win.document);
+        win.SemText.enhanceMdDocument(win.document);
         expect(win.performance.now() - t0).to.be.lessThan(2000);
       });
       cy.get('#p-stars .sem-md-body').invoke('text').then((t) => expect(t).to.contain('*'.repeat(10000) + ' end'));
@@ -311,7 +304,7 @@ describe('sem-md', () => {
       });
       cy.get('#p-surrogate .sem-md-body').should('contain.text', 'lone').and('contain.text', 'after');
       cy.get('#p-surrogate > .sem-md-chrome').should('exist');
-      cy.get('#p-stars, #p-quotes, #p-list').each(($e) => cy.wrap($e).should('have.attr', 'data-sem-fallback'));
+      cy.get('#p-stars, #p-quotes, #p-list').each(($e) => cy.wrap($e).should('have.attr', 'data-sem-upgraded'));
     });
   });
 
