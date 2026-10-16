@@ -324,7 +324,7 @@ describe('storage + Tab completion', () => {
     const note = el.lines[el.lines.length - 1];
     expect(note?.kind).toBe('comment'); // candidates listed as one comment line
     expect(note?.text).toContain('token-rotation.html'); // listed inline
-    expect(note?.text).toContain('more'); // capped display above 8 candidates
+    expect(note?.text).not.toContain('more'); // 10 candidates fit under the 12 cap (shell-v3-tabs-ui)
   });
 });
 
