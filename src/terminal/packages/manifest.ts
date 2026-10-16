@@ -25,10 +25,11 @@ import { gitPackage } from './git/stub.js';
 import {netPackage} from './net/stub.js';
 import { awkPackage } from './awk/stub.js';
 import { jqPackage } from './jq/stub.js';
+import { fsPackage } from './fs/stub.js';
 /* (empty at the contract commit — the sample lands with the build glob)     */
 
 /** Every registered package, in registration order. */
-export const PACKAGES: LazyPackage[] = [awkPackage, textPackage, gitPackage, netPackage, jqPackage];
+export const PACKAGES: LazyPackage[] = [awkPackage, textPackage, gitPackage, netPackage, jqPackage, fsPackage];
 
 /** One PluginManifest carrying every package's stub commands. */
 export const packagesPlugin: PluginManifest = {
