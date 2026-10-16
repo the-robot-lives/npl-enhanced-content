@@ -69,7 +69,12 @@ function build(el: Element, source: string, enhanceFence?: (fence: Element) => v
   const controls = (param(el, 'controls') || 'toggle,copy').split(/[,\s]+/).filter(Boolean);
   const label = param(el, 'label') || '';
   let raw = param(el, 'view-as') === 'raw';
-  el.textContent = '';
+  // Marker-preserving wipe: lit light-DOM part markers are runtime chrome —
+  // ejecting them makes the NEXT render throw ("ChildPart has no parentNode").
+  for (const n of Array.from(el.childNodes)) {
+    if (n.nodeType === Node.COMMENT_NODE) continue; // lit part markers
+    el.removeChild(n);
+  }
 
   const div = (cls: string): HTMLDivElement => {
     const d = document.createElement('div');

@@ -19,18 +19,16 @@ import type { RendererChoice } from './view.js';
  * One menu row. `hint` is the short right-aligned note (a disabled reason
  * or an affordance) — it is presentational and aria-hidden; the accessible
  * name stays the label alone.
+ *
+ * `id` is the stable verb id (e2e and tests key off this, never the label).
+ * The terminal's own ids are the closed union below; EDITOR.md §4.7 widens
+ * the type to `string` so the editor can host its own verbs
+ * (`properties`, `edit`, `duplicate`, `move-up`, `move-down`, `wrap-in`,
+ * `convert-to`, `insert-before`, `insert-after`, `delete`) through the
+ * `items` option. Terminal ids and their e2e hooks are unchanged.
  */
 export interface MenuItemSpec {
-  /** Stable verb id — e2e and tests key off this, never the label. */
-  readonly id:
-    | 'copy'
-    | 'select-all'
-    | 'paste'
-    | 'find'
-    | 'switch-view'
-    | 'clear'
-    | 'transcript'
-    | 'browser-menu';
+  readonly id: string;
   readonly label: string;
   /** Disabled items stay focusable (aria-disabled) but never activate. */
   readonly disabled: boolean;

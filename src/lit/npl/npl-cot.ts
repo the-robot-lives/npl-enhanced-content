@@ -79,6 +79,12 @@ export class NplCot extends SemElement {
     return this.#authored().filter((el) => !isOutcome(el)).length;
   }
 
+  /** Editor rerender seam (EDITOR.md §4.4): re-home authored children into
+   *  the step/outcome chrome after a controller re-projection. */
+  rehome(): void {
+    this.#move(this.#authored());
+  }
+
   #move(authored: Element[]): void {
     const steps = authored.filter((el) => !isOutcome(el));
     const outcome = authored.find(isOutcome) ?? null;
@@ -108,3 +114,8 @@ export class NplCot extends SemElement {
 }
 
 defineNpl('npl-cot', NplCot);
+
+/** Editor seam — see NplCot.rehome. */
+export function enhanceCotElement(el: Element): void {
+  if (el instanceof NplCot) el.rehome();
+}

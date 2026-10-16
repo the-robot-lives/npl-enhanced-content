@@ -162,6 +162,8 @@ export class SemChat extends SemElement {
 
     const log = document.createElement('div');
     log.className = 'sem-chat-log';
+    // Runtime chrome (§2.4): positional mapping must skip it.
+    log.setAttribute('data-sem-chrome', '');
     log.setAttribute('role', 'log');
     log.setAttribute('aria-live', 'polite');
     log.setAttribute('aria-label', 'Conversation');
@@ -169,12 +171,16 @@ export class SemChat extends SemElement {
 
     const error = document.createElement('div');
     error.className = 'sem-chat-error';
+    // Runtime chrome (§2.4): positional mapping must skip it.
+    error.setAttribute('data-sem-chrome', '');
     error.setAttribute('role', 'alert');
     error.hidden = true;
     this.#error = error;
 
     const composer = document.createElement('form');
     composer.className = 'sem-chat-composer';
+    // Runtime chrome (§2.4): positional mapping must skip it.
+    composer.setAttribute('data-sem-chrome', '');
 
     const input = document.createElement('textarea');
     input.className = 'sem-chat-input';
@@ -308,7 +314,18 @@ export class SemChat extends SemElement {
     this.#mode = nodes.length > 0 ? 'authored' : 'none';
 
     for (const message of this.#messages) {
-      if (message.el && this.#log) this.#log.append(message.el);
+      if (message.el && this.#log) {
+        // Marker-preserving move (§4.4, sem-browser precedent): lit part
+        // markers anchored immediately before an authored node travel with
+        // it — ejecting them breaks the element's next light-DOM commit.
+        let prev = message.el.previousSibling;
+        while (prev !== null && prev.nodeType === Node.COMMENT_NODE) {
+          const marker = prev;
+          prev = marker.previousSibling;
+          this.#log.insertBefore(marker, message.el);
+        }
+        this.#log.append(message.el);
+      }
       const seeded = parseJson(message.el?.getAttribute('data-reactions') ?? '');
       const map = asRecord(seeded);
       if (!map) continue;

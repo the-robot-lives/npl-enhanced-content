@@ -99,7 +99,10 @@ export class SemBrowser extends SemElement {
     // JS-off document keeps its children on the host (plain framed document),
     // the upgrade re-homes them behind the chrome. One move, idempotent.
     if (!this.src) {
-      for (const child of Array.from(this.childNodes)) viewport.appendChild(child);
+      for (const child of Array.from(this.childNodes)) {
+        if (child.nodeType === Node.COMMENT_NODE) continue; // lit part markers
+        viewport.appendChild(child);
+      }
     } else {
       // Host fallback chrome (landing contract): with a src the authored
       // children are the zero-JS fallback only — hidden once the element

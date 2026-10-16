@@ -76,7 +76,9 @@ export class NplArtifact extends SemElement {
   }
 
   /** Turn the authored title/content children into their display chrome. */
-  private enhance(): void {
+  /** Editor rerender seam (EDITOR.md §4.4): idempotent re-enhance after a
+   *  controller re-projection restores the authored form. */
+  enhance(): void {
     const type = nplParam(this, 'type', this.type || 'text');
 
     const title = this.querySelector(TITLE);
@@ -119,3 +121,8 @@ export class NplArtifact extends SemElement {
 }
 
 defineNpl('npl-artifact', NplArtifact);
+
+/** Editor seam — see NplArtifact.enhance. */
+export function enhanceArtifactElement(el: Element): void {
+  if (el instanceof NplArtifact) el.enhance();
+}

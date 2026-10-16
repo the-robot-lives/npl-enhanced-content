@@ -44,7 +44,7 @@
  *                                                   and copy self-label from
  *                                                   here; never hardcode the
  *                                                   spec revision in a page.
- *   <!-- sem:inline pkg-version -->                 "0.7.0" — package.json
+ *   <!-- sem:inline pkg-version -->                 "0.7.1" — package.json
  *                                                   `version`.
  *   <!-- sem:inline build-sha -->                   short SHA of the checkout
  *                                                   the build ran in ("unknown"

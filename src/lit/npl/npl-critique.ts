@@ -59,7 +59,7 @@ export class NplCritique extends SemElement {
     const parsed = typeof document === 'undefined' || document.readyState !== 'loading';
     if (parsed && this.querySelector(PARTS)) {
       this.#wired = true;
-      this.#structure();
+      this.structure();
       return;
     }
     // upgraded before its children were parsed (or they stream in later):
@@ -69,11 +69,13 @@ export class NplCritique extends SemElement {
     void this.whenChildrenReady(PARTS).then(() => {
       if (this.#wired) return;
       this.#wired = true;
-      this.#structure();
+      this.structure();
     });
   }
 
-  #structure(): void {
+  /** Editor rerender seam (EDITOR.md §4.4): idempotent re-labeling after a
+   *  controller re-projection. */
+  structure(): void {
     const label = (selector: string, cls: string): Element | null => {
       const part = this.querySelector(selector);
       if (part) part.classList.add(cls);
@@ -131,3 +133,8 @@ export class NplCritique extends SemElement {
 }
 
 defineNpl('npl-critique', NplCritique);
+
+/** Editor seam — see NplCritique.structure. */
+export function enhanceCritiqueElement(el: Element): void {
+  if (el instanceof NplCritique) el.structure();
+}
