@@ -93,7 +93,12 @@ export function attachEditor(el: SemElement, ctx: EditorContext): EditController
       .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/<template[^>]*\\bsem-source-raw\\b[^>]*>[\\s\\S]*?<\/template>/gi, '')
       // Runtime-only attrs (base.ts's claim marker et al.) never export.
-      .replace(/\\sdata-sem-upgraded(?:="[^"]*"|='[^']*'|=[^\\s>]*)?(?=[\\s>])/gi, '');
+      .replace(/\\sdata-sem-upgraded(?:="[^"]*"|='[^']*'|=[^\\s>]*)?(?=[\\s>])/gi, '')
+      // No comment opener survives, terminated or not (an unterminated
+      // `<!--` inside an attribute value defeats pair-matching) — the
+      // capture source is comment-free by construction.
+      .split('<!--')
+      .join('');
     const parsed = tryParse(source);
     if (!parsed.ok) {
       ctx.announce(`Cannot edit ${el.tagName.toLowerCase()}: failed to parse`);
