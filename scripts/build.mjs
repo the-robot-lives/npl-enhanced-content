@@ -46,7 +46,11 @@
  *
  * The target declares a size budget; the build prints measured size against
  * it and fails only if `--strict-budget` is passed, so a budget overrun is
- * always visible but never silently blocks local work. The budget history is
+ * always visible but never silently blocks local work. Targets flagged
+ * `budgetReportOnly: true` (the shell and editor bundles — opt-in tools,
+ * deliberately uncapped per user decision 2026-10-17) print their budget
+ * row but never set the failure flag; every reader bundle's budget stays a
+ * hard fail. The budget history is
  * recorded in ROADMAP.md ("R — Reading experience"); change both together.
  *
  * `--out <dir>` writes every artifact into <dir> instead of dist/ and never
@@ -151,6 +155,9 @@ const targets = [
     // 6b34053 updated ROADMAP "Size budgets" but not this constant — the
     // build table has disagreed with the recorded budget since).
     budgetKb: 256,
+    // Opt-in tool bundle, uncapped by user decision 2026-10-17: the budget
+    // row reports, `--strict-budget` never fails on it.
+    budgetReportOnly: true,
     required: true,
   },
   {
@@ -175,6 +182,9 @@ const targets = [
     entry: 'src/editor/index.ts',
     global: 'SemTextEditor',
     budgetKb: 256,
+    // Opt-in tool bundle, uncapped by user decision 2026-10-17: the budget
+    // row reports, `--strict-budget` never fails on it.
+    budgetReportOnly: true,
     required: true,
     editorSchema: true,
   },
@@ -250,8 +260,11 @@ for (const target of targets) {
   const bytes = statSync(file).size;
   const gzip = gzipSync(readFileSync(file)).length;
   const budget = target.budgetKb * 1024;
-  if (bytes > budget) overBudget = true;
-  results.push({ name: target.name, bytes, gzip, budget, ok: bytes <= budget });
+  const over = bytes > budget;
+  // Report-only budgets (shell + editor, uncapped opt-in tools) print ✗ OVER
+  // but never trip the --strict-budget exit; reader budgets always do.
+  if (over && !target.budgetReportOnly) overBudget = true;
+  results.push({ name: target.name, bytes, gzip, budget, ok: !over, reportOnly: target.budgetReportOnly === true });
 }
 
 /* js-shell manifest — both terminal tags ship in the one standalone bundle
@@ -442,7 +455,7 @@ console.log('  ------------------------------------------------');
 for (const r of results) {
   const kb = (n) => (n / 1024).toFixed(1).padStart(6) + ' KB';
   console.log(
-    `  ${r.name.padEnd(20)}${kb(r.bytes)}${kb(r.gzip)}${kb(r.budget)}  ${r.ok ? '✓' : '✗ OVER'}`,
+    `  ${r.name.padEnd(20)}${kb(r.bytes)}${kb(r.gzip)}${kb(r.budget)}  ${r.ok ? '✓' : r.reportOnly ? '✗ OVER (report-only)' : '✗ OVER'}`,
   );
 }
 for (const c of cssCopies) console.log(`  ${c.from.padEnd(20)}      → ${c.to}`);
