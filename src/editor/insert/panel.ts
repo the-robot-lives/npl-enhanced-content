@@ -43,6 +43,13 @@ export function openInsertPanel(
   options: InsertPanelOptions = {},
 ): HTMLDialogElement | null {
   const doc = ctx.doc;
+  // single-panel invariant: a second activation (e.g. Enter replayed while
+  // the edit bundle was still importing) must replace any open panel, not
+  // stack a second modal on the top layer — two open modals make every
+  // later focus() into the canvas a silent no-op.
+  for (const stale of Array.from(document.querySelectorAll('dialog.sem-ed-ins-panel'))) {
+    (stale as HTMLDialogElement).close();
+  }
   const openedAtVersion = doc.version;
   const available = entriesForTarget(doc, target);
   if (available.length === 0) {
@@ -182,8 +189,11 @@ export function openInsertPanel(
   };
 
   dialog.addEventListener('close', () => {
-    priorFocus?.focus();
+    // leave the top layer BEFORE restoring focus: focus() into an open
+    // modal dialog's inert background is a silent no-op, so a focus-first
+    // order can strand the caret on <body> under slow/throttled renderers.
     dialog.remove();
+    if (priorFocus?.isConnected) priorFocus.focus();
     // result 'insert' means a pick already ran; anything else is a cancel
     if (dialog.dataset.semEdResult !== 'insert') options.onCancel?.();
   });

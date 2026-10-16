@@ -353,8 +353,9 @@ export function openWizard(
   const priorFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   dialog.addEventListener('close', () => {
     const inserted = dialog.dataset.semEdResult === 'insert'; // happy-dom-safe
-    priorFocus?.focus();
+    // leave the top layer before restoring focus (inert-background no-op)
     dialog.remove();
+    if (priorFocus?.isConnected) priorFocus.focus();
     if (!inserted) options.onCancel?.();
   });
 

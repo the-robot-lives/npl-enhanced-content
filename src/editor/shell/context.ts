@@ -242,8 +242,16 @@ export class EditorContext {
   announce(message: string): void {
     const el = this.#liveRegion;
     if (!el) return;
+    if (el.textContent !== message) {
+      // synchronous swap: the region carries the new message immediately.
+      // A deferred write starves under throttled renderers (background
+      // tabs, headless CI) where rAF can fire late or never — a cleared
+      // live region that never refills is a lost announcement.
+      el.textContent = message;
+      return;
+    }
+    // identical repeat: clear now, re-set next frame so ATs re-read it
     el.textContent = '';
-    // next frame: the region is non-empty again and ATs re-read it
     const raf =
       typeof requestAnimationFrame === 'function'
         ? requestAnimationFrame

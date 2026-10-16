@@ -574,8 +574,9 @@ export function openPropertiesModal(ctx: EditorContext, options: PropertyModalOp
   const priorFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   dialog.addEventListener('close', () => {
     const saved = dialog.returnValue === 'save';
-    priorFocus?.focus();
+    // leave the top layer before restoring focus (inert-background no-op)
     dialog.remove();
+    if (priorFocus?.isConnected) priorFocus.focus();
     options.onClose?.(saved);
   });
 
