@@ -632,7 +632,12 @@ function applyAndInvert(doc: EditorDocumentImpl, op: EditOp): EditOp[] {
       const next = table.get(op.parent) as ElementNode;
       next.children.splice(idx, 0, n);
       n.parentId = op.parent;
-      return [{ type: 'moveNode', node: op.node, parent: prev.id, index: prevIdx }];
+      // Same-parent BACKWARD moves (the element moved towards the front)
+      // need index+1: the inverse runs against a list that still contains
+      // the element, so inserting at prevIdx would land one short.
+      const sameParent = prev.id === op.parent;
+      const backward = sameParent && prevIdx > op.index;
+      return [{ type: 'moveNode', node: op.node, parent: prev.id, index: backward ? prevIdx + 1 : prevIdx }];
     }
     case 'setAttr': {
       const el = table.get(op.node) as ElementNode;

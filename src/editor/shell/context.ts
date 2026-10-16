@@ -17,6 +17,11 @@
  */
 
 import type { EditorDocument, EditorNode, NodeId, Unsubscribe } from '../model/types.js';
+import type { EditDescriptor } from '../schema/types.js';
+// Type-only: the shell context structurally satisfies the controller's
+// EditorContext (one shared context of record — EDITOR.md §4.2); the entry
+// hands `ctx` itself to the controller, so the shapes must stay aligned.
+import type { EditorContext as ControllerEditorContext, ShellHooks as ControllerShellHooks } from '../controller/types.js';
 
 // ── Schema & descriptor views (structural — matches elements.json §3.1 and
 //    the EDITOR.md §3.3 descriptor, restricted to the fields the shell reads) ──
@@ -106,6 +111,38 @@ export function getCanvasProjector(): CanvasProjector | null {
   return canvasProjector;
 }
 
+/** Full-descriptor lookup backing the controller-facing `descriptors(tag)`
+ *  method (the schema registry's `getDescriptor` — hand descriptors
+ *  included). Wired by integrate; defaults to a null lookup so shell-only
+ *  hosts/tests need no registry. */
+export type DescriptorLookup = (tag: string) => EditDescriptor | null;
+
+let fullDescriptorLookup: DescriptorLookup = () => null;
+export function setDescriptorLookup(lookup: DescriptorLookup): void {
+  fullDescriptorLookup = lookup;
+}
+export function getDescriptorLookup(): DescriptorLookup {
+  return fullDescriptorLookup;
+}
+
+/** Default views for hosts that inject no per-element bridges. The entry
+ *  wires the bundled schema loader / descriptor registry adapters; tests
+ *  may leave them null (attribute-only modal, `<tag>` titles). */
+let defaultSchema: SchemaProvider | null = null;
+let defaultDescriptorView: DescriptorProvider | null = null;
+export function setDefaultSchemaProvider(p: SchemaProvider | null): void {
+  defaultSchema = p;
+}
+export function getDefaultSchemaProvider(): SchemaProvider | null {
+  return defaultSchema;
+}
+export function setDefaultDescriptorView(p: DescriptorProvider | null): void {
+  defaultDescriptorView = p;
+}
+export function getDefaultDescriptorView(): DescriptorProvider | null {
+  return defaultDescriptorView;
+}
+
 // ── The context ───────────────────────────────────────────────────────────────
 
 export type ContextEventMap = {
@@ -118,8 +155,14 @@ export class EditorContext {
   readonly doc: EditorDocument;
   /** Schema service; `null` until the schema lane's loader is wired. */
   schema: SchemaProvider | null = null;
-  /** Descriptor registry; `null` until descriptors land. */
-  descriptors: DescriptorProvider | null = null;
+  /** The shell's summary descriptor view (titles / item lists for the
+   *  outline, crumbs and property modal). Distinct from `descriptors(tag)`,
+   *  the controller-facing full-descriptor method below. */
+  descriptorView: DescriptorProvider | null = null;
+  /** Shell hooks (§4.2): property modal, pickers, inserter. Assigned by the
+   *  entry per document (after wireInsert builds the hooks); `null` keeps
+   *  the controller's menu items disabled-with-hint. */
+  #shellHooks: ControllerShellHooks | null = null;
   /** The element under inspection/edition; `null` = nothing selected. */
   #selectedId: NodeId | null = null;
   #listeners = new Map<keyof ContextEventMap, Set<Listener>>();
@@ -127,6 +170,30 @@ export class EditorContext {
 
   constructor(doc: EditorDocument) {
     this.doc = doc;
+  }
+
+  get shell(): ControllerShellHooks | null {
+    return this.#shellHooks;
+  }
+
+  set shell(hooks: ControllerShellHooks | null) {
+    this.#shellHooks = hooks;
+  }
+
+  /** The controller's descriptor door: the FULL registry descriptor
+   *  (textSlots / itemList verbs / link fields), not the shell's summary
+   *  view. Backed by the `setDescriptorLookup` seam (the entry wires the
+   *  real registry; tests may inject). */
+  descriptors(tag: string): EditDescriptor | null {
+    return fullDescriptorLookup(tag);
+  }
+
+  /** §7 reduced-motion probe shared with every consumer of the context. */
+  reducedMotion(): boolean {
+    return (
+      typeof matchMedia === 'function' &&
+      matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
   }
 
   get selectedId(): NodeId | null {
@@ -143,7 +210,7 @@ export class EditorContext {
     const node = this.doc.node(id);
     if (!node) return id;
     const tag = node.kind === 'element' ? node.name.toLowerCase() : node.kind;
-    return this.descriptors?.descriptorFor(tag)?.title ?? `<${tag}>`;
+    return this.descriptorView?.descriptorFor(tag)?.title ?? `<${tag}>`;
   }
 
   select(id: NodeId | null): void {
@@ -186,6 +253,13 @@ export class EditorContext {
     });
   }
 }
+
+// Compile-time guard: the shell context must keep structurally satisfying the
+// controller's EditorContext — the entry hands `ctx` to attachEditor/wireInsert
+// directly (§4.2: one shared context of record).
+type AssertControllerCompatible = EditorContext extends ControllerEditorContext ? true : never;
+const _controllerCompatible: AssertControllerCompatible = true;
+void _controllerCompatible;
 
 /**
  * Document title per §5.1: the first `<title>` element's text, else

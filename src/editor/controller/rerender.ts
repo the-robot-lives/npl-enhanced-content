@@ -97,16 +97,47 @@ export async function rerenderElement(
   const fresh = rootEl !== null ? Array.from(rootEl.childNodes) : [];
   const modelChildren = ctx.doc.childrenOf(binding.rootId);
 
-  // Node-for-node keep: children whose model id still exists AND whose
-  // subtree was NOT touched are reused live (media/caret stability, §4.4).
+  // Node-for-node keep keyed on IDENTITY, not DOM index (§4.4): children
+  // whose model counterpart still exists AND whose subtree was NOT touched
+  // are reused live (media/caret stability). A move reorders untouched
+  // siblings, so an index-based keep would steal a neighbour's node and
+  // duplicate the moved element. Identity = the data-sem-edit-node stamp
+  // (model node id) or, on stamp-less docs, the authored `id` attribute.
+  const byStamp = new Map<NodeId, Element>();
+  const byAuthored = new Map<string, Element>();
+  for (const child of Array.from(el.children)) {
+    if (isRuntimeChrome(child)) continue;
+    const stamp = child.getAttribute('data-sem-edit-node');
+    if (stamp !== null) byStamp.set(stamp, child);
+    const authoredId = child.getAttribute('id');
+    if (authoredId !== null && authoredId !== '') byAuthored.set(authoredId, child);
+  }
   const kept = new Map<number, Node>();
   for (let i = 0; i < modelChildren.length; i++) {
     const mc = modelChildren[i];
     if (mc.kind !== 'element') continue;
-    const hit = touched.some((t) => t === mc.id || ctx.doc.contains(mc.id, t));
-    if (hit) continue;
-    const old = authoredChildAt(el, i);
-    if (old instanceof Element && old.tagName.toLowerCase() === mc.name.toLowerCase()) {
+    if (touched.some((t) => t === mc.id || ctx.doc.contains(mc.id, t))) continue;
+    const authoredId = mc.attrs.find((a) => a.name === 'id')?.value ?? undefined;
+    let old: Element | undefined;
+    if (authoredId !== undefined && byAuthored.has(authoredId)) {
+      old = byAuthored.get(authoredId);
+    } else {
+      old = byStamp.get(mc.id);
+    }
+    if (old === undefined) {
+      // Stamp-less AND id-less children (plain wrappers on headless docs)
+      // fall back to the positional match — but only if the candidate is
+      // unstamped, so a reordered sibling's node is never stolen.
+      const byIndex = authoredChildAt(el, i);
+      if (
+        byIndex instanceof Element &&
+        !byIndex.hasAttribute('data-sem-edit-node') &&
+        byIndex.tagName.toLowerCase() === mc.name.toLowerCase()
+      ) {
+        old = byIndex;
+      }
+    }
+    if (old !== undefined && old.tagName.toLowerCase() === mc.name.toLowerCase()) {
       kept.set(i, old);
     }
   }
@@ -135,6 +166,10 @@ export async function rerenderElement(
     el.removeChild(n);
   }
 
+  // Restamp model↔DOM pairs: fresh projections carry no data-sem-edit-node,
+  // and the keep step + outline scroll + dnd resolution all key on it.
+  stampEditNodes(ctx, binding);
+
   // ── 3. re-establish element chrome ──
   // Plain (non-Lit) elements have no lifecycle — skip cleanly.
   const litHost = el as { requestUpdate?: () => void; updateComplete?: Promise<unknown> };
@@ -158,6 +193,33 @@ function firstNonChrome(el: Node): Node | null {
     if (!isRuntimeChrome(n)) return n;
   }
   return null;
+}
+
+/**
+ * Parallel model↔DOM walk stamping `data-sem-edit-node` on the binding host
+ * and its DIRECT element children (chrome skipped). Depth-2+ descendants of
+ * an upgraded host are re-homed by its build() and are deliberately not
+ * stamped here — the canvas projector stamps full depth on open, and a
+ * binding-scoped rerender restamps one level so the nearest stamped ancestor
+ * always resolves. The stamp drives outline scroll, dnd element resolution
+ * and the shell-aware claim fast path.
+ */
+export function stampEditNodes(ctx: EditorContext, binding: ElementBinding): void {
+  const root = ctx.doc.node(binding.rootId);
+  if (root === undefined || root.kind !== 'element') return;
+  const host = binding.el;
+  if (host.getAttribute('data-sem-edit-node') !== root.id) {
+    host.setAttribute('data-sem-edit-node', root.id);
+  }
+  const modelChildren = ctx.doc.childrenOf(root.id);
+  const domChildren = Array.from(host.children).filter((c) => !isChromeNode(c));
+  let k = 0;
+  for (const mc of modelChildren) {
+    if (mc.kind !== 'element') continue;
+    const dc = domChildren[k++];
+    if (dc === undefined) break;
+    if (dc.getAttribute('data-sem-edit-node') !== mc.id) dc.setAttribute('data-sem-edit-node', mc.id);
+  }
 }
 
 function nextNonChrome(node: Node | null): Node | null {

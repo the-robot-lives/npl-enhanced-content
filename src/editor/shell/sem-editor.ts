@@ -15,8 +15,8 @@
  *  - `setCanvasProjector` (context.js): the author-inert projection.
  *  - code pane: a named slot (`code-view`) for the code lane's
  *    `<sem-editor-code>`; a fallback note until one is slotted.
- *  - `ctx.schema` / `ctx.descriptors`: the schema and descriptor views the
- *    property modal and outline read.
+ *  - `ctx.schema` / `ctx.descriptorView`: the schema and descriptor views
+ *    the property modal and outline read.
  *
  * Mode is reflected as `data-mode` (§5.2); edit-mode is stamped on the host
  * when a document opens so the base.ts lazy hook (§4.1) queues the edited
@@ -30,6 +30,8 @@ import {
   EditorContext,
   documentTitle,
   getCanvasProjector,
+  getDefaultDescriptorView,
+  getDefaultSchemaProvider,
   getModelFactory,
 } from './context.js';
 import type { EditorDocument, ElementNode, NodeId } from '../model/types.js';
@@ -119,8 +121,8 @@ export class SemEditor extends SemElement {
     this.#unsubs = [];
 
     const ctx = new EditorContext(doc);
-    ctx.schema = this.#schemaBridge;
-    ctx.descriptors = this.#descriptorBridge;
+    ctx.schema = this.#schemaBridge ?? getDefaultSchemaProvider();
+    ctx.descriptorView = this.#descriptorBridge ?? getDefaultDescriptorView();
     this.#ctx = ctx;
     this.doc = doc;
     // §4.1 signal: elements in this subtree (and this frame) queue for edit
@@ -145,6 +147,10 @@ export class SemEditor extends SemElement {
     this.#renderFromModel();
     this.#syncHistoryButtons();
     this.#renderTitle();
+    // Per-document re-wire hook (integrate): openDocument builds a NEW
+    // EditorContext, so insert/io/code wiring must re-run against it. Fired
+    // AFTER the first projection so listeners see a rendered canvas.
+    this.#emit('sem-edit-open', { ctx });
   }
 
   /** Cycle wysiwyg → code → split → wysiwyg (Cmd/Ctrl+Shift+E, §7). */
@@ -158,7 +164,7 @@ export class SemEditor extends SemElement {
   /** Hosts set richer bridges; the defaults read the context of THIS editor
    *  only — tests inject directly onto `el.ctx.schema`. */
   #schemaBridge: EditorContext['schema'] = null;
-  #descriptorBridge: EditorContext['descriptors'] = null;
+  #descriptorBridge: EditorContext['descriptorView'] = null;
 
   // ── wiring ────────────────────────────────────────────────────────────────
 
@@ -174,8 +180,14 @@ export class SemEditor extends SemElement {
     this.#injectCss(doc);
 
     // authored children: the pending source (parsed once a model factory is
-    // wired — §5.2 move-on-connect; the model preserves the bytes, not the DOM)
+    // wired — §5.2 move-on-connect; the model preserves the bytes, not the
+    // DOM). Named-slot chrome (the code pane) is NOT document content — it
+    // is lifted out of the capture and re-attached after the frame renders,
+    // so its real custom element survives for wireDocument to host.
+    let keptPanes: Element[] = [];
     if (this.childNodes.length > 0) {
+      keptPanes = Array.from(this.querySelectorAll(':scope > [slot]'));
+      for (const pane of keptPanes) pane.remove();
       this.#pendingSource = this.innerHTML;
       this.textContent = '';
     }
@@ -199,6 +211,7 @@ export class SemEditor extends SemElement {
     frame.appendChild(live);
 
     this.appendChild(frame);
+    for (const pane of keptPanes) this.appendChild(pane);
     frame.addEventListener('keydown', this.#onFrameKey);
     this.setAttribute('data-mode', this.mode);
     this.#syncModeGroup();
@@ -465,7 +478,9 @@ export class SemEditor extends SemElement {
     if (projector === null) {
       this.#showEmpty('The visual projection is wired in Phase 3 (renderAuthorInert).');
     } else if (canvas !== null) {
-      canvas.textContent = '';
+      // NOTE: the canvas is NOT wiped here — the projector owns reconciliation
+      // (keep/reorder/insert/remove keyed on data-sem-edit-node), so an
+      // in-place re-render preserves controllers, focus and scroll anchors.
       try {
         projector(ctx.doc, canvas);
       } catch (err) {
@@ -500,7 +515,7 @@ export class SemEditor extends SemElement {
     for (const node of chain) {
       const tag = node.name.toLowerCase();
       const isCurrent = node.id === selected;
-      const title = ctx.descriptors?.descriptorFor(tag)?.title ?? tag;
+      const title = ctx.descriptorView?.descriptorFor(tag)?.title ?? tag;
       const crumb = doc.createElement(isCurrent ? 'span' : 'button');
       crumb.className = 'sem-ed-crumb';
       crumb.textContent = isCurrent ? `${title} (${tag})` : title; // text — never HTML

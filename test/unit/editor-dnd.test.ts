@@ -225,14 +225,7 @@ describe('one moveNode per move', () => {
     expect(ctx.doc.history().length).toBe(1);
   });
 
-  // Skipped, not deleted: the move itself works, but the MODEL's inverse is
-  // wrong for same-parent backward moves — applyAndInvert stores
-  // `index: prevIdx` as the undo op, and applying it to the moved state
-  // lands one slot short (move c to front [c,a,b], undo → [a,c,b] instead
-  // of [a,b,c]; the restore index must be prevIdx + 1 for backward moves).
-  // NOT this lane's file — cross-lane request filed with the exact patch.
-  // Unskip when the model lane lands the fix.
-  it.skip('backward reorder + undo is byte-identical (blocked: model applyAndInvert invert-index bug)', () => {
+  it('backward reorder + undo is byte-identical', () => {
     const src = '<sem-facts id="fx"><sem-fact id="a"><statement>one</statement></sem-fact><sem-fact id="b"><statement>two</statement></sem-fact><sem-fact id="c"><statement>three</statement></sem-fact></sem-facts>';
     const model = parse(src);
     const { ctx } = bind(src, model);
@@ -538,13 +531,7 @@ describe('rerender projection after a move', () => {
     expect(events).toEqual(['change']);
   });
 
-  // Skipped, not deleted: the controller's rerenderElement keeps untouched
-  // siblings by DOM INDEX (authoredChildAt), but a move reorders them — the
-  // keep-step steals a neighbour's node and the projection duplicates the
-  // moved element (move b before a → DOM shows two b's instead of [b,a]).
-  // NOT this lane's file — cross-lane request filed (keep by model id, not
-  // index). Unskip when the controller lane lands the fix.
-  it.skip('reorders the light DOM after the model move settles (blocked: controller rerender keep-by-index bug)', async () => {
+  it('reorders the light DOM after the model move settles', async () => {
     const src = '<sem-facts id="fx"><sem-fact id="a"><statement>one</statement></sem-fact><sem-fact id="b"><statement>two</statement></sem-fact></sem-facts>';
     const { ctx, el } = bind(src);
     const fx = elementId(ctx, 'sem-facts', 'fx');

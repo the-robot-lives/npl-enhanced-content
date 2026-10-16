@@ -216,9 +216,11 @@ export interface ElementSpec {
   children?: EditorNode[];
 }
 
-/** The nine typed edit operations. Every op is atomic and invertible; the
- *  inverse is computed by the model at apply time (removeNode records the
- *  removed subtree, moveNode the previous parent/index, and so on).
+/** The nine typed edit operations, plus two model-internal restore ops that
+ *  appear ONLY inside `Transaction.inverse` (the model computes them to undo
+ *  with byte-exact trivia: restoring an attribute's authored quote/rawValue
+ *  and a text node's authored entity spelling). Lanes never construct
+ *  restore ops. Every op is atomic and invertible.
  *
  *  Guards (checked by `canApply`/`apply`, rejected via `ApplyCheck`):
  *  - moveNode/insertNode refuse to place a node inside its own subtree.
@@ -236,7 +238,11 @@ export type EditOp =
   | { type: 'setText'; node: NodeId; value: string }
   | { type: 'wrap'; node: NodeId; wrapper: ElementSpec }
   | { type: 'unwrap'; node: NodeId }
-  | { type: 'replaceSubtree'; node: NodeId; replacement: EditorNode };
+  | { type: 'replaceSubtree'; node: NodeId; replacement: EditorNode }
+  /** model-internal: restore an attribute with full trivia at `index`. */
+  | { type: 'restoreAttr'; node: NodeId; attr: AttrNode; index: number }
+  /** model-internal: restore a text node's value + raw baseline. */
+  | { type: 'restoreText'; node: NodeId; value: string; raw: string; edited: boolean };
 
 export interface ApplyCheck {
   ok: boolean;
@@ -401,8 +407,10 @@ export interface EditorDocument {
     fn: (tx: TransactionBuilder) => T,
     opts?: TransactionOptions,
   ): T;
-  /** Manual transaction span (for async flows that must not hold the
-   *  callback). MUST be closed with `commit()`/`abort()` exactly once. */
+  /** Manual transaction span (for flows that cannot use a synchronous
+   *  callback). MUST be closed with `commit()`/`abort()` exactly once:
+   *  commit fires the batched change event; abort undoes the span's ops and
+   *  fires NO change event and leaves NO history entry. */
   openTransaction(label: string, opts?: TransactionOptions): TransactionSpan;
   /** Fresh node factory: allocates an id and wires parentId/range
    *  (range `{start:0,end:0}` until the next serialize). */
@@ -423,8 +431,9 @@ export interface EditorDocument {
    *  they were parsed from; edited nodes re-emit canonically. Refreshes
    *  every node's range (invariant 4) and returns the new `source`. */
   serialize(style?: Partial<SerializeStyle>): string;
-  /** Emit one subtree (element or any node). Refreshes that subtree's
-   *  ranges only. */
+  /** Emit one subtree (element or any node) standalone. Offsets in the
+   *  result are subtree-local; node ranges are NOT refreshed (use
+   *  `serialize()` for that). */
   serializeSubtree(id: NodeId, style?: Partial<SerializeStyle>): string;
 
   // ── selection mapping ──
@@ -448,8 +457,8 @@ export interface EditorDocument {
 }
 
 /** Manual-span transaction handle. `commit` fires the batched change event;
- *  `abort` undoes the ops applied so far (still one undo entry, marked) and
- *  fires no change event. */
+ *  `abort` undoes the ops applied so far, fires no change event and leaves
+ *  no history entry. */
 export interface TransactionSpan extends TransactionBuilder {
   commit(): Transaction;
   abort(): void;

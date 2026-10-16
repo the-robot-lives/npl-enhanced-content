@@ -7,7 +7,7 @@
 export { claim, attachEditor, detachEditor, createContext, watchEditMode, bindingFor } from './attach.js';
 export { EditController } from './edit-controller.js';
 export { buildEditorMenuItems, createEditorMenuHost, EDITOR_MENU_IDS } from './menu.js';
-export { rerenderElement, scheduleRerender, affectsBinding } from './rerender.js';
+export { rerenderElement, scheduleRerender, affectsBinding, stampEditNodes } from './rerender.js';
 export { caretFromDomPosition, domPositionFor } from './selection.js';
 export * from './actions.js';
 export type {

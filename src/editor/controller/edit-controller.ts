@@ -161,7 +161,9 @@ export class EditController implements ReactiveController {
       if (this.ctx.shell?.openProperties) this.ctx.shell.openProperties(this.binding);
       return false;
     }
-    if (!mod) return false;
+    // Alt+Shift+Arrow belongs to the dnd lane's promote/demote chord —
+    // a bare Alt (mod) test swallows it here and the chord double-hands.
+    if (!mod || e.shiftKey) return false;
     switch (e.key) {
       case 'ArrowUp':
       case 'ArrowLeft':

@@ -29,7 +29,7 @@ export function outlineEntries(ctx: EditorContext): OutlineEntry[] {
       entries.push({
         id: el.id,
         tag,
-        title: ctx.descriptors?.descriptorFor(tag)?.title ?? tag,
+        title: ctx.descriptorView?.descriptorFor(tag)?.title ?? tag,
         depth,
       });
       walk(el.children, depth + 1);
@@ -245,7 +245,7 @@ export function renderBreadcrumb(ctx: EditorContext, host: HTMLElement): void {
     crumb.className = 'sem-ed-crumb';
     if (isCurrent) crumb.setAttribute('aria-current', 'location');
     else crumb.addEventListener('click', () => ctx.select(node.id));
-    const title = ctx.descriptors?.descriptorFor(tag)?.title ?? tag;
+    const title = ctx.descriptorView?.descriptorFor(tag)?.title ?? tag;
     crumb.textContent = isCurrent ? `${title} (${tag})` : title; // text — never HTML
     host.appendChild(crumb);
   }

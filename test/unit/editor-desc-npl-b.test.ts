@@ -270,7 +270,8 @@ describe('desc-npl-b: item add/remove touch only the list', () => {
   it('npl-rubric: add inserts after the last criterion; remove takes it back', async (t) => {
     const h = harness('npl-rubric');
     await flush();
-    if (!addItem(h.ctx, h.binding)) t.skip(); // blocked by the buildFromXml id-collision (cross-lane request)
+    // id allocators are per-document now — addItem cannot collide
+    if (!addItem(h.ctx, h.binding)) expect.unreachable('addItem refused');
     await flush();
     const added = '<npl-criterion name="Criterion" weight="1" score="1"></npl-criterion>';
     expect(h.ctx.doc.serialize()).toBe(
@@ -304,7 +305,8 @@ describe('desc-npl-b: item add/remove touch only the list', () => {
   it('npl-thought: add inserts after the last thought; remove takes it back', async (t) => {
     const h = harness('npl-thought');
     await flush();
-    if (!addItem(h.ctx, h.binding)) t.skip(); // blocked by the buildFromXml id-collision (cross-lane request)
+    // id allocators are per-document now — addItem cannot collide
+    if (!addItem(h.ctx, h.binding)) expect.unreachable('addItem refused');
     await flush();
     const added = '<npl-thought type="observation">The thought</npl-thought>';
     const anchor = '<npl-thought type="balloon">unknown — degrades to plain text</npl-thought>';
@@ -335,7 +337,8 @@ describe('desc-npl-b: item add/remove touch only the list', () => {
   it('npl-mood: + appends the part at the end of the element model children', async (t) => {
     const h = harness('npl-mood');
     await flush(); // parts already regrouped into .npl-mood-detail
-    if (!addItem(h.ctx, h.binding)) t.skip(); // blocked by the buildFromXml id-collision (cross-lane request)
+    // id allocators are per-document now — addItem cannot collide
+    if (!addItem(h.ctx, h.binding)) expect.unreachable('addItem refused');
     await flush();
     expect(h.ctx.doc.serialize()).toBe(
       spliced(h.example, '</npl-mood>', '<div class="npl-mood-tone">Tone</div></npl-mood>'),
@@ -345,7 +348,8 @@ describe('desc-npl-b: item add/remove touch only the list', () => {
   it('npl-vos: + appends the part at the end of the element model children', async (t) => {
     const h = harness('npl-vos');
     await flush(); // parts already bracketed into .npl-vos-row bodies
-    if (!addItem(h.ctx, h.binding)) t.skip(); // blocked by the buildFromXml id-collision (cross-lane request)
+    // id allocators are per-document now — addItem cannot collide
+    if (!addItem(h.ctx, h.binding)) expect.unreachable('addItem refused');
     await flush();
     expect(h.ctx.doc.serialize()).toBe(
       spliced(h.example, '</npl-vos>', '<p data-vos="id">Part text</p></npl-vos>'),

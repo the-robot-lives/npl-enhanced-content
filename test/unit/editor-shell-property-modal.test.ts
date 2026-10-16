@@ -282,7 +282,7 @@ describe('sub-item list editor', () => {
 
   it('lists matching rows in document order', () => {
     const { el, doc, ctx } = setup(sectionWith().section);
-    ctx.descriptors = descriptors;
+    ctx.descriptorView = descriptors;
     const dialog = openPropertiesModal(ctx) as HTMLDialogElement;
     const rows = dialog.querySelectorAll('.sem-ed-item-row');
     expect(rows.length).toBe(2);
@@ -295,7 +295,7 @@ describe('sub-item list editor', () => {
   it('reorder down + Save = ONE transaction with one moveNode', () => {
     const { section } = sectionWith();
     const { el, doc, ctx } = setup(section);
-    ctx.descriptors = descriptors;
+    ctx.descriptorView = descriptors;
     const dialog = openPropertiesModal(ctx) as HTMLDialogElement;
     dialog.querySelector<HTMLButtonElement>('.sem-ed-item-row button[aria-label="Move Fact 1 down"]')!.click();
     dialog.querySelector<HTMLButtonElement>('.sem-ed-btn-primary')!.click();
@@ -309,7 +309,7 @@ describe('sub-item list editor', () => {
   it('remove row + Save deletes the node in the same transaction discipline', () => {
     const { section } = sectionWith();
     const { el, doc, ctx } = setup(section);
-    ctx.descriptors = descriptors;
+    ctx.descriptorView = descriptors;
     const dialog = openPropertiesModal(ctx) as HTMLDialogElement;
     dialog.querySelector<HTMLButtonElement>('button[aria-label="Remove Fact 1"]')!.click();
     dialog.querySelector<HTMLButtonElement>('.sem-ed-btn-primary')!.click();
@@ -324,7 +324,7 @@ describe('sub-item list editor', () => {
     );
     const { section } = sectionWith();
     const { el, doc, ctx } = setup(section);
-    ctx.descriptors = descriptors;
+    ctx.descriptorView = descriptors;
     const dialog = openPropertiesModal(ctx) as HTMLDialogElement;
     const add = dialog.querySelector<HTMLButtonElement>('button.sem-ed-btn-add');
     expect(add?.disabled).toBe(false);
@@ -339,7 +339,7 @@ describe('sub-item list editor', () => {
 
   it('Add is disabled with an explanation when no compiler is wired', () => {
     const { el, doc, ctx } = setup(sectionWith().section);
-    ctx.descriptors = descriptors;
+    ctx.descriptorView = descriptors;
     const dialog = openPropertiesModal(ctx) as HTMLDialogElement;
     const add = dialog.querySelector<HTMLButtonElement>('button.sem-ed-btn-add');
     expect(add?.disabled).toBe(true);
@@ -362,7 +362,7 @@ describe('JSON payload editor', () => {
   it('loads the payload text; live-invalid JSON shows an error and Save leaves it unchanged', () => {
     const { section } = sectionWith();
     const { el, doc, ctx } = setup(section);
-    ctx.descriptors = descriptors;
+    ctx.descriptorView = descriptors;
     const dialog = openPropertiesModal(ctx) as HTMLDialogElement;
     const area = dialog.querySelector<HTMLTextAreaElement>('textarea.sem-ed-json');
     expect(area?.value).toBe('{"a":1}');
@@ -381,7 +381,7 @@ describe('JSON payload editor', () => {
   it('valid JSON edit + Save = one setText on the payload raw text node', () => {
     const { section } = sectionWith();
     const { el, doc, ctx } = setup(section);
-    ctx.descriptors = descriptors;
+    ctx.descriptorView = descriptors;
     const dialog = openPropertiesModal(ctx) as HTMLDialogElement;
     const area = dialog.querySelector<HTMLTextAreaElement>('textarea.sem-ed-json');
     area!.value = '{"a":2,"b":[1,2]}';
@@ -396,7 +396,7 @@ describe('JSON payload editor', () => {
     const sw = sectionWith({ payload: null });
     const { el, doc, ctx } = setup(sw.section);
     const section = sw.section;
-    ctx.descriptors = descriptors;
+    ctx.descriptorView = descriptors;
     const dialog = openPropertiesModal(ctx) as HTMLDialogElement;
     const area = dialog.querySelector<HTMLTextAreaElement>('textarea.sem-ed-json');
     expect(area?.value).toBe('');
