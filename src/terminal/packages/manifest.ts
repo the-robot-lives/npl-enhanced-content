@@ -21,10 +21,11 @@ import { withPackageMan, type LazyPackage } from './lazy.js';
 
 /* ── package registrations — append-only; one import + one entry per lane ── */
 import { textPackage } from './text/stub.js';
+import { gitPackage } from './git/stub.js';
 /* (empty at the contract commit — the sample lands with the build glob)     */
 
 /** Every registered package, in registration order. */
-export const PACKAGES: LazyPackage[] = [textPackage];
+export const PACKAGES: LazyPackage[] = [textPackage, gitPackage];
 
 /** One PluginManifest carrying every package's stub commands. */
 export const packagesPlugin: PluginManifest = {
