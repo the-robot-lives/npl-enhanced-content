@@ -24,7 +24,7 @@
  *   - semtext.css + themes/
  * Bundle BYTES are copied verbatim — this script never rebuilds, strips or
  * rewrites an artifact ("don't change bundle contents" is the whole point:
- * a byte in dist/semtext.js is the same byte in dist/v0.7.0/semtext.js).
+ * a byte in dist/semtext.js is the same byte in dist/v0.7.1/semtext.js).
  *
  * It also writes dist/version.json — the machine-readable record of what
  * was just stamped:

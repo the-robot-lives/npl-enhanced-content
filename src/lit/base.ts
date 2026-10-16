@@ -1,6 +1,7 @@
 import { LitElement } from 'lit';
 import { parseTokens } from '../shared/tokens.js';
 import { closureFor, matches, warn as semWarn, type AudienceClosure } from '../shared/audience.js';
+import { queueEdit } from './edit-hook.js';
 
 /**
  * SemElement — the shared base for every SemText custom element.
@@ -43,6 +44,9 @@ export class SemElement extends LitElement {
     // Document-level marker: hide rules that have no per-element host
     // (`.incorrect-statement` in a list-view deck) gate on the root instead.
     this.ownerDocument?.documentElement?.setAttribute('data-sem-upgraded', '');
+    // Lazy edit-mode hook (EDITOR.md §4.1): an attribute presence test only —
+    // no reactive property; the editor's shell/claim path handles removal.
+    if (this.hasAttribute('edit-mode') || this.closest('sem-editor[edit-mode]')) queueEdit(this);
   }
 
   disconnectedCallback(): void {

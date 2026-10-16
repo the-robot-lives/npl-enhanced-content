@@ -62,6 +62,8 @@ function joinError(j: Element, message: string): void {
   j.querySelectorAll(':scope > .sem-data-error').forEach((n) => n.remove());
   const p = document.createElement('p');
   p.className = 'sem-data-error';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  p.setAttribute('data-sem-chrome', '');
   p.setAttribute('role', 'alert');
   p.textContent = 'sem-data-join: ' + message;
   j.appendChild(p);
@@ -173,6 +175,8 @@ function runQueryChrome(chrome: Chrome, container: Element): void {
   if (!parsed.ok) {
     const err = document.createElement('p');
     err.className = 'sem-data-query-error';
+    // Runtime chrome (§2.4): positional mapping must skip it.
+    err.setAttribute('data-sem-chrome', '');
     err.setAttribute('role', 'alert');
     err.textContent = 'sem-data-query: ' + parsed.error;
     chrome.results.appendChild(err);
@@ -183,6 +187,8 @@ function runQueryChrome(chrome: Chrome, container: Element): void {
   if (!result.ok) {
     const err = document.createElement('p');
     err.className = 'sem-data-query-error';
+    // Runtime chrome (§2.4): positional mapping must skip it.
+    err.setAttribute('data-sem-chrome', '');
     err.setAttribute('role', 'alert');
     err.textContent = 'sem-data-query: ' + result.error;
     chrome.results.appendChild(err);
@@ -192,6 +198,8 @@ function runQueryChrome(chrome: Chrome, container: Element): void {
   const schema = inferSchema(result.table);
   const body = document.createElement('div');
   body.className = 'sem-data-body';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  body.setAttribute('data-sem-chrome', '');
   const table = buildTable(result.table, schema, result.table.columns.map(() => true), '');
   body.appendChild(table);
   chrome.results.appendChild(body);
@@ -218,6 +226,8 @@ function wireQuery(q: Element, container: Element): void {
   const text = (q.textContent ?? '').trim();
   const chromeEl = document.createElement('div');
   chromeEl.className = 'sem-data-query-chrome';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  chromeEl.setAttribute('data-sem-chrome', '');
 
   const label = document.createElement('label');
   label.className = 'sem-data-query-label';
@@ -229,6 +239,8 @@ function wireQuery(q: Element, container: Element): void {
   const textarea = document.createElement('textarea');
   textarea.id = id;
   textarea.className = 'sem-data-query-input';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  textarea.setAttribute('data-sem-chrome', '');
   textarea.rows = 3;
   textarea.spellcheck = false;
   textarea.value = text;
@@ -236,13 +248,19 @@ function wireQuery(q: Element, container: Element): void {
 
   const controls = document.createElement('div');
   controls.className = 'sem-data-query-controls';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  controls.setAttribute('data-sem-chrome', '');
   const runBtn = document.createElement('button');
   runBtn.type = 'button';
   runBtn.className = 'sem-data-query-run';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  runBtn.setAttribute('data-sem-chrome', '');
   runBtn.textContent = 'Run';
   controls.appendChild(runBtn);
   const status = document.createElement('span');
   status.className = 'sem-data-query-status';
+  // Runtime chrome (§2.4): positional mapping must skip it.
+  status.setAttribute('data-sem-chrome', '');
   status.setAttribute('role', 'status');
   controls.appendChild(status);
   chromeEl.appendChild(controls);
