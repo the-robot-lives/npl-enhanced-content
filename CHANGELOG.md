@@ -2,7 +2,7 @@
 
 ## 2026-10-17
 
-- build: versioned asset snapshots (feature/asset-versioning) — `npm run build` (and `build:strict`) now end with `scripts/stamp-version.mjs`, which copies the runtime set verbatim (five IIFE bundles, both lazy loaders + manifests + chunk dirs, `semtext.css`, `themes/`) into `dist/v<package-version>/` and writes `dist/version.json` (`{version, specVersion, epoch, files}`) for consumers; bundle bytes are never rewritten and the unversioned `dist/` root is untouched (package `exports`, Dockerfile, cypress all keep working). semtext.dev's sync reads the stamp to publish immutable `/semtext/v<semver>/` URLs. Supersedes the `?v=`-query approach of PR #2 (closed, superseded — with versioned directories the lazy loaders already resolve their chunks inside the pinned snapshot via `import.meta.url`, no loader changes needed).
+- build: versioned asset snapshots (feature/asset-versioning) — `npm run build` (and `build:strict`) now end with `scripts/stamp-version.mjs`, which copies the runtime set verbatim (five IIFE bundles, both lazy loaders + manifests + chunk dirs, `semtext.css`, `themes/`) into `dist/v<package-version>/` and writes `dist/version.json` (`{version, specVersion, epoch, files}`) for consumers; bundle bytes are never rewritten and the unversioned `dist/` root is untouched (package `exports`, Dockerfile, cypress all keep working). semtext.dev's sync reads the stamp to publish immutable `/semtext/v<semver>/` URLs. Supersedes the `?v=`-query approach of PR #2 (closed, superseded — with versioned directories the lazy loaders already resolve their chunks inside the pinned snapshot via `import.meta.url`, no loader changes needed). — → develop (#15), → stage (#16), → main (#17), back-merge (#18).
 
 ## 2026-10-14
 
