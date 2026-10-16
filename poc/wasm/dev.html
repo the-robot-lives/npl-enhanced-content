@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>wasm PoC — dev verification</title>
+  <style>
+    body { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin: 2rem; color: #222; }
+    h1 { font-size: 1rem; }
+    section { margin-bottom: 1.5rem; }
+    pre { background: #f4f4f4; border: 1px solid #ddd; padding: .75rem; min-height: 3rem; white-space: pre-wrap; }
+    input { width: 24rem; font: inherit; }
+    button { font: inherit; margin-right: .5rem; }
+    .dim { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>wasm PoC — worker + JSPI verification (round-3 LANE=wasm-poc)</h1>
+  <p class="dim">
+    Served by the repo's vite dev server (<code>npx vite</code> from the repo
+    root, then open <code>/poc/wasm/dev.html</code>). Each run goes through
+    <code>startWasiJob</code>: a dedicated module worker when the browser
+    allows it, in-thread otherwise. Requires a browser — file:// will not
+    load module workers.
+  </p>
+
+  <section>
+    <strong>run a fixture</strong>
+    <div>
+      <button data-run="hello">hello</button>
+      <button data-run="wcat">wcat</button>
+      <button data-run="wargs">wargs</button>
+      <button data-run="wtype">wtype /notes/welcome.txt</button>
+    </div>
+    <p class="dim" id="placement">placement: …</p>
+    <pre id="out"></pre>
+    <p>
+      <label for="stdin">guest stdin (wcat)</label><br />
+      <input id="stdin" placeholder="type a line, press Enter; Ctrl+D-style EOF via the button" />
+      <button id="eof">EOF</button>
+    </p>
+  </section>
+
+  <script type="module">
+    import { startWasiJob } from '/src/terminal/wasm/index.js';
+
+    const out = document.getElementById('out');
+    const placement = document.getElementById('placement');
+    let job = null;
+
+    const write = (text) => { out.textContent += text; };
+
+    const fetchFixture = async (name) => new Uint8Array(await (await fetch(`/poc/wasm/bin/${name}.wasm`)).arrayBuffer());
+
+    const run = async (name, args, preopenFiles) => {
+      out.textContent = `— ${name} ${args.join(' ')}\n`;
+      const bytes = await fetchFixture(name);
+      job = startWasiJob(bytes, {
+        args: [name, ...args],
+        preopens: preopenFiles === null ? [] : [{ name: '/', files: new Map(Object.entries(preopenFiles).map(([k, v]) => [k, new TextEncoder().encode(v)])) }],
+      }, {
+        stdout: (b) => write(new TextDecoder().decode(b)),
+        stderr: (b) => write(new TextDecoder().decode(b)),
+        status: (text) => { placement.textContent = `placement: ${text}`; },
+        done: (r) => write(`\n[exit ${r.code}${r.crash === null ? '' : `, crash: ${r.crash}`}; compile ${r.compileMs.toFixed(2)} ms, instantiate ${r.instantiateMs.toFixed(2)} ms, run ${r.runMs.toFixed(2)} ms]\n`),
+      });
+    };
+
+    for (const button of document.querySelectorAll('button[data-run]')) {
+      button.addEventListener('click', () => {
+        const name = button.dataset.run;
+        void run(
+          name,
+          name === 'wtype' ? ['/notes/welcome.txt'] : [],
+          name === 'wtype' ? { '/notes/welcome.txt': 'welcome to the preopen snapshot\nsecond line\n' } : null,
+        );
+      });
+    }
+
+    const input = document.getElementById('stdin');
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' && job !== null) {
+        job.write(new TextEncoder().encode(input.value + '\n'));
+        input.value = '';
+      }
+    });
+    document.getElementById('eof').addEventListener('click', () => job?.eof());
+  </script>
+</body>
+</html>
