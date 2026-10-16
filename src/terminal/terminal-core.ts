@@ -71,7 +71,20 @@ export interface AppSpawnAction {
   app: TerminalApp;
 }
 
-export type ShellAction = WindowAction | TuiAction | AppSpawnAction;
+/**
+ * Data-only request to drive the shell tabs (CORE-V2 §11.2, `tab` builtin).
+ * The element owns the TabModel and the per-tab sessions; the core stays
+ * DOM-free — it parses the arguments and emits, the element performs.
+ */
+export interface TabAction {
+  kind: 'tab';
+  /** `new` (optional name) · `close` (optional 1-based position) · `rename <name>` · `list`. */
+  op: 'new' | 'close' | 'rename' | 'list';
+  /** `new`: the tab label; `close`: strip position; `rename`: the new title. */
+  target?: string;
+}
+
+export type ShellAction = WindowAction | TuiAction | AppSpawnAction | TabAction;
 
 /**
  * Page-supplied S3 request signer (`core.setS3Signer`): given one
@@ -203,11 +216,14 @@ export interface ExecResult {
 const NAME_PATTERN = /^[a-z][a-z0-9-]*$/;
 
 /**
- * The registry + dispatcher. One terminal owns one; the element
- * (`sem-terminal.ts`) wraps it with input/history/DOM.
+ * The registry + dispatcher. One terminal session owns one; the element
+ * (`sem-terminal.ts`) wraps it with input/history/DOM. Shell tabs share ONE
+ * VFS per element: each session core is constructed over the same `Vfs`
+ * (constructor injection), so files and mounts are common while cwd, env,
+ * history and aliases stay per-session.
  */
 export class TerminalCore {
-  readonly vfs = new Vfs();
+  readonly vfs: Vfs;
   state: ShellState = {
     cwd: '/',
     env: { HOME: '/', PWD: '/', SHELL: 'semtext-sh' },
@@ -226,7 +242,8 @@ export class TerminalCore {
   /** Async line subscribers (onLine) — backend hydration reports here. */
   #lineHandlers = new Set<(line: ShellLine) => void>();
 
-  constructor() {
+  constructor(vfs?: Vfs) {
+    this.vfs = vfs ?? new Vfs();
     this.#register(
       {
         name: 'help',
@@ -402,6 +419,45 @@ export class TerminalCore {
       },
       '(builtin)',
     );
+    this.#register(
+      {
+        name: 'tab',
+        usage: 'tab [new [name] | close [n] | rename <name> | list] — shell tabs (`tabs` is an alias)',
+        run: (ctx) => {
+          const sub = ctx.args[0] ?? 'list';
+          if (sub === 'new') {
+            const name = ctx.args.slice(1).join(' ').trim();
+            ctx.emit({ kind: 'tab', op: 'new', target: name === '' ? undefined : name });
+            return;
+          }
+          if (sub === 'close') {
+            const position = ctx.args[1]?.trim();
+            if (position !== undefined && !/^\d+$/.test(position)) {
+              ctx.err('tab close: the position must be a strip number (see `tab list`)');
+              return;
+            }
+            ctx.emit({ kind: 'tab', op: 'close', target: position });
+            return;
+          }
+          if (sub === 'rename') {
+            const name = ctx.args.slice(1).join(' ').trim();
+            if (name === '') {
+              ctx.err('tab rename: missing name (`tab rename <name>`)');
+              return;
+            }
+            ctx.emit({ kind: 'tab', op: 'rename', target: name });
+            return;
+          }
+          if (sub === 'list') {
+            ctx.emit({ kind: 'tab', op: 'list' });
+            return;
+          }
+          ctx.err(`tab: unknown subcommand "${sub}" (want new | close | rename | list)`);
+        },
+      },
+      '(builtin)',
+    );
+    this.state.aliases['tabs'] = 'tab'; // the plural spelling (§11.2)
   }
 
   /** Register one command; refuses duplicates and malformed names. */
