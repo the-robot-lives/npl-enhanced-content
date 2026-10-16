@@ -144,3 +144,18 @@ export function resolveScriptValue(value: string | null | undefined): DemoStep[]
   }
   return parseDemoScript(landingScript(text) ?? text);
 }
+
+/**
+ * Does this start-script value name a FETCHABLE script file rather than an
+ * inline script? A single-line path — absolute site path, relative path, or
+ * any `.txt`/`.demo` filename — must be fetched and its BODY parsed as
+ * demo-format. Before the r2.1 fix such values silently parsed as a
+ * one-comment inline script, so the landing's `start-script="/demo/…"`
+ * shells never typed anything.
+ */
+export function looksLikeScriptPath(value: string): boolean {
+  const text = value.trim();
+  if (text === '' || text.includes('\n')) return false;
+  if (/^\.{0,2}\//.test(text)) return true; // /demo/…  ./…  ../…
+  return /\.(txt|demo)$/i.test(text);
+}

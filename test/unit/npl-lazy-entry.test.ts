@@ -11,7 +11,7 @@
 // does not exist under the test runner, so every attempt takes the
 // failure path deterministically.
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 4));
 
@@ -23,9 +23,16 @@ describe('npl-lazy entry wiring', () => {
   });
 
   it('boots document-wide for npl-* elements — no wrapper required', () => {
-    const el = document.querySelector('npl-flag')!;
-    expect(el.getAttribute('data-sem-lazy-error')).toBe('npl-flag');
-    expect(el.querySelector('[role="alert"]')?.textContent).toContain('npl-flag');
+    // The chunk rejection is async and its timing varies with machine load;
+    // poll for it instead of assuming one 4ms tick suffices.
+    vi.waitFor(
+      () => {
+        const el = document.querySelector('npl-flag')!;
+        expect(el.getAttribute('data-sem-lazy-error')).toBe('npl-flag');
+        expect(el.querySelector('[role="alert"]')?.textContent).toContain('npl-flag');
+      },
+      { timeout: 2000, interval: 20 },
+    );
   });
 
   it('owns only the npl namespace: a sem-* element is left to semtext-lazy', () => {

@@ -44,7 +44,7 @@
  *                                                   and copy self-label from
  *                                                   here; never hardcode the
  *                                                   spec revision in a page.
- *   <!-- sem:inline pkg-version -->                 "0.1.0" — package.json
+ *   <!-- sem:inline pkg-version -->                 "0.7.0" — package.json
  *                                                   `version`.
  *   <!-- sem:inline build-sha -->                   short SHA of the checkout
  *                                                   the build ran in ("unknown"
@@ -209,6 +209,17 @@ if (existsSync(dataSrc)) {
   mkdirSync(dataOut, { recursive: true });
   for (const f of readdirSync(dataSrc)) copyFileSync(resolve(dataSrc, f), resolve(dataOut, f));
   console.log(`\n  copied web/demo/data/** → dist/demo/data/ (${readdirSync(dataSrc).length} files)`);
+}
+
+// Demo start scripts: a `start-script="<path>"` shell fetches its demo-format
+// file at runtime (the landing page's contract), so dist/demo needs the
+// scripts served verbatim (web/demo/scripts/**).
+const scriptsSrc = resolve(root, 'web', 'demo', 'scripts');
+if (existsSync(scriptsSrc)) {
+  const scriptsOut = resolve(outDir, 'scripts');
+  mkdirSync(scriptsOut, { recursive: true });
+  for (const f of readdirSync(scriptsSrc)) copyFileSync(resolve(scriptsSrc, f), resolve(scriptsOut, f));
+  console.log(`  copied web/demo/scripts/** → dist/demo/scripts/ (${readdirSync(scriptsSrc).length} files)`);
 }
 console.log('');
 

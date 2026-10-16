@@ -1,7 +1,7 @@
 // script-format — the demo line grammar and start-script value resolution.
 import { describe, it, expect } from 'vitest';
 import {
-  parseDemoScript, resolveScriptValue, keyPresses,
+  parseDemoScript, resolveScriptValue, looksLikeScriptPath, keyPresses,
   DEFAULT_TYPE_MS, DEFAULT_WAIT_MS, DEFAULT_PAUSE_MS,
 } from '../../src/terminal/script/demo-format.js';
 
@@ -102,5 +102,21 @@ describe('resolveScriptValue', () => {
 
   it('anything else parses as an inline line script', () => {
     expect(types(resolveScriptValue('$ bat')!)).toEqual(['type', 'run', 'wait']);
+  });
+});
+
+describe('looksLikeScriptPath', () => {
+  it('site paths — the landing contract — are fetchable', () => {
+    expect(looksLikeScriptPath('/demo/scripts/code.txt')).toBe(true);
+    expect(looksLikeScriptPath('./scripts/tui.txt')).toBe(true);
+    expect(looksLikeScriptPath('../demo/cli.txt')).toBe(true);
+    expect(looksLikeScriptPath('scripts/code.demo')).toBe(true);
+  });
+
+  it('inline scripts and named demos are not fetchable', () => {
+    expect(looksLikeScriptPath('$ echo hi\n@expect hi')).toBe(false);
+    expect(looksLikeScriptPath('landing-code')).toBe(false);
+    expect(looksLikeScriptPath('[{"type":"comment","text":"x"}]')).toBe(false);
+    expect(looksLikeScriptPath('')).toBe(false);
   });
 });
