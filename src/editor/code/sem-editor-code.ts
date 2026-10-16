@@ -75,8 +75,18 @@ export class SemEditorCode extends SemElement {
     // wins; the external value lands on the next non-typing set (§2.6).
     if (this.#isDriving()) return;
     this.#ta.value = value;
-    this.#rehighlight();
-    this.#scheduleReparse();
+    // An external push is a model→pane display refresh (wireDocument on open
+    // and on every doc change) — never in-flight typing (§2.5): parsing it
+    // back and adopting would re-open the whole document ~300 ms later over
+    // a live session (contenteditable stripped, canvas re-projected, focus
+    // dead). Only user input drives parse+adopt, so the pending reparse for
+    // overwritten text is cancelled, and the pushed value — model truth by
+    // construction — clears any stale failure flag with it.
+    if (this.#reparseTimer) {
+      clearTimeout(this.#reparseTimer);
+      this.#reparseTimer = null;
+    }
+    this.#applyIssues([], false);
   }
 
   render() {

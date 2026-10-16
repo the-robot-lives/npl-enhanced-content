@@ -334,6 +334,50 @@ describe('<sem-editor-code> — parse lifecycle', () => {
     expect(ta.hasAttribute('aria-invalid')).toBe(false);
   });
 
+  it('an external source push is display-only: no reparse, no adopt', async () => {
+    // wireDocument pushes ctx.doc.serialize() on open and on every doc
+    // change. Reparsing that push adopted a fresh document object ~300 ms
+    // later and re-opened the whole editor over a live session (CI-only e2e
+    // failures: slot contenteditable stripped mid-type, plus-zone focus
+    // restore dead). Only user input drives parse+adopt (§2.5).
+    const { el, host, ta } = await makePane('<p>a</p>');
+    el.reparseNow();
+    await flushRaf();
+    expect(host.adopt).toHaveBeenCalledTimes(1);
+
+    el.source = '<p>b</p>';
+    await vi.advanceTimersByTimeAsync(300);
+    expect(host.tryParse).toHaveBeenCalledTimes(1); // the push never parses
+    expect(host.adopt).toHaveBeenCalledTimes(1);
+    expect(ta.value).toBe('<p>b</p>');
+
+    // a pending USER reparse is cancelled when the push overwrites its text
+    type(ta, '<p>c</p>');
+    el.source = '<p>d</p>';
+    await vi.advanceTimersByTimeAsync(300);
+    expect(host.tryParse).toHaveBeenCalledTimes(1);
+    expect(ta.value).toBe('<p>d</p>');
+
+    // typing still wins after a push (the input path is unchanged)
+    type(ta, '<p>e</p>');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(host.adopt).toHaveBeenCalledTimes(2);
+  });
+
+  it('an external push clears a stale failure flag (pushed value is model truth)', async () => {
+    const { el, host, ta } = await makePane('<p>ok</p>');
+    el.reparseNow();
+    await flushRaf();
+    type(ta, '<p>FAIL');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(ta.getAttribute('aria-invalid')).toBe('true');
+
+    el.source = '<p>ok again</p>';
+    await flushRaf();
+    expect(ta.hasAttribute('aria-invalid')).toBe(false);
+    expect(host.adopt).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps the last good tree on a broken parse and recovers', async () => {
     const { el, host, ta, strip } = await makePane('<p>ok</p>');
     el.reparseNow();
