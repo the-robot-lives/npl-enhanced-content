@@ -134,14 +134,39 @@ Until then the committed `poc/wasm/asm/` path is the source of truth:
 
 CORE-V2 §6.4's `app?(ctx)` is synchronous, and the pipeline's `run()` is
 synchronous — a cold dynamic `import()` cannot satisfy either mid-command.
-The pragmatic bridge is **pre-warm on mount, claim from cache**:
+Two pieces land the command without touching the shell bundle:
+
+**(a) a build stanza** — `scripts/build.mjs` emits the shim as a sibling
+chunk exactly like `semtext-lazy.js` / `npl-lazy.js` (esbuild API, same
+directory as `semtext-js-shell.js`):
+
+```js
+// scripts/build.mjs — coordinator/build-owner addition (NOT this lane's edit)
+await esbuild.build({
+  entryPoints: ['src/terminal/wasm/index.ts'],
+  bundle: true, format: 'esm', minify: true,
+  outfile: resolve(distDir, 'semtext-wasm.js'),   // 15.4 KB raw / 5.5 KB gzip
+});
+```
+
+**(b) the bridge** — `src/terminal/plugins/posix/plugin.ts` (tabs-ui's
+file). A plain relative `import('../../wasm/index.js')` would be *inlined*
+by the IIFE lib build (Rollup cannot code-split IIFE), so the bridge must
+use the repo's established runtime-specifier pattern
+(`src/lazy/boot.ts#defaultImportChunk`): `@vite-ignore` + a URL resolved
+against `import.meta.url`, which Rollup leaves alone and the browser
+fetches next to the shell script:
 
 ```ts
 // src/terminal/plugins/posix/plugin.ts (tabs-ui's file — Cross-lane request)
 import type { CommandSpec } from '../../terminal-core.js';
+import type { wasmCommand as WasmCommand } from '../../wasm/index.js';
 
-// fire-and-forget at plugin load; resolves long before a user types `wasm`
-const warmed = import('../../wasm/index.js').then((m) => m.wasmCommand, () => null);
+type WasmSpec = typeof WasmCommand;
+// Pre-warm at plugin load: resolves long before a user types `wasm`.
+const warmed: Promise<WasmSpec | null> = import(
+  /* @vite-ignore */ new URL('semtext-wasm.js', import.meta.url).href
+).then((m) => (m as { wasmCommand?: WasmSpec }).wasmCommand ?? null, () => null);
 
 export const wasmBridge: CommandSpec = {
   name: 'wasm',
@@ -152,7 +177,8 @@ export const wasmBridge: CommandSpec = {
     ctx.exit(75); // EX_TEMPFAIL
   },
 };
-// then, once `warmed` resolves, replace the spec:
+// once the chunk is resident, swap in the real run/app — the registration
+// identity stays stable, `app:` claims only when the code is loaded:
 void warmed.then((spec) => { if (spec) Object.assign(wasmBridge, spec); });
 ```
 
@@ -163,14 +189,12 @@ shell later moves to an async-capable command pipeline (a CORE-V2
 question, not this lane's), the bridge collapses to a plain
 `app: async (ctx) => (await import('…')).wasmApp(ctx)`.
 
-Bundle note for whoever lands the registration: under the current
-vite IIFE lib build, a *static* import of `src/terminal/wasm/index.ts`
-into `src/js-shell.ts` inlines the whole shim (+15.4 KB raw) — that fits
-the 256 KB budget only once the tree is back under ~240 KB. The pre-warm
-bridge above keeps it a separate fetch instead. The worker reference
-(`new URL('./worker-main.js', import.meta.url)`) is emitted as its own
-file by any bundler that includes the chunk; under `vite dev` it 404s
-(sources are `.ts`) and the runner degrades in-thread by design.
+The `import type` line is erased at build time — it types the swap without
+adding a byte to the bundle. The worker reference
+(`new URL('./worker-main.js', import.meta.url)`) inside the chunk is
+emitted as its own file by any bundler that builds the chunk; under
+`vite dev` it 404s (sources are `.ts`) and the runner degrades in-thread
+by design.
 
 ## 7. Test evidence
 
