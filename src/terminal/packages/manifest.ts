@@ -29,9 +29,10 @@ import { netPackage } from './net/stub.js';
 import { fsPackage } from './fs/stub.js';
 import { archivePackage } from './archive/stub.js';
 import { gitPackage } from './git/stub.js';
+import { diffPackage } from './diff/stub.js';
 
 /** Every registered package, in registration order. */
-export const PACKAGES: LazyPackage[] = [helloPackage, wasmPackage, awkPackage, textPackage, jqPackage, netPackage, fsPackage, archivePackage, gitPackage];
+export const PACKAGES: LazyPackage[] = [helloPackage, wasmPackage, awkPackage, textPackage, jqPackage, netPackage, fsPackage, archivePackage, gitPackage, diffPackage];
 
 /** One PluginManifest carrying every package's stub commands. */
 export const packagesPlugin: PluginManifest = {
