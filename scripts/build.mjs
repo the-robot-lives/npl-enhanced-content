@@ -153,7 +153,69 @@ const targets = [
     budgetKb: 256,
     required: true,
   },
+  {
+    // The editor (shell + controller + insert/dnd/io + descriptors, §9).
+    // Loaded on demand by the core hook (src/lit/edit-hook.ts); core pays
+    // only the queue + one dynamic import. `editorSchema` swaps the bundled
+    // elements.json import for a slim build-time projection (examples and
+    // prose descriptions dropped — ~14 KB of example text + prose the editor
+    // never reads; insert templates come from the descriptor registry, not
+    // the schema).
+    //
+    // 128 → 256 KB (2026-10-14, integrate): the §9.1 estimate assumed the
+    // schema dominated the payload. The integrated editor measures 245.1 raw
+    // / 69.8 gzipped with the slim schema in place — 12.8 K lines across
+    // model/shell/controller/insert/dnd/io/code/descriptors, of which ~34 KB
+    // is injected CSS that minification cannot shrink. A lazy descriptor
+    // split was evaluated and rejected for now: side-effect registration
+    // needs one registry instance, so a second IIFE would have to re-plumb
+    // all 55 descriptor modules through a global shim. History in ROADMAP
+    // "Size budgets".
+    name: 'semtext-editor.js',
+    entry: 'src/editor/index.ts',
+    global: 'SemTextEditor',
+    budgetKb: 256,
+    required: true,
+    editorSchema: true,
+  },
 ];
+
+/** Vite plugin: resolve elements.json to the editor's slim projection. Test
+ *  runs (vitest) import the real file; only the built bundle is slimmed. */
+function editorSchemaSlim() {
+  return {
+    name: 'editor-slim-schema',
+    enforce: 'pre',
+    resolveId(id) {
+      if (id.endsWith('elements.json')) return '\0semtext-editor-elements-slim';
+      return null;
+    },
+    load(id) {
+      if (id !== '\0semtext-editor-elements-slim') return null;
+      const raw = JSON.parse(readFileSync(resolve(root, 'elements.json'), 'utf8'));
+      const slim = {
+        specVersion: raw.specVersion,
+        tagCount: raw.tagCount,
+        tags: (raw.tags ?? []).map((t) => ({
+          name: t.name,
+          family: t.family,
+          summary: t.summary,
+          attributes: (t.attributes ?? []).map((a) => ({
+            name: a.name,
+            required: a.required === true ? true : null,
+            type: a.type,
+            allowedValues: a.allowedValues,
+            default: a.default,
+            description: a.description,
+          })),
+          children: (t.children ?? []).map((c) => ({ name: c.name })),
+          optionsIn: t.optionsIn,
+        })),
+      };
+      return `export default ${JSON.stringify(slim)};`;
+    },
+  };
+}
 
 rmSync(distDir, { recursive: true, force: true });
 
@@ -175,6 +237,7 @@ for (const target of targets) {
     root,
     configFile: false,
     logLevel: 'warn',
+    ...(target.editorSchema ? { plugins: [editorSchemaSlim()] } : {}),
     build: {
       target: 'es2022',
       outDir: distDir,

@@ -77,6 +77,7 @@ guardrail discipline they document.
 | `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
 | `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
 | `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
+| `semtext-editor.js` (editor, §9) | **256 KB** (raised from the §9.1 estimate of 128 — integrate 2026-10-14; the estimate predated the integrated build, see the budget comment in `scripts/build.mjs`) | 245.1 raw / 69.8 gzipped — in budget |
 | `semtext-lazy.js` (loader) | **8 KB** | 3.3 raw / 1.6 gzipped (2026-10-14) |
 | `npl-lazy.js` (loader) | **8 KB** | 4.0 raw / 1.8 gzipped (2026-10-14) |
 
