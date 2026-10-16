@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://semtext.noizu.com/schemas/semtext.schema.json",
   "title": "SemText document schema",
-  "description": "Machine-readable contract for SemText documents, derived from spec/conventions.md (v0.6) and the per-element prose contracts in spec/schema/*.md. The prose files are normative; this file is the enforcement layer that semtext-validate reads. Changes here precede spec changes precede code, same as the prose contracts.",
+  "description": "Machine-readable contract for SemText documents, derived from spec/conventions.md (v0.7) and the per-element prose contracts in spec/schema/*.md. The prose files are normative; this file is the enforcement layer that semtext-validate reads. Changes here precede spec changes precede code, same as the prose contracts.",
   "x-semtext": {
-    "specVersion": "0.6",
+    "specVersion": "0.7",
     "document": {
       "root": {
         "tag": "sem-enhanced-document",
