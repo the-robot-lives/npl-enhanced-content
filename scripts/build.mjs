@@ -150,8 +150,13 @@ const targets = [
     // 96 → 256 KB: the canvas-everywhere terminal renderer raise (commit
     // 6b34053 updated ROADMAP "Size budgets" but not this constant — the
     // build table has disagreed with the recorded budget since).
+    // Advisory since the packages round (user decision, 2026-10-17): the
+    // shell is demo/agent tooling, not a main package — its size is
+    // reported, never blocking. Reader bundles (semtext.js / npl.js / the
+    // lazy loaders) keep hard budgets.
     budgetKb: 256,
     required: true,
+    advisory: true,
     // The nano editor body stays out of the shell: the LazyNano stub's
     // dynamic `import('./nano-app.js')` must survive the IIFE build, so the
     // specifier is marked external and the chunk below ships it separately
@@ -170,6 +175,39 @@ const targets = [
     required: true,
   },
 ];
+
+/* Command packages (packages round, LANE=pkg-infra): every
+ * `src/terminal/packages/<pkg>/index.ts` auto-chunks to
+ * `semtext-pkg-<pkg>.js` next to the shell bundle — no per-lane build
+ * edit, registration is just the manifest.ts lines. ES-module format: a
+ * package stub loads its chunk with a runtime dynamic `import()` (the
+ * @vite-ignore pattern, src/terminal/packages/lazy.ts), which needs real
+ * exports; the IIFE shell cannot carry them. Chunks are self-contained by
+ * contract (index.ts imports only types from outside its directory), so
+ * one lib build per package, no shared-chunk factoring. `required: false`
+ * — a half-landed package (no index.ts yet) is skipped, never fatal; a
+ * worker referenced as `new Worker(new URL('./x.js', import.meta.url))`
+ * inside the chunk's graph is emitted as its own file next to it. */
+const packagesDir = resolve(root, 'src/terminal/packages');
+if (existsSync(packagesDir)) {
+  for (const entry of readdirSync(packagesDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const entryRel = `src/terminal/packages/${entry.name}/index.ts`;
+    if (!existsSync(resolve(root, entryRel))) continue;
+    const pascal = entry.name.replace(/(^|-)([a-z])/g, (_, __, c) => c.toUpperCase());
+    targets.push({
+      name: `semtext-pkg-${entry.name}.js`,
+      entry: entryRel,
+      global: `SemTextPkg${pascal}`,
+      formats: ['es'],
+      budgetKb: 64,
+      required: false,
+      // Package chunks are report-only too (same user decision): the
+      // contract keeps LOAD lazy, and bytes never block the build.
+      advisory: true,
+    });
+  }
+}
 
 rmSync(distDir, { recursive: true, force: true });
 
@@ -205,8 +243,11 @@ for (const target of targets) {
   const bytes = statSync(file).size;
   const gzip = gzipSync(readFileSync(file)).length;
   const budget = target.budgetKb * 1024;
-  if (bytes > budget) overBudget = true;
-  results.push({ name: target.name, bytes, gzip, budget, ok: bytes <= budget });
+  const over = bytes > budget;
+  // Advisory budgets (shell + package chunks) are reported, never blocking
+  // — even under --strict-budget (user decision, packages round 2026-10-17).
+  if (over && !target.advisory) overBudget = true;
+  results.push({ name: target.name, bytes, gzip, budget, over, advisory: !!target.advisory });
 }
 
 /* js-shell manifest — both terminal tags ship in the one standalone bundle
@@ -367,7 +408,7 @@ for (const lazy of LAZY_TARGETS) {
   const gzip = gzipSync(readFileSync(lazyPath)).length;
   const budget = lazy.budgetKb * 1024;
   if (bytes > budget) overBudget = true;
-  results.push({ name: `${lazy.id}.js`, bytes, gzip, budget, ok: bytes <= budget });
+  results.push({ name: `${lazy.id}.js`, bytes, gzip, budget, over: bytes > budget, advisory: false });
   const shared = readdirSync(resolve(distDir, lazy.chunkDir)).filter(
     (f) => !Object.values(lazyManifest).includes(`${lazy.chunkDir}/${f}`),
   );
@@ -405,9 +446,8 @@ console.log('\n  artifact              size     gzip    budget');
 console.log('  ------------------------------------------------');
 for (const r of results) {
   const kb = (n) => (n / 1024).toFixed(1).padStart(6) + ' KB';
-  console.log(
-    `  ${r.name.padEnd(20)}${kb(r.bytes)}${kb(r.gzip)}${kb(r.budget)}  ${r.ok ? '✓' : '✗ OVER'}`,
-  );
+  const verdict = r.over ? (r.advisory ? '✗ OVER (report-only)' : '✗ OVER') : '✓';
+  console.log(`  ${r.name.padEnd(20)}${kb(r.bytes)}${kb(r.gzip)}${kb(r.budget)}  ${verdict}`);
 }
 for (const c of cssCopies) console.log(`  ${c.from.padEnd(20)}      → ${c.to}`);
 console.log('');
