@@ -37,6 +37,24 @@ export function bindingFromElement(el: Element | null): BindingHandle | null {
 }
 
 /**
+ * The nearest non-chrome element at or above `start` within `binding` —
+ * the authored anchor the pointer is really over. Null at the boundary.
+ * Drag placement uses this to decide "on the host itself": hovering the
+ * host's GENERATED chrome (tools bar, chips) must count as on-host, not
+ * as a positional hit on the binding root (integrate 2026-10 — without it
+ * a drop on the data-visualizer's toolbar resolved to the ROOT container
+ * and the drop was silently refused as 'self').
+ */
+export function hoveredAnchor(binding: ElementBinding, start: Element | null): Element | null {
+  let el = start;
+  while (el !== null && el !== binding.el.parentElement) {
+    if (!isRuntimeChrome(el)) return el;
+    el = el.parentElement;
+  }
+  return null;
+}
+
+/**
  * The model ELEMENT under the pointer inside a binding: `modelIdFor`
  * answers element ids only (text/marked chrome → null), so walk up until
  * one resolves. Null when the pointer sits over unmodeled chrome.

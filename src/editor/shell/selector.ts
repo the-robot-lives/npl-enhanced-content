@@ -57,9 +57,25 @@ function parseSimple(raw: string): SimpleSelector | null {
   return s.trim() === '' ? out : null;
 }
 
+/** Expand a top-level `:is(A, B)` group into comma alternatives, carrying
+ *  the combinator prefix into each alternative (`sel('fact')` is
+ *  `:scope > :is(sem-fact, .sem-fact)`). The DOM side has querySelectorAll
+ *  for `:is()`; the model-side matcher only needs the descriptor shapes
+ *  (§3.3) and `:is` never nests in the vocabulary. */
+function expandIsGroups(selector: string): string {
+  const m = /(^|,)\s*([^,]*?):is\(([^()]*)\)/.exec(selector);
+  if (m === null) return selector;
+  const prefix = m[2].trim();
+  const alts = m[3]
+    .split(',')
+    .map((a) => prefix + a.trim())
+    .filter((a) => a !== prefix);
+  return selector.slice(0, m.index) + m[1] + alts.join(', ') + selector.slice(m.index + m[0].length);
+}
+
 /** Does the selector use only the grammar above? (UI gates on this.) */
 export function selectorSupports(selector: string): boolean {
-  return selector
+  return expandIsGroups(selector)
     .split(',')
     .every((alt) => alt.trim() === '' || parseSimple(alt) !== null);
 }
@@ -87,7 +103,7 @@ function matchesSimple(node: EditorNode, sel: SimpleSelector): boolean {
  * Unknown grammar matches nothing (call `selectorSupports` first to warn).
  */
 export function childMatches(child: EditorNode, selector: string): boolean {
-  return selector
+  return expandIsGroups(selector)
     .split(',')
     .map((alt) => parseSimple(alt))
     .some((sel) => sel !== null && matchesSimple(child, sel));

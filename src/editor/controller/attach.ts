@@ -109,6 +109,14 @@ export function attachEditor(el: SemElement, ctx: EditorContext): EditController
   controllerMap.set(el, controller);
   contextMap.set(el, ctx);
   el.setAttribute('data-sem-editing', '');
+  // Plain hosts (zero-JS tags: sem-heading, sem-paragraph…) have no Lit
+  // controller registry — the constructor's addController is a no-op and
+  // Lit never calls hostConnected for them. Wire DOM + doc listeners NOW
+  // (integrate 2026-10: without this, right-click/edit/chrome silently
+  // didn't exist on plain hosts — data-sem-editing was set but inert).
+  if (typeof (el as { addController?: unknown }).addController !== 'function') {
+    controller.hostConnected();
+  }
   ensureInjected(el.ownerDocument, CONTROLLER_CSS);
   installPostRerenderStamp(ctx);
   return controller;

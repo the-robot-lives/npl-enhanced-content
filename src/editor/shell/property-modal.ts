@@ -2,7 +2,7 @@
  * property-modal — the schema-driven Properties dialog (EDITOR.md §5.4).
  *
  * Built from three injected views on the context — `ctx.schema` (attribute
- * specs per tag), `ctx.descriptors` (item lists / JSON payload) and the doc —
+ * specs per tag), `ctx.descriptorView` (item lists / JSON payload) and the doc —
  * so it runs today against test doubles and unchanged when the schema lane's
  * loader lands.
  *
@@ -59,7 +59,7 @@ export function openPropertiesModal(ctx: EditorContext, options: PropertyModalOp
   const host: ElementNode = node;
   const tag = host.name.toLowerCase();
 
-  const descriptor = ctx.descriptors?.descriptorFor(tag) ?? null;
+  const descriptor = ctx.descriptorView?.descriptorFor(tag) ?? null;
   const schema = ctx.schema?.schemaFor(tag) ?? null;
   const specs: readonly AttrSpec[] = schema === null ? [] : schema.attrs;
 
@@ -268,7 +268,16 @@ export function openPropertiesModal(ctx: EditorContext, options: PropertyModalOp
   refreshWarns();
 
   // ── advanced (attributes the schema does not know) ───────────────────────
-  const unknownAttrs = host.attrs.filter((a) => !knownNames.has(a.name.toLowerCase()));
+  // Runtime markers the editor/core itself stamps are chrome, never
+  // authored data — never surface them as editable properties
+  // (integrate 2026-10: data-sem-upgraded leaked into the Advanced list).
+  const RUNTIME_ATTRS = new Set([
+    'data-sem-upgraded', 'data-sem-edit-node', 'data-sem-editing',
+    'data-sem-chrome', 'data-sem-inert', 'data-npl-generated',
+  ]);
+  const unknownAttrs = host.attrs.filter((a) =>
+    !knownNames.has(a.name.toLowerCase()) && !RUNTIME_ATTRS.has(a.name.toLowerCase()),
+  );
   if (unknownAttrs.length > 0) {
     const advanced = document.createElement('details');
     advanced.className = 'sem-ed-advanced';

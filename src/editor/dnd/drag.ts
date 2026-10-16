@@ -27,7 +27,7 @@ import {
   type DragState,
   type DropCandidate,
 } from './types.js';
-import { bindingFromElement, draggedElementFor, hoveredModelId, labelFor } from './resolve.js';
+import { bindingFromElement, draggedElementFor, hoveredAnchor, hoveredModelId, labelFor } from './resolve.js';
 import { structuralParentId, isMoveAllowed, isReorderNoOp, elementIndexOf, modelIndexForElementSlot, performMove, describeMove } from './placement.js';
 import { dropIndexFromRects, indicatorRectFor, type RectLike } from './geometry.js';
 import { hideDropIndicator, showDropIndicator } from './indicators.js';
@@ -116,10 +116,13 @@ export function attachDnD(options: AttachDnDOptions = {}): () => void {
     const hoveredId = hoveredModelId(handle.ctx, handle.binding, hovered);
     if (hoveredId === null) return { ok: false, why: 'outside' };
 
-    // Pointer over the bound HOST itself (its own padding/empty area) means
-    // "append into the host"; over any authored descendant means
-    // "before/after that element, among its parent's children".
-    const onHost = hovered !== null && hovered === handle.binding.el;
+    // Pointer over the bound HOST itself — or over its GENERATED chrome
+    // (the nearest authored anchor above the hit is the host; e.g. the
+    // data-visualizer's tools bar) — means "append into the host"; over
+    // any authored descendant means "before/after that element, among its
+    // parent's children".
+    const anchor = hoveredAnchor(handle.binding, hovered);
+    const onHost = hovered !== null && (hovered === handle.binding.el || anchor === handle.binding.el);
     const containerId = onHost ? hoveredId : structuralParentId(handle.ctx, hoveredId);
     if (containerId === null) return { ok: false, why: 'outside' };
     // never drop into the dragged node's own subtree
