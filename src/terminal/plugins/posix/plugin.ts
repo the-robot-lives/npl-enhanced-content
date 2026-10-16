@@ -10,12 +10,14 @@
 import type { PluginManifest } from '../../terminal-core.js';
 import { posixCommands } from './commands.js';
 import { applyEnvDirenv } from './env-commands.js';
+import { applyFindSed } from './sed.js';
 
 export const posixPlugin: PluginManifest = {
   name: 'posix-sh',
   version: '0.1.0',
-  description: 'POSIX-style commands over the virtual file system: ls, cat, bat, grep, pipes and redirects',
-  commands: applyEnvDirenv(posixCommands),
+  description:
+    'POSIX-style commands over the virtual file system: ls, cat, bat, grep, find, sed, pipes and redirects',
+  commands: applyFindSed(applyEnvDirenv(posixCommands)),
   files: [],
 };
 
