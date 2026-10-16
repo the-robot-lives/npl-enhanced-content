@@ -152,6 +152,22 @@ const targets = [
     // build table has disagreed with the recorded budget since).
     budgetKb: 256,
     required: true,
+    // The nano editor body stays out of the shell: the LazyNano stub's
+    // dynamic `import('./nano-app.js')` must survive the IIFE build, so the
+    // specifier is marked external and the chunk below ships it separately
+    // (shell-v3 r3, r3-nano cross-lane patch — measured −~18 KB gross).
+    rollupExternal: [/nano-app\.js$/],
+  },
+  {
+    // The nano editor body as its own IIFE chunk, loaded on first `nano`
+    // invocation (see the shell target's rollupExternal note). The file
+    // name MUST stay `nano-app.js` — the stub's relative specifier resolves
+    // against it with zero runtime changes.
+    name: 'nano-app.js',
+    entry: 'src/terminal/apps/nano/nano-app.ts',
+    global: 'SemTextNano',
+    budgetKb: 24,
+    required: true,
   },
 ];
 
@@ -180,6 +196,8 @@ for (const target of targets) {
       outDir: distDir,
       emptyOutDir: false,
       lib: { entry, formats: ['iife'], name: target.global, fileName: () => target.name },
+      // Per-target external specifiers (shell keeps `nano-app.js` lazy).
+      ...(target.rollupExternal ? { rollupOptions: { external: target.rollupExternal } } : {}),
     },
   });
 
@@ -197,7 +215,16 @@ for (const target of targets) {
  * manifests so a consumer can resolve either tag without hardcoding. */
 writeFileSync(
   resolve(distDir, 'semtext-js-shell-manifest.json'),
-  JSON.stringify({ 'sem-terminal': 'semtext-js-shell.js', 'sem-shell': 'semtext-js-shell.js' }, null, 2) + '\n',
+  JSON.stringify(
+    {
+      'sem-terminal': 'semtext-js-shell.js',
+      'sem-shell': 'semtext-js-shell.js',
+      // the lazy nano editor chunk (loaded by the shell's LazyNano stub)
+      'nano-app': 'nano-app.js',
+    },
+    null,
+    2,
+  ) + '\n',
 );
 
 /* ---------------------------------------------------------------------------
