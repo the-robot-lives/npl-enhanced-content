@@ -39,10 +39,27 @@ import { textPackage } from './text/stub.js';   // 1. import, in the block
 const PACKAGES: LazyPackage[] = [/* … */ textPackage];
 ```
 
-That is the whole registration: `packagesPlugin` picks the commands up and
-the shell mounts them per session core; `applyPackageMan` (sem-shell.ts)
-makes `man <cmd>` answer from your package. Do NOT add commands to the
-posix plugin, do NOT touch `sem-terminal.ts`/`terminal-core.ts`.
+That is the whole registration: `mountPackages` (sem-shell.ts, called
+after the base plugins) picks the commands up and the shell mounts them
+per session core; `applyPackageMan` makes `man <cmd>` answer from your
+package. Do NOT add commands to the posix plugin, do NOT touch
+`sem-terminal.ts`/`terminal-core.ts`.
+
+## Name clashes — `supersedes`
+
+Packages mount AFTER the base plugins, so a name collision with an
+existing command is possible (e.g. a richer `grep`). Mounts never fail on
+a clash: declare the intentional replacements in the stub and they
+replace the base command silently —
+
+```ts
+const stub: PackageStub = { name: 'text', supersedes: ['grep', 'wc', 'head', 'tail'], commands: [/* … */] };
+```
+
+An UNDECLARED collision still resolves last-wins (your package wins),
+but emits a `[packages]` console warning naming the command — declare it
+to silence the warning. `packagesPlugin` (the single-manifest view) is
+kept for suites; the shell mounts per-package via `mountPackages`.
 
 ## Stub budget
 

@@ -53,8 +53,12 @@ export interface LazyPackage {
   /** Command names this package can answer `man` for right now. */
   manNames(): ReadonlySet<string>;
   /** Man page lines for one command: the chunk's page once resident, else
-   *  the stub's short page; null when this package has none. */
+   *  the stub's short page; null when this package has none. Consulted
+   *  live on every `man` call, so the swap needs no re-registration. */
   manPage(name: string): string[] | null;
+  /** Base command names the stub declares it intentionally replaces
+   *  (types.ts#PackageStub.supersedes) — silent supersedes at mount. */
+  readonly supersedes: ReadonlySet<string>;
 }
 
 /** True when the invocation only asks for help (answered from the stub). */
@@ -75,17 +79,16 @@ export function createLazyPackage(stub: PackageStub, load: () => Promise<Package
   for (const cmd of stub.commands) {
     if (cmd.man !== undefined) stubMan.set(cmd.name, cmd.man);
   }
+  let resident = false; // the chunk resolved (even if it shipped no commands)
   let failed = false;
   let pending: Promise<boolean> | null = null;
 
   const ensure = (): Promise<boolean> => {
     pending ??= load().then(
       (mod) => {
-        for (const spec of mod.commands) {
-          real.set(spec.name, spec);
-          const page = mod.manPages?.[spec.name];
-          if (page !== undefined) chunkMan.set(spec.name, page);
-        }
+        for (const spec of mod.commands) real.set(spec.name, spec);
+        for (const [name, page] of Object.entries(mod.manPages ?? {})) chunkMan.set(name, page);
+        resident = true;
         return true;
       },
       () => {
@@ -118,7 +121,7 @@ export function createLazyPackage(stub: PackageStub, load: () => Promise<Package
           ctx.exit(1);
           return;
         }
-        if (real.size > 0) {
+        if (resident) {
           // The chunk is resident but forgot this command — a contract bug.
           ctx.err(`${cmd.name}: package chunk ${chunkFile} does not provide it`);
           ctx.exit(70);
@@ -142,9 +145,10 @@ export function createLazyPackage(stub: PackageStub, load: () => Promise<Package
     name: stub.name,
     commands: stub.commands.map(specFor),
     ensure,
-    loaded: () => real.size > 0,
+    loaded: () => resident,
     manNames: () => new Set([...chunkMan.keys(), ...stubMan.keys()]),
     manPage: (name) => chunkMan.get(name) ?? stubMan.get(name) ?? null,
+    supersedes: new Set(stub.supersedes ?? []),
   };
 }
 
@@ -158,13 +162,6 @@ export function createLazyPackage(stub: PackageStub, load: () => Promise<Package
 export function withPackageMan(manifest: PluginManifest, packages: readonly LazyPackage[]): PluginManifest {
   const man = manifest.commands.find((spec) => spec.name === 'man');
   if (man === undefined) return manifest;
-  const pages = new Map<string, string[]>();
-  for (const pkg of packages) {
-    for (const name of pkg.manNames()) {
-      const page = pkg.manPage(name);
-      if (page !== null && !pages.has(name)) pages.set(name, page);
-    }
-  }
   return {
     ...manifest,
     commands: manifest.commands.map((spec) =>
@@ -173,12 +170,20 @@ export function withPackageMan(manifest: PluginManifest, packages: readonly Lazy
         : {
             ...spec,
             run(ctx: CommandContext) {
-              const page = ctx.args[0] === undefined ? undefined : pages.get(ctx.args[0]);
-              if (page !== undefined) {
-                ctx.out(`${ctx.args[0]!.toUpperCase()}(1)                semtext-sh manual`);
-                ctx.out('');
-                for (const line of page) ctx.out(line);
-                return;
+              const name = ctx.args[0];
+              if (name !== undefined) {
+                // Live lookup — chunk pages appear the moment the chunk
+                // resolves, no re-registration (first package wins on a
+                // name two stubs both document).
+                for (const pkg of packages) {
+                  const page = pkg.manPage(name);
+                  if (page !== null) {
+                    ctx.out(`${name.toUpperCase()}(1)                semtext-sh manual`);
+                    ctx.out('');
+                    for (const line of page) ctx.out(line);
+                    return;
+                  }
+                }
               }
               man.run(ctx);
             },

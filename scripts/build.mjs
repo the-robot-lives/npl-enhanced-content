@@ -229,13 +229,32 @@ for (const target of targets) {
     root,
     configFile: false,
     logLevel: 'warn',
+    // Package targets are ES modules: the stubs' runtime dynamic `import()`
+    // reads the chunks' named exports (`commands`, `manPages`) — an IIFE
+    // chunk has none and would fail to load in every browser.
+    ...(target.formats ? { base: './' } : {}),
+    // Module workers (the wasm chunk's runner) keep their own build; pin
+    // the emitted file FLAT and stable so it sits next to the chunk —
+    // `worker-main.js`, no hash, no /assets/ subdir.
+    ...(target.formats
+      ? {
+          worker: {
+            format: 'es',
+            rollupOptions: { output: { entryFileNames: 'worker-main.js', chunkFileNames: 'worker-[name].js' } },
+          },
+        }
+      : {}),
     build: {
       target: 'es2022',
       outDir: distDir,
       emptyOutDir: false,
-      lib: { entry, formats: ['iife'], name: target.global, fileName: () => target.name },
+      lib: { entry, formats: target.formats ?? ['iife'], name: target.global, fileName: () => target.name },
       // Per-target external specifiers (shell keeps `nano-app.js` lazy).
       ...(target.rollupExternal ? { rollupOptions: { external: target.rollupExternal } } : {}),
+      // Package chunks: assets (the wasm worker) land FLAT and relative —
+      // `worker-main.js` next to the chunk, no hash, no /assets/ absolute
+      // path (the no-fetch-outside-bundle-dir rule).
+      ...(target.formats ? { rollupOptions: { output: { assetFileNames: '[name][extname]' } } } : {}),
     },
   });
 

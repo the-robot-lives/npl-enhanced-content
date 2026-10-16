@@ -6,6 +6,7 @@ import { lineText } from '../terminal/screen/screen.js';
 import { demoPlugin } from '../terminal/plugins/demo/plugin.js';
 import { posixPlugin } from '../terminal/plugins/posix/plugin.js';
 import { cardsPlugin } from '../terminal/plugins/cards/plugin.js';
+import { PACKAGES, applyPackageMan, mountPackages } from '../terminal/packages/manifest.js';
 import { attachAutostart } from '../terminal/script/autostart.js';
 import type { AutostartHandle } from '../terminal/script/autostart.js';
 import { looksLikeScriptPath, resolveScriptValue } from '../terminal/script/demo-format.js';
@@ -127,8 +128,15 @@ export class SemShell extends SemTerminal {
    */
   protected override configureSessionCore(core: TerminalCore, emit: (lines: ShellLine[]) => void): void {
     const lines: ShellLine[] = [];
+    // Base plugins first — packages mount AFTER them (packages round): each
+    // package is its own manifest via mountPackages, which lets a package
+    // supersede a base command (declared in the stub's `supersedes`, or
+    // last-wins with a warning) so a name clash never kills a mount. `man`
+    // picks up the packages' pages (applyPackageMan is identity for
+    // manifests that carry no `man` command). Registration is appending to
+    // src/terminal/packages/manifest.ts — nothing else changes here.
     for (const manifest of [posixPlugin, demoPlugin, cardsPlugin]) {
-      const mounted = core.mountPlugin(manifest);
+      const mounted = core.mountPlugin(applyPackageMan(manifest));
       if (mounted.ok) {
         lines.push({
           kind: 'stdout',
@@ -136,6 +144,15 @@ export class SemShell extends SemTerminal {
         });
       } else {
         lines.push({ kind: 'stderr', text: `plugin ${manifest.name}: ${mounted.error}` });
+      }
+    }
+    for (const pm of mountPackages(core)) {
+      const pkg = PACKAGES.find((p) => p.name === pm.pkg);
+      const count = pkg?.commands.length ?? 0;
+      if (pm.ok) {
+        lines.push({ kind: 'stdout', text: `package ${pm.pkg} mounted — ${count} command${count === 1 ? '' : 's'} (lazy)` });
+      } else {
+        lines.push({ kind: 'stderr', text: `package ${pm.pkg}: ${pm.error}` });
       }
     }
     if (!this.#firstSessionHooked) {

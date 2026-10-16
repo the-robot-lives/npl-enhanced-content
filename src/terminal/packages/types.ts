@@ -46,6 +46,15 @@ export interface PackageStub {
   /** Human-readable line for docs; not mounted as a command. */
   description?: string;
   commands: readonly PackageCommandStub[];
+  /**
+   * Base commands this package intentionally replaces (e.g. a richer
+   * `grep` over the posix plugin's simple one). A declared name supersedes
+   * the earlier registration SILENTLY; a collision NOT declared here still
+   * resolves last-wins (the package wins — mounts never fail on name
+   * clashes) but emits a console warning naming the command. Declare
+   * deliberate replacements so the warning only ever fires for surprises.
+   */
+  supersedes?: readonly string[];
 }
 
 /** What a package's chunk (`index.ts`) exports. */

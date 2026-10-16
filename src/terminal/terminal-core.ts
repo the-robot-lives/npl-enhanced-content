@@ -460,12 +460,13 @@ export class TerminalCore {
     this.state.aliases['tabs'] = 'tab'; // the plural spelling (§11.2)
   }
 
-  /** Register one command; refuses duplicates and malformed names. */
-  #register(spec: CommandSpec, plugin: string): void {
+  /** Register one command; refuses duplicates (unless the mount declared
+   *  them supersedable) and malformed names. */
+  #register(spec: CommandSpec, plugin: string, replace?: ReadonlySet<string>): void {
     if (!NAME_PATTERN.test(spec.name)) {
       throw new Error(`invalid command name "${spec.name}" [${plugin}]`);
     }
-    if (this.commands.has(spec.name)) {
+    if (this.commands.has(spec.name) && !replace?.has(spec.name)) {
       throw new Error(`command "${spec.name}" already registered [${plugin}]`);
     }
     if (typeof spec.run !== 'function') {
@@ -511,10 +512,15 @@ export class TerminalCore {
   /**
    * Mount a JS-object manifest: all commands are checked before any is
    * registered, then files mount (last write wins). All-or-nothing per
-   * plugin — a failed mount changes nothing.
+   * plugin — a failed mount changes nothing. `opts.supersede` names
+   * commands this manifest may REPLACE when already registered (the mount
+   * still fails on any other collision) — the packages round's
+   * package-supersedes-base rule rides on it; omitted, behaviour is
+   * exactly the historical all-or-nothing refusal.
    */
-  mountPlugin(manifest: PluginManifest): MountResult {
+  mountPlugin(manifest: PluginManifest, opts?: { supersede?: readonly string[] }): MountResult {
     const label = manifest?.name ?? '(unnamed)';
+    const supersede = new Set(opts?.supersede ?? []);
     try {
       if (typeof manifest?.name !== 'string' || manifest.name === '') {
         throw new Error('plugin manifest needs a name');
@@ -531,7 +537,7 @@ export class TerminalCore {
         if (typeof spec.run !== 'function') {
           throw new Error(`command "${spec.name}" has no run function [${label}]`);
         }
-        if (this.commands.has(spec.name) || seen.has(spec.name)) {
+        if ((this.commands.has(spec.name) && !supersede.has(spec.name)) || seen.has(spec.name)) {
           throw new Error(`command "${spec.name}" already registered [${label}]`);
         }
         seen.add(spec.name);
@@ -542,7 +548,7 @@ export class TerminalCore {
         }
         this.vfs.mountFile(entry.path, entry.content);
       }
-      for (const spec of commands) this.#register(spec, label);
+      for (const spec of commands) this.#register(spec, label, supersede);
       const plugin: MountedPlugin = { name: manifest.name, version: manifest.version };
       this.plugins.push(plugin);
       return { ok: true, error: null, plugin };
