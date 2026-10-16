@@ -19,6 +19,7 @@ import readme from './files/README.md?raw';
 import renderDemo from './files/render-demo.card?raw';
 import renderSubsection from './files/render-subsection.card?raw';
 import renderToc from './files/render-toc.card?raw';
+import yourFirstCard from './files/your-first-card.card?raw';
 
 export const cardsPlugin: PluginManifest = {
   name: 'semtext-cards',
@@ -36,6 +37,7 @@ export const cardsPlugin: PluginManifest = {
     { path: '/demo/render-demo.card', content: renderDemo },
     { path: '/demo/render-subsection.card', content: renderSubsection },
     { path: '/demo/render-toc.card', content: renderToc },
+    { path: '/demo/your-first-card.card', content: yourFirstCard },
   ],
 };
 
