@@ -7,9 +7,9 @@
  * captured here, recursively lexed+parsed by the parser), `@format` words,
  * `$var` references, and `#` comments to end of line.
  *
- * Assignment operators (`=`, `|=`, `+=`, …) tokenize so the parser can
- * reject them with a clear "not supported" message instead of a cryptic
- * syntax error — update-paths are the one big jq feature this build omits.
+ * Assignment operators (`=`, `|=`, `+=`, …) tokenize here and now parse as
+ * real update expressions; `..` and `$__loc__` (with line tracking) also
+ * tokenize here.
  */
 
 /** A tokenizer error: message plus where in the source it happened. */
@@ -31,6 +31,7 @@ export interface InterpPart {
 
 export type Tok =
   | { k: 'dot'; pos: number }
+  | { k: 'dotdot'; pos: number }
   | { k: '['; pos: number }
   | { k: ']'; pos: number }
   | { k: '{'; pos: number }
@@ -46,7 +47,7 @@ export type Tok =
   | { k: 'num'; v: number; pos: number }
   | { k: 'str'; parts: Array<string | InterpPart>; pos: number }
   | { k: 'ident'; name: string; pos: number; adj: boolean }
-  | { k: 'var'; name: string; pos: number }
+  | { k: 'var'; name: string; pos: number; line: number }
   | { k: 'format'; name: string; pos: number }
   | { k: 'eof'; pos: number };
 
@@ -54,7 +55,7 @@ const IDENT_START = /[A-Za-z_]/;
 const IDENT_BODY = /[A-Za-z0-9_]/;
 const NUM_BODY = /[0-9]/;
 
-/** `=`-carrying operators tokenize (the parser rejects them with context). */
+/** `=`-carrying operators tokenize (the parser turns them into updates). */
 const ONE_CHAR_OPS = new Set(['<', '>', '+', '-', '*', '/', '%', '=']);
 
 const ESCAPES: Record<string, string> = {
@@ -73,6 +74,7 @@ const WS = new Set([' ', '\t', '\n', '\r']);
 export function lex(src: string): Tok[] {
   const toks: Tok[] = [];
   let i = 0;
+  let line = 1;
   const n = src.length;
 
   const fail = (msg: string, pos = i): never => {
@@ -83,6 +85,7 @@ export function lex(src: string): Tok[] {
     const c = src[i]!;
     // whitespace + comments
     if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+      if (c === '\n') line++;
       i++;
       continue;
     }
@@ -93,8 +96,13 @@ export function lex(src: string): Tok[] {
     // punctuation
     switch (c) {
       case '.':
-        toks.push({ k: 'dot', pos: i });
-        i++;
+        if (src[i + 1] === '.') {
+          toks.push({ k: 'dotdot', pos: i });
+          i += 2;
+        } else {
+          toks.push({ k: 'dot', pos: i });
+          i++;
+        }
         continue;
       case '[':
         toks.push({ k: '[', pos: i });
@@ -148,13 +156,13 @@ export function lex(src: string): Tok[] {
       default:
         break;
     }
-    // two-char operators: // //= and the comparison / update forms
-    const two = src.slice(i, i + 2);
-    if (two === '//=') {
+    // three-char `//=` must be checked before two-char `//`
+    if (src.slice(i, i + 3) === '//=') {
       toks.push({ k: 'op', op: '//=', pos: i });
-      i += 2;
+      i += 3;
       continue;
     }
+    const two = src.slice(i, i + 2);
     if (['==', '!=', '<=', '>=', '//'].includes(two)) {
       toks.push({ k: 'op', op: two, pos: i });
       i += 2;
@@ -204,7 +212,7 @@ export function lex(src: string): Tok[] {
       if (!IDENT_START.test(src[i] ?? '')) fail("' $' must be followed by a name", start);
       let name = '';
       while (i < n && IDENT_BODY.test(src[i]!)) name += src[i++];
-      toks.push({ k: 'var', name, pos: start });
+      toks.push({ k: 'var', name, pos: start, line });
       continue;
     }
     // format strings

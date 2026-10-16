@@ -1,5 +1,5 @@
 /**
- * packages/jq/index — the jq chunk (packages round, LANE=pkg-jq).
+ * packages/jq/index — the jq chunk (packages rounds 1–2, LANE=pkg-jq).
  *
  * This file is the chunk (`semtext-pkg-jq.js` once built); the stub
  * (./stub.ts) registers `jq` and `json` before it exists. Everything here
@@ -7,18 +7,19 @@
  * bundled shorts, `--`), input-source resolution (pipe or VFS files,
  * multi-document JSON streams), per-input evaluation with jq's exit-code
  * conventions, and output formatting (pretty/compact/raw). The language
- * itself lives in ./jq-lex.ts, ./jq-parse.ts, ./jq-eval.ts and the JSON
- * stream reader in ./jq-json.ts.
+ * itself lives in ./jq-lex.ts, ./jq-parse.ts, ./jq-eval.ts, ./jq-re.ts and
+ * the JSON stream reader in ./jq-json.ts.
  *
  * Exit codes follow jq: 0 ok · 2 usage/system trouble (bad options,
  * unreadable files, malformed input JSON) · 3 program parse/compile
- * errors · 5 runtime errors (one bad input doesn't stop the rest).
+ * errors · 5 runtime errors (one bad input doesn't stop the rest);
+ * `halt`/`halt_error` end the whole run with their own code.
  */
 
 import type { CommandContext, CommandSpec, CompletionContext } from '../../terminal-core.js';
 import type { Command, PackageModule } from '../types.js';
 import { JqParseError, parseProgram } from './jq-parse.js';
-import { JqError, evalNode, validateProgram, type Env, type JVal } from './jq-eval.js';
+import { JqError, JqHalt, evalNode, makeBaseEnv, runState, validateProgram, type JVal } from './jq-eval.js';
 import { JqJsonError, parseOneJson, renderValue, scanJson } from './jq-json.js';
 
 const USAGE = "jq [-rscn] [--arg name value] [--argjson name json] 'FILTER' [file ...]";
@@ -38,20 +39,26 @@ const RICH_HELP = [
   '  -h, --help           this help; --version',
   '',
   'Language: paths (.a.b, .["k"], .[0], slices), .[] iteration, pipe |,',
-  'comma, select map keys length to_entries from_entries has add range,',
-  'sort_by group_by unique_by min_by max_by unique sort reverse first last,',
-  'min max any all flatten map_values with_entries join split startswith',
-  'endswith ltrimstr rtrimstr ascii_downcase ascii_upcase type tostring',
-  'tonumber tojson fromjson not empty error, comparisons and arithmetic,',
-  'and/or/not, // alternative, if/elif/else/end, try/catch and ?, string',
-  'interpolation "\\(expr)", array/object construction, $vars, reduce,',
-  'formats @csv @tsv @json @base64 @base64d @text @uri @html.',
+  'comma, // alternative, and/or/not, comparisons and arithmetic,',
+  'if/elif/else/end, try/catch and ?, reduce, foreach, def (incl.',
+  'recursion and $params), label/break, .. recursive descent,',
+  'EXPR as $x, string interpolation "\\(expr)", @format and',
+  '@format "\\(interp)", assignment = |= += -= *= /= %= //=,',
+  '$ENV/env, $__loc__, input/inputs/input_filename, halt/halt_error,',
+  'regex test match capture scan split/2 splits sub gsub with flags',
+  'g i x s m n p, path getpath setpath delpaths del paths leaf_paths,',
+  'indices index rindex transpose explode implode ascii tojson,',
+  'limit first(f) last(f) until while repeat walk, plus the string,',
+  'array and object builtins (select map keys sort_by group_by',
+  'unique_by to_entries with_entries has contains inside add range',
+  'min max join split startswith endswith ltrimstr rtrimstr',
+  'ascii_downcase ascii_upcase tostring tonumber type not empty',
+  'error, @csv @tsv @json @base64 @base64d @text @uri @html).',
   '',
-  'Not supported: assignment (= |= +=), def, foreach, regex fns (test,',
-  'match, sub, gsub), .., input/inputs, @format with interpolation.',
+  'Not supported: import/include of module files.',
   '',
   'Exit codes: 0 ok · 2 usage/bad input JSON · 3 bad program · 5 runtime',
-  'error (later inputs still run).',
+  'error (later inputs still run); halt/halt_error exit with their code.',
 ];
 
 const JSON_USAGE = 'json [-c] [-r] [file ...]';
@@ -176,59 +183,101 @@ function checkVar(name: string): string | null {
   return null;
 }
 
-const VERSION = 'jq-1.6-semtext (semtext-sh) — a jq subset for the sem-shell';
+const VERSION = 'jq-1.7-semtext (semtext-sh) — a jq subset for the sem-shell';
 
 /**
- * Read every input document. Files concatenate in order (`-` is the
- * pipe); malformed JSON aborts with jq's exit-2 wording. Returns null
- * after reporting a fatal read error.
+ * One input document plus the file it came from (`input_filename`; null
+ * under -n and -s, "<stdin>" for the pipe).
  */
-function readInputs(ctx: CommandContext, files: readonly string[]): JVal[] | null {
-  const docs: JVal[] = [];
+interface Doc {
+  v: JVal;
+  file: string | null;
+}
+
+/** Malformed JSON met while pulling documents (fatal, jq exit 2). */
+class JqDocError extends Error {
+  constructor(
+    message: string,
+    readonly label: string,
+  ) {
+    super(message);
+    this.name = 'JqDocError';
+  }
+}
+
+/**
+ * Open every input source up front (files must exist even under -n, as in
+ * jq). Returns null after reporting a fatal open error and setting exit 2.
+ */
+function collectSources(ctx: CommandContext, files: readonly string[]): Array<{ label: string; text: string }> | null {
   const sources: Array<{ label: string; text: string }> = [];
   if (files.length === 0) {
     sources.push({ label: '<stdin>', text: ctx.stdin ?? '' });
-  } else {
-    for (const file of files) {
-      if (file === '-') {
-        if (ctx.stdin === null) {
-          ctx.err('jq: error: Could not open -: no piped input');
-          ctx.exit(2);
-          return null;
-        }
-        sources.push({ label: '<stdin>', text: ctx.stdin });
-        continue;
-      }
-      const path = ctx.vfs.resolve(ctx.state.cwd, file);
-      const node = ctx.vfs.nodeAt(path);
-      if (node === null) {
-        ctx.err(`jq: error: Could not open ${file}: No such file or directory`);
-        ctx.exit(2);
-        return null;
-      }
-      if (node.kind === 'dir') {
-        ctx.err(`jq: error: Could not open ${file}: Is a directory`);
-        ctx.exit(2);
-        return null;
-      }
-      sources.push({ label: file, text: node.content });
-    }
+    return sources;
   }
-  for (const source of sources) {
-    try {
-      for (const doc of scanJson(source.text)) docs.push(doc);
-    } catch (e) {
-      if (e instanceof JqJsonError) {
-        ctx.err(`jq: error (at ${source.label}): ${e.message}`);
+  for (const file of files) {
+    if (file === '-') {
+      if (ctx.stdin === null) {
+        ctx.err('jq: error: Could not open -: no piped input');
         ctx.exit(2);
         return null;
       }
-      throw e;
+      sources.push({ label: '<stdin>', text: ctx.stdin });
+      continue;
     }
+    const path = ctx.vfs.resolve(ctx.state.cwd, file);
+    const node = ctx.vfs.nodeAt(path);
+    if (node === null) {
+      ctx.err(`jq: error: Could not open ${file}: No such file or directory`);
+      ctx.exit(2);
+      return null;
+    }
+    if (node.kind === 'dir') {
+      ctx.err(`jq: error: Could not open ${file}: Is a directory`);
+      ctx.exit(2);
+      return null;
+    }
+    sources.push({ label: file, text: node.content });
   }
-  return docs;
+  return sources;
 }
 
+/**
+ * A lazy pull-stream over the sources: documents are parsed on demand so
+ * `input`/`inputs` consume exactly the not-yet-seen remainder of the stream
+ * (`jq -n '[inputs]'` and `jq 'input'` behave like real jq). Parse errors
+ * surface as fatal JqDocErrors carrying the source label.
+ */
+function makeDocStream(sources: Array<{ label: string; text: string }>): { next(): Doc | null } {
+  let si = 0;
+  let gen: Generator<Doc> | null = null;
+  return {
+    next(): Doc | null {
+      for (;;) {
+        if (gen === null) {
+          if (si >= sources.length) return null;
+          const label = sources[si]!.label;
+          const text = sources[si]!.text;
+          gen = (function* (): Generator<Doc> {
+            try {
+              for (const doc of scanJson(text)) yield { v: doc, file: label };
+            } catch (e) {
+              if (e instanceof JqJsonError) throw new JqDocError(e.message, label);
+              throw e;
+            }
+          })();
+        }
+        const r = gen.next(); // manual pull: for-of would close the generator on return
+        if (r.done) {
+          gen = null;
+          si++;
+          continue;
+        }
+        return r.value;
+      }
+    },
+  };
+}
 /** Emit one output value (line-split like every shell command). */
 function emitValue(ctx: CommandContext, v: JVal, opts: { raw: boolean; compact: boolean }): void {
   const text = renderValue(v, opts);
@@ -276,7 +325,7 @@ const jq: CommandSpec = {
     let program;
     try {
       program = parseProgram(programText);
-      const bad = validateProgram(program, new Set(opts.vars.keys()));
+      const bad = validateProgram(program, new Set([...opts.vars.keys(), 'ENV']));
       if (bad !== null) {
         ctx.err(`jq: error: ${bad}`);
         ctx.exit(3);
@@ -291,35 +340,76 @@ const jq: CommandSpec = {
       throw e;
     }
 
-    // inputs: -n skips reading entirely; -s wraps everything in one array
-    let inputs: JVal[];
-    if (opts.nullInput) {
-      inputs = [null];
-    } else {
-      const docs = readInputs(ctx, opts.files);
-      if (docs === null) return; // read failure already reported + exited
-      inputs = opts.slurp ? [docs] : docs;
+    // Sources open up front (even under -n, as in jq); documents parse
+    // lazily so input/inputs see the true remaining stream.
+    const sources = collectSources(ctx, opts.files);
+    if (sources === null) return; // open failure already reported + exited
+    const stream = makeDocStream(sources);
+
+    // Main-run documents: -n uses a single null; -s drains the stream into
+    // one array (afterwards `input` correctly reports "No more inputs").
+    let preMain: Doc[] | null = null;
+    if (opts.nullInput) preMain = [{ v: null, file: null }];
+    else if (opts.slurp) {
+      const all: JVal[] = [];
+      for (;;) {
+        const d = stream.next();
+        if (d === null) break;
+        all.push(d.v);
+      }
+      preMain = [{ v: all, file: null }];
     }
 
-    const env: Env = null;
-    const base = [...opts.vars.entries()];
+    // Run state for input/inputs/$ENV/input_filename/halt.
+    runState.env = { ...ctx.state.env };
+    runState.depth = 0;
+    runState.nextInput = () => {
+      const d = stream.next();
+      return d === null ? null : d.v;
+    };
+    const base = makeBaseEnv(opts.vars.entries(), runState.env);
+
+    let mainAt = 0;
+    const nextDoc = (): Doc | null => (preMain !== null ? (mainAt < preMain.length ? preMain[mainAt++]! : null) : stream.next());
+
     let hadRuntimeError = false;
-    for (const input of inputs) {
-      let scope: Env = env;
-      for (let i = base.length - 1; i >= 0; i--) {
-        const [name, value] = base[i]!;
-        scope = { name, value, parent: scope };
-      }
-      try {
-        for (const out of evalNode(program, input, scope)) emitValue(ctx, out, opts);
-      } catch (e) {
-        if (e instanceof JqError) {
-          ctx.err(`jq: error: ${e.jqMessage}`);
-          hadRuntimeError = true;
-          continue;
+    try {
+      for (;;) {
+        const doc = nextDoc();
+        if (doc === null) break;
+        runState.filename = doc.file;
+        try {
+          for (const out of evalNode(program, doc.v, base)) emitValue(ctx, out, opts);
+        } catch (e) {
+          if (e instanceof JqError) {
+            ctx.err(`jq: error: ${e.jqMessage}`);
+            hadRuntimeError = true;
+            continue; // later inputs still run
+          }
+          if (e instanceof RangeError) {
+            // V8 native stack exhaustion (deep recursion past the jq cap)
+            ctx.err('jq: error: recursion limit exceeded');
+            hadRuntimeError = true;
+            continue;
+          }
+          throw e; // JqDocError / JqHalt → outer handlers; real bugs rethrow
         }
-        throw e;
       }
+    } catch (e) {
+      if (e instanceof JqDocError) {
+        ctx.err(`jq: error (at ${e.label}): ${e.message}`);
+        ctx.exit(2);
+        return;
+      }
+      if (e instanceof JqHalt) {
+        if (e.payload !== null) {
+          if (typeof e.payload === 'string') ctx.err(e.payload);
+          else for (const line of renderValue(e.payload, { raw: false, compact: true }).split('\n')) ctx.err(line);
+        }
+        ctx.exit(e.code);
+        return;
+      }
+      throw e;
     }
     if (hadRuntimeError) ctx.exit(5);
   },
@@ -439,28 +529,37 @@ export const manPages: Record<string, string[]> = {
     '',
     'LANGUAGE',
     '     Paths .a.b .["k"] .[0] .[1:3] and .[] iteration; pipe | and',
-    '     comma; select, map, keys, length, to_entries, from_entries,',
-    '     has, add, range; sort/sort_by, group_by, unique/unique_by,',
-    '     min/max, min_by/max_by, reverse, first, last, any, all,',
-    '     flatten, map_values, with_entries; string fns join, split,',
-    '     startswith, endswith, ltrimstr, rtrimstr, ascii_downcase,',
-    '     ascii_upcase, tostring, tonumber, tojson, fromjson; type,',
-    '     not, empty, error; comparisons (jq total order), arithmetic',
-    '     (+ - * / % incl. string/array/object forms), and/or/not, //',
-    '     alternative; if/elif/else/end; try/catch and the ? suffix;',
-    '     string interpolation "\\(expr)"; [..] and {..} construction;',
-    '     $vars; reduce EXPR as $x (INIT; UPDATE); @csv @tsv @json',
-    '     @base64 @base64d @text @uri @html.',
+    '     comma; the // alternative; and/or/not; comparisons (jq total',
+    '     order) and arithmetic (+ - * / % incl. string/array/object',
+    '     forms); if/elif/else/end; try/catch and the ? suffix; reduce',
+    '     and foreach; user defs (recursion, filter and $ parameters);',
+    '     label/break; recursive descent ..; EXPR as $x; string',
+    '     interpolation "\\(expr)" with @format forms; assignment and',
+    '     update-assignment = |= += -= *= /= %= //=; $ENV, env,',
+    '     $__loc__, input, inputs, input_filename, halt, halt_error;',
+    '     regex test match capture scan sub gsub split/2 splits with',
+    '     flags g i x s m n p; path getpath setpath delpaths del paths',
+    '     leaf_paths; indices index rindex transpose explode implode',
+    '     ascii tojson fromjson; limit first(f) last(f) until while',
+    '     repeat walk recurse; sort/sort_by, group_by, unique/unique_by,',
+    '     min/max, min_by/max_by, reverse, flatten, first, last, any,',
+    '     all, add, map, map_values, with_entries, to/from_entries, has,',
+    '     contains, inside, range, join, split, startswith, endswith,',
+    '     ltrimstr, rtrimstr, ascii_downcase, ascii_upcase, tostring,',
+    '     tonumber, type, not, empty, error, length, keys; @csv @tsv',
+    '     @json @base64 @base64d @text @uri @html.',
     '',
     'EXIT CODES',
     '     0 ok · 2 usage or malformed input JSON · 3 program compile',
-    '     error · 5 runtime error (remaining inputs still run).',
+    '     error · 5 runtime error (remaining inputs still run); halt',
+    '     and halt_error exit with their own code (halt_error default',
+    '     5).',
     '',
     'NOT SUPPORTED',
-    '     Assignment and update-assignment (=, |=, +=, ...), def,',
-    '     foreach, label/break, recursive descent (..), regex functions',
-    '     (test, match, capture, sub, gsub, splits), input/inputs, env,',
-    '     paths, limit, and "@format "\\(interp)"" combinations.',
+    '     Module import/include. Regexes compile to JavaScript rather',
+    '     than Oniguruma: common syntax (classes, anchors, named',
+    '     groups, i/x/n/s/m/p flags) matches, but exotic Onig',
+    '     constructs (callouts, \K, possessive quantifiers) do not.',
   ],
   json: [
     'NAME',

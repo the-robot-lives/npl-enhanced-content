@@ -1,19 +1,21 @@
 /**
- * packages/jq/jq-parse — the jq parser (packages round, LANE=pkg-jq).
+ * packages/jq/jq-parse — the jq parser (packages rounds 1–2, LANE=pkg-jq).
  *
- * Pratt-style over ./jq-lex.ts tokens, with jq's precedence ladder:
- *   `|`  <  `,`  <  `//`  <  `or`  <  `and`  <  comparisons  <  `+ -`  <  `* / %`
- * and term-level extras: `.foo` / `[..]` / `?` suffixes, `EXPR as $x | body`,
- * `reduce`, `if/elif/else/end`, `try/catch`, `[..]` / `{..}` construction and
- * function calls.
+ * Recursive-descent over ./jq-lex.ts tokens, with jq's precedence ladder
+ * (loosest first):
+ *   `|`  <  `,`  <  `//`  <  `= |= += …` (nonassoc)  <  `or`  <  `and`
+ *   <  comparisons  <  `+ -`  <  `* / %`
+ * (probe-verified against real jq: `.a = false // "x"` is `(.a = false) // "x"`
+ * — assignment binds tighter than the alternative operator).
+ *
+ * Term-level extras: `.foo` / `[..]` / `?` suffixes, `EXPR as $x | body`,
+ * `reduce`, `foreach`, `if/elif/else/end`, `try/catch`, `def f: …; rest`,
+ * `label $x | body` / `break $x`, `..` (recurse), `@format` words and
+ * `@format "\(interp)"` strings, `[..]` / `{..}` construction, calls.
  *
  * Path expressions compose as pipes: `.a.b` is `. | .a | .b`, so a `?`
  * suffix (a try without catch) wraps exactly the chain built so far —
  * `.a?.b` and `.a.b?` differ the way jq says they do.
- *
- * Deliberately NOT parsed (clear errors, not cryptic ones): assignment and
- * update-assignment (`=`, `|=`, `+=`, …), `def` user functions, `foreach`,
- * `label`/`break`, `..` recursive descent, `@format "\(interp)"`.
  */
 
 import { lex, type Tok } from './jq-lex.js';
@@ -29,10 +31,17 @@ export class JqParseError extends Error {
   }
 }
 
+/** A `def` parameter: `$name` (call-by-value) or `name` (filter closure). */
+export interface DefParam {
+  dollar: boolean;
+  name: string;
+}
+
 export type Ast =
   | { t: 'id' }
   | { t: 'lit'; v: JVal }
   | { t: 'str'; parts: Array<string | Ast> }
+  | { t: 'fmtnstr'; name: string; parts: Array<string | Ast> }
   | { t: 'field'; name: string }
   | { t: 'index'; key: Ast }
   | { t: 'slice'; lo: Ast | null; hi: Ast | null }
@@ -47,7 +56,13 @@ export type Ast =
   | { t: 'try'; body: Ast; catch_: Ast | null }
   | { t: 'if'; clauses: Array<{ cond: Ast; then: Ast }>; els: Ast | null }
   | { t: 'reduce'; src: Ast; name: string; init: Ast; update: Ast }
+  | { t: 'foreach'; src: Ast; name: string; init: Ast; update: Ast; extract: Ast | null }
   | { t: 'as'; src: Ast; name: string; body: Ast }
+  | { t: 'def'; name: string; params: DefParam[]; body: Ast; rest: Ast }
+  | { t: 'label'; name: string; body: Ast }
+  | { t: 'break'; name: string }
+  | { t: 'assign'; op: string; lhs: Ast; rhs: Ast }
+  | { t: 'loc'; line: number }
   | { t: 'var'; name: string }
   | { t: 'call'; name: string; args: Ast[] }
   | { t: 'array'; body: Ast | null }
@@ -58,14 +73,11 @@ export type Ast =
 export const FORMAT_NAMES = new Set(['text', 'json', 'csv', 'tsv', 'html', 'uri', 'base64', 'base64d']);
 
 const ASSIGN_OPS = new Set(['=', '|=', '+=', '-=', '*=', '/=', '%=', '//=']);
-const NOT_SUPPORTED_KEYWORDS: Record<string, string> = {
-  def: 'user-defined functions (def)',
-  foreach: 'foreach (use reduce)',
-  label: 'label/break control flow',
-  import: 'import/include of module files',
-  include: 'import/include of module files',
-  __loc__: 'the $__loc__ literal',
-};
+
+/** Words that stay bare object keys (`{if: 1}` works) but are keywords elsewhere. */
+const KEYWORDS = new Set([
+  'if', 'then', 'elif', 'else', 'end', 'as', 'def', 'foreach', 'reduce', 'try', 'catch', 'label', 'and', 'or', 'import', 'include', 'break', '__loc__',
+]);
 
 class Parser {
   private i = 0;
@@ -100,17 +112,25 @@ class Parser {
   }
 
   parseProgram(): Ast {
-    for (const t of this.toks) {
-      if (t.k === 'op' && ASSIGN_OPS.has(t.op)) this.fail(`assignment (${t.op}) is not supported by this jq build`, t.pos);
-    }
     const ast = this.parsePipe();
     const t = this.peek();
     if (t.k !== 'eof') this.fail(`unexpected ${describe(t)}`, t.pos);
     return ast;
   }
 
-  /** `|` — lowest; right-associated; `EXPR as $x | body` binds here. */
+  /**
+   * `|` — lowest; right-associated. `EXPR as $x | body` binds here (its body
+   * eats the rest of the pipe), as do `def f: …; rest` and `label $x | body`.
+   */
   private parsePipe(): Ast {
+    if (this.atIdent('def')) return this.parseDef();
+    if (this.atIdent('label')) {
+      this.next();
+      const v = this.expect('var', "a $label after 'label'") as Extract<Tok, { k: 'var' }>;
+      if (this.peek().k !== 'pipe') this.fail("expected '|' after 'label $name'", this.peek().pos);
+      this.next();
+      return { t: 'label', name: v.name, body: this.parsePipe() };
+    }
     let l = this.parseComma();
     if (l.t === 'as') return l; // the as-body consumed the rest of the pipe
     if (this.peek().k === 'pipe') {
@@ -119,6 +139,33 @@ class Parser {
       return { t: 'pipe', l, r };
     }
     return l;
+  }
+
+  private parseDef(): Ast {
+    this.next(); // 'def'
+    const nameTok = this.expect('ident', 'a function name after def');
+    const name = (nameTok as { k: 'ident'; name: string }).name;
+    const params: DefParam[] = [];
+    if (this.peek().k === '(') {
+      this.next();
+      for (;;) {
+        const t = this.next();
+        if (t.k === 'var') params.push({ dollar: true, name: t.name });
+        else if (t.k === 'ident') params.push({ dollar: false, name: t.name });
+        else this.fail('expected a parameter name ($var or f) in the def parameter list', t.pos);
+        if (this.peek().k === 'semi') {
+          this.next();
+          continue;
+        }
+        this.expect(')', "')' after the def parameter list");
+        break;
+      }
+    }
+    this.expect('colon', "':' after the def name/parameters");
+    const body = this.parsePipe();
+    this.expect('semi', "';' after the def body");
+    const rest = this.parsePipe();
+    return { t: 'def', name, params, body, rest };
   }
 
   private parseComma(): Ast {
@@ -132,12 +179,23 @@ class Parser {
     return l;
   }
 
+  /** `//` — right-associated, binds looser than assignment (probe-verified). */
   private parseAlt(): Ast {
-    let l = this.parseOr();
-    while (this.atOp('//')) {
+    const l = this.parseAssign();
+    if (this.atOp('//')) {
       this.next();
-      const r = this.parseOr();
-      l = { t: 'alt', l, r };
+      return { t: 'alt', l, r: this.parseAlt() };
+    }
+    return l;
+  }
+
+  /** `= |= += -= *= /= %= //=` — nonassociative; operands at `or` level. */
+  private parseAssign(): Ast {
+    const l = this.parseOr();
+    const t = this.peek();
+    if (t.k === 'op' && ASSIGN_OPS.has(t.op)) {
+      this.next();
+      return { t: 'assign', op: t.op, lhs: l, rhs: this.parseOr() };
     }
     return l;
   }
@@ -194,7 +252,6 @@ class Parser {
 
   private parseUnary(): Ast {
     // Unary minus binds looser than postfix suffixes: -.a is -( .a ).
-    // Assignment operators are rejected in parsePrimary with a clear message.
     if (this.atOp('-')) {
       this.next();
       return { t: 'neg', e: this.parsePostfix() };
@@ -282,9 +339,11 @@ class Parser {
           const s = this.next() as Extract<Tok, { k: 'str' }>;
           return { t: 'pipe', l: { t: 'id' }, r: { t: 'field', name: constStr(s, this) } };
         }
-        if (nt.k === 'dot') this.fail("recursive descent ('..') is not supported by this jq build", nt.pos);
         return { t: 'id' };
       }
+      case 'dotdot':
+        // `..` is recurse/0 (jq defines it as a zero-arg function)
+        return { t: 'call', name: 'recurse', args: [] };
       case 'num':
         return { t: 'lit', v: t.v };
       case 'str': {
@@ -292,9 +351,17 @@ class Parser {
         return { t: 'str', parts };
       }
       case 'var':
+        if (t.name === '__loc__') return { t: 'loc', line: t.line };
         return { t: 'var', name: t.name };
       case 'format': {
         if (!FORMAT_NAMES.has(t.name)) this.fail(`'@${t.name}' is not a known format`, t.pos);
+        // @fmt followed directly by a string applies the format to each
+        // interpolation (and NOT to the literal parts): @base64 "x\(1)".
+        if (this.peek().k === 'str') {
+          const s = this.next() as Extract<Tok, { k: 'str' }>;
+          const parts = s.parts.map((p) => (typeof p === 'string' ? p : parseProgramText(p.raw)));
+          return { t: 'fmtnstr', name: t.name, parts };
+        }
         return { t: 'format', name: t.name };
       }
       case '(':
@@ -326,9 +393,7 @@ class Parser {
       case 'eof':
         this.fail(`unexpected ${describe(t)}`, t.pos);
       case 'op':
-        if (ASSIGN_OPS.has(t.op)) {
-          this.fail(`assignment (${t.op}) is not supported by this jq build`, t.pos);
-        }
+        if (ASSIGN_OPS.has(t.op)) this.fail("an assignment needs a path on its left ('X' is not a path)", t.pos);
         this.fail(`unexpected operator '${t.op}'`, t.pos);
       case 'ident':
         return this.parseIdent(t.name, t.pos);
@@ -338,8 +403,8 @@ class Parser {
   /**
    * `{...}` construction. Entries: `{key: VAL}`, `{key}` (= `.key`),
    * `{$var}` (key = the variable's name), `{"str": VAL}`, `{"str"}`,
-   * `{(EXPR): VAL}`. Values parse at `//` level so `,` separates entries
-   * and `:` never leaks into them; keys accept any identifier word
+   * `{(EXPR): VAL}`. Values parse at assignment level so `,` separates
+   * entries and `:` never leaks into them; keys accept any identifier word
    * (jq's keywords-as-keys allowance).
    */
   private parseObject(): Ast {
@@ -351,9 +416,10 @@ class Parser {
     for (;;) {
       const t = this.next();
       if (t.k === 'var') {
+        if (t.name === '__loc__') this.fail('$__loc__ is not a valid object key shorthand', t.pos);
         entries.push({ key: { t: 'lit', v: t.name }, val: { t: 'var', name: t.name } });
       } else if (t.k === 'ident') {
-        if (NOT_SUPPORTED_KEYWORDS[t.name] !== undefined) {
+        if (KEYWORDS.has(t.name)) {
           // keywords still work as bare object keys, as in jq
           entries.push({ key: { t: 'lit', v: t.name }, val: { t: 'pipe', l: { t: 'id' }, r: { t: 'field', name: t.name } } });
         } else if (this.peek().k === 'colon') {
@@ -388,12 +454,11 @@ class Parser {
   }
 
   private parseObjVal(): Ast {
-    return this.parseAlt();
+    return this.parseAssign();
   }
 
   private parseIdent(name: string, pos: number): Ast {
-    const unsupported = NOT_SUPPORTED_KEYWORDS[name];
-    if (unsupported !== undefined) this.fail(`${unsupported} ${'is'} not supported by this jq build`, pos);
+    if (name === 'import' || name === 'include') this.fail('import/include of module files is not supported by this jq build', pos);
     if (name === 'true') return { t: 'lit', v: true };
     if (name === 'false') return { t: 'lit', v: false };
     if (name === 'null') return { t: 'lit', v: null };
@@ -418,10 +483,13 @@ class Parser {
       this.expect(')', "')'");
       return { t: 'reduce', src, name: v.name, init, update };
     }
-    if (name === 'as') this.fail("'as' needs a source expression (EXPR as $x | body)", pos);
-    if (name === 'and' || name === 'or' || name === 'then' || name === 'elif' || name === 'else' || name === 'end' || name === 'catch') {
-      this.fail(`unexpected keyword '${name}'`, pos);
+    if (name === 'foreach') return this.parseForeach();
+    if (name === 'break') {
+      const v = this.expect('var', "a $label after 'break'") as Extract<Tok, { k: 'var' }>;
+      return { t: 'break', name: v.name };
     }
+    if (name === 'as') this.fail("'as' needs a source expression (EXPR as $x | body)", pos);
+    if (KEYWORDS.has(name)) this.fail(`unexpected keyword '${name}'`, pos);
     // function call
     if (this.peek().k === '(') {
       this.next();
@@ -434,6 +502,25 @@ class Parser {
       return { t: 'call', name, args };
     }
     return { t: 'call', name, args: [] };
+  }
+
+  /** `foreach SOURCE as $x (INIT; UPDATE)` or `foreach SOURCE as $x (INIT; UPDATE; EXTRACT)`. */
+  private parseForeach(): Ast {
+    const src = this.parsePostfix();
+    if (!this.atIdent('as')) this.fail("expected 'as' after 'foreach SOURCE'", this.peek().pos);
+    this.next();
+    const v = this.expect('var', 'a $variable') as Extract<Tok, { k: 'var' }>;
+    this.expect('(', "'('");
+    const init = this.parsePipe();
+    this.expect('semi', "';'");
+    const update = this.parsePipe();
+    let extract: Ast | null = null;
+    if (this.peek().k === 'semi') {
+      this.next();
+      extract = this.parsePipe();
+    }
+    this.expect(')', "')'");
+    return { t: 'foreach', src, name: v.name, init, update, extract };
   }
 
   private parseIf(): Ast {
@@ -487,6 +574,8 @@ function describe(t: Tok): string {
       return 'end of program';
     case 'dot':
       return "'.'";
+    case 'dotdot':
+      return "'..'";
     case 'pipe':
       return "'|'";
     case 'comma':

@@ -470,14 +470,13 @@ describe('jq — files, streams, exit codes', () => {
     expect(status(r)).toBe(2);
     expect(errs(r).join(' ')).toContain('no filter given');
   });
-  it('syntax errors exit 3; assignment and unsupported forms called out', () => {
+  it('syntax errors and unknown names exit 3', () => {
     expect(status(run(`echo '{}' | jq '.a['`))).toBe(3);
     expect(status(run(`echo '{}' | jq ''`))).toBe(3);
     expect(errs(run(`echo '{}' | jq '.a['`)).join(' ')).toContain('jq: error');
-    expect(status(run(`echo '{}' | jq '.a = 1'`))).toBe(3);
-    expect(errs(run(`echo '{}' | jq '.a = 1'`)).join(' ')).toContain('assignment (=) is not supported');
-    expect(status(run(`echo '{}' | jq 'def f: 1; f'`))).toBe(3);
     expect(status(run(`echo '{}' | jq '.a as $x | $y'`))).toBe(3);
+    expect(status(run(`echo '{}' | jq 'break $x'`))).toBe(3);
+    expect(errs(run(`echo '{}' | jq 'break $x'`)).join(' ')).toContain('matching label');
   });
 });
 
@@ -599,7 +598,7 @@ describe('jq — package contract (lazy stub)', () => {
     });
     expect(fresh.manPage('jq')!.join(' ')).toContain('short page');
     await fresh.ensure();
-    expect(fresh.manPage('jq')!.join(' ')).toContain('to_entries,');
+    expect(fresh.manPage('jq')!.join(' ')).toContain('leaf_paths');
     expect(fresh.manPage('json')!.join(' ')).toContain('pretty-print and validate');
     expect(fresh.manPage('nothing')).toBeNull();
   });
@@ -619,5 +618,265 @@ describe('jq — package contract (lazy stub)', () => {
     ]);
     expect(jqSpec.complete?.({ word: '-r', args: [] } as never)).toEqual(['-r']);
     expect(jsonSpec.complete?.({ word: '-', args: [] } as never)).toEqual(['-c', '-r', '--compact', '--raw', '--help']);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* round 2 — regex builtins                                            */
+/* ------------------------------------------------------------------ */
+
+describe('jq — regex builtins (round 2)', () => {
+  it('test/1 and test/2 with flags', () => {
+    expect(jq('test("b+")', '"abbc"')).toEqual(lines('true'));
+    expect(jq('test("z")', '"abc"')).toEqual(lines('false'));
+    expect(jq('test("^a.c$")', '"abc"')).toEqual(lines('true'));
+    expect(jq('test("^a.c$")', '"a\\nc"')).toEqual(lines('false')); // jq default: . stops at newline
+    expect(jq('test("^a.c$"; "m")', '"a\\nc"')).toEqual(lines('true')); // jq m/p = dot matches newline
+    expect(jq('test("ABC"; "i")', '"abc"')).toEqual(lines('true'));
+    expect(jq('test("a b"; "x")', '"ab"')).toEqual(lines('true')); // x strips whitespace
+    expect(jq('test("[[:digit:]]+")', '"a1"')).toEqual(lines('true')); // POSIX classes translate
+  });
+  it('match objects, captures, offsets (code points)', () => {
+    expect(jq('match("b+"; "g") | .offset', '"abbc"')).toEqual(lines('1'));
+    expect(jq('[match("a"; "g")] | length', '"aaa"')).toEqual(lines('3'));
+    expect(jq('match("(?<x>.)-(?<y>.)") | .captures | map(.string)', '"a-b"')).toEqual(lines('[\n  "a",\n  "b"\n]'));
+    expect(jq('match("a(?<n>x)?b") | .captures[0].string', '"ab"')).toEqual(lines('null'));
+    expect(jq('match("a(?<n>x)?b") | .captures[0].offset', '"ab"')).toEqual(lines('-1'));
+    expect(jq('match("😀") | .offset', '"a😀z"')).toEqual(lines('1')); // codepoint offset
+    expect(jq('match("(?<w>[a-z]+)") | .captures[0].name', '"ab"')).toEqual(lines('"w"'));
+  });
+  it('capture / scan', () => {
+    expect(jq('capture("(?<a>.)(?<b>.): (?<c>...)")', '"aa: bbb"')).toEqual(lines('{\n  "a": "a",\n  "b": "a",\n  "c": "bbb"\n}'));
+    expect(jq('capture("x")', '"abc"')).toEqual([]); // no match → no output
+    expect(jq('scan("aa")', '"aaaa"')).toEqual(lines('"aa"', '"aa"'));
+    expect(jq('[scan("[0-9]")]', '"a1b2"')).toEqual(lines('[\n  "1",\n  "2"\n]'));
+    expect(jq('scan("(?<o>.)(?<i>.)") | .i', '"abcd"')).toEqual(lines('"b"', '"d"'));
+  });
+  it('sub / gsub, cartesian replacements, flags', () => {
+    expect(jq('sub("a"; "X")', '"aaa"')).toEqual(lines('"Xaa"'));
+    expect(jq('gsub("a"; "X")', '"aaa"')).toEqual(lines('"XXX"'));
+    expect(jq('gsub("o"; "0", "O")', '"foo"')).toEqual(lines('"f00"', '"f0O"', '"fO0"', '"fOO"'));
+    expect(jq('gsub("(?<x>a)"; "<\\(.x)>")', '"aa"')).toEqual(lines('"<a><a>"')); // replacement sees captures as .
+    expect(jq('sub("a"; "X"; "g")', '"aa"')).toEqual(lines('"XX"'));
+    expect(jq('gsub("A"; "x"; "i")', '"aA"')).toEqual(lines('"xx"'));
+  });
+  it('split/2 and splits (regex, not literal)', () => {
+    expect(jq('split(", *"; null)', '"a, b,c"')).toEqual(lines('[\n  "a",\n  "b",\n  "c"\n]'));
+    expect(jq('[splits(",")]', '"a,b,c"')).toEqual(lines('[\n  "a",\n  "b",\n  "c"\n]'));
+    expect(jq('[splits(",")]', '"a, b"')).toEqual(lines('[\n  "a",\n  " b"\n]'));
+  });
+  it('regex errors: bad flags and non-string input exit 5', () => {
+    const flags = run(`echo '"a"' | jq 'test("a"; "zzz")'`);
+    expect(status(flags)).toBe(5);
+    expect(errs(flags).join(' ')).toContain('not a valid modifier string');
+    const nonstr = run(`echo 5 | jq 'test("a")'`);
+    expect(status(nonstr)).toBe(5);
+    expect(errs(nonstr).join(' ')).toContain('cannot be matched, as it is not a string');
+    const badre = run(`echo '"a"' | jq 'test("a(")'`);
+    expect(status(badre)).toBe(5);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* round 2 — assignment and update-assignment                          */
+/* ------------------------------------------------------------------ */
+
+describe('jq — assignment (round 2)', () => {
+  it('= sets paths, creates structure, streams the rhs', () => {
+    expect(jq('.a = 1', '{}')).toEqual(lines('{\n  "a": 1\n}'));
+    expect(jq('.a.b = 1', 'null')).toEqual(lines('{\n  "a": {\n    "b": 1\n  }\n}'));
+    expect(jq('.a = (1, 2)', '{}')).toEqual(lines('{\n  "a": 1\n}', '{\n  "a": 2\n}'));
+    expect(jq('.[0] = 9', '[1,2]')).toEqual(lines('[\n  9,\n  2\n]'));
+    expect(jq('.[-1] = 9', '[1,2]')).toEqual(lines('[\n  1,\n  9\n]'));
+    expect(jq('setpath([0,1]; 9)', '[[0]]')).toEqual(lines('[\n  [\n    0,\n    9\n  ]\n]'));
+  });
+  it('assignment binds tighter than // (real-jq parse)', () => {
+    expect(jq('.a = false // "x"', '{"a":false}')).toEqual(lines('{\n  "a": false\n}'));
+  });
+  it('|= updates each path; first output wins; empty deletes', () => {
+    expect(jq('.a |= . + 1', '{"a":1}')).toEqual(lines('{\n  "a": 2\n}'));
+    expect(jq('.[] |= . + 1', '[1,2]')).toEqual(lines('[\n  2,\n  3\n]'));
+    expect(jq('.a |= (2, 3)', '{"a":1}')).toEqual(lines('{\n  "a": 2\n}')); // first output only
+    expect(jq('.a |= empty', '{"a":1,"b":2}')).toEqual(lines('{\n  "b": 2\n}'));
+    expect(jq('(.a, .a) |= . + 1', '{"a":1}')).toEqual(lines('{\n  "a": 3\n}')); // sequential on the evolving doc
+    expect(jq('(.[] | select(. > 1)) |= empty', '[1,5,3,0,7]')).toEqual(lines('[\n  1,\n  0\n]')); // jq 1.7 descending delete
+  });
+  it('+= -= *= /= %= //= update in place', () => {
+    expect(jq('.a += 1', '{"a":1}')).toEqual(lines('{\n  "a": 2\n}'));
+    expect(jq('.a -= 1', '{"a":1}')).toEqual(lines('{\n  "a": 0\n}'));
+    expect(jq('.a *= 3', '{"a":2}')).toEqual(lines('{\n  "a": 6\n}'));
+    expect(jq('.a /= 2', '{"a":7}')).toEqual(lines('{\n  "a": 3.5\n}'));
+    expect(jq('.a %= 3', '{"a":7}')).toEqual(lines('{\n  "a": 1\n}'));
+    expect(jq('.a //= 5', '{"a":null}')).toEqual(lines('{\n  "a": 5\n}'));
+    expect(jq('.a //= 5', '{"a":1}')).toEqual(lines('{\n  "a": 1\n}'));
+    expect(jq('.[0] += 10', '[1,2]')).toEqual(lines('[\n  11,\n  2\n]'));
+  });
+  it('with_entries / to_entries round trips with updates', () => {
+    expect(jq('with_entries(.value += 1)', '{"a":1,"b":2}')).toEqual(lines('{\n  "a": 2,\n  "b": 3\n}'));
+    expect(jq('to_entries | map(.value |= . * 2) | from_entries', '{"a":1,"b":2}')).toEqual(lines('{\n  "a": 2,\n  "b": 4\n}'));
+  });
+  it('del / delpaths remove paths (deepest first)', () => {
+    expect(jq('del(.a)', '{"a":1,"b":2}')).toEqual(lines('{\n  "b": 2\n}'));
+    expect(jq('del(.[0], .[2])', '[1,2,3,4]')).toEqual(lines('[\n  2,\n  4\n]'));
+    expect(jq('delpaths([[1], [3]])', '[1,5,3,0,7]')).toEqual(lines('[\n  1,\n  3,\n  7\n]'));
+    expect(jq('del(.a.b)', '{"a":{"b":1},"c":2}')).toEqual(lines('{\n  "a": {},\n  "c": 2\n}'));
+    expect(jq('del(.nope)', '{"a":1}')).toEqual(lines('{\n  "a": 1\n}'));
+  });
+  it('bad path expressions exit 5', () => {
+    const r = run(`echo 5 | jq '.a = 1'`);
+    expect(status(r)).toBe(5);
+    expect(errs(r).join(' ')).toContain('Cannot index number');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* round 2 — def, foreach, label/break, ..                             */
+/* ------------------------------------------------------------------ */
+
+describe('jq — def (round 2)', () => {
+  it('simple defs, recursion, $params and filter params', () => {
+    expect(jq('def f: . + 1; f', '1')).toEqual(lines('2'));
+    expect(jq('def fact: if . <= 1 then 1 else . * (. - 1 | fact) end; [range(5) | . + 1 | fact]', 'null')).toEqual(
+      lines('[\n  1,\n  2,\n  6,\n  24,\n  120\n]'),
+    );
+    expect(jq('def pair($a; $b): [$a, $b]; pair(1; 2)', 'null')).toEqual(lines('[\n  1,\n  2\n]'));
+    expect(jq('def f($x): $x + 1; f(1, 2)', 'null')).toEqual(lines('2', '3')); // $params bind per output
+    expect(jq('def twice(f): f | f; twice(. + 1)', '0')).toEqual(lines('2'));
+    expect(jq('def apply(f): map(f); apply(. * 10)', '[1,2]')).toEqual(lines('[\n  10,\n  20\n]'));
+    expect(jq('def compose(f; g): f | g; compose(. + 1; . * 2)', '5')).toEqual(lines('12'));
+    expect(jq('def outer: def inner: 7; inner; outer', 'null')).toEqual(lines('7')); // lexical nesting
+  });
+  it('defs shadow builtins; recursion cap is a runtime error', () => {
+    expect(jq('def map(f): "shadowed"; map(.x)', '[1]')).toEqual(lines('"shadowed"'));
+    const r = run(`echo 0 | jq 'def loop: loop; loop'`);
+    expect(status(r)).toBe(5);
+    expect(errs(r).join(' ')).toContain('recursion limit');
+  });
+  it('undefined defs and wrong arities are compile (exit 3) errors', () => {
+    expect(status(run(`echo '{}' | jq 'def f: nosuch; f'`))).toBe(3);
+    expect(status(run(`echo '{}' | jq 'def f(a): a; f'`))).toBe(3); // arity mismatch
+  });
+});
+
+describe('jq — foreach, label/break, .. (round 2)', () => {
+  it('foreach emits per update; extract reshapes; multi-output updates', () => {
+    expect(jq('foreach .[] as $x (0; . + $x)', '[1,2,3]')).toEqual(lines('1', '3', '6'));
+    expect(jq('[foreach .[] as $x (0; . + $x; [$x, .])]', '[1,2,3]')).toEqual(lines('[\n  [\n    1,\n    1\n  ],\n  [\n    2,\n    3\n  ],\n  [\n    3,\n    6\n  ]\n]'));
+    expect(jq('foreach (1,2) as $x (0; . + $x, . + 10)', 'null')).toEqual(lines('1', '10', '12', '20'));
+  });
+  it('label / break unwind to the label', () => {
+    expect(jq('label $out | 1, break $out, 2', 'null')).toEqual(lines('1'));
+    expect(jq('[label $out | .[] | if . > 2 then break $out else . end]', '[1,2,3,4]')).toEqual(lines('[\n  1,\n  2\n]'));
+  });
+  it('.. recurses; paths / leaf_paths walk it', () => {
+    expect(jq('[..]', '{"a":[1]}')).toEqual(lines('[\n  {\n    "a": [\n      1\n    ]\n  },\n  [\n    1\n  ],\n  1\n]'));
+    expect(jq('.. | numbers', '{"a":1,"b":{"c":2}}')).toEqual(lines('1', '2'));
+    expect(jq('[paths]', '{"a":1}')).toEqual(lines('[\n  [\n    "a"\n  ]\n]'));
+    expect(jq('[paths]', '3')).toEqual(lines('[]')); // scalar: root path [] is filtered out (real jq prints [])
+    expect(jq('[leaf_paths]', '{"a":{"b":1},"c":null}')).toEqual(lines('[\n  [\n    "a",\n    "b"\n  ]\n]')); // null is not a leaf
+    expect(jq('[paths(type == "number")]', '{"a":1,"b":"x"}')).toEqual(lines('[\n  [\n    "a"\n  ]\n]'));
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* round 2 — control builtins and environment                          */
+/* ------------------------------------------------------------------ */
+
+describe('jq — limit/first/last/until/while/repeat and friends (round 2)', () => {
+  it('limit / first(f) / last(f)', () => {
+    expect(jq('[limit(2; .[])]', '[1,2,3]')).toEqual(lines('[\n  1,\n  2\n]'));
+    expect(jq('[limit(0; .[])]', '[1,2]')).toEqual(lines('[]'));
+    expect(jq('[first(.[] | select(. > 1))]', '[1,2,3]')).toEqual(lines('[\n  2\n]'));
+    expect(jq('[last(range(4))]', 'null')).toEqual(lines('[\n  3\n]'));
+  });
+  it('until / while / repeat (jq 1.7 semantics)', () => {
+    expect(jq('until(. > 100; . * 2)', '3')).toEqual(lines('192'));
+    expect(jq('[while(. < 100; . * 2)]', '1')).toEqual(lines('[\n  1,\n  2,\n  4,\n  8,\n  16,\n  32,\n  64\n]'));
+    expect(jq('[limit(3; repeat(.*2))]', '1')).toEqual(lines('[\n  2,\n  4,\n  8\n]'));
+  });
+  it('walk / recurse(f) / add(f) / any(cond) / all(cond) / abs / toarray', () => {
+    expect(jq('walk(if type == "number" then . + 1 else . end)', '{"a":[1,2],"b":{"c":3}}')).toEqual(
+      lines('{\n  "a": [\n    2,\n    3\n  ],\n  "b": {\n    "c": 4\n  }\n}'),
+    );
+    expect(jq('[recurse(if . < 3 then . + 1 else empty end)]', '0')).toEqual(lines('[\n  0,\n  1,\n  2,\n  3\n]'));
+    expect(jq('add(.[])', '[1,2,3]')).toEqual(lines('6'));
+    expect(jq('any(.[]; . > 2)', '[1,2,3]')).toEqual(lines('true'));
+    expect(jq('all(.[]; . > 0)', '[1,2,3]')).toEqual(lines('true'));
+    expect(jq('abs', '-5')).toEqual(lines('5'));
+    expect(jq('toarray', '5')).toEqual(lines('[\n  5\n]'));
+    expect(jq('toarray', '[1]')).toEqual(lines('[\n  1\n]'));
+  });
+  it('input/inputs share the document stream; input_filename names the source', () => {
+    expect(out(run(`cat /stream.json | jq -c -n '[inputs]'`))).toEqual(lines('[{"a":1},{"a":2},[3]]'));
+    const one = run(`cat /stream.json | jq -c 'input'`);
+    expect(out(one)).toEqual(lines('{"a":2}')); // doc 1 ran `input` → doc 2; doc 3's input errors
+    expect(status(one)).toBe(5);
+    expect(errs(one).join(' ')).toContain('No more inputs');
+    expect(out(run(`jq 'input_filename' /u.json`))).toEqual(lines('"/u.json"'));
+    expect(out(run(`echo 1 | jq 'input_filename'`))).toEqual(lines('"<stdin>"'));
+    expect(out(run(`jq -n 'input_filename'`))).toEqual(lines('null'));
+  });
+  it('$ENV / env expose the shell environment', () => {
+    expect(jq('$ENV == env', 'null')).toEqual(lines('true'));
+    expect(jq('env | type', 'null')).toEqual(lines('"object"'));
+  });
+  it('halt / halt_error stop the whole run with their code', () => {
+    const h = run(`echo 1 | jq 'halt'`);
+    expect(out(h)).toEqual([]);
+    expect(status(h)).toBe(0);
+    const he = run(`echo 1 | jq '"boom" | halt_error'`);
+    expect(errs(he)).toEqual(['boom']); // raw string payload
+    expect(status(he)).toBe(5);
+    const he2 = run(`echo 1 | jq '"quiet" | halt_error(2)'`);
+    expect(status(he2)).toBe(2);
+    expect(errs(he2)).toEqual(['quiet']);
+    const obj = run(`echo 1 | jq '{"a":1} | halt_error'`);
+    expect(errs(obj)).toEqual(['{"a":1}']); // non-strings print as compact JSON
+    expect(status(obj)).toBe(5);
+  });
+  it('$__loc__ reports the program line', () => {
+    expect(jq('$__loc__.line > 0', 'null')).toEqual(lines('true'));
+    expect(jq('$__loc__ | type', 'null')).toEqual(lines('"object"'));
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* round 2 — path/shape builtins                                       */
+/* ------------------------------------------------------------------ */
+
+describe('jq — getpath/setpath/path, indices, misc (round 2)', () => {
+  it('getpath / setpath / path', () => {
+    expect(jq('getpath(["a", "b"])', '{"a":{"b":7}}')).toEqual(lines('7'));
+    expect(jq('getpath(["x"])', '{"a":1}')).toEqual(lines('null'));
+    expect(jq('setpath(["a"]; 9)', '{}')).toEqual(lines('{\n  "a": 9\n}'));
+    expect(jq('setpath(["a", 0]; 1)', 'null')).toEqual(lines('{\n  "a": [\n    1\n  ]\n}'));
+    expect(jq('[path(.a.b)]', 'null')).toEqual(lines('[\n  [\n    "a",\n    "b"\n  ]\n]'));
+    expect(jq('[path(..)]', '{"a":1}')).toEqual(lines('[\n  [],\n  [\n    "a"\n  ]\n]'));
+  });
+  it('indices / index / rindex are substring/subarray search, not regex', () => {
+    expect(jq('[indices("b")]', '"abcb"')).toEqual(lines('[\n  [\n    1,\n    3\n  ]\n]')); // one array output
+    expect(jq('[indices([1,2])]', '[0,1,2,1,2]')).toEqual(lines('[\n  [\n    1,\n    3\n  ]\n]'));
+    expect(jq('[indices("z")]', '"abc"')).toEqual(lines('[\n  []\n]'));
+    expect(jq('[indices("")]', '"abc"')).toEqual(lines('[\n  []\n]'));
+    expect(jq('[indices("a.c")]', '"axc"')).toEqual(lines('[\n  []\n]')); // literal dots
+    expect(jq('indices("a")', 'null')).toEqual(lines('null'));
+    expect(jq('index("b")', '"abcb"')).toEqual(lines('1'));
+    expect(jq('rindex("b")', '"abcb"')).toEqual(lines('3'));
+    expect(jq('index("z")', '"abc"')).toEqual(lines('null'));
+  });
+  it('transpose / explode / implode / ascii', () => {
+    expect(jq('transpose', '[[1,2],[3,4]]')).toEqual(lines('[\n  [\n    1,\n    3\n  ],\n  [\n    2,\n    4\n  ]\n]'));
+    expect(jq('transpose', '[[1],[2,3]]')).toEqual(lines('[\n  [\n    1,\n    2\n  ],\n  [\n    null,\n    3\n  ]\n]'));
+    expect(jq('explode', '"ab"')).toEqual(lines('[\n  97,\n  98\n]'));
+    expect(jq('implode', '[97,98]')).toEqual(lines('"ab"'));
+    expect(jq('explode | implode', '"a😀"')).toEqual(lines('"a😀"')); // astral round trip
+    expect(jq('ascii', '97')).toEqual(lines('"a"'));
+    const bad = run(`echo null | jq 'implode'`);
+    expect(status(run(`echo '[[55296]]' | jq '.[0] | implode'`))).toBe(5); // surrogate rejected
+    expect(status(bad)).toBe(5);
+  });
+  it('ltrimstr-style helpers stay; min/max/flatten unchanged; round-trips hold', () => {
+    expect(jq('[.[] | tostring] | join("-") | ltrimstr("1-")', '[1,2,3]')).toEqual(lines('"2-3"'));
+    expect(jq('fromjson | tojson', '"[1,2]"')).toEqual(lines('"[1,2]"')); // string content has no quotes to escape
   });
 });
