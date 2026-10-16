@@ -1,7 +1,13 @@
 import { html, type PropertyValues, type TemplateResult } from 'lit';
-import { AnsiStateMachine, ansiSpans, type AnsiSpan } from './ansi/index.js';
+import { ansiSpans, type AnsiSpan } from './ansi/index.js';
 import { SemElement } from '../lit/base.js';
-import { TerminalCore, type ShellLine, type WindowAction } from './terminal-core.js';
+import {
+  TerminalCore,
+  type ExecResult,
+  type ShellLine,
+  type TabAction,
+  type WindowAction,
+} from './terminal-core.js';
 import {
   parseScriptAttribute,
   startPlayback,
@@ -21,16 +27,15 @@ import {
   type TuiAction,
   type TuiState,
 } from './tui.js';
-import { completeLine } from './complete.js';
 import { attachLocalStorage } from './backends/local-storage.js';
 import { createS3Backend } from './backends/s3.js';
 import { Screen, lineText } from './screen/screen.js';
-import { ScreenFeed } from './screen/feed.js';
 import { COLS_MAX, COLS_MIN, ROWS_MAX, ROWS_MIN } from './screen/types.js';
-import { AppRunner } from './app/runner.js';
-import { CookedLine, RawLine, abbreviateHome } from './line/discipline.js';
+import { abbreviateHome } from './line/discipline.js';
+import { TabModel, type ShellTab } from './tabs/tabs-model.js';
+import { TerminalSession, type SessionHost } from './tabs/session.js';
 import { TitleFeed } from './title/title-feed.js';
-import { TabModel } from './tabs/tabs-model.js';
+import { Vfs } from './vfs.js';
 import { onEnvFeed } from './env/direnv.js';
 import { InputModel } from './input/index.js';
 import {
@@ -44,7 +49,7 @@ import {
 } from './menu/index.js';
 import { createCanvasRenderer } from './render/canvas.js';
 import { DOMMirror } from './render/mirror.js';
-import { DEFAULT_ANSI16, screenView, type PaintScreen, type Rgb } from './render/screen-shape.js';
+import { screenView, type PaintScreen, type Rgb } from './render/screen-shape.js';
 import type { CanvasRenderer } from './render/canvas.js';
 import type { CellMetrics, ScreenRenderer } from './render/types.js';
 import { renderTabStrip, renderWindowTitlebar } from '../shared/window-chrome.js';
@@ -97,6 +102,8 @@ export class SemTerminal extends SemElement {
     tui: { type: Object, state: true },
     /** A full-screen app owns the screen (§6.2) — prompt hidden, keys raw. */
     appLive: { type: Boolean, state: true },
+    /** `tabs` — keep the tab strip visible even with a single tab (§11.3). */
+    tabs: { type: Boolean },
   };
 
   declare cwd: string;
@@ -111,21 +118,52 @@ export class SemTerminal extends SemElement {
   declare playing: boolean;
   declare tui: TuiState | null;
   declare appLive: boolean;
+  declare tabs: boolean;
 
-  readonly core = new TerminalCore();
+  /* -- shell-v3 tabs (§11.2, Epoch 3): per-tab sessions over one VFS -- */
+  /** The ONE virtual file system — files and mounts are common; state is not. */
+  readonly #vfs = new Vfs();
+  /** Every live session, oldest first (strip order mirrors the TabModel). */
+  readonly #sessions: TerminalSession[] = [];
+  /** The session the strip points at — the source of every active-path read. */
+  #session: TerminalSession;
+  /** The session whose execLine is on the stack (direnv TAB_TITLE attribution). */
+  #executing: TerminalSession | null = null;
+  /** Plugin URLs from the `plugins` attribute — re-loaded per session core. */
+  #pluginUrls: string[] = [];
+  /** The element-side callbacks sessions call back through. */
+  readonly #sessionHost: SessionHost = {
+    pushLines: (session, lines) => this.#pushLines(session, lines),
+    execLine: (session, line) => this.#execLine(session, line),
+    clearViewport: (session) => this.#clearTranscript(session),
+    mirrorInput: (buffer, caret) => this.#mirrorInput(buffer, caret),
+    appExit: (session, code, crash) => this.#onAppExit(session, code, crash),
+    cwdLabel: (session) => abbreviateHome(session.core.state.cwd, session.core.state.env.HOME ?? '/'),
+  };
+
+  /** The ACTIVE session's core: per-tab cwd/env/history/aliases over the shared VFS. */
+  get core(): TerminalCore {
+    return this.#session.core;
+  }
+
+  /** The ACTIVE session's screen — its own scrollback ring and alt buffer. */
+  get screen(): Screen {
+    return this.#session.screen;
+  }
+
+  /** The ACTIVE session's OSC chrome feed (§11.1); titles scope to the tab. */
+  get titleFeed(): TitleFeed {
+    return this.#session.titleFeed;
+  }
 
   #booted = false;
   #playbackHandle: PlaybackHandle | null = null;
   #playbackStopped = false;
   #hasScript = false;
-  /** onLine unsubscribe for the core's async line channel. */
-  #offLines: (() => void) | null = null;
 
   /* -- shell-v2 canvas paint path (CORE-V2 §8; integration of r2-canvas) -- */
   /** The canvas driver; null until first attach (or after a forced detach). */
   #renderer: (CanvasRenderer & ScreenRenderer) | null = null;
-  /** The renderer's read-side adapter over the screen (built once). */
-  #paintScreen: PaintScreen | null = null;
   /** Standalone mirror when the factory itself refused (forced-colors). */
   #mirrorOnly: DOMMirror | null = null;
   /** True when the mirror is the visible view (§8.5 promotion). */
@@ -134,12 +172,16 @@ export class SemTerminal extends SemElement {
   #ansiCache: Array<Rgb | null> = [];
 
   /* -- shell-v2 chrome (§11; osc-tabs XR-1/XR-3, env-direnv TAB_THEME) -- */
-  /** Tab model — ONE session this round; per-tab TerminalCore is §11.2/E3. */
+  /** Tab model — ids are strip positions; sessions live in `#sessions`. */
   readonly tabModel = new TabModel('shell');
   /** TAB_TITLE/TAB_THEME from the direnv feed (§12 chrome vars). */
   #tabTheme: string | null = null;
-  #offTitle: (() => void) | null = null;
+  #offEnv: (() => void) | null = null;
   #offTabs: (() => void) | null = null;
+  /** Confirm-close pending on this tab id (a live app owns its screen). */
+  #confirmingClose: number | null = null;
+  /** Cancels the confirm-close reminder timer. */
+  #confirmTimer: (() => void) | null = null;
 
   /* -- shell-v2 context menu (§8.5; dom-menu integrate patch) -- */
   #browserPassthroughArmed = false;
@@ -148,35 +190,13 @@ export class SemTerminal extends SemElement {
   #inputSurface: HTMLElement | null = null;
 
   /* -- shell-v2 core-screen wiring (CORE-V2 §4–§8) -- */
-  /** The screen: source of truth for scrollback, selection, alt apps. */
-  readonly screen = new Screen({ cols: 80, rows: 24 });
-  /** Parser-gated write sink into the screen. */
-  readonly #feed = new ScreenFeed(this.screen);
-  /** Raw-mode handover; the runner drives its lifetime. */
-  readonly #raw = new RawLine();
-  /** Full-screen app lifecycle (spawn, guaranteed teardown, Ctrl+C 130). */
-  readonly #runner = new AppRunner(this.#feed, this.screen, this.#raw, (code, crash) => this.#onAppExit(code, crash));
-  /** Cooked line editor — the relocated v1 input semantics (§5.2). */
-  readonly #cooked = new CookedLine(
-    {
-      emit: (text) => this.appendLines([{ kind: 'comment', text }]),
-      clearViewport: () => this.#clearTranscript(),
-    },
-    () => this.core,
-    () => abbreviateHome(this.cwd, this.core.state.env.HOME ?? '/'),
-    (buffer, caret) => this.#mirrorInput(buffer, caret),
-    (line) => this.#exec(line), // Enter inside the discipline → the shell
-  );
-  /** OSC 0/1/2 + 9 chrome feed (§11.1); TAB_TITLE lands here too (§11.3). */
-  readonly titleFeed = new TitleFeed();
-  #offEnv: (() => void) | null = null;
   /**
    * The ONE input path (§7.5): physical keys (via the input element's
    * keydown), playback `pressKey`, and programmatic `sendKeys` all land in
-   * the same pipeline. The DOM surface attach (hidden input, mouse,
-   * selection) stays OFF while the visible `<input>` is the IME surface —
-   * it flips on with the canvas renderer, whose canvas has no native
-   * input surface.
+   * the same pipeline — routed to the ACTIVE session below. The DOM surface
+   * attach (hidden input, mouse, selection) stays OFF while the visible
+   * `<input>` is the IME surface — it flips on with the canvas renderer,
+   * whose canvas has no native input surface.
    */
   readonly #input = new InputModel({
     dispatchKey: (ev) => this.#routeKey(ev),
@@ -184,10 +204,10 @@ export class SemTerminal extends SemElement {
     isAltScreen: () => this.screen.altScreen,
     insertCooked: (text) => this.#insertCooked(text),
     pasteRaw: (text) => {
-      if (this.appLive) this.#runner.paste(text);
+      if (this.appLive) this.#session.runner.paste(text);
     },
     dispatchMouse: (info) => {
-      this.#runner.mouse(info);
+      this.#session.runner.mouse(info);
     },
     onWheelScroll: (dy) => {
       this.screen.scrollBy(dy);
@@ -223,6 +243,10 @@ export class SemTerminal extends SemElement {
 
   constructor() {
     super();
+    // Session 1 exists before anything reads `this.core`. The TabModel
+    // self-seeds its first tab (a shell always has a current session), so
+    // the seed session binds to THAT tab instead of adding another.
+    this.#session = this.#createSession('shell', this.tabModel.tabs[0]!);
     this.cwd = this.core.state.cwd;
     this.lines = [];
     this.plugins = '';
@@ -231,42 +255,108 @@ export class SemTerminal extends SemElement {
     this.playing = false;
     this.tui = null;
     this.appLive = false;
-    // OSC tokens tap the chrome feeds BEFORE they apply (§11.1, XR-1) —
-    // replaces the old `titleFeed.consume(text)` per-line scrape.
-    this.#feed.onTokens = (tokens) => this.titleFeed.feed(tokens);
-    // Chrome state is external → re-render on its changes (§11.3).
-    this.#offTitle = this.titleFeed.subscribe(() => this.requestUpdate());
-    this.#offTabs = this.tabModel.subscribe(() => this.requestUpdate());
-    this.core.mountKinds.set('s3', {
+    this.tabs = false;
+    // The strip's active tab IS the active session — the model's changes
+    // (add/close/activate/keys) repoint the element here.
+    this.#offTabs = this.tabModel.subscribe(() => {
+      const id = this.tabModel.activeId;
+      if (id !== null) this.#repointSession(id);
+      this.requestUpdate();
+    });
+  }
+
+  /* ---------------------------------------------------------------- *
+   * per-tab sessions (§11.2, Epoch 3)
+   * ---------------------------------------------------------------- */
+
+  /** Build a session over an EXISTING tab entry (the model owns tab ids). */
+  #createSession(label: string, tab: ShellTab): TerminalSession {
+    const session = new TerminalSession(this.#vfs, label, this.#sessionHost);
+    session.tabId = tab.id;
+    this.#setupCoreBase(session);
+    this.#sessions.push(session);
+    return session;
+  }
+
+  /** Non-virtual per-session wiring: s3 kind, core lines, OSC titles. */
+  #setupCoreBase(session: TerminalSession): void {
+    session.core.mountKinds.set('s3', {
       id: 's3',
       help: 'S3 bucket over https (read-only unless the page sets a signer)',
-      create: (args: string[]) => createS3Backend(args, this.core.s3Signer ?? undefined),
+      create: (args: string[]) => createS3Backend(args, session.core.s3Signer ?? undefined),
     });
+    // Shared-VFS errors route to whichever tab is on screen.
+    this.#vfs.onError = (error) => {
+      this.#pushLines(this.#session, [{ kind: 'stderr', text: `${error.backend}: ${error.path}: ${error.message}` }]);
+    };
+    session.offCoreLine = session.core.onLine((line) => this.#pushLines(session, [line]));
+    // Per-tab titles (§11.3): the session's OSC 0/2 title (and TAB_TITLE
+    // via setTitle) names its strip entry; the active feed also paints the
+    // title bar, so its changes re-render.
+    session.offTitle = session.titleFeed.subscribe(() => {
+      this.tabModel.setTitle(session.tabId, session.label);
+      if (session === this.#session) this.requestUpdate();
+    });
+  }
+
+  /**
+   * Per-session command setup. The base class loads nothing; hosts with
+   * bundled plugins mount them on EVERY session core (sem-shell overrides
+   * this), and the `plugins` attribute URLs re-load per session. `emit`
+   * appends transcript lines to THIS session (hook time may precede the
+   * session becoming active, so `appendLines` would land elsewhere).
+   * Called once per session, after it becomes addressable.
+   */
+  protected configureSessionCore(_core: TerminalCore, _emit: (lines: ShellLine[]) => void): void {
+    void _core;
+    void _emit;
+  }
+
+  /** Run the (virtual) command setup + the `plugins` attribute URLs. */
+  #hookSession(session: TerminalSession): void {
+    this.configureSessionCore(session.core, (lines) => this.#pushLines(session, lines));
+    for (const url of this.#pluginUrls) {
+      void session.core.loadPluginFromUrl(url).then((result) => {
+        if (result.ok && result.plugin) {
+          this.#pushLines(session, [{ kind: 'stdout', text: `plugin loaded: ${result.plugin.name} ${result.plugin.version}` }]);
+        } else {
+          this.#pushLines(session, [{ kind: 'stderr', text: `plugin ${url}: ${result.error}` }]);
+        }
+      });
+    }
+  }
+
+  /** Transcript + paint append for ONE session (background-safe). */
+  #pushLines(session: TerminalSession, newLines: ShellLine[]): void {
+    // Every shell-emitted kind streams onto the session's grid — the canvas
+    // is the paint path (§8); texts carry no separators: each ends CRLF.
+    for (const line of newLines) {
+      session.feed.write(`${line.text}\r\n`);
+    }
+    session.lines = [...session.lines, ...newLines];
+    if (session === this.#session) this.lines = session.lines;
   }
 
   connectedCallback(): void {
     super.connectedCallback();
     this.setAttribute('aria-label', 'Terminal');
-    this.#offLines?.();
-    this.#offLines = this.core.onLine((line) => this.appendLines([line]));
-    // .envrc chrome feeds — TAB_TITLE drives the title bar, TAB_THEME the
-    // tab strip theming hook (§11.3 / §12 chrome vars).
+    // .envrc chrome feeds — TAB_TITLE titles the tab whose cd loaded it
+    // (attributed through #executing), TAB_THEME the tab strip (§11.3/§12).
     this.#offEnv?.();
     this.#offEnv = onEnvFeed((feed) => {
+      const session = this.#executing ?? this.#session;
       const title = feed.vars.TAB_TITLE;
-      if (title !== undefined) this.titleFeed.setTitle(title);
+      if (title !== undefined) session.titleFeed.setTitle(title);
       const theme = feed.vars.TAB_THEME;
       if (theme !== undefined) this.#applyTabTheme(theme);
     });
-    this.core.vfs.onError = (error) => {
-      this.appendLines([{ kind: 'stderr', text: `${error.backend}: ${error.path}: ${error.message}` }]);
-    };
     if (!this.#booted) {
       this.#booted = true;
       this.replaceChildren(); // the authored zero-JS transcript is replaced
       this.lines = [{ kind: 'stdout', text: 'sem-terminal — type help.' }];
-      this.#loadPluginsAttribute();
+      this.#pluginUrls = this.plugins.split(/\s+/).filter((url) => url !== '');
       this.#attachStorage();
+      this.#hookSession(this.#session); // bundled plugins + attribute URLs
       this.#maybeStartPlayback();
     }
     // The canvas surface needs a rendered frame first; reconnects re-run
@@ -282,14 +372,11 @@ export class SemTerminal extends SemElement {
     this.#menu.detach();
     this.#input.detach();
     this.#inputSurface = null;
-    this.#offLines?.();
-    this.#offLines = null;
     this.#offEnv?.();
     this.#offEnv = null;
-    this.#offTitle?.();
-    this.#offTitle = null;
-    this.#offTabs?.();
-    this.#offTabs = null;
+    // Per-session subscriptions (core lines, OSC titles) and the TabModel
+    // subscription live for the element's lifetime — sessions and the
+    // model outlive a disconnect, so nothing is torn down here.
     // Reconnect re-attaches: the guard + firstUpdated cover both paths.
     this.#renderer?.detach();
     this.#renderer = null;
@@ -338,20 +425,6 @@ export class SemTerminal extends SemElement {
     });
   }
 
-  /** Load every declared manifest URL; failures are isolated + recorded. */
-  #loadPluginsAttribute(): void {
-    for (const url of this.plugins.split(/\s+/)) {
-      if (url === '') continue;
-      void this.core.loadPluginFromUrl(url).then((result) => {
-        if (result.ok && result.plugin) {
-          this.appendLines([{ kind: 'stdout', text: `plugin loaded: ${result.plugin.name} ${result.plugin.version}` }]);
-        } else {
-          this.appendLines([{ kind: 'stderr', text: `plugin ${url}: ${result.error}` }]);
-        }
-      });
-    }
-  }
-
   /* ---------------------------------------------------------------- *
    * scripted playback
    * ---------------------------------------------------------------- */
@@ -365,7 +438,7 @@ export class SemTerminal extends SemElement {
   #maybeStartPlayback(): void {
     const steps = this.#scriptSteps();
     if (!steps) return;
-    this.#hasScript = true;
+    this.markScripted();
     const view = this.ownerDocument?.defaultView ?? window;
     // Let the plugin mount lines land before the typing begins.
     view.setTimeout(() => this.#startPlayback(steps), 350);
@@ -449,28 +522,28 @@ export class SemTerminal extends SemElement {
     this.#input.sendKeys(spec);
   }
 
-  /** The InputHost dispatch seam: raw → app, cooked → the discipline. */
+  /** The InputHost dispatch seam: raw → the active app, cooked → its discipline. */
   #routeKey(ev: KeyEvent): void {
     if (this.appLive) {
-      this.#runner.key(ev);
+      this.#session.runner.key(ev);
       this.#touchApp();
       return;
     }
     const input = this.#inputEl();
     if (input) {
       const caret = input.selectionStart ?? input.value.length;
-      this.#cooked.syncFrom(input.value, caret);
+      this.#session.cooked.syncFrom(input.value, caret);
     }
-    this.#cooked.key(ev);
-    this.#mirrorInput(this.#cooked.buffer, this.#cooked.caret);
+    this.#session.cooked.key(ev);
+    this.#mirrorInput(this.#session.cooked.buffer, this.#session.cooked.caret);
   }
 
   /** Cooked paste/composition insert: one key event per code point. */
   #insertCooked(text: string): void {
     for (const char of text) {
-      this.#cooked.key({ key: char, ctrl: false, alt: false, shift: false, meta: false });
+      this.#session.cooked.key({ key: char, ctrl: false, alt: false, shift: false, meta: false });
     }
-    this.#mirrorInput(this.#cooked.buffer, this.#cooked.caret);
+    this.#mirrorInput(this.#session.cooked.buffer, this.#session.cooked.caret);
   }
 
   /** The replay button: stop where it is, start over. */
@@ -478,6 +551,28 @@ export class SemTerminal extends SemElement {
     const steps = this.#scriptSteps();
     if (!steps) return;
     this.#startPlayback(steps);
+  }
+
+  /**
+   * The replay button: stop where it is, start over. A subclass may replay
+   * through a different channel — sem-shell's start-script autostart keeps
+   * its own handle and re-attaches it here.
+   */
+  protected replayScript(): void {
+    this.#restartPlayback();
+  }
+
+  /**
+   * The element has a replayable script — the boot `script`/`playback` flow
+   * marks itself; a subclass channel (start-script, fetched or inline) calls
+   * this so the replay button renders for it too (r2 follow-up: the FETCH
+   * flow never saw `#hasScript`).
+   */
+  protected markScripted(): void {
+    if (!this.#hasScript) {
+      this.#hasScript = true;
+      this.requestUpdate();
+    }
   }
 
   /* ---------------------------------------------------------------- *
@@ -491,17 +586,30 @@ export class SemTerminal extends SemElement {
     return html`
       <div class="sem-shell-frame" @click=${this.#focusInput} @keydown=${this.#onFrameKeydown}>
         ${renderWindowTitlebar({ title: this.titleFeed.title || 'sem shell', tone: this.titleFeed.status.tone })}
-        ${tabs.length > 1
-          ? html`<div class="sem-term-tabs" @click=${this.#onTabStripClick}>
+        ${tabs.length > 1 || this.tabs
+          ? html`<div class="sem-term-tabs" @click=${this.#onTabStripClick} @keydown=${this.#onTabStripKeydown}>
               ${renderTabStrip({
-                tabs: tabs.map((tab) => ({ id: String(tab.id), title: tab.title, active: tab.id === this.tabModel.activeId })),
+                tabs: tabs.map((tab) => ({
+                  id: String(tab.id),
+                  title: tab.id === this.#confirmingClose ? `${tab.title} — confirm close?` : tab.title,
+                  active: tab.id === this.tabModel.activeId,
+                })),
                 label: 'Shell tabs',
                 closable: true,
               })}
+              <button
+                type="button"
+                class="sem-window-tab-new"
+                aria-label="New tab"
+                title="New tab (Ctrl+Shift+T)"
+                @click=${() => this.#newTab()}
+              >
+                +
+              </button>
             </div>`
           : null}
         ${this.#hasScript
-          ? html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${this.#restartPlayback}>
+          ? html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
               replay
             </button>`
           : null}
@@ -575,8 +683,6 @@ export class SemTerminal extends SemElement {
     `;
   }
 
-  #ansi = new AnsiStateMachine();
-
   #renderLine(line: ShellLine): TemplateResult {
     const cls =
       line.kind === 'cmd'
@@ -588,13 +694,14 @@ export class SemTerminal extends SemElement {
             : line.kind === 'comment'
               ? 'sem-shell-line sem-shell-comment'
               : 'sem-shell-line';
-    // stdout/stderr stream through the ANSI tokeniser — one machine per
-    // element, so attributes persist across lines like a real terminal.
-    // Every other kind is shell chrome: bypass the parser, render verbatim.
+    // stdout/stderr stream through the ANSI tokeniser — the ACTIVE session's
+    // own machine, so attributes persist across its lines like a real
+    // terminal (and never leak across tabs). Every other kind is shell
+    // chrome: bypass the parser, render verbatim.
     if (line.kind !== 'stdout' && line.kind !== 'stderr') {
       return html`<div class=${cls}>${line.text}</div>`;
     }
-    const spans = ansiSpans(line.text, this.#ansi);
+    const spans = ansiSpans(line.text, this.#session.ansi);
     return html`<div class=${cls}>
       ${spans.map(
         (span) =>
@@ -606,14 +713,7 @@ export class SemTerminal extends SemElement {
   }
 
   appendLines(newLines: ShellLine[]): void {
-    // Every shell-emitted kind streams onto the grid — the canvas is the
-    // paint path now (§8), so comments/status must live there too. ShellLine
-    // texts carry no separators: each line ends CRLF (LF alone moves the
-    // row but keeps the column).
-    for (const line of newLines) {
-      this.#feed.write(`${line.text}\r\n`);
-    }
-    this.lines = [...this.lines, ...newLines];
+    this.#pushLines(this.#session, newLines);
   }
 
   /* ---------------------------------------------------------------- *
@@ -625,12 +725,6 @@ export class SemTerminal extends SemElement {
     if (this.#renderer !== null || this.#domView) return;
     const surface = this.querySelector('.sem-term-surface');
     if (!(surface instanceof HTMLElement)) return;
-    if (this.#paintScreen === null) {
-      this.#paintScreen = screenView(this.screen, {
-        truecolorAt: (slot) => this.#feed.truecolor.at(slot),
-        ansiRgb: (index) => this.#themeAnsi(index),
-      });
-    }
     const result = createCanvasRenderer({
       onUnavailable: () => {
         // §8.5: the mirror IS the a11y tree; promote it to the view. The
@@ -667,7 +761,7 @@ export class SemTerminal extends SemElement {
       };
     }
     this.#renderer = renderer;
-    renderer.attach(this.#paintScreen, surface);
+    renderer.attach(this.#paintScreenFor(this.#session), surface);
     this.dataset.paint = 'canvas';
     shell.markCanvasAvailable?.();
     // The paint path owns the input surface from here on (bat lane's
@@ -704,7 +798,7 @@ export class SemTerminal extends SemElement {
       },
       now: () => (view !== undefined && typeof view.performance?.now === 'function' ? view.performance.now() : Date.now()),
     });
-    mirror.attach(this.#paintScreen ?? screenView(this.screen, {}), surface);
+    mirror.attach(this.#paintScreenFor(this.#session), surface);
     mirror.setVisible(true);
     this.#mirrorOnly = mirror;
     this.#domView = true;
@@ -725,6 +819,21 @@ export class SemTerminal extends SemElement {
     this.#inputSurface = surface;
   }
 
+  /**
+   * The renderer's read-side adapter, built lazily PER SESSION — it reads
+   * that session's screen and truecolour map (the renderer re-attaches to
+   * the next session's adapter on tab switch; §11.2 switch = swap screens).
+   */
+  #paintScreenFor(session: TerminalSession): PaintScreen {
+    if (session.paintScreen === null) {
+      session.paintScreen = screenView(session.screen, {
+        truecolorAt: (slot) => session.feed.truecolor.at(slot),
+        ansiRgb: (index) => this.#themeAnsi(index),
+      });
+    }
+    return session.paintScreen;
+  }
+
   /** Metrics settled (attach, font load, zoom): refit the screen (§8.3). */
   #onMetrics(metrics: CellMetrics): void {
     this.#ansiCache = [];
@@ -733,7 +842,7 @@ export class SemTerminal extends SemElement {
     const rows = Math.max(ROWS_MIN, Math.min(ROWS_MAX, metrics.rows));
     if (cols !== this.screen.cols || rows !== this.screen.rows) {
       this.screen.resize(cols, rows);
-      this.#runner.onScreenResized(cols, rows);
+      this.#session.runner.onScreenResized(cols, rows);
     }
     // Keep the surface exactly rows tall: auto-height pages (the demo
     // cards) wrap the terminal in normal flow, and the canvas is 100% of
@@ -806,8 +915,8 @@ export class SemTerminal extends SemElement {
           .then((text) => self.#input.handlePaste(text))
           .catch(() => self.appendLines([{ kind: 'stderr', text: 'clipboard read refused' }]));
       },
-      activateFind: () => self.#runner.app?.find?.(),
-      clearTerminal: () => self.#exec('clear'),
+      activateFind: () => self.#session.runner.app?.find?.(),
+      clearTerminal: () => self.#execLine(self.#session, 'clear'),
       openTranscript: () => {
         const view = self.ownerDocument?.defaultView;
         if (view !== null && view !== undefined) openPlainTranscript(self.screen.extractText(null), view);
@@ -816,7 +925,7 @@ export class SemTerminal extends SemElement {
       switchView: (to) => self.#shellView().switchTo(to),
       canvasAvailable: () => self.#shellView().canvasAvailable(),
       clipboardReadAvailable: () => typeof navigator.clipboard?.readText === 'function',
-      findAvailable: () => self.#runner.app?.find !== undefined,
+      findAvailable: () => self.#session.runner.app?.find !== undefined,
       armBrowserPassthrough: () => {
         self.#browserPassthroughArmed = true;
       },
@@ -838,7 +947,7 @@ export class SemTerminal extends SemElement {
   }
 
   /* ---------------------------------------------------------------- *
-   * tab strip (§11.3) — chrome + keys only; per-tab sessions are §11.2
+   * tab strip + sessions (§11.2/§11.3, Epoch 3)
    * ---------------------------------------------------------------- */
 
   /** Strip clicks: close buttons by data-tab-close, else activate the tab. */
@@ -847,7 +956,7 @@ export class SemTerminal extends SemElement {
     const close = target?.closest('[data-tab-close]');
     if (close !== null) {
       const id = Number((close as HTMLElement).getAttribute('data-tab-close'));
-      if (Number.isFinite(id)) this.#closeTab(id);
+      if (Number.isFinite(id)) void this.#closeTab(id);
       return;
     }
     const tab = target?.closest('[role="tab"]');
@@ -855,16 +964,176 @@ export class SemTerminal extends SemElement {
     if (Number.isFinite(id)) this.#activateTab(id);
   }
 
+  /** Strip keys (§11.2): roving focus — ArrowLeft/Right/Home/End. */
+  #onTabStripKeydown(event: KeyboardEvent): void {
+    const target = this.tabModel.stripKeyToTarget(event.key);
+    if (target === null) return;
+    event.preventDefault();
+    this.#activateTab(target);
+    (this.querySelector(`[data-tab-id="${target}"]`) as HTMLElement | null)?.focus();
+  }
+
   #activateTab(id: number): void {
-    // One session this round: activation updates strip state only. The
-    // per-tab TerminalCore + shared VFS build-out is §11.2 (next epoch).
+    // The #offTabs subscription repoints the session + swaps the paint.
     this.tabModel.activate(id);
   }
 
-  #closeTab(id: number): void {
-    // Same single-session caveat: closing a tab never kills the session.
-    if (this.tabModel.count <= 1) return;
-    this.tabModel.close(id);
+  /**
+   * Follow the TabModel's active tab: mirror the session's user-visible
+   * slice and move the paint path onto its screen. A background session
+   * keeps running — an app left behind writes into its own screen and is
+   * seen again on switch-back.
+   */
+  #repointSession(id: number): void {
+    const next = this.#sessions.find((session) => session.tabId === id);
+    if (next === undefined || next === this.#session) return;
+    const previous = this.#session;
+    // Drop the outgoing view's pending damage; the screen itself is kept.
+    previous.screen.takeDamage();
+    this.#session = next;
+    this.lines = next.lines;
+    this.cwd = next.core.state.cwd;
+    this.appLive = next.appLive;
+    this.tui = next.tui;
+    const surface = this.querySelector('.sem-term-surface');
+    if (surface instanceof HTMLElement) {
+      if (this.#renderer !== null) {
+        this.#renderer.detach();
+        this.#renderer.attach(this.#paintScreenFor(next), surface);
+        // Preserve the §8.5 view choice across the re-attach.
+        if (this.dataset.paint === 'dom') this.#renderer.useDomView();
+      } else if (this.#mirrorOnly !== null) {
+        this.#mirrorOnly.detach();
+        this.#mirrorOnly.attach(this.#paintScreenFor(next), surface);
+        this.#mirrorOnly.setVisible(true);
+      }
+    }
+    // The visible input adopts the session's own editing buffer.
+    const input = this.#inputEl();
+    if (input !== null) {
+      input.value = next.cooked.buffer;
+      try {
+        input.setSelectionRange(next.cooked.caret, next.cooked.caret);
+      } catch {
+        // input types without selection support — value is enough
+      }
+    }
+    this.requestUpdate();
+  }
+
+  /** New tab (Ctrl+Shift+T, the + button, `tab new`): a fresh session. */
+  #newTab(label?: string): void {
+    const name = label?.trim() ?? '';
+    const tab = this.tabModel.add(name === '' ? `shell ${this.tabModel.count + 1}` : name);
+    if (tab === null) {
+      this.#pushLines(this.#session, [{ kind: 'stderr', text: 'tab: the shell is at its 9-tab limit' }]);
+      return;
+    }
+    const session = this.#createSession(tab.title, tab);
+    this.#hookSession(session); // the new core gets the same command set
+    this.#repointSession(session.tabId);
+  }
+
+  /**
+   * Close by id. A full-screen app is asked first: the first ×/Ctrl+Shift+W
+   * on a live tab announces and arms a short confirm; the second acts
+   * (§11.2). The last tab never closes. Returns true when a tab closed.
+   */
+  #closeTab(id: number | null): boolean {
+    if (id === null || this.tabModel.count <= 1) return false;
+    const session = this.#sessions.find((entry) => entry.tabId === id);
+    if (session === undefined) return false;
+    if (session.appLive && this.#confirmingClose !== id) {
+      this.#confirmingClose = id;
+      this.#pushLines(session, [
+        { kind: 'comment', text: `tab: "${session.label}" is running a full-screen app — close again to confirm` },
+      ]);
+      const view = this.ownerDocument?.defaultView ?? window;
+      const timer = view.setTimeout(() => {
+        if (this.#confirmingClose === id) {
+          this.#confirmingClose = null;
+          this.requestUpdate();
+        }
+      }, 4_000);
+      this.#confirmTimer?.();
+      this.#confirmTimer = () => view.clearTimeout(timer);
+      this.requestUpdate();
+      return false;
+    }
+    this.#confirmingClose = null;
+    this.#confirmTimer?.();
+    this.#confirmTimer = null;
+    if (session.appLive) session.runner.requestInterrupt(); // exit 130, then close
+    if (!this.tabModel.close(id)) return false;
+    this.#disposeSession(session);
+    return true;
+  }
+
+  /** Drop a closed tab's session: unsubscribe, leave the strip order. */
+  #disposeSession(session: TerminalSession): void {
+    session.offCoreLine?.();
+    session.offTitle?.();
+    const index = this.#sessions.indexOf(session);
+    if (index !== -1) this.#sessions.splice(index, 1);
+  }
+
+  /** The `tab` builtin's action (the core stays DOM-free; data only). */
+  #onTabAction(session: TerminalSession, action: TabAction): void {
+    switch (action.op) {
+      case 'new': {
+        const before = this.tabModel.count;
+        this.#newTab(action.target);
+        if (this.tabModel.count > before) {
+          this.#pushLines(session, [{ kind: 'comment', text: `tab: opened ${this.#session.label}` }]);
+        }
+        return;
+      }
+      case 'close': {
+        const id = this.#tabIdFromPosition(action.target);
+        if (id === null) {
+          this.#pushLines(session, [{ kind: 'stderr', text: `tab close: no tab at position ${action.target ?? '(missing)'}` }]);
+          return;
+        }
+        const label = this.#sessions.find((entry) => entry.tabId === id)?.label ?? `tab ${id}`;
+        if (this.tabModel.count <= 1) {
+          this.#pushLines(session, [{ kind: 'stderr', text: 'tab close: the last tab stays open' }]);
+          return;
+        }
+        this.#confirmingClose = id; // an explicit command needs no double ask
+        this.#closeTab(id);
+        this.#pushLines(session, [{ kind: 'comment', text: `tab: closed ${label}` }]);
+        return;
+      }
+      case 'rename': {
+        const name = (action.target ?? '').trim();
+        const id = this.tabModel.activeId;
+        if (id === null || !this.tabModel.setTitle(id, name)) {
+          this.#pushLines(session, [{ kind: 'stderr', text: 'tab rename: give the active tab a new name (`tab rename <name>`)' }]);
+          return;
+        }
+        this.#pushLines(session, [{ kind: 'comment', text: `tab: renamed tab ${this.tabModel.indexOf(id) + 1} to "${name}"` }]);
+        return;
+      }
+      case 'list': {
+        const lines: ShellLine[] = [];
+        const tabs = this.tabModel.tabs;
+        for (let i = 0; i < tabs.length; i++) {
+          const tab = tabs[i]!;
+          const live = this.#sessions.some((entry) => entry.tabId === tab.id && entry.appLive);
+          const marker = tab.id === this.tabModel.activeId ? '*' : ' ';
+          lines.push({ kind: 'stdout', text: `${i + 1}${marker} ${tab.title}${live ? '  (app running)' : ''}` });
+        }
+        this.#pushLines(session, lines);
+        return;
+      }
+    }
+  }
+
+  /** `tab close [n]`: 1-based strip position → tab id; default the active. */
+  #tabIdFromPosition(position: string | undefined): number | null {
+    if (position === undefined) return this.tabModel.activeId;
+    const tab = this.tabModel.tabs[Number(position) - 1];
+    return tab?.id ?? null;
   }
 
   /* ---------------------------------------------------------------- *
@@ -890,39 +1159,53 @@ export class SemTerminal extends SemElement {
     if (!input) return;
     const value = input.value;
     // The discipline owns history/draft; the form path submits externally.
-    this.#cooked.syncFrom(value, value.length);
-    this.#cooked.onSubmit(value);
+    const cooked = this.#session.cooked;
+    cooked.syncFrom(value, value.length);
+    cooked.onSubmit(value);
     input.value = '';
-    this.#exec(value);
+    this.#execLine(this.#session, value);
   }
 
-  #exec(value: string): void {
-    const result = this.core.execLine(value);
-    this.cwd = result.state.cwd;
+  /**
+   * Run one line in ONE session (usually the active one). The `#executing`
+   * bracket attributes synchronous side channels fired inside the pipeline
+   * — the direnv TAB_TITLE feed — to the session whose `cd` caused them.
+   */
+  #execLine(session: TerminalSession, value: string): void {
+    this.#executing = session;
+    let result: ExecResult;
+    try {
+      result = session.core.execLine(value);
+    } finally {
+      this.#executing = null;
+    }
+    if (session === this.#session) this.cwd = result.state.cwd;
     if (result.clear) {
-      this.#clearTranscript();
+      this.#clearTranscript(session);
     } else {
-      this.appendLines(result.lines);
+      this.#pushLines(session, result.lines);
     }
     for (const action of result.actions) {
       if (action.kind === 'window') this.#openWindow(action);
-      else if (action.kind === 'tui') this.#openTui(action);
-      else if (action.kind === 'app') this.#spawnApp((action as AppSpawnAction).app);
+      else if (action.kind === 'tui') this.#openTui(session, action);
+      else if (action.kind === 'app') this.#spawnApp(session, (action as AppSpawnAction).app);
+      else if (action.kind === 'tab') this.#onTabAction(session, action);
     }
   }
 
   /**
    * `clear` / Ctrl+L (§5.2): the DOM transcript empties, parser attribute
    * state resets, and the SCREEN keeps its scrollback — only the viewport
-   * clears (§4.6), so the plain-transcript ring survives the wipe.
+   * clears (§4.6), so the plain-transcript ring survives the wipe. The
+   * session owns each of those state pieces.
    */
-  #clearTranscript(): void {
-    this.lines = [];
-    this.#ansi.reset();
-    this.#ansi.reset();
-    this.#feed.reset();
-    this.screen.clearViewport();
-    this.titleFeed.reset();
+  #clearTranscript(session: TerminalSession = this.#session): void {
+    session.lines = [];
+    session.ansi.reset();
+    session.feed.reset();
+    session.screen.clearViewport();
+    session.titleFeed.reset();
+    if (session === this.#session) this.lines = [];
   }
 
   /**
@@ -942,13 +1225,17 @@ export class SemTerminal extends SemElement {
     view.setTimeout(() => view.URL.revokeObjectURL(url), 60_000);
   }
 
-  #openTui(action: TuiAction): void {
-    this.tui = createTuiState(action.cards, action.title);
+  #openTui(session: TerminalSession, action: TuiAction): void {
+    session.tui = createTuiState(action.cards, action.title);
+    this.tui = session.tui;
     void this.updateComplete.then(() => (this.querySelector('.sem-tui') as HTMLElement | null)?.focus());
   }
 
   #touchTui(): void {
-    if (this.tui) this.tui = { ...this.tui }; // new reference → Lit re-renders
+    if (this.tui) {
+      this.tui = { ...this.tui }; // new reference → Lit re-renders
+      this.#session.tui = this.tui;
+    }
   }
 
   /**
@@ -957,7 +1244,22 @@ export class SemTerminal extends SemElement {
    * Ctrl+C during an app interrupts it with exit 130 (§6.3).
    */
   #onFrameKeydown(event: KeyboardEvent): void {
-    // Tab keys (§11.3, XR-3) outrank everything, including the app ladder:
+    // Tab chrome (§11.3) outranks everything, including the app ladder:
+    // Ctrl+Shift+T opens a tab, Ctrl+Shift+W closes the active one (a live
+    // app gets a confirm), Ctrl+PgUp/PgDn cycle, Alt+1..9 jump.
+    if (event.ctrlKey && event.shiftKey && !event.altKey && !event.metaKey) {
+      const key = event.key.toLowerCase();
+      if (key === 't') {
+        event.preventDefault();
+        this.#newTab();
+        return;
+      }
+      if (key === 'w') {
+        event.preventDefault();
+        this.#closeTab(this.tabModel.activeId);
+        return;
+      }
+    }
     // Ctrl+PgUp/PgDn cycle, Alt+1..9 jump. Only meaningful past one tab.
     if (this.tabModel.count > 1) {
       const target = this.tabModel.keyToTarget({
@@ -976,12 +1278,12 @@ export class SemTerminal extends SemElement {
     if (this.appLive) {
       if (event.key === 'c' && event.ctrlKey && !event.altKey && !event.metaKey) {
         event.preventDefault();
-        this.#runner.requestInterrupt();
+        this.#session.runner.requestInterrupt();
         return;
       }
       if (event.key === 'Escape') {
         event.preventDefault();
-        this.#runner.key({ key: 'Escape', ctrl: false, alt: false, shift: false, meta: false });
+        this.#session.runner.key({ key: 'Escape', ctrl: false, alt: false, shift: false, meta: false });
         this.#touchApp();
       }
       return;
@@ -1014,10 +1316,10 @@ export class SemTerminal extends SemElement {
       return;
     }
     const caret = input.selectionStart ?? input.value.length;
-    this.#cooked.syncFrom(input.value, caret);
-    if (this.#cooked.key(toKeyEvent(event))) {
+    this.#session.cooked.syncFrom(input.value, caret);
+    if (this.#session.cooked.key(toKeyEvent(event))) {
       event.preventDefault();
-      this.#mirrorInput(this.#cooked.buffer, this.#cooked.caret);
+      this.#mirrorInput(this.#session.cooked.buffer, this.#session.cooked.caret);
     }
   }
 
@@ -1037,10 +1339,11 @@ export class SemTerminal extends SemElement {
    * full-screen apps (§6)
    * ---------------------------------------------------------------- */
 
-  /** Spawn an app action from the core: alt screen, raw keys, DOM paint. */
-  #spawnApp(app: import('./screen/types.js').App): void {
-    if (!this.#runner.spawn(app)) return;
-    this.appLive = true;
+  /** Spawn an app action from the session's core: alt screen, raw keys. */
+  #spawnApp(session: TerminalSession, app: import('./screen/types.js').App): void {
+    if (!session.runner.spawn(app)) return;
+    session.appLive = true;
+    if (session === this.#session) this.appLive = true;
     void this.updateComplete.then(() => {
       this.#input.focus(); // the canvas has no native focus surface
       this.#touchApp();
@@ -1048,14 +1351,17 @@ export class SemTerminal extends SemElement {
   }
 
   /** Runner exit callback: status line + `$?`, prompt restored (§6.2). */
-  #onAppExit(code: number, crash: string | null): void {
-    this.appLive = false;
-    this.core.state.lastStatus = code;
+  #onAppExit(session: TerminalSession, code: number, crash: string | null): void {
+    session.appLive = false;
+    session.core.state.lastStatus = code;
     const lines: ShellLine[] = [];
     if (crash !== null) lines.push({ kind: 'stderr', text: `${crash}` });
     lines.push({ kind: 'status', text: `exit ${code}` });
-    this.appendLines(lines);
-    void this.updateComplete.then(() => this.#inputEl()?.focus());
+    this.#pushLines(session, lines);
+    if (session === this.#session) {
+      this.appLive = false;
+      void this.updateComplete.then(() => this.#inputEl()?.focus());
+    }
   }
 
   /** The screen changed under the app: repaint via drain + park the IME. */
@@ -1142,9 +1448,10 @@ export class SemTerminal extends SemElement {
     const input = this.#inputEl();
     if (!input) return;
     const caret = input.selectionStart ?? input.value.length;
-    this.#cooked.syncFrom(input.value, caret);
-    this.#cooked.key({ key: delta < 0 ? 'ArrowUp' : 'ArrowDown', ctrl: false, alt: false, shift: false, meta: false });
-    this.#mirrorInput(this.#cooked.buffer, this.#cooked.caret);
+    const cooked = this.#session.cooked;
+    cooked.syncFrom(input.value, caret);
+    cooked.key({ key: delta < 0 ? 'ArrowUp' : 'ArrowDown', ctrl: false, alt: false, shift: false, meta: false });
+    this.#mirrorInput(cooked.buffer, cooked.caret);
   }
 }
 
