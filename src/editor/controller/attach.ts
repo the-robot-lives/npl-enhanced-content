@@ -83,10 +83,14 @@ export function attachEditor(el: SemElement, ctx: EditorContext): EditController
     // attributes) is unrecoverable here, so undo restores canonical bytes.
     // Authored-faithful editing goes through `createContext({ source })`.
     // Lit runtime markers (empty + `?lit$` comments) are chrome, never
-    // authored content — strip before the model ever sees them (§2.4), as
-    // is SemSource's runtime fence (`template.sem-source-raw`).
+    // authored content (§2.4), as is SemSource's runtime fence
+    // (`template.sem-source-raw`). ALL comments are dropped on live capture:
+    // the canonical serialization cannot preserve authored comment
+    // formatting any more than whitespace, and a capture sanitizer that
+    // leaves `<!--` in place is an incomplete one (CodeQL high). The
+    // authored-faithful path — `createContext({ source })` — keeps comments.
     const source = el.outerHTML
-      .replace(/<!--(?:\\?lit\$[^>]*)?-->/g, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/<template[^>]*\\bsem-source-raw\\b[^>]*>[\\s\\S]*?<\/template>/gi, '')
       // Runtime-only attrs (base.ts's claim marker et al.) never export.
       .replace(/\\sdata-sem-upgraded(?:="[^"]*"|='[^']*'|=[^\\s>]*)?(?=[\\s>])/gi, '');
