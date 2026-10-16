@@ -285,7 +285,8 @@ export class NanoEditor implements App {
     this.paint();
   }
 
-  resize(): void {
+  /** The runner reallocates the screen first; paint re-reads #api.cols/rows. */
+  resize(_cols: number, _rows: number): void {
     this.#invalidate();
     this.#ensureVisible();
     this.paint();
@@ -916,7 +917,7 @@ export class NanoEditor implements App {
   }
 
   paste(text: string): void {
-    if (this.#prompt !== null) {
+    if (this.#prompt !== null && this.#prompt.mode !== 'confirm-exit') {
       for (const ch of text) {
         if (ch >= ' ' && ch !== '\x7f') this.#prompt.buffer += ch;
       }
