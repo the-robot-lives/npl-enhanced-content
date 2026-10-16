@@ -1906,7 +1906,8 @@ export const manPages: Record<string, string[]> = {
     '     %H %I %M %S %p %P %a %A %b %B %h %j %u %w %Z %z %s %n %t %%',
     '     %F %T %D %R %c %x %X; unknown specs pass through). -d parses',
     "     'now', '@epoch', ISO 'YYYY-MM-DD[ HH:MM[:SS]]' and",
-    "     'YYYY/MM/DD'.",
+    "     'YYYY/MM/DD'. Date-only strings parse as UTC midnight;",
+    '     date-times parse as UTC under -u, local time otherwise.',
   ],
   cal: [
     'CAL(1)                    semtext-sh manual',
