@@ -19,6 +19,7 @@ import type { CommandContext, CommandSpec, CompletionContext } from '../../termi
 import { highlightAnsi } from '../../sh-highlight.js';
 import { resolvePath } from '../../vfs.js';
 import { batApp } from '../../apps/bat/bat-app.js';
+import { nanoCommand } from '../../apps/nano/nano-command.js';
 
 /* ------------------------------------------------------------------ *
  * shared helpers
@@ -1080,5 +1081,6 @@ export const posixCommands: CommandSpec[] = [
   touchCmd,
   rmCmd,
   cpCmd,
+  nanoCommand,
 ];
 export default posixCommands;
