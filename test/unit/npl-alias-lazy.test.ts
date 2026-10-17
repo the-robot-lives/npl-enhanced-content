@@ -12,6 +12,13 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 8));
+// the chunk-failure path is async on both ends (import rejection lands a
+// macrotask late) — poll for the marker instead of trusting a fixed tick,
+// which misfires on loaded CI workers
+const until = async (fn: () => boolean, ms = 1000): Promise<void> => {
+  const end = Date.now() + ms;
+  while (!fn() && Date.now() < end) await new Promise((r) => setTimeout(r, 8));
+};
 
 describe('npl-lazy — class-form alias route', () => {
   beforeAll(async () => {
@@ -29,8 +36,9 @@ describe('npl-lazy — class-form alias route', () => {
     expect(el.getAttribute('data-kind')).toBe('concept');
   });
 
-  it('the rewritten alias triggered the chunk load — failure degrades to prose + alert', () => {
+  it('the rewritten alias triggered the chunk load — failure degrades to prose + alert', async () => {
     const el = document.querySelector('npl-flag')!;
+    await until(() => el.getAttribute('data-sem-lazy-error') !== null);
     expect(el.getAttribute('data-sem-lazy-error')).toBe('npl-flag');
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('npl-flag');
     // degradation contract: the authored text is still there, readable
@@ -53,6 +61,7 @@ describe('npl-lazy — class-form alias route', () => {
     expect(late!.hasAttribute('data-npl-alias')).toBe(true);
     expect(wrap.querySelector('div.npl-flag')).toBeNull();
     // the late element failed fast against the cached-failed chunk
+    await until(() => late!.getAttribute('data-sem-lazy-error') !== null);
     expect(late!.getAttribute('data-sem-lazy-error')).toBe('npl-flag');
     expect(late!.textContent).toContain('late flag');
   });
