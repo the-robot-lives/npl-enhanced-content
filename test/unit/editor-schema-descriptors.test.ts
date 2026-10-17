@@ -132,9 +132,10 @@ describe('edit descriptors — pilots', () => {
 describe('edit descriptors — coverage', () => {
   it('resolves a descriptor for every schema tag plus sem-chat', () => {
     const tags = [...loadSchema().tags.map((t) => t.name), 'sem-chat'];
-    // 54 tags in elements.json (sem-tag-def / sem-tag-attr / sem-api-call /
-    // sem-api-param joined at v0.7.3) + the editor-only sem-chat stub.
-    expect(tags.length).toBe(55);
+    // Derived: every tag in elements.json (grows with the vocabulary —
+    // the round-2 reference defs joined at v0.7.3, sem-tldr at v0.8.2)
+    // + the editor-only sem-chat stub. Never re-pinned by hand.
+    expect(tags.length).toBe(loadSchema().tags.length + 1);
     for (const name of tags) {
       const d = getDescriptor(name);
       expect(d, name).not.toBe(null);
