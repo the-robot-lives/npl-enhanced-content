@@ -20,6 +20,7 @@
 import { deriveSummary } from '../shared/summary.js';
 import { normalizeMd } from '../shared/mdsource.js';
 import { parseMarks } from '../shared/marks.js';
+import { trimTrailingWs } from '../shared/trim.js';
 
 /** One extracted record. Shape is normative; see spec/extraction.md §2. */
 export interface SemRecord {
@@ -527,7 +528,7 @@ function buildCode(el: Element): Payload {
   // Flat form: the same two structural trims the runtime's adopt applies
   // (one leading newline after the open tag, trailing whitespace before
   // the close tag) so authored and enhanced `source` agree byte-for-byte.
-  const flat = code ? null : collectText(el, isChrome).replace(/^\n/, '').replace(/\s+$/, '');
+  const flat = code ? null : trimTrailingWs(collectText(el, isChrome).replace(/^\n/, ''));
   const source = code ? collectText(code, isChrome) : flat ?? '';
   const lines = source === '' ? 0 : source.split('\n').length;
   return {
