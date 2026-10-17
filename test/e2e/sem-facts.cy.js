@@ -7,7 +7,7 @@
 //   Scenario: flashcards — one card at a time, flip reveals conclusion
 //   Scenario: flashcards — one tab stop on the current card; Enter/Space
 //             flip it, aria-expanded tracks, focus ring visible
-//   Scenario: flashcards — meter uses .sem-facts-meter, wraps around
+//   Scenario: flashcards — meter is an index (one chip per card), wraps around
 //   Scenario: quiz — conclusion hidden until correct selection, scored
 //   Scenario: quiz — wrong pick marked, counts as answered
 //   Scenario: D1 — .sem-progress element and facts meter coexist
@@ -34,13 +34,14 @@ describe('sem-facts', () => {
       cy.get(fc + '.sem-current.sem-flipped .sem-conclusion').should('be.visible');
     });
 
-    it('flashcards: meter counts position, prev wraps to last card', () => {
+    it('flashcards: meter is an index (one chip per card), prev wraps to last position', () => {
       const fc = '.sem-facts[data-view-as="flashcards"] ';
-      cy.get(fc + '.sem-facts-meter').should('contain', '1/3');
+      cy.get(fc + '.sem-facts-meter button').should('have.length', 3);
+      cy.get(fc + '.sem-facts-meter button[aria-current="true"]').should('have.attr', 'aria-label', 'Card 1');
       cy.get(fc + '[data-act="prev"]').click();
-      cy.get(fc + '.sem-facts-meter').should('contain', '3/3');
+      cy.get(fc + '.sem-facts-meter button[aria-current="true"]').should('have.attr', 'aria-label', 'Card 3');
       cy.get(fc + '[data-act="next"]').click();
-      cy.get(fc + '.sem-facts-meter').should('contain', '1/3');
+      cy.get(fc + '.sem-facts-meter button[aria-current="true"]').should('have.attr', 'aria-label', 'Card 1');
     });
 
     it('quiz: conclusion hidden until correct selection, then scored', () => {
@@ -51,13 +52,13 @@ describe('sem-facts', () => {
       cy.get(qz + '.sem-facts-meter').should('contain', 'score 1/1');
     });
 
-    it('quiz: wrong pick marked wrong, answered once', () => {
+    it('quiz: wrong pick marked wrong, spent pick inert', () => {
       const qz = '.sem-facts[data-view-as="quiz"] ';
       cy.get(qz + '.sem-current .sem-quiz-options button[data-correct="false"]').first().click();
       cy.get(qz + '.sem-current .sem-quiz-options button.sem-wrong-pick').should('have.length', 1);
       cy.get(qz + '.sem-facts-meter').should('contain', 'score 0/1');
-      // answered — further clicks change nothing
-      cy.get(qz + '.sem-current .sem-quiz-options button').first().click();
+      // the spent pick is disabled; any further enabled pick keeps the miss score
+      cy.get(qz + '.sem-current .sem-quiz-options button:enabled').first().click();
       cy.get(qz + '.sem-facts-meter').should('contain', 'score 0/1');
     });
 
@@ -65,8 +66,8 @@ describe('sem-facts', () => {
       // the meter element renders its track under its own class…
       cy.get('#p-coverage.sem-progress').should('contain', 'coverage :: 62%');
       cy.get('#p-coverage .sem-progress-track').should('exist');
-      // …while the facts chrome label is a different class entirely
-      cy.get('.sem-facts[data-view-as="flashcards"] .sem-facts-meter').should('contain', '1/3');
+      // …while the facts chrome meter is a different class entirely
+      cy.get('.sem-facts[data-view-as="flashcards"] .sem-facts-meter button').should('have.length', 3);
       cy.get('.sem-facts-chrome .sem-progress').should('not.exist');
       // and the meter element is untouched by facts chrome
       cy.get('#p-coverage .sem-facts-meter').should('not.exist');
@@ -99,7 +100,7 @@ describe('sem-facts', () => {
       cy.get(fc + '.sem-current .sem-conclusion').should('not.be.visible');
       cy.get(fc + '.sem-current').click();
       cy.get(fc + '.sem-current.sem-flipped .sem-conclusion').should('be.visible');
-      cy.get(fc + '.sem-facts-meter').should('contain', '1/2');
+      cy.get(fc + '.sem-facts-meter button').should('have.length', 2);
     });
 
     it('flashcards: keyboard flips — one tab stop, Enter/Space, aria-expanded', () => {

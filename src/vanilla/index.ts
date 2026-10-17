@@ -79,3 +79,4 @@ export {
   enhanceAudience,
   enhanceTarget,
 };
+export { wireFactsDeck } from './facts-deck.js';

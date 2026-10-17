@@ -19,6 +19,12 @@ import { getParam } from '../shared/state.js';
 
 const WRAPPER = 'sem-enhanced-document, .sem-enhanced-document';
 
+// 0.9.1: the bundle re-runs its passes when nodes mount late; the
+// hashchange listener rides the WINDOW, so each scope wires it once —
+// the document scope via a module flag, panes via a WeakSet.
+const wiredScopes = new WeakSet<ParentNode>();
+let documentWired = false;
+
 export function enhanceAudience(scope: ParentNode): void {
   const html = document.documentElement;
   // A pane-scoped call (a host embedding examples) reads the profile block
@@ -52,6 +58,10 @@ export function enhanceAudience(scope: ParentNode): void {
     });
   };
 
-  window.addEventListener('hashchange', apply);
+  if (isDocument ? !documentWired : !wiredScopes.has(scope)) {
+    if (isDocument) documentWired = true;
+    else wiredScopes.add(scope);
+    window.addEventListener('hashchange', apply);
+  }
   apply();
 }
