@@ -117,14 +117,6 @@ export class SemShell extends SemTerminal {
     }
     lines.push({ kind: 'stdout', text: 'type help to begin — or press replay to watch the demo.' });
     this.appendLines(lines);
-    // The CDN-rule demo: absolute https, no integrity — refused pre-fetch.
-    void this.core
-      .loadPluginFromUrl('https://cdn.noizu.com/semtext/plugins/extra/manifest.json')
-      .then((result) => {
-        if (!result.ok) {
-          this.appendLines([{ kind: 'stderr', text: `plugin https://cdn.noizu.com/…: ${result.error}` }]);
-        }
-      });
     this.#attachAutostart();
     this.#resolveView();
   }

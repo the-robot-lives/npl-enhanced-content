@@ -8,7 +8,7 @@
 // Feature: the core stays SemText-free
 //   Scenario: a bare <sem-terminal> has no demo commands
 // Feature: the demo plugin on <sem-shell>
-//   Scenario: boot reports the local mount and the refused CDN demo plugin
+//   Scenario: boot reports the local mount and runs no CDN demo fetch
 //   Scenario: ls / semtext run through the prompt
 // Feature: terminal mechanics
 //   Scenario: up/down history with draft restore; Ctrl+L clears
@@ -106,16 +106,17 @@ describe('the core stays SemText-free', () => {
 });
 
 describe('<sem-shell> — the demo plugin', () => {
-  it('boots with the local mount and the refused CDN demo plugin', async () => {
+  it('boots with the local mount, no refused-CDN boot line, and no demo fetch', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     const el = await attach('sem-shell');
     expect(el.lines.some((l) => l.text.includes('semtext-demo 0.1.0 mounted'))).toBe(true);
-    await vi.waitFor(() =>
-      expect(el.lines.some((l) => l.kind === 'stderr' && l.text.includes('integrity'))).toBe(true),
-    );
-    expect(fetchMock).not.toHaveBeenCalled(); // refused before any network request
-    expect(el.core.loadErrors).toHaveLength(1);
+    // The boot-time CDN-refusal demo is gone: a fresh shell prints no
+    // stderr, records no load errors, and never reaches the network.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(el.lines.some((l) => l.kind === 'stderr')).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(el.core.loadErrors).toHaveLength(0);
     expect(el.core.hasCommand('semtext')).toBe(true);
   });
 

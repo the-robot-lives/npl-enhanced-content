@@ -18,6 +18,31 @@ import { copyText, canCopy } from '../shared/clipboard.js';
 
 export const CODE = ':is(sem-code, .sem-code)';
 
+/**
+ * Flat authoring form (spec/schema/sem-code.md): the listing may be
+ * authored as the element's own text, with no `<pre>` child — the element
+ * wraps it in `<pre><code>` itself, so authors never nest by hand. Runs
+ * before the chrome build; idempotent (a `<pre>` child wins, and an empty
+ * or element-bearing host is left untouched — author-side highlighting
+ * without a `<pre>` is never flattened away).
+ */
+function adoptTextListing(el: Element): void {
+  if (el.querySelector(':scope > pre')) return;
+  if (el.children.length > 0) return;
+  const raw = el.textContent ?? '';
+  // One structural leading newline (after the open tag) and trailing
+  // whitespace carrying the close tag are authoring layout, not content;
+  // interior whitespace stays byte-identical (the verbatim contract).
+  const source = raw.replace(/^\n/, '').replace(/\s+$/, '');
+  if (!source) return;
+  el.textContent = '';
+  const pre = document.createElement('pre');
+  const code = document.createElement('code');
+  code.textContent = source;
+  pre.appendChild(code);
+  el.appendChild(pre);
+}
+
 function wrapLines(code: Element, marks: number[]): void {
   if (code.children.length) return; // author-side markup: leave as authored
   const lines = (code.textContent || '').split('\n');
@@ -34,6 +59,7 @@ function wrapLines(code: Element, marks: number[]): void {
 
 export function enhanceCodeElement(el: Element): void {
   if (el.querySelector(':scope > .sem-code-chrome')) return;
+  adoptTextListing(el);
   const pre = el.querySelector<HTMLElement>(':scope > pre');
   if (!pre) return;
   const code = pre.querySelector('code') || pre;

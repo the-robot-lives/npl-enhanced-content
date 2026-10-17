@@ -503,10 +503,16 @@ function buildEvent(el: Element): Payload {
 function buildCode(el: Element): Payload {
   // `source` is VERBATIM — the one field whose whitespace is content
   // (spec/schema/sem-code.md, machine contract). Line-wrapping spans and
-  // <mark> are read through; chrome is skipped.
+  // <mark> are read through; chrome is skipped. The flat authoring form
+  // (no `<pre>` child — the listing is the element's own text) is read
+  // off the host itself; a host that renders no listing yields "".
   const pre = el.querySelector('pre');
   const code = pre ? pre.querySelector('code') || pre : null;
-  const source = code ? collectText(code, isChrome) : '';
+  // Flat form: the same two structural trims the runtime's adopt applies
+  // (one leading newline after the open tag, trailing whitespace before
+  // the close tag) so authored and enhanced `source` agree byte-for-byte.
+  const flat = code ? null : collectText(el, isChrome).replace(/^\n/, '').replace(/\s+$/, '');
+  const source = code ? collectText(code, isChrome) : flat ?? '';
   const lines = source === '' ? 0 : source.split('\n').length;
   return {
     fields: {
