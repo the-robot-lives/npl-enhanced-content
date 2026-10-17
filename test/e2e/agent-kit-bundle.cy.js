@@ -34,11 +34,19 @@ const PERSONA_TYPES = [
 // Document order of the structured-lists section (below the personas).
 const LIST_TYPES = ['agent-kit-acceptance-criteria', 'agent-kit-custom-assert'];
 
-// The board + reference sections (last) — the refs/columns never mint.
+// The board + reference + media sections (last) — the refs/columns never mint.
 const BOARD_TYPES = ['agent-kit-board'];
 const REFERENCE_TYPES = ['agent-kit-organization', 'agent-kit-project', 'agent-kit-chatroom'];
+const MEDIA_TYPES = ['agent-kit-asset', 'agent-kit-artifact', 'agent-kit-review'];
 
-const ALL_TYPES = [...TICKET_TYPES, ...PERSONA_TYPES, ...LIST_TYPES, ...BOARD_TYPES, ...REFERENCE_TYPES];
+const ALL_TYPES = [
+  ...TICKET_TYPES,
+  ...PERSONA_TYPES,
+  ...LIST_TYPES,
+  ...BOARD_TYPES,
+  ...REFERENCE_TYPES,
+  ...MEDIA_TYPES,
+];
 
 describe('agent-kit bundle — tickets (sub-batch 1)', () => {
   it('INVARIANT: JS-off extraction deep-equals JS-on extraction', () => {
@@ -264,13 +272,14 @@ describe('agent-kit bundle — reference cards + chatroom (sub-batch 5)', () => 
     cy.visit('/demo/agent-kit.html');
     extract().then((records) => {
       expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
-      const room = records[records.length - 1];
+      // the media trio tails the page; the chatroom is the record before it
+      const room = records[records.length - 4];
       expect(room.kind).to.equal('chatroom');
       expect(room.text).to.contain("Board's wired");
       expect(room.text).to.contain('Authoring stand-up');
       expect(room.text).not.to.contain('Ada:');
       expect(room.text).not.to.contain('Chatroom ·');
-      const org = records[records.length - 3];
+      const org = records[records.length - 6];
       expect(org.text).to.contain('Acme Corporation');
       expect(org.text).not.to.contain('Open in agent-kit');
     });
@@ -300,5 +309,49 @@ describe('agent-kit bundle — reference cards + chatroom (sub-batch 5)', () => 
     cy.get('.agent-kit-chatroom-chip').should('not.exist');
     cy.get('agent-kit-chatroom agent-kit-chat-msg').should('have.length', 3);
     cy.get('agent-kit-organization agent-kit-name').should('have.text', 'Acme Corporation');
+  });
+});
+
+describe('agent-kit bundle — media cards (sub-batch 6)', () => {
+  it('asset, artifact and review mint plain records; chrome, versions and labels stay out', () => {
+    cy.visit('/demo/agent-kit.html');
+    extract().then((records) => {
+      expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
+      const last3 = records.slice(-3);
+      expect(last3.map((r) => r.type)).to.deep.equal(MEDIA_TYPES);
+      expect(last3[0].text).to.contain('The board cover');
+      expect(last3[0].text).not.to.contain('image/svg+xml');
+      expect(last3[1].text).to.contain('authored body');
+      expect(last3[1].text).not.to.contain('v1 — draft');
+      expect(last3[2].text).to.contain('shipping it');
+      expect(last3[2].text).not.to.contain('Ada:');
+    });
+  });
+
+  it('image, chips, version list and verdict render JS-on; prose stands alone JS-off', () => {
+    cy.visit('/demo/agent-kit.html');
+    cy.get('agent-kit-asset img.agent-kit-asset-image').should('exist');
+    cy.get('agent-kit-asset .agent-kit-asset-mime').should('have.text', 'image/svg+xml');
+    cy.get('agent-kit-artifact .agent-kit-artifact-type').should('have.text', 'markdown');
+    cy.get('agent-kit-artifact .agent-kit-artifact-version').should('have.length', 2);
+    cy.get('agent-kit-review .agent-kit-review-verdict')
+      .should('have.attr', 'data-verdict', 'approve')
+      .and('have.text', 'Approved');
+    cy.get('agent-kit-review agent-kit-comment').should('have.length', 2);
+    // reviewer labels ride ::before even JS-off
+    cy.get('agent-kit-review agent-kit-comment')
+      .first()
+      .then(($c) => {
+        const before = window.getComputedStyle($c[0], '::before').content;
+        expect(before).to.equal('"Ada: "');
+      });
+    cy.visit('/demo/agent-kit.nojs.html');
+    cy.get('agent-kit-asset img').should('not.exist');
+    cy.get('.agent-kit-artifact-type').should('not.exist');
+    cy.get('.agent-kit-artifact-version').should('not.exist');
+    cy.get('.agent-kit-review-verdict').should('not.exist');
+    cy.get('agent-kit-artifact agent-kit-artifact-content').should('contain.text', 'authored body');
+    cy.get('agent-kit-review agent-kit-comment').should('have.length', 2);
+    cy.get('agent-kit-asset agent-kit-caption').should('contain.text', 'The board cover');
   });
 });

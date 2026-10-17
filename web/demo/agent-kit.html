@@ -223,6 +223,41 @@ call_sign: loom</agent-kit-persona-metadata>
     </agent-kit-chat-msg>
   </agent-kit-chatroom>
 
+  <h2>Media cards</h2>
+  <p>
+    The sem-media-gallery / sem-artifact-card / sem-review-canvas shapes,
+    promoted to cached embeds: authored captions, content and comments are
+    the records; the image, chips and version list are chrome.
+  </p>
+
+  <agent-kit-asset kind="asset" tags="cover" org="acme" project="semtext" key="asset-cover"
+                   mime="image/svg+xml"
+                   src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='120'%3E%3Crect width='320' height='120' fill='%232563eb' rx='8'/%3E%3Ctext x='160' y='66' font-family='monospace' font-size='20' fill='white' text-anchor='middle'%3Ecover.svg%3C/text%3E%3C/svg%3E">
+    <agent-kit-caption>The board cover, shipped with the authoring release.</agent-kit-caption>
+  </agent-kit-asset>
+
+  <agent-kit-artifact kind="artifact" tags="spec" org="acme" project="semtext" key="artifact-spec" type="markdown">
+    <agent-kit-artifact-content># Extraction spec
+
+The record is the authored body — never the network.</agent-kit-artifact-content>
+    <script type="application/json">{
+      "updated_at": "2026-10-17T12:00:00Z",
+      "versions": [
+        { "id": "v1", "label": "v1 — draft", "createdAt": "2026-10-16T09:00:00Z" },
+        { "id": "v2", "label": "v2 — review", "createdAt": "2026-10-17T12:00:00Z" }
+      ]
+    }</script>
+  </agent-kit-artifact>
+
+  <agent-kit-review kind="review" tags="board" org="acme" project="semtext" key="review-board" verdict="approve">
+    <agent-kit-comment author="Ada" at="2026-10-17T10:00:00Z">
+      Columns and refs line up; shipping it.
+    </agent-kit-comment>
+    <agent-kit-comment author="Loom" at="2026-10-17T10:05:00Z">
+      Agreed — the anchors hold.
+    </agent-kit-comment>
+  </agent-kit-review>
+
 </div>
 </body>
 </html>

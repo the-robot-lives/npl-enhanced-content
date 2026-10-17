@@ -1700,6 +1700,108 @@
         "div.agent-kit-chat-msg",
         "span.agent-kit-chat-msg"
       ]
+    },
+    "agent-kit-asset": {
+      "source": "spec/schema/agent-kit/asset.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "src": {
+          "type": "token"
+        },
+        "mime": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-caption"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-caption",
+          "severity": "error"
+        }
+      ]
+    },
+    "agent-kit-artifact": {
+      "source": "spec/schema/agent-kit/artifact.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "type": {
+          "type": "token",
+          "values": ["markdown", "json", "diff", "code"]
+        },
+        "language": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-artifact-content"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-artifact-content",
+          "severity": "error"
+        }
+      ]
+    },
+    "agent-kit-review": {
+      "source": "spec/schema/agent-kit/review.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "verdict": {
+          "type": "token",
+          "values": ["approve", "request-changes", "comment", "pending"]
+        }
+      },
+      "children": [
+        "agent-kit-comment"
+      ]
+    },
+    "agent-kit-caption": {
+      "source": "spec/schema/agent-kit/asset.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-asset"
+      ],
+      "classAliases": [
+        "div.agent-kit-caption",
+        "span.agent-kit-caption"
+      ]
+    },
+    "agent-kit-artifact-content": {
+      "source": "spec/schema/agent-kit/artifact.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-artifact"
+      ],
+      "classAliases": [
+        "div.agent-kit-artifact-content",
+        "span.agent-kit-artifact-content"
+      ]
+    },
+    "agent-kit-comment": {
+      "source": "spec/schema/agent-kit/review.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-review"
+      ],
+      "attributes": {
+        "author": {
+          "type": "token"
+        },
+        "at": {
+          "type": "token"
+        }
+      },
+      "classAliases": [
+        "div.agent-kit-comment",
+        "span.agent-kit-comment"
+      ]
     }
   }
 }

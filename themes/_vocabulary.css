@@ -1529,6 +1529,8 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
    ============================================================ */
 agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria { display: block; }
 agent-kit-agent-persona, .agent-kit-agent-persona { display: block; }
+agent-kit-artifact, .agent-kit-artifact { display: block; }
+agent-kit-asset, .agent-kit-asset { display: block; }
 agent-kit-board, .agent-kit-board { display: block; }
 agent-kit-bug, .agent-kit-bug { display: block; }
 agent-kit-chatroom, .agent-kit-chatroom { display: block; }
@@ -1537,6 +1539,7 @@ agent-kit-epic, .agent-kit-epic { display: block; }
 agent-kit-issue, .agent-kit-issue { display: block; }
 agent-kit-organization, .agent-kit-organization { display: block; }
 agent-kit-project, .agent-kit-project { display: block; }
+agent-kit-review, .agent-kit-review { display: block; }
 agent-kit-sub-task, .agent-kit-sub-task { display: block; }
 agent-kit-task, .agent-kit-task { display: block; }
 agent-kit-ticket-ref, .agent-kit-ticket-ref { display: block; }
@@ -2705,3 +2708,149 @@ agent-kit-ticket-ref[data-sem-upgraded], .agent-kit-ticket-ref[data-sem-upgraded
   font-size: 0.85em;
 }
 /* ── end agent-kit reference cards + chatroom ── */
+
+/* ── agent-kit media (asset, artifact, review) ────────────────────
+   Cached cards promoting the sem-media-gallery / sem-artifact-card /
+   sem-review-canvas shapes (spec/schema/agent-kit/{asset,artifact,
+   review}.md). Authored captions/content/comments are the records;
+   the src image, mime/type/verdict chips and version list are chrome.
+   Tokens only; dual spellings throughout.
+   ============================================================ */
+
+:is(agent-kit-asset, .agent-kit-asset),
+:is(agent-kit-artifact, .agent-kit-artifact),
+:is(agent-kit-review, .agent-kit-review) {
+  box-sizing: border-box;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--sem-surface, #ffffff);
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 8px;
+  color: var(--sem-fg, #1e293b);
+}
+
+/* asset */
+:is(agent-kit-asset, .agent-kit-asset) > :is(agent-kit-caption, .agent-kit-caption) {
+  display: block;
+  margin: 0.35rem 0 0;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.9em;
+}
+.agent-kit-asset-chrome .agent-kit-asset-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--sem-bg, #fafafa);
+}
+.agent-kit-asset-chrome .agent-kit-asset-mime {
+  display: inline-block;
+  margin: 0.35rem 0 0;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.agent-kit-asset-chrome .agent-kit-asset-snapshot {
+  display: inline-block;
+  margin: 0.35rem 0 0;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.85em;
+}
+
+/* artifact */
+:is(agent-kit-artifact, .agent-kit-artifact) > :is(agent-kit-artifact-content, .agent-kit-artifact-content) {
+  display: block;
+  margin: 0.5rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--sem-bg, #fafafa);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  white-space: pre-wrap;
+}
+.agent-kit-artifact-chrome .agent-kit-artifact-type {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-accent, #2563eb);
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+}
+.agent-kit-artifact-chrome .agent-kit-artifact-snapshot {
+  display: inline-block;
+  margin: 0.35rem 0 0;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.85em;
+}
+.agent-kit-artifact-chrome .agent-kit-artifact-versions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+}
+.agent-kit-artifact-chrome .agent-kit-artifact-version {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+}
+
+/* review */
+:is(agent-kit-review, .agent-kit-review) > :is(agent-kit-comment, .agent-kit-comment) {
+  display: block;
+  margin: 0.35rem 0;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--sem-bg, #fafafa);
+}
+/* the reviewer label rides the attribute — visible with styles on or
+   off, never part of any extracted record */
+:is(agent-kit-review, .agent-kit-review) > :is(agent-kit-comment, .agent-kit-comment)::before {
+  content: attr(author) ': ';
+  display: block;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+  font-weight: 600;
+}
+.agent-kit-review-chrome .agent-kit-review-verdict {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+  color: var(--sem-muted, #64748b);
+}
+.agent-kit-review-chrome .agent-kit-review-verdict[data-verdict='approve'] {
+  color: var(--sem-correct, #16a34a);
+  border-color: var(--sem-correct, #16a34a);
+}
+.agent-kit-review-chrome .agent-kit-review-verdict[data-verdict='request-changes'] {
+  color: var(--sem-wrong, #dc2626);
+  border-color: var(--sem-wrong, #dc2626);
+}
+.agent-kit-review-chrome .agent-kit-review-count {
+  margin-left: 0.5rem;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+}
+.agent-kit-review-chrome .agent-kit-review-snapshot {
+  display: inline-block;
+  margin: 0.35rem 0 0;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.85em;
+}
+/* ── end agent-kit media ── */
