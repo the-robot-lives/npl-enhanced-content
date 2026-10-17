@@ -36,6 +36,12 @@ export function enhanceViews(scope: ParentNode): void {
   scope.querySelectorAll<HTMLElement>(sel('views') + '[id]').forEach((root) => {
     const views = Array.from(root.querySelectorAll<HTMLElement>(VIEW));
     if (!views.length) return;
+    // Idempotent re-scan guard (0.9.1): the bundle re-runs its passes over
+    // the document whenever nodes mount late (island/SPA hosts). The bar,
+    // the hashchange/sem-activate listeners and the deepIds capture are
+    // built once per container — a second build would duplicate the bar
+    // and stack stale closures over the same views.
+    if (root.querySelector(':scope > .sem-views-tabs')) return;
     root.setAttribute('data-sem-upgraded', '');
     if (!root.hasAttribute('role')) root.setAttribute('role', 'region');
     if (!root.hasAttribute('aria-label')) root.setAttribute('aria-label', root.id);

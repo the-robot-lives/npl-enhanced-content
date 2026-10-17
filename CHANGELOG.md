@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-10-18 (0.9.1 — SEMTEX high-bug wave)
+
+- **Late DOM now upgrades (MutationObserver rescan).** The bundle scanned once at
+  DOMContentLoaded; content a host rendered afterwards (client-side routes, hydration,
+  CMS injection) stayed unenhanced — the root cause behind SEMTEX-001 (sem-views tabs
+  navigating instead of switching), SEMTEX-005/006/007 (sem-reveal / sem-details /
+  sem-source div-alias and data-summary forms dead), and SEMTEX-008 (tag-form
+  sem-progress). `src/index.ts` now observes `document.documentElement` (childList,
+  subtree), debounces 50 ms, and re-runs the three scans over the whole document; the
+  observer is quiet after its own chrome insertions.
+- **Re-scan idempotency guards.** `views` guards on its generated `.sem-views-tabs` bar,
+  `progress` on `.sem-progress-track` (NOT the element marker — the tag form's claim stub
+  stamps `data-sem-upgraded` at connect, before the handler runs), `audience` and
+  `target` wire document-level listeners once (`WeakSet` for scoped audiences). Covered
+  by `test/unit/rescan-idempotency.test.ts`.
+- **sem-facts deck rework (SEMTEX-003 / SEMTEX-004).** One shared wiring
+  (`src/vanilla/facts-deck.ts`) serves both tiers and both deck views: flashcards show
+  ONE card in a seeded shuffled order, flip on click/Enter/Space, record ✓ Got it /
+  ✗ Wrong verdicts that advance to the next unanswered card, carry a numbered-chip INDEX
+  (prev/next kept, the `n/N` count dropped) and end with a "You got X of N" summary +
+  Restart; quiz shuffles its options, keeps the question open on a wrong pick (✗ spent),
+  and auto-advances 500 ms after the correct pick. Fixed the sparse-array trap
+  (`new Array(n).every()` skips holes and read "all answered" at first render) with
+  `.fill(undefined)`; Restart got its own listener (it lives outside the chrome row).
+- **sem-question ships (SEMTEX-009).** The glossary element was plain HTML — no
+  component, `shipped: false`. New `src/lit/sem-question.ts` (+ `sem-option` claim stub):
+  seeded-shuffled thin-bordered option buttons, keep-picking-until-correct, optional
+  `retry`. Barrel + manifest updated via the entry graph.
+- **Default theme tokens (`:where(html)`).** `_vocabulary.css` declared no palette, so
+  unmounted pages rendered `.sem-occluded` invisible and modals borderless/transparent
+  (SEMTEX-006/020 visual half). A zero-specificity default block now provides bg,
+  surface, fg, muted, border, accent, note, correct/wrong and occluded tokens; any
+  `[data-sem-theme]` mount still wins regardless of load order.
+- **e2e spec updated** to the chips-index contract (`test/e2e/sem-facts.cy.js`); the
+  disabled-spent-pick re-click uses `:enabled`. Unit suite 182 files / 2859 tests green;
+  Playwright integration smoke green (views, flashcards, quiz, progress, question,
+  tokens, reveal/details aliases) with zero console errors.
 ## 2026-10-18 (0.9.2 — Phase 7 vocabulary release)
 
 - **Version note:** 0.9.1 is claimed by the in-flight SEMTEX bug-fix wave

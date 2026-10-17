@@ -26,6 +26,33 @@
    on `<html>` for rules whose host is deliberately unmarked.
    With no script, every distractor, view, conclusion and body renders. */
 
+/* ── default palette ──
+   The file still "declares none" in the theme sense — these are the
+   fallback values a page gets when it loads the vocabulary WITHOUT a
+   theme (embedded panes, islands, quick embeds): every --sem-* resolves
+   instead of falling back to nothing (transparent surfaces, invisible
+   occlusions, borderless modals — the 0.9.0 defect class). `:where(html)`
+   has ZERO specificity, so any theme mount ([data-sem-theme] rules, loaded
+   before OR after this file) overrides every value here; a theme that
+   declares all fourteen still changes nothing for its own pages. Values =
+   minimal-tech-light, the reference palette. */
+:where(html) {
+  --sem-bg: #fafafa;
+  --sem-surface: #ffffff;
+  --sem-fg: #1e293b;
+  --sem-muted: #64748b;
+  --sem-border: #e2e8f0;
+  --sem-accent: #2563eb;
+  --sem-accent-fg: #ffffff;
+  --sem-note-info: #2563eb;
+  --sem-note-tip: #059669;
+  --sem-note-warning: #d97706;
+  --sem-note-danger: #dc2626;
+  --sem-correct: #059669;
+  --sem-wrong: #dc2626;
+  --sem-occluded: #94a3b8;
+}
+
 body { margin: 0; }
 /* Paint the element that carries the theme, not <body>: themes may mount
    on an embedded subtree (data-sem-theme on a pane div), where the tokens
@@ -43,7 +70,7 @@ html[data-sem-theme] body { background: var(--sem-bg); color: var(--sem-fg); }
 /* Custom elements are inline by default; the vocabulary is block-level. */
 sem-enhanced-document, sem-agent, sem-audiences, sem-note, sem-facts, sem-fact,
 sem-details, sem-detail, sem-procedure, sem-step, sem-properties, sem-property,
-sem-views, sem-view, sem-reveal, sem-progress, sem-quota-meter,
+sem-views, sem-view, sem-reveal, sem-progress, sem-quota-meter, sem-question, sem-option,
 sem-chronology, sem-event, sem-code, sem-references, sem-reference, sem-reader, sem-table, sem-source, sem-md,
 sem-data-visualizer, sem-data-source, sem-tldr,
 sem-agent > :is(name, bio, instructions), sem-fact > :is(statement, conclusion, incorrect-statement) { display: block; }
@@ -136,7 +163,21 @@ sem-agent > :is(name, bio, instructions), sem-fact > :is(statement, conclusion, 
   padding: .5rem .75rem; cursor: pointer; }
 .sem-quiz-options button[data-correct="true"].sem-answered { border-color: var(--sem-correct); }
 .sem-quiz-options button.sem-wrong-pick { border-color: var(--sem-wrong); }
+/* a picked-wrong option is spent: dimmed and inert, the reader keeps
+   picking until the correct option lands (0.9.1 contract) */
+.sem-quiz-options button.sem-wrong-pick { cursor: default; opacity: .7; }
 .sem-score { font-size: .875rem; color: var(--sem-muted); }
+/* flashcard verdicts (✓ got it / ✗ wrong): authored nowhere, appended by
+   the deck wiring inside each card; hidden until that card is flipped and
+   the current one (hide rules stay marker-gated, D12) */
+.sem-facts-verdict { display: none; gap: .5rem; margin-top: .75rem; }
+.sem-facts-verdict button { font: inherit; font-weight: 600; border: 1px solid var(--sem-border);
+  background: var(--sem-surface); border-radius: 8px; padding: .375rem .875rem; cursor: pointer; }
+.sem-facts-verdict button[data-verdict="got"] { color: var(--sem-correct); border-color: var(--sem-correct); }
+.sem-facts-verdict button[data-verdict="miss"] { color: var(--sem-wrong); border-color: var(--sem-wrong); }
+.sem-facts-summary { margin: .75rem 0; padding: .75rem 1rem; border: 1px solid var(--sem-border);
+  border-radius: 12px; background: var(--sem-surface); font-weight: 600; }
+.sem-facts-summary .sem-facts-verdict { display: flex; }
 
 /* details + highlight */
 :is(sem-details, .sem-details) { margin: 1rem 0; }
@@ -1736,7 +1777,16 @@ agent-kit-user-story, .agent-kit-user-story { display: block; }
    targets clear 44px. */
 .sem-facts-chrome { align-items: stretch; }
 .sem-facts-chrome .sem-facts-meter { flex: 1; display: flex; align-items: center;
-  justify-content: center; font-variant-numeric: tabular-nums; }
+  justify-content: center; font-variant-numeric: tabular-nums; gap: .25rem; flex-wrap: wrap; }
+/* 0.9.1: the meter is an INDEX of the deck (one chip per card, current
+   highlighted), not a count readout — chips are chrome buttons, so the
+   hover/focus rules above already apply. */
+.sem-facts-meter button { font: inherit; font-size: .8125rem; padding: .125rem .5rem;
+  border-radius: 999px; color: var(--sem-muted); }
+.sem-facts-meter button[aria-current="true"] { background: var(--sem-accent);
+  border-color: var(--sem-accent); color: var(--sem-accent-fg); }
+.sem-facts-meter button.sem-facts-done[data-verdict="got"] { color: var(--sem-correct); border-color: var(--sem-correct); }
+.sem-facts-meter button.sem-facts-done[data-verdict="miss"] { color: var(--sem-wrong); border-color: var(--sem-wrong); }
 @media (pointer: coarse) {
   .sem-facts-chrome button { min-width: 2.75rem; min-height: 2.75rem; }
 }
@@ -1762,6 +1812,11 @@ agent-kit-user-story, .agent-kit-user-story { display: block; }
   content: "click or press enter to reveal"; }
 :is(sem-facts, .sem-facts)[data-sem-upgraded][data-view-as="flashcards"] :is(sem-fact, .sem-fact).sem-current.sem-flipped::after {
   content: "flip back"; }
+/* verdict buttons share the hint's row: card front on row 2 start, the
+   click-or-reveal hint on row 2 end. Visible only on the flipped current
+   card (base rules keep .sem-facts-verdict display:none elsewhere). */
+:is(sem-facts, .sem-facts)[data-sem-upgraded][data-view-as="flashcards"] :is(sem-fact, .sem-fact).sem-current.sem-flipped .sem-facts-verdict {
+  display: flex; grid-row: 2; justify-self: start; align-self: end; }
 :is(sem-facts, .sem-facts)[data-sem-upgraded][data-view-as="flashcards"] :is(sem-fact, .sem-fact):focus-visible {
   outline: 2px solid var(--sem-accent); outline-offset: 2px; }
 
@@ -1785,6 +1840,32 @@ agent-kit-user-story, .agent-kit-user-story { display: block; }
     transition: border-color .15s ease, background-color .15s ease; }
 }
 /* ── end sem-facts ── */
+
+/* ── sem-question ──
+   The quiz block (component: src/lit/sem-question.ts, shipped 0.9.1).
+   JS-off / pre-upgrade the authored sem-option elements read as a plain
+   list inside the question card; once the component drives it (marker
+   claimed) the authored options hide and the generated button row takes
+   over — same D12 gate as the deck distractors. */
+:is(sem-question, .sem-question) { border: 1px solid var(--sem-border); border-radius: 12px;
+  padding: 1rem; margin: 1rem 0; background: var(--sem-surface); }
+:is(sem-question, .sem-question) > :is(sem-option, .sem-option) { margin: .25rem 0; color: var(--sem-muted); }
+:is(sem-question, .sem-question)[data-sem-upgraded] > :is(sem-option, .sem-option) { display: none; }
+.sem-question-options { display: grid; gap: .5rem; margin-top: .75rem; }
+.sem-question-options button { font: inherit; text-align: left; border: 1px solid var(--sem-border);
+  background: var(--sem-surface); color: var(--sem-fg); border-radius: 8px;
+  padding: .5rem .75rem; cursor: pointer; }
+.sem-question-options button:hover:not(:disabled) { border-color: var(--sem-accent);
+  background: color-mix(in srgb, var(--sem-accent) 8%, var(--sem-surface)); }
+.sem-question-options button:focus-visible { outline: 2px solid var(--sem-accent); outline-offset: 2px; }
+.sem-question-options button.sem-answered { border-color: var(--sem-correct);
+  background: color-mix(in srgb, var(--sem-correct) 10%, var(--sem-surface)); }
+.sem-question-options button.sem-answered::before { content: "✓ "; color: var(--sem-correct); font-weight: 700; }
+.sem-question-options button.sem-wrong-pick { border-color: var(--sem-wrong); cursor: default; opacity: .7; }
+.sem-question-options button.sem-wrong-pick::before { content: "✗ "; color: var(--sem-wrong); font-weight: 700; }
+.sem-question-options button:disabled { cursor: default; }
+.sem-question-options button:not(.sem-answered):not(.sem-wrong-pick):disabled { opacity: .55; }
+.sem-question-retry { justify-self: start; }
 
 /* ── sem-note ──
    Additive chrome only. The base accents, the collapsed hide rule (gated on
