@@ -133,6 +133,9 @@ export interface AutosaveOptions {
   delay?: number;
   /** Mode recorded in the payload (editor mode at save time). */
   getMode?: () => string;
+  /** Called after each successful slot write (debounced or flushed) — the
+   *  shell clears its dirty dot here (Instrument: "Saved HH:MM"). */
+  onSave?: () => void;
 }
 
 export interface AutosaveHandle {
@@ -167,6 +170,7 @@ export function attachAutosave(doc: EditorDocument, opts: AutosaveOptions): Auto
       rest.push({ key, savedAt: payload.savedAt, title: documentTitle(doc) });
       writeIndex(storage, rest);
       error = null;
+      opts.onSave?.();
     } catch (cause) {
       error = cause instanceof Error ? cause : new Error(String(cause));
     }

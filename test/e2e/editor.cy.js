@@ -112,7 +112,7 @@ describe('semtext-editor bundle (§9)', () => {
   });
 
   it('plus zone opens the panel; picking an entry inserts a sibling', () => {
-    canvasEl().find('button[aria-label="Insert block at the end"]').click();
+    canvasEl().find('button[aria-label="Add block at the end"]').click();
     cy.get('dialog.sem-ed-ins-panel').should('be.visible');
     cy.get('dialog.sem-ed-ins-panel button')
       .contains('.sem-ed-ins-tile-title', /^[^…]+$/)

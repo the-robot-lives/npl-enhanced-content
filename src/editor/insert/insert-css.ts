@@ -35,20 +35,27 @@ export const INSERT_CSS = `
 .sem-ed-ins-empty { padding: 0.8rem 0.2rem; opacity: 0.75; font-style: italic; }
 .sem-ed-ins-hint { margin: 0 0.9rem 0.4rem; font-size: 0.82em; opacity: 0.7; }
 
-/* ── `+` between blocks (canvas chrome; hover/focus reveal) ────────────── */
+/* ── `+` between blocks (canvas chrome; labelled "Add block" affordance) ── */
 .sem-ed-ins-plus {
   font: inherit; cursor: pointer; line-height: 1;
-  width: 1.5rem; height: 1.5rem; padding: 0;
-  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 1.5rem; padding: 0 0.45rem 0 0;
+  display: inline-flex; align-items: center; gap: 0.3rem;
   color: inherit; background: var(--sem-surface, canvas);
   border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
   border-radius: 999px; opacity: 0.55; margin: 0.1rem auto;
 }
+.sem-ed-ins-plus-glyph {
+  width: 1.35rem; height: 1.35rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto;
+}
+.sem-ed-ins-plus-label { font-size: 0.78em; white-space: nowrap; }
 .sem-ed-ins-plus:hover,
 .sem-ed-ins-plus:focus-visible { opacity: 1; outline: 2px solid var(--sem-focus, currentColor); outline-offset: 1px; }
 .sem-ed-ins-plus-zone { display: flex; justify-content: center; }
-@media (hover: hover) {
-  /* pointer devices reveal the affordance only near the gap */
+@media (hover: hover) and (pointer: fine) {
+  /* pointer devices reveal the affordance only near the gap — but a focused
+   * zone keeps its label visible so the affordance is never unexplained */
   .sem-ed-ins-plus-zone .sem-ed-ins-plus { opacity: 0; }
   .sem-ed-ins-plus-zone:hover .sem-ed-ins-plus,
   .sem-ed-ins-plus-zone:focus-within .sem-ed-ins-plus { opacity: 0.85; }
