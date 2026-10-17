@@ -111,11 +111,13 @@ export function createLazyPackage(stub: PackageStub, load: () => Promise<Package
       name: cmd.name,
       // Help/completion surfaces read the stub's line — never the chunk.
       usage: cmd.usage,
-      run(ctx: CommandContext) {
+      run(ctx: CommandContext): void | Promise<void> {
         const spec = loadedSpec();
         if (spec !== undefined) {
-          spec.run(ctx); // the real command owns even --help once resident
-          return;
+          // The real command owns even --help once resident — and its
+          // Promise: an async command (CORE-V2) must reach the shell so
+          // the pipeline awaits the body before the next stage reads.
+          return spec.run(ctx);
         }
         if (isHelpRequest(ctx.args)) {
           ctx.out(cmd.usage); // answered from the stub, chunk or no chunk

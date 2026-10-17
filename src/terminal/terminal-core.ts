@@ -20,7 +20,7 @@
  */
 
 import { Vfs, type VfsBackend, type VfsNode } from './vfs.js';
-import { parseCommandLine } from './sh-parse.js';
+import { parseCommandLine, type ShellStage } from './sh-parse.js';
 import {
   checkSourceAllowed,
   fetchText,
@@ -147,7 +147,9 @@ export interface CommandSpec {
   name: string;
   /** Full usage string, shown by `help`, e.g. `ls [-l] [path]`. */
   usage: string;
-  run(ctx: CommandContext): void;
+  /** Run one stage. May return a Promise: the shell then awaits it before
+   *  the next pipeline stage reads stdin (CORE-V2 async commands). */
+  run(ctx: CommandContext): void | Promise<void>;
   /**
    * Tab-completion candidates for the word at this stage's cursor.
    * Given the args so far (word removed) and the word itself; the shell
@@ -625,7 +627,7 @@ export class TerminalCore {
    * executed command appends a `status` line with its exit status; actions
    * accumulate for the element to perform. Never throws.
    */
-  execLine(input: string): ExecResult {
+  execLine(input: string): ExecResult | Promise<ExecResult> {
     const lines: ShellLine[] = [{ kind: 'cmd', text: `${this.state.cwd} $ ${input}` }];
     const result: ExecResult = { lines, state: this.state, clear: false, actions: [] };
     if (input.trim() !== '') this.state.history.push(input);
@@ -636,70 +638,96 @@ export class TerminalCore {
       lines.push({ kind: 'status', text: `exit ${this.state.lastStatus}` });
       return result;
     }
+    // Stages run synchronously until one of them returns a Promise
+    // (CORE-V2 async commands, integration TODO 2) — an all-sync line
+    // still returns the ExecResult object itself, so every existing
+    // caller is untouched. From the first async stage on, the rest of
+    // the pipeline continues in a promise chain.
     let ran = false;
     let spawnedApp = false;
     let stdin: string | null = null;
     for (let i = 0; i < parsed.stages.length; i++) {
-      const stage = parsed.stages[i];
-      const argv = this.#expandAliases(stage.argv);
-      const redirect = stage.redirect;
-      if (argv.length === 0 && !redirect) continue; // empty stage: stdin passes through
-      if (argv[0] === 'clear') {
-        result.clear = true;
-        continue;
+      const step = this.#runStage(parsed.stages[i]!, stdin, result, i === parsed.stages.length - 1);
+      if (step instanceof Promise) {
+        return step.then((first) => {
+          if (first.ran) ran = true;
+          if (first.spawnedApp) spawnedApp = true;
+          stdin = first.stdout;
+          return this.#runStageRest(parsed.stages, i + 1, stdin, result, { ran, spawnedApp });
+        });
       }
-      ran = true;
-      let stdout = '';
-      const isTty = i === parsed.stages.length - 1 && redirect === null;
-      let explicitStatus: number | null = null;
-      let stderrLines = 0;
-      const ctx: CommandContext = {
-        args: argv.slice(1),
-        stdin,
-        vfs: this.vfs,
-        state: this.state,
-        color: isTty,
-        commands: this.commands,
-        out: (text) => {
-          stdout += text + '\n';
-          if (isTty) lines.push({ kind: 'stdout', text }); // piped/redirected stages stay off the transcript
-        },
-        err: (text) => {
-          stderrLines++;
-          lines.push({ kind: 'stderr', text });
-        },
-        emit: (action) => result.actions.push(action),
-        exit: (code) => {
-          explicitStatus = code;
-        },
-      };
-      if (argv.length === 0) {
-        // `> file` with no command: truncate or create, like sh.
-        stdout = '';
-      } else {
-        const spec = this.commands.get(argv[0]);
-        if (!spec) {
-          lines.push({ kind: 'stderr', text: `sh: command not found: ${argv[0]}` });
-          this.state.lastStatus = 127;
-          continue;
-        }
-        try {
-          // Full-screen app handover (CORE-V2 §6.4): tty-only, additive —
-          // app may decline (null) or the stage may be piped (no ctx.color),
-          // in which case `run` remains the fallback path.
-          const spawned = isTty ? spec.app?.(ctx) ?? null : null;
-          if (spawned !== null) {
-            result.actions.push({ kind: 'app', app: spawned });
-            spawnedApp = true;
-            explicitStatus = 0; // the app reports its own exit status (§6.2)
-          } else {
-            spec.run(ctx);
-          }
-        } catch (cause) {
-          stderrLines++;
-          lines.push({ kind: 'stderr', text: `${argv[0]}: ${cause instanceof Error ? cause.message : String(cause)}` });
-        }
-      }
+      if (step.ran) ran = true;
+      if (step.spawnedApp) spawnedApp = true;
+      stdin = step.stdout;
+    }
+    if (ran && !result.clear && !spawnedApp) lines.push({ kind: 'status', text: `exit ${this.state.lastStatus}` });
+    this.state.env.PWD = this.state.cwd;
+    return result;
+  }
+
+  /** Async continuation: stages `from..end`, chaining each stage's output. */
+  async #runStageRest(
+    stages: ShellStage[],
+    from: number,
+    stdin: string | null,
+    result: ExecResult,
+    acc: { ran: boolean; spawnedApp: boolean },
+  ): Promise<ExecResult> {
+    for (let i = from; i < stages.length; i++) {
+      const step = await this.#runStage(stages[i]!, stdin, result, i === stages.length - 1);
+      if (step.ran) acc.ran = true;
+      if (step.spawnedApp) acc.spawnedApp = true;
+      stdin = step.stdout;
+    }
+    if (acc.ran && !result.clear && !acc.spawnedApp) result.lines.push({ kind: 'status', text: `exit ${result.state.lastStatus}` });
+    result.state.env.PWD = result.state.cwd;
+    return result;
+  }
+
+  /**
+   * One pipeline stage: expand aliases, build the CommandContext, run the
+   * command (its `run` may return a Promise), apply redirects. Returns the
+   * stage's stdout plus the bookkeeping flags the line loop needs.
+   */
+  #runStage(
+    stage: ShellStage,
+    stdin: string | null,
+    result: ExecResult,
+    isLast: boolean,
+  ): { stdout: string; ran: boolean; spawnedApp: boolean } | Promise<{ stdout: string; ran: boolean; spawnedApp: boolean }> {
+    const lines = result.lines;
+    const argv = this.#expandAliases(stage.argv);
+    const redirect = stage.redirect;
+    if (argv.length === 0 && !redirect) return { stdout: stdin ?? '', ran: false, spawnedApp: false }; // empty stage: stdin passes through
+    if (argv[0] === 'clear') {
+      result.clear = true;
+      return { stdout: '', ran: false, spawnedApp: false };
+    }
+    let stdout = '';
+    const isTty = isLast && redirect === null;
+    let explicitStatus: number | null = null;
+    let stderrLines = 0;
+    const ctx: CommandContext = {
+      args: argv.slice(1),
+      stdin,
+      vfs: this.vfs,
+      state: this.state,
+      color: isTty,
+      commands: this.commands,
+      out: (text) => {
+        stdout += text + '\n';
+        if (isTty) lines.push({ kind: 'stdout', text }); // piped/redirected stages stay off the transcript
+      },
+      err: (text) => {
+        stderrLines++;
+        lines.push({ kind: 'stderr', text });
+      },
+      emit: (action) => result.actions.push(action),
+      exit: (code) => {
+        explicitStatus = code;
+      },
+    };
+    const finish = (r: { ran: boolean; spawnedApp: boolean }): { stdout: string; ran: boolean; spawnedApp: boolean } => {
       if (redirect !== null) {
         const targetPath = this.vfs.resolve(this.state.cwd, redirect.target);
         try {
@@ -711,13 +739,46 @@ export class TerminalCore {
         }
       }
       this.state.lastStatus = explicitStatus ?? (stderrLines > 0 ? 1 : 0);
-      stdin = stdout;
+      return { stdout, ...r };
+    };
+    if (argv.length === 0) {
+      // `> file` with no command: truncate or create, like sh.
+      stdout = '';
+      return finish({ ran: true, spawnedApp: false });
     }
-    // An app launch prints no `exit N` — the runner adds it when the app
-    // exits, with the app's own status (§6.2).
-    if (ran && !result.clear && !spawnedApp) lines.push({ kind: 'status', text: `exit ${this.state.lastStatus}` });
-    this.state.env.PWD = this.state.cwd;
-    return result;
+    const spec = this.commands.get(argv[0]);
+    if (!spec) {
+      lines.push({ kind: 'stderr', text: `sh: command not found: ${argv[0]}` });
+      this.state.lastStatus = 127;
+      return { stdout: '', ran: true, spawnedApp: false };
+    }
+    try {
+        // Full-screen app handover (CORE-V2 §6.4): tty-only, additive —
+        // app may decline (null) or the stage may be piped (no ctx.color),
+        // in which case `run` remains the fallback path.
+        const spawned = isTty ? spec.app?.(ctx) ?? null : null;
+        if (spawned !== null) {
+          result.actions.push({ kind: 'app', app: spawned });
+          explicitStatus = 0; // the app reports its own exit status (§6.2)
+          return finish({ ran: true, spawnedApp: true });
+        }
+        const outcome = spec.run(ctx);
+        if (outcome instanceof Promise) {
+          return outcome.then(
+            () => finish({ ran: true, spawnedApp: false }),
+            (cause: unknown) => {
+              stderrLines++;
+              lines.push({ kind: 'stderr', text: `${argv[0]}: ${cause instanceof Error ? cause.message : String(cause)}` });
+              return finish({ ran: true, spawnedApp: false });
+            },
+          );
+        }
+        return finish({ ran: true, spawnedApp: false });
+      } catch (cause) {
+        stderrLines++;
+        lines.push({ kind: 'stderr', text: `${argv[0]}: ${cause instanceof Error ? cause.message : String(cause)}` });
+        return finish({ ran: true, spawnedApp: false });
+    }
   }
 }
 

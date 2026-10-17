@@ -72,9 +72,21 @@ export class NetError extends Error {
 
 export type NetTransport = (req: NetRequest) => NetResponse;
 
+/** Async transport — the shell awaits an async command's Promise
+ *  (terminal-core execLine, CORE-V2), so fetch() works as a transport. */
+export type NetTransportAsync = (req: NetRequest) => Promise<NetResponse>;
+
 export interface NetConfig {
   /** Replaces the transport for every net command. Null forces "none". */
   transport?: NetTransport | null;
+  /**
+   * Replaces the transport with an ASYNC one (e.g. fetchTransport). When
+   * set (including null), commands dispatch through it and the shell
+   * awaits the Promise; when unset, commands use the sync `transport`
+   * resolution above. Embedders opt in — the default stays sync so tests
+   * and environments without await-capable shells behave as before.
+   */
+  transportAsync?: NetTransportAsync | null;
   /**
    * Embedder allowlist hook. Return `true` to allow, or a string — the
    * reason shown to the user in the denial message.
@@ -180,6 +192,67 @@ export function activeTransport(): NetTransport | null {
 /** The built-in transport for this environment (null outside a browser). */
 export function defaultTransport(): NetTransport | null {
   return typeof XMLHttpRequest === 'undefined' ? null : xhrTransport;
+}
+
+/**
+ * The async transport in effect: ONLY an explicitly configured one (the
+ * shell boot wires fetchTransport where fetch exists). Never an implicit
+ * default — tests that expect "no transport" must not grow real fetches.
+ */
+export function activeTransportAsync(): NetTransportAsync | null {
+  return config.transportAsync !== undefined ? config.transportAsync : null;
+}
+
+/**
+ * The fetch()-based transport: redirects always followed, credentials
+ * never attached (XHR parity — `credentials: 'omit'`), forbidden header
+ * names (Host, User-Agent, …) silently dropped like curl's ignored
+ * --header. Rejects with NetError('network') on connection/CORS failure —
+ * the browser hides which.
+ */
+export async function fetchTransport(req: NetRequest): Promise<NetResponse> {
+  let res: Response;
+  try {
+    const headers = new Headers();
+    for (const [name, value] of Object.entries(req.headers)) {
+      try {
+        headers.set(name, value);
+      } catch {
+        // Forbidden header names are enforced by the browser; the server
+        // just never sees the header.
+      }
+    }
+    res = await fetch(req.url, {
+      method: req.method,
+      headers,
+      body: req.body ?? undefined,
+      redirect: 'follow',
+      credentials: 'omit',
+    });
+  } catch {
+    throw new NetError(
+      'network',
+      'the request failed before a response was returned (fetch rejects on ' +
+        'network/CORS/mixed-content failures; the browser hides the exact cause)',
+    );
+  }
+  const headers: Record<string, string> = {};
+  res.headers.forEach((value, name) => {
+    headers[name.toLowerCase()] = value;
+  });
+  let bodyText = '';
+  try {
+    bodyText = await res.text();
+  } catch {
+    bodyText = '';
+  }
+  return {
+    status: res.status,
+    statusText: res.statusText ?? '',
+    headers,
+    bodyText,
+    url: res.url || req.url,
+  };
 }
 
 /** Resolve a request through the active transport. Throws NetError. */

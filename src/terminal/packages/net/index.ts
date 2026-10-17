@@ -23,7 +23,7 @@ import type { CommandContext, CommandSpec } from '../../terminal-core.js';
 import type { Command, PackageModule } from '../types.js';
 import type { NetRequest, NetResponse } from './transport.js';
 import { netStub } from './stub.js';
-import { NetError, basicAuthValue, byteLength, checkAllowed, netFetch } from './transport.js';
+import { NetError, activeTransportAsync, basicAuthValue, byteLength, checkAllowed, netFetch } from './transport.js';
 
 /**
  * The embedder/test seam, re-exported at the chunk edge: an embedder (or
@@ -31,8 +31,8 @@ import { NetError, basicAuthValue, byteLength, checkAllowed, netFetch } from './
  * chunk has loaded — `import('semtext-pkg-net.js').then((net) =>
  * net.configureNet({ allow }))`.
  */
-export { NetError, configureNet, resetNet, netConfig } from './transport.js';
-export type { NetRequest, NetResponse, NetTransport, NetConfig } from './transport.js';
+export { NetError, configureNet, resetNet, netConfig, fetchTransport } from './transport.js';
+export type { NetRequest, NetResponse, NetTransport, NetTransportAsync, NetConfig } from './transport.js';
 
 const usageOf = (name: string): string => netStub.commands.find((c) => c.name === name)!.usage;
 
@@ -88,6 +88,19 @@ function headerLines(headers: Record<string, string>): string[] {
 function dispatch(req: NetRequest): NetResponse {
   checkAllowed(req.url);
   return netFetch(req);
+}
+
+/**
+ * Dispatch through the allowlist, preferring the configured ASYNC
+ * transport (the shell awaits an async command's Promise — CORE-V2).
+ * Returns a Promise only when the embedder configured transportAsync;
+ * otherwise this is exactly dispatch() and the command stays synchronous.
+ */
+function dispatchMaybeAsync(req: NetRequest): NetResponse | Promise<NetResponse> {
+  checkAllowed(req.url);
+  const asyncTransport = activeTransportAsync();
+  if (asyncTransport === null) return netFetch(req);
+  return asyncTransport(req);
 }
 
 /** The exit code for a NetError, shared by all three commands. */
@@ -178,7 +191,7 @@ const curl: CommandSpec = {
   name: 'curl',
   usage: usageOf('curl'),
   complete: flagComplete(['-s', '-S', '-f', '-i', '-I', '-L', '-X', '-H', '-d', '--data-binary', '-u', '-o', '-O', '-w', '--help']),
-  run(ctx: CommandContext): void {
+  run(ctx: CommandContext): void | Promise<void> {
     const args = splitArgs(ctx.args, 'XHdouw');
     let silent = false;
     let showErrors = false;
@@ -309,24 +322,20 @@ const curl: CommandSpec = {
     if (body !== null && !haveContentType) headers['Content-Type'] = 'application/x-www-form-urlencoded';
 
     const effectiveMethod = method ?? (headOnly ? 'HEAD' : body !== null ? 'POST' : 'GET');
-    let resp: NetResponse;
-    try {
-      resp = dispatch({ method: effectiveMethod, url, headers, body });
-    } catch (cause) {
+    const fail = (cause: unknown): void => {
       const err = asNetError(cause);
       if (!silent || showErrors) ctx.err(`curl: ${err.message}`);
       ctx.exit(exitCodeFor(err));
-      return;
-    }
-    if (failOnHttpError && resp.status >= 400) {
-      if (!silent || showErrors) {
-        ctx.err(`curl: (22) The requested URL returned error: ${resp.status}${resp.statusText ? ' ' + resp.statusText : ''}`);
+    };
+    const finish = (resp: NetResponse): void => {
+      if (failOnHttpError && resp.status >= 400) {
+        if (!silent || showErrors) {
+          ctx.err(`curl: (22) The requested URL returned error: ${resp.status}${resp.statusText ? ' ' + resp.statusText : ''}`);
+        }
+        ctx.exit(22);
+        return;
       }
-      ctx.exit(22);
-      return;
-    }
-
-    if (includeHeaders) {
+      if (includeHeaders) {
       ctx.out(statusLine(resp));
       for (const line of headerLines(resp.headers)) ctx.out(line);
       if (!headOnly) ctx.out('');
@@ -383,6 +392,16 @@ const curl: CommandSpec = {
       }
     }
     ctx.exit(0);
+    };
+    let dispatched: NetResponse | Promise<NetResponse>;
+    try {
+      dispatched = dispatchMaybeAsync({ method: effectiveMethod, url, headers, body });
+    } catch (cause) {
+      fail(cause);
+      return;
+    }
+    if (dispatched instanceof Promise) return dispatched.then(finish, fail);
+    finish(dispatched);
   },
 };
 
@@ -400,7 +419,7 @@ const wget: CommandSpec = {
   name: 'wget',
   usage: usageOf('wget'),
   complete: flagComplete(['-q', '-O', '--help']),
-  run(ctx: CommandContext): void {
+  run(ctx: CommandContext): void | Promise<void> {
     const args = splitArgs(ctx.args, 'O');
     let quiet = false;
     let outputFile: string | null = null;
@@ -461,26 +480,19 @@ const wget: CommandSpec = {
       if (!quiet) ctx.err(line);
     };
     let status = 0;
-    for (const url of urls) {
-      let resp: NetResponse;
-      try {
-        resp = dispatch({ method: 'GET', url, headers: {}, body: null });
-      } catch (cause) {
-        const err = asNetError(cause);
-        log(`wget: ${err.message}`);
-        status = err.kind === 'network' ? 4 : 1;
-        continue;
-      }
+    // One URL's fetch+save. Returns 'skip' when the URL is done (error or
+    // stdout body) and the loop must move on without the save bookkeeping.
+    const finishUrl = (url: string, resp: NetResponse): void => {
       if (resp.status >= 400) {
         log(`wget: ERROR ${resp.status}: ${resp.statusText || 'error'}.`);
         status = 8;
-        continue;
+        return;
       }
       const bytes = byteLength(resp.bodyText);
       log(`--${WGET_STAMP()}--  ${url}`);
       if (outputFile === '-') {
         outBody(ctx, resp.bodyText);
-        continue;
+        return;
       }
       let name = outputFile;
       if (name === null) {
@@ -496,13 +508,43 @@ const wget: CommandSpec = {
       } catch (cause) {
         ctx.err(`wget: cannot write '${name}': ${cause instanceof Error ? cause.message : String(cause)}`);
         status = status === 0 ? 1 : status;
-        continue;
+        return;
       }
       log(`'${name}' saved [${bytes}/${bytes}]`);
-    }
+    };
+    const failUrl = (cause: unknown): void => {
+      const err = asNetError(cause);
+      log(`wget: ${err.message}`);
+      status = err.kind === 'network' ? 4 : 1;
+    };
     // Explicit even on success: the log went to stderr, and the runner
     // defaults a stderr-writing command to exit 1 — wget exits 0 there.
-    ctx.exit(status);
+    const finish = (): void => ctx.exit(status);
+    if (activeTransportAsync() !== null) {
+      // Async transport: fetches resolve out of order — strictly sequential
+      // like the sync loop (one URL at a time, in the order given).
+      return (async (): Promise<void> => {
+        for (const url of urls) {
+          try {
+            finishUrl(url, await dispatchMaybeAsync({ method: 'GET', url, headers: {}, body: null }));
+          } catch (cause) {
+            failUrl(cause);
+          }
+        }
+        finish();
+      })();
+    }
+    for (const url of urls) {
+      let resp: NetResponse;
+      try {
+        resp = dispatch({ method: 'GET', url, headers: {}, body: null });
+      } catch (cause) {
+        failUrl(cause);
+        continue;
+      }
+      finishUrl(url, resp);
+    }
+    finish();
   },
 };
 
@@ -561,7 +603,7 @@ const http: CommandSpec = {
       f.startsWith(word),
     );
   },
-  run(ctx: CommandContext): void {
+  run(ctx: CommandContext): void | Promise<void> {
     const rest: string[] = [];
     let verbose = false;
     let bodyOnly = false;
@@ -633,20 +675,23 @@ const http: CommandSpec = {
     else if (parsed.hasFields) body = JSON.stringify(parsed.fields);
 
     let urlObj: URL;
-    let resp: NetResponse;
     try {
       urlObj = checkAllowed(url);
-      headers['Host'] = urlObj.host; // shown by -v; the transport sets the real one
-      resp = netFetch({ method: effectiveMethod, url, headers, body });
     } catch (cause) {
       const err = asNetError(cause);
       ctx.err(`http: error: ${err.message}`);
       ctx.exit(exitCodeFor(err));
       return;
     }
-
-    const color = ctx.color;
-    if (verbose) {
+    headers['Host'] = urlObj.host; // shown by -v; the transport sets the real one
+    const fail = (cause: unknown): void => {
+      const err = asNetError(cause);
+      ctx.err(`http: error: ${err.message}`);
+      ctx.exit(exitCodeFor(err));
+    };
+    const finish = (resp: NetResponse): void => {
+      const color = ctx.color;
+      if (verbose) {
       const path = urlObj.pathname + urlObj.search;
       ctx.out(paint(color, 90, `${effectiveMethod} ${path} HTTP/1.1`));
       for (const line of headerLines(headers)) ctx.out(paint(color, 90, line));
@@ -660,16 +705,26 @@ const http: CommandSpec = {
       ctx.out(paint(color, resp.status < 300 ? 32 : resp.status < 400 ? 33 : 31, statusLine(resp)));
       for (const line of headerLines(resp.headers)) ctx.out(line);
     }
-    if (!headersOnly) {
-      if (!bodyOnly) ctx.out('');
-      const pretty = prettyBody(resp.headers['content-type'] ?? '', resp.bodyText, color);
-      if (pretty !== '') {
-        const lines = pretty.split('\n');
-        if (pretty.endsWith('\n')) lines.pop();
-        for (const line of lines) ctx.out(line);
+      if (!headersOnly) {
+        if (!bodyOnly) ctx.out('');
+        const pretty = prettyBody(resp.headers['content-type'] ?? '', resp.bodyText, color);
+        if (pretty !== '') {
+          const lines = pretty.split('\n');
+          if (pretty.endsWith('\n')) lines.pop();
+          for (const line of lines) ctx.out(line);
+        }
       }
+      ctx.exit(0);
+    };
+    let dispatched: NetResponse | Promise<NetResponse>;
+    try {
+      dispatched = dispatchMaybeAsync({ method: effectiveMethod, url, headers, body });
+    } catch (cause) {
+      fail(cause);
+      return;
     }
-    ctx.exit(0);
+    if (dispatched instanceof Promise) return dispatched.then(finish, fail);
+    finish(dispatched);
   },
 };
 

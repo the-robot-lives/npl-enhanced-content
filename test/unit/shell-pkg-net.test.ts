@@ -39,7 +39,7 @@
 //   Scenario: 4xx still exit 0 with the body; network exit 7
 //   Scenario: colors follow ctx.color (SGR on tty, plain when piped)
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TerminalCore, type CommandContext, type ExecResult } from '../../src/terminal/terminal-core.js';
 import { posixPlugin } from '../../src/terminal/plugins/posix/plugin.js';
 import { createLazyPackage } from '../../src/terminal/packages/lazy.js';
@@ -48,6 +48,7 @@ import { netStub } from '../../src/terminal/packages/net/stub.js';
 import {
   NetError,
   configureNet,
+  fetchTransport,
   resetNet,
   type NetRequest,
   type NetResponse,
@@ -538,5 +539,76 @@ describe('http', () => {
       'http://api.test/broken': resp(200, '{"nope', { 'content-type': 'application/json' }, 'OK'),
     });
     expect(outPlain(run('http http://api.test/broken'))).toEqual(['HTTP/1.1 200 OK', 'content-type: application/json', '', '{"nope']);
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * async transport (shell-v3 TODO 2+8): fetch transport + async dispatch
+ * ------------------------------------------------------------------ */
+
+describe('net async transport (CORE-V2)', () => {
+  /** fetch double: resolves `body` after a macrotask, records the init. */
+  let fetchInits: Array<{ url: string; init: RequestInit }>;
+  const installFetch = (impl: (url: string, init: RequestInit) => Promise<Response>): void => {
+    vi.stubGlobal('fetch', vi.fn(impl));
+  };
+
+  beforeEach(() => {
+    resetNet();
+    fetchInits = [];
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetNet();
+  });
+
+  it('configureNet({ transportAsync }) routes commands through fetch and the shell awaits the body', async () => {
+    installFetch(async (url, init) => {
+      fetchInits.push({ url, init });
+      return new Response(TEXT_BODY, { status: 200, headers: { 'content-type': 'text/plain' } });
+    });
+    configureNet({ transportAsync: fetchTransport });
+    const r = (await run('curl -s http://api.test/text | wc -c')) as ExecResult;
+    console.log('PROBE', JSON.stringify(errs(r)), status(r));
+    expect(out(r)).toEqual([String(TEXT_BODY.length)]);
+    expect(fetchInits).toHaveLength(1);
+    // credentials never attach ambient auth (XHR parity); redirects follow.
+    expect(fetchInits[0]!.init.credentials).toBe('omit');
+    expect(fetchInits[0]!.init.redirect).toBe('follow');
+  });
+
+  it('no transportAsync configured: commands stay synchronous (ExecResult returned, sync transport used)', () => {
+    configureNet({ transport: fakeTransport });
+    const r = run('curl -s http://api.test/text');
+    expect(r instanceof Promise).toBe(false);
+    expect(out(r as ExecResult)).toEqual(['one', 'two', 'three']);
+  });
+
+  it('async network failure maps to the same NetError exit codes (7)', async () => {
+    installFetch(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+    configureNet({ transportAsync: fetchTransport });
+    const r = (await run('curl http://api.test/text')) as ExecResult;
+    expect(status(r)).toBe(7);
+    expect(errs(r)[0]).toContain('the request failed before a response was returned');
+  });
+
+  it('async allowlist denial still blocks before dispatch (exit 1)', async () => {
+    installFetch(async () => new Response('nope', { status: 200 }));
+    configureNet({ transportAsync: fetchTransport, allow: () => 'no exfiltration' });
+    const r = (await run('curl http://api.test/text')) as ExecResult;
+    expect(status(r)).toBe(1);
+    expect(errs(r)[0]).toContain('network allowlist');
+    expect(fetchInits).toHaveLength(0);
+  });
+
+  it('wget saves through the async transport, sequentially, exit 0', async () => {
+    installFetch(async () => new Response('async bytes', { status: 200, headers: { 'content-type': 'text/plain' } }));
+    configureNet({ transportAsync: fetchTransport });
+    const r = (await run('wget -O /tmp-async.txt http://api.test/text')) as ExecResult;
+    expect(status(r)).toBe(0);
+    expect(core.vfs.read('/tmp-async.txt')).toBe('async bytes');
   });
 });

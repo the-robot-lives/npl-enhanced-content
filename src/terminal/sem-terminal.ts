@@ -1173,12 +1173,23 @@ export class SemTerminal extends SemElement {
    */
   #execLine(session: TerminalSession, value: string): void {
     this.#executing = session;
-    let result: ExecResult;
+    let outcome: ExecResult | Promise<ExecResult>;
     try {
-      result = session.core.execLine(value);
+      outcome = session.core.execLine(value);
     } finally {
       this.#executing = null;
     }
+    // An async command (CORE-V2) resolves later: the sync side-channel
+    // bracket above covers only the synchronous prefix — side channels
+    // fired inside the continuation attribute to whoever runs then.
+    if (outcome instanceof Promise) {
+      void outcome.then((result) => this.#applyExecResult(session, result));
+      return;
+    }
+    this.#applyExecResult(session, outcome);
+  }
+
+  #applyExecResult(session: TerminalSession, result: ExecResult): void {
     if (session === this.#session) this.cwd = result.state.cwd;
     if (result.clear) {
       this.#clearTranscript(session);
