@@ -31,11 +31,12 @@ describe('editor schema loader', () => {
     expect(loadSchema().specVersion.length).toBeGreaterThan(0);
   });
 
-  it('carries the 54 normative tags; the advisory count agrees', () => {
+  it('carries the 74 normative tags; the advisory count agrees', () => {
     const schema = loadSchema();
-    // 54 = the v0.7.2 index (49 + sem-browser) + the round-2 reference
-    // definitions (sem-tag-def / sem-tag-attr / sem-api-call / sem-api-param).
-    expect(schema.tags.length).toBe(54);
+    // 74 = 55 (through sem-tldr et al.) + the 19 family A container tags
+    // (15 elements, four of them collection/entry pairs) — the pin had
+    // drifted to 54 before family A landed and is re-pinned here.
+    expect(schema.tags.length).toBe(74);
     // tagCount is advisory (EDITOR.md §3.1) — assert agreement, never rely on it
     // Lookup-only seeds: sem-chat + sem-enhanced-document + agent. (sem-browser
     // was a seed until the v0.7.2 artifact regen promoted it to a tag.)

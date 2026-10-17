@@ -177,7 +177,7 @@ describe('resolveInsertTarget (request normalization)', () => {
 describe('insertCatalog', () => {
   it('has one entry per schema tag plus sem-chat plus the hand-only descriptors', () => {
     const catalog = insertCatalog();
-    expect(catalog.length).toBe(57); // 54 schema + sem-chat + sem-question + sem-option
+    expect(catalog.length).toBe(77); // 74 schema (incl. the 19 family A container tags) + sem-chat + sem-question + sem-option
     for (const e of catalog) {
       expect(e.template.xml.length).toBeGreaterThan(0);
       expect(BUCKET_ORDER).toContain(e.bucket);

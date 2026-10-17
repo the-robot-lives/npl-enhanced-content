@@ -132,9 +132,9 @@ describe('edit descriptors — pilots', () => {
 describe('edit descriptors — coverage', () => {
   it('resolves a descriptor for every schema tag plus sem-chat', () => {
     const tags = [...loadSchema().tags.map((t) => t.name), 'sem-chat'];
-    // 54 tags in elements.json (sem-tag-def / sem-tag-attr / sem-api-call /
-    // sem-api-param joined at v0.7.3) + the editor-only sem-chat stub.
-    expect(tags.length).toBe(55);
+    // 74 tags in elements.json (55 through the walking skeleton + the 19
+    // family A container tags) + the editor-only sem-chat stub.
+    expect(tags.length).toBe(75);
     for (const name of tags) {
       const d = getDescriptor(name);
       expect(d, name).not.toBe(null);
