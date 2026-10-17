@@ -105,10 +105,13 @@ describe('element and attribute contracts', () => {
     expect(errorsOf(r).some((d) => d.rule === 'missing-attribute' && d.message.includes('"name"'))).toBe(true);
   });
 
-  it('a required child (sem-code without exactly one pre) is an error', () => {
-    const src = `<sem-enhanced-document><sem-code lang="ts">no pre here</sem-code></sem-enhanced-document>`;
-    const r = validateSource(src, schema);
-    expect(errorsOf(r).some((d) => d.rule === 'child-structure')).toBe(true);
+  it('more than one pre child (sem-code) is an error; the flat listing is valid', () => {
+    // flat authoring form: no <pre> is fine (the listing is the element's text)
+    const flat = `<sem-enhanced-document><sem-code lang="ts">no pre here</sem-code></sem-enhanced-document>`;
+    expect(errorsOf(validateSource(flat, schema)).some((d) => d.rule === 'child-structure')).toBe(false);
+    // but two <pre> children stay an error (childRule atMostOne)
+    const two = `<sem-enhanced-document><sem-code lang="ts"><pre><code>a</code></pre><pre><code>b</code></pre></sem-code></sem-enhanced-document>`;
+    expect(errorsOf(validateSource(two, schema)).some((d) => d.rule === 'child-structure')).toBe(true);
   });
 
   it('unknown controls flags are a warning (spec: ignored), not an error', () => {

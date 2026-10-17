@@ -25,6 +25,18 @@ export class SemCode extends SemElement {
     // DOMContentLoaded gate applies); text only, or empty → DOMContentLoaded
     // directly (whenChildrenReady would wait on a selector that never
     // matches — the flat form has no element child to find).
+    // Flat listing whose text already parsed (innerHTML fixtures, documents
+    // past the element): adopt synchronously, so edit-mode attach and
+    // same-tick queries see the minted <pre><code>. Empty text at upgrade
+    // (streaming parse) waits for DOMContentLoaded via the promise path.
+    if (
+      !this.firstElementChild &&
+      (this.textContent ?? '').trim() !== ''
+    ) {
+      enhanceCodeElement(this);
+      this.setAttribute('data-sem-upgraded', '');
+      return;
+    }
     const settle = this.firstElementChild
       ? this.whenChildrenReady(':scope > *')
       : new Promise<Element[]>((resolve) => {
