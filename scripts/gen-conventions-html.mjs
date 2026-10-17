@@ -767,12 +767,11 @@ function generate(mdOverride) {
       }
       if (section === '7') {
         w(`  <sem-properties id="${DISTRIBUTION.container}" kind="distribution-forms">`);
+        let noteItem = null; // the danger note trails the container (properties 1,2,3,5 inside — the old hand-authored shape)
         b.items.forEach((item, k) => {
           const n = k + 1;
           if (DISTRIBUTION.note.item === n) {
-            w('  </sem-properties>');
-            w(`  <sem-note id="${DISTRIBUTION.note.id}" variant="${DISTRIBUTION.note.variant}">${renderInline(item, ctx)}</sem-note>`);
-            use(`dist:${DISTRIBUTION.note.id}`);
+            noteItem = item;
             return;
           }
           const [id, key] = DISTRIBUTION.items[n];
@@ -781,6 +780,10 @@ function generate(mdOverride) {
           use(`dist:${id}`);
         });
         w('  </sem-properties>');
+        if (noteItem !== null) {
+          w(`  <sem-note id="${DISTRIBUTION.note.id}" variant="${DISTRIBUTION.note.variant}">${renderInline(noteItem, ctx)}</sem-note>`);
+          use(`dist:${DISTRIBUTION.note.id}`);
+        }
         w('');
         continue;
       }

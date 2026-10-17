@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-18 (0.9.2 — Phase 7 vocabulary release)
+
+- **Version note:** 0.9.1 is claimed by the in-flight SEMTEX bug-fix wave
+  (`fix/semext-091`, branch-pushed, PR pending as this lands) — this
+  vocabulary release takes the next free number to keep the train
+  single-filed.
+
+- **First versioned release of the Phase 7 surface** (landed on `develop` through #56/#61–#66,
+  previously only on the branch): the 108-tag vocabulary — 19 static knowledge/doc containers
+  (`sem-kb`, `sem-howto`, `sem-runbook`, `sem-faq(s)`, `sem-changelog(s)`, `sem-tsg(s)`,
+  `sem-guard-rail(s)`, `sem-plan`, `sem-requirement`, `sem-rubric`, `sem-eval`, `sem-philosophy`,
+  `sem-summary`, `sem-mockup`, `sem-threat-model`, `sem-tldr`), the interactive
+  workflow/site/file-tree containers, nine service-backed `semext-*` embeds and 22 `agent-kit-*`
+  cards — plus `bin/semtext-refresh.mjs` (`npm run refresh`, #65) and the conventions generator
+  (`npm run gen:conventions`, #66). Every element ships a Lit component (display stubs register
+  and claim `data-sem-upgraded`; no CSS-only elements). `elements.json` regenerated from the
+  spec (108 tags, no gaps).
+- **Fix forward — `gen:conventions` emitted an unbalanced §7** (the #66 regression that left the
+  `unit` lane red on `develop`): the distribution container closed before the danger note, then
+  re-opened nothing and emitted a second `</sem-properties>` — the stray close made every
+  `spec/conventions.html` round-trip test fail byte-exactness. The generator now holds the note
+  and emits it after the container close (properties 1/2/3/5 inside, note after — the
+  hand-authored shape); `spec/conventions.html` regenerated (4 opens / 4 closes) and the
+  freshness gate passes.
+
 ## 2026-10-18 (0.9.0 — fallback tier removal)
 
 - **Authoring refresh tooling (Phase 7):** `bin/semtext-refresh.mjs` (`npm run refresh`) — a pure cache-region
