@@ -11,6 +11,11 @@ import { sel } from '../shared/sel.js';
 
 export function enhanceProgress(scope: ParentNode): void {
   scope.querySelectorAll(sel('progress') + '[data-value]').forEach((p) => {
+    // Idempotent re-scan guard (0.9.1): skip a meter already built. This
+    // handler must NOT guard on the element marker — the tag form's claim
+    // stub (sem-stubs SemProgress) stamps `data-sem-upgraded` at connect,
+    // before the handler ever ran (the doc in sem-stubs.ts is explicit).
+    if (p.querySelector('.sem-progress-track')) return;
     const raw = parseFloat(p.getAttribute('data-value') as string);
     const v = Math.min(1, Math.max(0, isNaN(raw) ? 0 : raw));
     const label = p.getAttribute('data-label') || 'progress';

@@ -97,8 +97,15 @@ function run(): void {
   }
 }
 
+// 0.9.1: hash state is per document, not per scope — the window listeners
+// (hashchange/beforeprint/afterprint) wire ONCE no matter how often the
+// re-scan calls back into the document scope.
+let wired = false;
+
 export function enhanceTarget(scope: ParentNode): void {
   if (scope !== document) return; // hash state is per document, not per scope
+  if (wired) return;
+  wired = true;
   window.addEventListener('hashchange', run);
   window.setTimeout(run, 0);
 

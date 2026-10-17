@@ -58,6 +58,9 @@ export { SemNote } from './lit/sem-note.js';
 import './lit/sem-note.js';
 export { SemFacts } from './lit/sem-facts.js';
 import './lit/sem-facts.js';
+/* sem-question + sem-option — the quiz block (shipped 0.9.1, SEMTEX-009) */
+export { SemQuestion, SemOption } from './lit/sem-question.js';
+import './lit/sem-question.js';
 export { SemDetails } from './lit/sem-details.js';
 import './lit/sem-details.js';
 export { SemReveal } from './lit/sem-reveal.js';
@@ -241,10 +244,41 @@ function init(): void {
   enhanceReading(document);
 }
 
+/* Late-mounted DOM (SPA islands, Hologram renders, async embeds) never
+ * sees the one-shot DOMContentLoaded scan — every reference pane on a
+ * hydrating host was invisible to it (0.9.1 defect class: views with no
+ * tab bar, div-alias handlers never wired). The passes are idempotent on
+ * marked DOM (`data-sem-upgraded` / chrome guards, including the
+ * window-listener dedup in audience/target), so the cheapest correct
+ * strategy is a debounced FULL re-scan whenever nodes enter the document.
+ * Our own chrome insertions trigger one extra pass that finds nothing
+ * unmarked and quiets — no loop. */
+let rescanTimer = 0;
+function rescan(): void {
+  if (rescanTimer) return;
+  rescanTimer = window.setTimeout(() => {
+    rescanTimer = 0;
+    enhanceCore(document);
+    enhanceMdScan(document);
+    enhanceReading(document);
+  }, 50);
+}
+
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
     init();
+  }
+  if (typeof MutationObserver !== 'undefined' && document.documentElement) {
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.addedNodes.length > 0) {
+          rescan();
+          return;
+        }
+      }
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
   }
 }
