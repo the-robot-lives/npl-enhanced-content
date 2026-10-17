@@ -146,6 +146,9 @@ export interface CommentNode extends NodeCommon {
   kind: 'comment';
   /** Body between `<!--` and `-->`, verbatim (comments are never decoded). */
   value: string;
+  /** Set by the (future) comment-edit op; the serializer then emits
+   *  escapeCommentBody(value) — authored bodies keep their bytes. */
+  edited?: boolean;
 }
 
 export interface CdataNode extends NodeCommon {

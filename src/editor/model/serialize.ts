@@ -12,7 +12,7 @@
  * and repeated serializes are byte-stable.
  */
 
-import { escapeAttr, escapeText } from './entities.js';
+import { escapeAttr, escapeCommentBody, escapeText } from './entities.js';
 import { VOID_ELEMENTS } from './types.js';
 import type {
   AttrNode,
@@ -91,7 +91,10 @@ function emitNode(node: DocumentNode | EditorNode, em: Emitter, style: Serialize
     }
     case 'comment': {
       const start = em.offset;
-      em.push('<!--' + node.value + '-->');
+      // Edited bodies are made safe (escapeCommentBody); authored bodies
+      // keep their bytes so untouched documents round-trip verbatim.
+      const body = node.edited ? escapeCommentBody(node.value) : node.value;
+      em.push('<!--' + body + '-->');
       if (refresh) node.range = { start, end: em.offset };
       return;
     }
