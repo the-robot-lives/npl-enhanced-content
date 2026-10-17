@@ -1,0 +1,16 @@
+{
+  "theme": {
+    "name": "Minimal Tech Light",
+    "slug": "minimal-tech-light",
+    "colors": [
+      { "token": "--sem-accent", "value": "#2563eb", "role": "accent" },
+      { "token": "--sem-surface", "value": "#f8fafc", "role": "surface" },
+      { "token": "--sem-ink", "value": "#0f172a", "role": "text" }
+    ],
+    "typography": {
+      "heading": "Inter, 600",
+      "body": "Inter, system-ui, sans-serif",
+      "sample": "The quick brown fox jumps over the lazy dog."
+    }
+  }
+}

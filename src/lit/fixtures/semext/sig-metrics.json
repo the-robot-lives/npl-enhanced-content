@@ -1,0 +1,9 @@
+{
+  "title": "p95 latency by service",
+  "columns": ["service", "p50", "p95", "error rate"],
+  "rows": [
+    ["annotate-srv", "120ms", "1.8s", "0.2%"],
+    ["semtext-site", "45ms", "310ms", "0.0%"],
+    ["checkout", "88ms", "2.4s", "1.1%"]
+  ]
+}

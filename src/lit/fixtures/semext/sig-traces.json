@@ -1,0 +1,28 @@
+{
+  "traces": [
+    {
+      "id": "a1b2c3d4",
+      "root": "POST /checkout",
+      "service": "checkout",
+      "durationMs": 214,
+      "spans": 12,
+      "error": false
+    },
+    {
+      "id": "e5f60718",
+      "root": "GET /api/v1/threads",
+      "service": "annotate-srv",
+      "durationMs": 1840,
+      "spans": 9,
+      "error": true
+    },
+    {
+      "id": "9c8d7e6f",
+      "root": "GET /demo/semext.html",
+      "service": "semtext-site",
+      "durationMs": 63,
+      "spans": 4,
+      "error": false
+    }
+  ]
+}

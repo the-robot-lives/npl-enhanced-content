@@ -1510,6 +1510,112 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
 /* first component inserts its display line here, e.g.
    semext-canvas, .semext-canvas { display: block; } */
 
+/* Family B (feat/semext-embeds): the nine service-backed embeds over the
+   cached-embed base. Cards use the vocabulary tokens only (var(--sem-*));
+   nothing hard-coded. */
+
+semext-annotate, .semext-annotate { display: block; }
+semext-docptr, .semext-docptr { display: block; }
+semext-media-prompt, .semext-media-prompt { display: block; }
+semext-sig-logs, .semext-sig-logs { display: block; }
+semext-sig-metrics, .semext-sig-metrics { display: block; }
+semext-sig-synthetic-monitor, .semext-sig-synthetic-monitor { display: block; }
+semext-sig-traces, .semext-sig-traces { display: block; }
+semext-styleguide-theme, .semext-styleguide-theme { display: block; }
+semext-styleguide-themes, .semext-styleguide-themes { display: block; }
+
+/* shared card chrome — the cached-embed chrome div + the sig cards */
+.sem-cached-embed-chrome {
+  margin-top: .5rem;
+  border: 1px solid color-mix(in srgb, var(--sem-border) 70%, transparent);
+  border-radius: .375rem;
+  padding: .625rem .75rem;
+  font-size: .875rem; }
+.sem-cached-embed-chrome[data-sem-chrome-source="error"] {
+  color: var(--sem-muted); font-style: italic; }
+
+/* docptr — pointer locator card */
+.semext-docptr-card { margin: 0; }
+.semext-docptr-locator {
+  font-family: var(--sem-mono, ui-monospace, monospace);
+  font-size: .8125rem; font-weight: 600; }
+.semext-docptr-kind, .semext-docptr-class, .semext-docptr-fn, .semext-docptr-marker {
+  font-variant-caps: all-small-caps; letter-spacing: .06em;
+  color: var(--sem-muted); margin-right: .5rem; }
+.semext-docptr-desc { margin: .25rem 0 0; }
+.semext-docptr-snippet {
+  margin: .5rem 0 0; padding: .5rem;
+  background: color-mix(in srgb, var(--sem-border) 22%, transparent);
+  border-radius: .25rem; overflow-x: auto; }
+.semext-docptr-missing { color: var(--sem-muted); font-style: italic; margin: 0; }
+
+/* styleguide — theme token cards */
+.semext-styleguide-theme-card { margin: 0; }
+.semext-styleguide-theme-card h3 { margin: 0 0 .25rem; font-size: 1rem; }
+.semext-styleguide-theme-swatches { list-style: none; display: flex; gap: .375rem; padding: 0; margin: .25rem 0; }
+.semext-styleguide-theme-dot {
+  display: inline-block; width: 1rem; height: 1rem;
+  border-radius: 50%; border: 1px solid color-mix(in srgb, var(--sem-border) 80%, transparent); }
+.semext-styleguide-theme-typo { margin: .25rem 0; color: var(--sem-muted); font-size: .8125rem; }
+.semext-styleguide-theme-preview { font-size: .8125rem; }
+.semext-styleguide-themes-summary { color: var(--sem-muted); font-size: .8125rem; margin: 0; }
+
+/* annotate — visitor threads (text-only chrome) */
+.semext-annotate-head { color: var(--sem-muted); font-size: .8125rem; margin: 0 0 .375rem; }
+.semext-annotate-empty { color: var(--sem-muted); font-style: italic; margin: 0; }
+.semext-annotate-thread { border-top: 1px solid color-mix(in srgb, var(--sem-border) 55%, transparent); padding: .375rem 0; margin: 0; }
+.semext-annotate-thread:first-of-type { border-top: 0; }
+.semext-annotate-status {
+  font-variant-caps: all-small-caps; letter-spacing: .06em;
+  color: var(--sem-muted); margin-right: .375rem; }
+.semext-annotate-title { font-weight: 600; margin-right: .375rem; }
+.semext-annotate-anchor {
+  margin: .25rem 0; padding: .25rem .5rem;
+  border-left: 2px solid color-mix(in srgb, var(--sem-border) 70%, transparent);
+  color: var(--sem-muted); font-style: italic; }
+.semext-annotate-comment { margin: .25rem 0 0; }
+.semext-annotate-author { font-weight: 600; margin-right: .375rem; }
+.semext-annotate-when { color: var(--sem-muted); font-size: .75rem; margin-right: .375rem; }
+
+/* sig — metrics / traces / logs cards */
+.semext-sig-card { margin: 0; }
+.semext-sig-title { margin: 0 0 .25rem; font-size: 1rem; }
+.semext-sig-table { width: 100%; border-collapse: collapse; font-size: .8125rem; }
+.semext-sig-table th, .semext-sig-table td {
+  text-align: left; padding: .25rem .5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--sem-border) 50%, transparent); }
+.semext-sig-traces, .semext-sig-monitor-asserts { list-style: none; padding: 0; margin: 0; }
+.semext-sig-trace { padding: .25rem 0; border-bottom: 1px solid color-mix(in srgb, var(--sem-border) 50%, transparent); }
+.semext-sig-trace:last-child { border-bottom: 0; }
+.semext-sig-trace[data-error="true"] .semext-sig-trace-root { font-weight: 600; }
+.semext-sig-trace-id { font-family: var(--sem-mono, ui-monospace, monospace); font-size: .75rem; margin-right: .5rem; }
+.semext-sig-trace-root { font-weight: 500; margin-right: .5rem; }
+.semext-sig-trace-meta { color: var(--sem-muted); font-size: .8125rem; }
+.semext-sig-loglines { list-style: none; padding: 0; margin: 0; font-family: var(--sem-mono, ui-monospace, monospace); font-size: .75rem; }
+.semext-sig-logline { padding: .125rem 0; display: flex; gap: .5rem; flex-wrap: wrap; }
+.semext-sig-log-ts { color: var(--sem-muted); }
+.semext-sig-log-sev::before { content: "["; }
+.semext-sig-log-sev::after { content: "]"; }
+.semext-sig-logline[data-severity="error"] .semext-sig-log-sev { font-weight: 700; }
+.semext-sig-monitor-interval { color: var(--sem-muted); font-size: .8125rem; margin: 0; }
+.semext-sig-linkline { margin: .5rem 0 0; }
+.semext-sig-link { font-size: .8125rem; }
+
+/* media-prompt — authored prompt + output cache region */
+.semext-media-prompt-chrome { margin-top: .5rem; }
+.semext-media-prompt-params { margin: 0 0 .25rem; display: flex; gap: .375rem; flex-wrap: wrap; }
+.semext-media-prompt-param {
+  font-variant-caps: all-small-caps; letter-spacing: .06em;
+  border: 1px solid color-mix(in srgb, var(--sem-border) 70%, transparent);
+  border-radius: 999px; padding: 0 .5rem; font-size: .75rem; }
+.semext-media-prompt-dir { font-family: var(--sem-mono, ui-monospace, monospace); font-size: .75rem; }
+.semext-media-prompt-state { color: var(--sem-muted); font-size: .8125rem; margin: 0; }
+.semext-media-prompt-empty {
+  color: var(--sem-muted); font-style: italic; font-size: .8125rem; margin: 0;
+  border: 1px dashed color-mix(in srgb, var(--sem-border) 80%, transparent);
+  border-radius: .25rem; padding: .375rem .5rem; }
+semext-media-prompt[data-semext-cache-region="empty"] > pre { opacity: .85; }
+
 /* ============================================================
    agent-kit-* — agent-kit components (src/lit/agent-kit/; recipe: that
    barrel's header). Introduced EMPTY by the epic.semext-components
