@@ -77,7 +77,6 @@ describe('the raw box on enhance', () => {
     expect(src.querySelector(':scope > .sem-data-raw')).toBeNull();
     const err = src.querySelector('.sem-data-error');
     expect(err?.getAttribute('role')).toBe('alert');
-    expect(src.getAttribute('data-sem-fallback')).toBe('');
     expect(src.textContent).toContain('| token |');
   });
 

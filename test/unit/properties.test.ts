@@ -14,7 +14,7 @@
 // these unit specs pin the same contract without a browser.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { enhanceProperties } from '../../src/fallback/properties.js';
+import { enhanceProperties } from '../../src/vanilla/properties.js';
 
 let warnings: string[] = [];
 let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -40,7 +40,7 @@ afterEach(() => {
   doc.body.innerHTML = '';
 });
 
-describe('fallback properties duplicate-key diagnostic', () => {
+describe('vanilla properties duplicate-key diagnostic', () => {
   it('warns once per duplicated data-key, rendering everything', () => {
     const el = container(
       '<sem-properties>' +

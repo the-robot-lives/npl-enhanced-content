@@ -186,7 +186,7 @@ describe('sem-source', () => {
         win.document.querySelector('.sem-enhanced-document').appendChild(el);
         win.SemText.enhanceSourceElement(el);
       });
-      cy.get('@warn').should('have.been.calledWithMatch', /sem-source: no snapshot/);
+      cy.get('@warn').should('have.been.calledWithMatch', /sem-source: no core snapshot/);
       cy.get('#s-nosnap [data-act="source"]').click();
       cy.get('#s-nosnap .sem-source-fence code').should('have.text', '<p>late</p>');
     });

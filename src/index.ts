@@ -197,13 +197,14 @@ import './lit/sem-faqs.js';
 export { SemChangelogs, SemChangelog } from './lit/sem-changelogs.js';
 import './lit/sem-changelogs.js';
 
-/* Vanilla handlers — the former dist/semtext-fallback.js,
- * dist/semtext-md.js and dist/semtext-reading.js entry points. */
+/* Core vanilla handlers — sem-views/progress/audiences, deep links, the
+ * sem-source snapshot pass and the other elements no Lit component defines
+ * (the former standalone fallback bundle's code, renamed 0.9.0). */
 import {
   enhance as enhanceCore,
-  type FallbackHandler,
-} from './fallback/index.js';
-export type { FallbackHandler } from './fallback/index.js';
+  type VanillaHandler,
+} from './vanilla/index.js';
+export type { VanillaHandler } from './vanilla/index.js';
 export {
   enhanceSource,
   enhanceAttrs,
@@ -216,7 +217,7 @@ export {
   enhanceProgress,
   enhanceAudience,
   enhanceTarget,
-} from './fallback/index.js';
+} from './vanilla/index.js';
 import { enhance as enhanceMdScan } from './md/index.js';
 export { enhanceMd, enhanceMdElement, normalizeMd, parseBlocks, safeUrl } from './md/index.js';
 import { enhance as enhanceReading } from './reading/index.js';

@@ -107,7 +107,7 @@ Change order: schema → spec → code.
 | `spec/conventions.md` | Authoring spec source of truth (v0.5 draft, tag form canonical) | Markdown, 10 sections + open questions + Appendix A (class-form alias) |
 | `spec/conventions.html` | The spec as a SemText document in the canonical tag form (dogfood) | Folder-form XHTML: linked theme + vocabulary CSS, shipped bundles by `src`, no inline CSS/JS |
 | `web/demo/reading-lit.html` | Reference tag-form document, both tiers | Single-file XHTML, `sem:inline` markers |
-| `web/demo/index.html` | Reference class-form alias document (v0.4 baseline) | Single-file XHTML: inlined vocabulary CSS + `sem-fallback` vanilla JS |
+| `web/demo/index.html` | Reference class-form alias document (v0.4 baseline) | Single-file XHTML: inlined vocabulary CSS + vanilla JS |
 
 ## 4. Config file schemas
 
@@ -116,7 +116,7 @@ Change order: schema → spec → code.
 | Field | Value |
 |-------|-------|
 | `type` | `module` |
-| `exports` | `./lit` → `dist/semtext.js`, `./fallback` → `dist/semtext-fallback.js`, `./reading` → `dist/semtext-reading.js`, `./extract` → `dist/semtext-extract.js`, `./md` → `dist/semtext-md.js`, `./themes/*` → `themes/*`. No `.` export — each artifact is a classic IIFE script that installs a global and exports nothing (D9). |
+| `exports` | `./lit` → `dist/semtext.js`, `./lazy` → `dist/semtext-lazy.js`, `./npl` → `dist/npl.js`, `./npl-lazy` → `dist/npl-lazy.js`, `./agent` → `dist/semtext-agent.js`, `./themes/*` → `themes/*`. No `.` export — each artifact is a classic IIFE script that installs a global and exports nothing (D9). The retired per-tier exports (`./fallback`, `./reading`, `./extract`, `./md`) are gone as of 0.9.0. |
 | `files` | `dist`, `themes` |
 | `dependencies` | `lit ^3.3.3` |
 | `devDependencies` | `cypress ^15`, `typescript ^5.6`, `vite ^6`, `vitest ^5`, `happy-dom ^20` |

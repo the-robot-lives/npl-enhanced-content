@@ -3,7 +3,7 @@
  * and the literal authored markup.
  *
  * Spec: spec/schema/sem-source.md. The markup comes from the snapshot the
- * fallback CORE takes before any handler runs (`src/fallback/source.ts`,
+ * fallback CORE takes before any handler runs (`src/vanilla/source.ts`,
  * a DOM clone of the children inside a `template.sem-source-raw`); this
  * module only builds the chrome and, on first request, a fence holding one
  * class-form `sem-code` enhanced by the same `enhanceCodeElement` as any
@@ -79,7 +79,7 @@ export function enhanceSourceElement(el: Element): void {
   const snap = el.querySelector<HTMLTemplateElement>(':scope > template.sem-source-raw');
   // No core snapshot (reading bundle alone): best effort, chrome and all —
   // clone the live children now (a DOM clone, still never parsed text).
-  if (!snap) warn('sem-source: no snapshot (load semtext-fallback.js before the reading bundle); showing the live DOM');
+  if (!snap) warn('sem-source: no core snapshot (load semtext.js first); showing the live DOM');
   let raw: DocumentFragment;
   if (snap) {
     raw = snap.content;

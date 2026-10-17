@@ -208,7 +208,7 @@ still shows the markup as written.
 
 `view-as` is the core inversion: `<sem-fact>` is a fact in every view;
 `view-as` only selects rendering. Unknown `view-as` => falls back to `list`/
-plain + fallback-handler warning. CSS-only modes exist too:
+plain + vanilla-handler warning. CSS-only modes exist too:
 `sem-note view-as="margin"` (right-gutter aside on wide viewports),
 `sem-chronology view-as="timeline|list"`. `sem-properties
 view-as="glossary"` adds term previews.
@@ -292,8 +292,7 @@ both present; authors pick one per fact.
    is deliberately unmarked (a list-view deck's distractors). The zero-JS
    elements (`sem-procedure`, `sem-chronology`, `sem-audiences`) and the
    handler-only ones (`sem-views`, `sem-progress`) define no custom
-   element: they are `:not(:defined)` in every document, by design. The former two-script handoff (`data-sem-fallback`, cleared on
-   upgrade) is gone with the merged bundle -- one runtime, one marker.
+   element: they are `:not(:defined)` in every document, by design. The former two-script handoff marker (`data-sem-fallback`) is removed as of 0.9.0 -- one runtime, one marker.
 3. Theme CSS styles **both authoring forms from one rule** --
    `:is(sem-x, .sem-x)` throughout the vocabulary base (D10). Rules
    that must hold with **no script** read the bare and the `data-*`
