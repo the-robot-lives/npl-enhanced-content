@@ -13,6 +13,7 @@
  */
 
 import { param, hasParam } from '../shared/attr.js';
+import { trimTrailingWs } from '../shared/trim.js';
 import { parseMarks } from '../shared/marks.js';
 import { copyText, canCopy } from '../shared/clipboard.js';
 
@@ -33,7 +34,7 @@ function adoptTextListing(el: Element): void {
   // One structural leading newline (after the open tag) and trailing
   // whitespace carrying the close tag are authoring layout, not content;
   // interior whitespace stays byte-identical (the verbatim contract).
-  const source = raw.replace(/^\n/, '').replace(/\s+$/, '');
+  const source = trimTrailingWs(raw.replace(/^\n/, ''));
   if (!source) return;
   el.textContent = '';
   const pre = document.createElement('pre');
