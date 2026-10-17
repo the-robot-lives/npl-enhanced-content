@@ -28,6 +28,15 @@ import { Vfs } from '../../src/terminal/vfs.js';
 import type { KeyEvent } from '../../src/terminal/screen/types.js';
 import type { CommandContext, ShellState } from '../../src/terminal/terminal-core.js';
 import { wasmApp, wasmCommand } from '../../src/terminal/wasm/command.js';
+import { jspiAvailable } from '../../src/terminal/wasm/engine.js';
+
+// The interactive in-thread specs need JSPI (the guest suspends inside
+// fd_read until bytes arrive). Node runs JSPI flagless from v26; on older
+// Nodes (CI = 22) the in-thread engine degrades to batch — stdin EOFs at
+// start and typed input can never reach the guest — so those two specs
+// only apply where the capability exists. (The worker placement, the only
+// one browsers use, always runs interactive.)
+const interactiveIt = jspiAvailable() ? it : it.skip;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const binDir = resolve(here, '../../poc/wasm/bin');
@@ -195,7 +204,7 @@ describe('wasm app — AppRunner harness (in-thread engine)', () => {
     expect(exits).toEqual([[0, null]]);
   });
 
-  it('wcat: typed lines reach the guest, Ctrl+D EOFs, exit 0', async () => {
+  interactiveIt('wcat: typed lines reach the guest, Ctrl+D EOFs, exit 0', async () => {
     const ctx = makeCtx(['/bin/wcat.wasm'], { '/bin/wcat.wasm': binaryString(fixtureBytes('wcat')) });
     const app = wasmApp(ctx);
     if (app === null) throw new Error('wasmApp declined');
@@ -218,7 +227,7 @@ describe('wasm app — AppRunner harness (in-thread engine)', () => {
     expect(exits).toEqual([[0, null]]);
   });
 
-  it('Ctrl+C kills and exits 130', async () => {
+  interactiveIt('Ctrl+C kills and exits 130', async () => {
     const ctx = makeCtx(['/bin/wcat.wasm'], { '/bin/wcat.wasm': binaryString(fixtureBytes('wcat')) });
     const app = wasmApp(ctx);
     if (app === null) throw new Error('wasmApp declined');
