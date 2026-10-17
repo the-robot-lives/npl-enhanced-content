@@ -552,9 +552,10 @@
       },
       "childRules": [
         {
-          "rule": "exactlyOne",
+          "rule": "atMostOne",
           "selector": "pre",
-          "severity": "error"
+          "severity": "error",
+          "description": "the listing's <pre> — authored directly, or minted by the element when the listing is authored flat (no <pre>); more than one is an error"
         }
       ]
     },
@@ -742,6 +743,122 @@
       "record": true,
       "attributes": {},
       "note": "text body is the default §8 query; the chrome is rendered by the reading bundle"
+    },
+    "sem-tag-def": {
+      "source": "spec/schema/sem-tag-def.md",
+      "record": true,
+      "attributes": {
+        "tag": {
+          "type": "token",
+          "required": true
+        },
+        "name": {},
+        "group": {
+          "type": "token"
+        },
+        "children": {
+          "type": "flaglist"
+        },
+        "id": {}
+      },
+      "children": [
+        "sem-tag-attr"
+      ]
+    },
+    "sem-tag-attr": {
+      "source": "spec/schema/sem-tag-def.md",
+      "record": false,
+      "attributes": {
+        "name": {
+          "type": "token",
+          "required": true
+        },
+        "type": {
+          "type": "token",
+          "values": [
+            "string",
+            "boolean",
+            "integer",
+            "number"
+          ]
+        },
+        "required": {
+          "type": "flag"
+        },
+        "default": {},
+        "allowed": {
+          "type": "flaglist"
+        },
+        "id": {}
+      }
+    },
+    "sem-api-call": {
+      "source": "spec/schema/sem-api-call.md",
+      "record": true,
+      "attributes": {
+        "name": {
+          "type": "token",
+          "required": true
+        },
+        "method": {
+          "type": "token",
+          "values": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "HEAD",
+            "OPTIONS"
+          ]
+        },
+        "endpoint": {
+          "required": true
+        },
+        "status": {
+          "type": "token"
+        },
+        "id": {}
+      },
+      "children": [
+        "sem-api-param"
+      ]
+    },
+    "sem-api-param": {
+      "source": "spec/schema/sem-api-call.md",
+      "record": false,
+      "attributes": {
+        "name": {
+          "type": "token",
+          "required": true
+        },
+        "in": {
+          "type": "token",
+          "values": [
+            "query",
+            "body",
+            "header",
+            "response"
+          ]
+        },
+        "type": {
+          "type": "token",
+          "values": [
+            "string",
+            "boolean",
+            "integer",
+            "number"
+          ]
+        },
+        "required": {
+          "type": "flag"
+        },
+        "default": {},
+        "allowed": {
+          "type": "flaglist"
+        },
+        "id": {}
+      }
     }
   }
 }

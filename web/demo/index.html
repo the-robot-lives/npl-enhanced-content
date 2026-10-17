@@ -165,6 +165,10 @@
   <div class="sem-reveal" id="r-derived">
     Refresh tokens rotate per use — each exchange retires the presented token.
   </div>
+  <sem-reveal id="r-component" data-summary="Why session storage?">
+    Session storage dies with the tab, which shrinks — not eliminates — the
+    theft window. Treat every browser-side token as exposed.
+  </sem-reveal>
   </div>
 
   <div class="sem-source" id="s-progress" data-label="Progress — completion meter">
@@ -214,6 +218,32 @@
       keep six
   keep two</code></pre>
     <script type="text/plain" id="s-fid-raw">before <\/script after</script>
+  </div>
+
+  <!-- reference-definition cards (round 2). Appended after the fidelity
+       zone: they mint records, so extraction.cy.js indexes them last. -->
+  <div class="sem-source" id="s-tagdef" data-label="Reference — tag definitions">
+  <h2>Reference — tag definitions</h2>
+  <sem-tag-def id="d-note" tag="sem-note" name="Note" group="annotation" children="sem-note-summary">
+    An inline annotation with an optional variant and a collapsible body.
+    <sem-tag-attr name="variant" type="string" allowed="tip,warning,danger" default="tip">Display variant.</sem-tag-attr>
+    <sem-tag-attr name="collapsed" type="boolean" required>Starts hidden.</sem-tag-attr>
+  </sem-tag-def>
+  <div class="sem-tag-def" id="d-attr-class" data-tag="sem-tag-attr" data-group="annotation">
+    One attribute row of a documented tag; body is the description.
+    <div class="sem-tag-attr" data-name="name" data-type="string" data-required>Name of the attribute.</div>
+    <div class="sem-tag-attr" data-name="type" data-type="string">string | boolean | integer | number.</div>
+  </div>
+  </div>
+
+  <div class="sem-source" id="s-apicall" data-label="Reference — API calls">
+  <h2>Reference — API calls</h2>
+  <sem-api-call id="a-token" name="Create token" method="POST" endpoint="/oauth/token" status="200">
+    Exchanges a grant for a token pair.
+    <sem-api-param name="grant_type" in="body" type="string" required allowed="authorization_code,refresh_token">The grant to exchange.</sem-api-param>
+    <sem-api-param name="code" in="body" type="string">The authorization code.</sem-api-param>
+    <sem-api-param name="ttl" in="response" type="integer">Access-token lifetime in seconds.</sem-api-param>
+  </sem-api-call>
   </div>
 
 </div>

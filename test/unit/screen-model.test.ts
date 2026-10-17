@@ -106,6 +106,57 @@ describe('resize + reflow', () => {
     screen.resize(20, 4); // unwrap
     expect(text(screen, screen.viewportTop()).trim()).toBe('one two three four');
   });
+
+  it('reflow parks the cursor after the content, not on row 0 (round-2 shell clobber)', () => {
+    // The semtext.dev boot sequence: several CRLF-terminated lines, then a
+    // metrics settle resizes the screen — the next writes must continue
+    // BELOW the boot output, never overwrite its first rows.
+    const screen = new Screen({ cols: 40, rows: 8, scrollback: 50 });
+    const feed = new ScreenFeed(screen);
+    feed.write('line one\r\nline two\r\nline three\r\n');
+    expect(text(screen, 2)).toBe('line three');
+    screen.resize(26, 8);
+    expect(screen.cursorRow).toBe(3); // the empty row after the boot lines
+    feed.write('after resize\r\n');
+    expect(text(screen, 3)).toBe('after resize');
+    expect(text(screen, 0)).toBe('line one'); // head untouched
+    expect(text(screen, 1)).toBe('line two');
+    expect(text(screen, 2)).toBe('line three');
+  });
+
+  it('reflow counts rows of wrapped lines above the cursor', () => {
+    // A wrapped logical line sits ABOVE the cursor's position: the placed
+    // row must count its two physical rows, not just the offset within
+    // the cursor's own line.
+    const screen = new Screen({ cols: 40, rows: 12, scrollback: 50 });
+    const feed = new ScreenFeed(screen);
+    feed.write('a'.repeat(40) + '\r\nbb\r\nc\r\n');
+    screen.resize(20, 12); // COLS_MIN is 20 — 40 wraps into two rows of 20
+    // 'aaaa…' re-wraps into rows 0-1, 'bb' row 2, 'c' row 3 — the cursor
+    // rides the empty fourth logical line on viewport row 4.
+    expect(screen.cursorRow).toBe(4);
+    feed.write('tail\r\n');
+    expect(text(screen, 4)).toBe('tail');
+    expect(text(screen, 0)).toBe('a'.repeat(20)); // wrapped head intact
+    expect(text(screen, 3)).toBe('c');
+  });
+
+  it('reflow scrolls re-wrapped overflow into the ring, head first', () => {
+    // More re-wrapped rows than the viewport holds: the stream keeps its
+    // order — the leading rows go to the ring, the tail fills the
+    // viewport, and the cursor clamps to the bottom row.
+    const screen = new Screen({ cols: 40, rows: 4, scrollback: 50 });
+    const feed = new ScreenFeed(screen);
+    feed.write('x'.repeat(40) + '\r\n' + 'x'.repeat(40) + '\r\ny\r\n');
+    screen.resize(20, 4);
+    expect(text(screen, 0)).toBe('x'.repeat(20)); // scrolled-off heads in the ring
+    expect(text(screen, 2)).toBe('x'.repeat(20)); // viewport top = a re-wrapped row
+    expect(text(screen, 4)).toBe('y');
+    expect(screen.cursorRow).toBe(3); // the empty line, clamped bottom row
+    feed.write('Z'); // writes continue on that empty row
+    expect(text(screen, 5)).toBe('Z');
+    expect(text(screen, 4)).toBe('y'); // content above untouched
+  });
 });
 
 describe('the alternate screen', () => {

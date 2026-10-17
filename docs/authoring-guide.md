@@ -175,7 +175,8 @@ previews. Schema: [`sem-properties.md`](../spec/schema/sem-properties.md).
 ### Reveals, views, progress — `sem-reveal`, `sem-views`, `sem-progress`
 
 ```html
-<sem-reveal summary="Why not localStorage?" collapsed>…</sem-reveal>
+<sem-reveal summary="Why not localStorage?">…</sem-reveal>
+<!-- hidden until the reader acts; `open` starts revealed -->
 <sem-views id="deploy">
   <sem-view name="Helm" active role="tabpanel">…</sem-view>
   <sem-view name="ArgoCD" role="tabpanel">…</sem-view>
@@ -187,6 +188,26 @@ previews. Schema: [`sem-properties.md`](../spec/schema/sem-properties.md).
 Schemas: [`sem-reveal.md`](../spec/schema/sem-reveal.md),
 [`sem-views.md`](../spec/schema/sem-views.md),
 [`sem-progress.md`](../spec/schema/sem-progress.md).
+
+### Reference definitions — `sem-tag-def`, `sem-api-call`
+
+```html
+<sem-tag-def tag="sem-note" name="Note" group="annotation" children="sem-note-summary">
+  An inline annotation with an optional variant.
+  <sem-tag-attr name="variant" type="string" allowed="tip,warning,danger" default="tip">Display variant.</sem-tag-attr>
+</sem-tag-def>
+<sem-api-call name="Create token" method="POST" endpoint="/oauth/token" status="200">
+  Exchanges a grant for a token pair.
+  <sem-api-param name="grant_type" in="body" type="string" required>The grant to exchange.</sem-api-param>
+</sem-api-call>
+```
+
+One authored source renders the reader card (native table) and extracts
+as one structured record — a page of definitions IS a machine-readable
+vocabulary index.
+
+Schemas: [`sem-tag-def.md`](../spec/schema/sem-tag-def.md),
+[`sem-api-call.md`](../spec/schema/sem-api-call.md).
 
 ### Code and Markdown — `sem-code`, `sem-md`
 

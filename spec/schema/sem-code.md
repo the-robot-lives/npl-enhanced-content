@@ -5,49 +5,62 @@ Contract per conventions.md v0.6. BDD source of truth for
 
 ## Scope semantics
 
-A source listing with provenance. The element exists because plain
-`<pre><code>` cannot carry a filename, a language, or a set of emphasised
-lines that a machine can read back, and because copy / wrap are reading
-affordances that need JS. The listing itself is **verbatim**: whitespace
-inside `<code>` is content, never normalised.
+A source listing with provenance: a filename, a language, emphasised
+lines a machine can read back, and copy / wrap controls plain
+`<pre><code>` cannot carry. The listing itself is **verbatim**:
+whitespace is content, never normalised.
 
 ## Authoring form
 
+The listing is authored **flat**: as the element's own text, with no
+`<pre>` child. The element wraps it in `<pre><code>` itself when it
+enhances, so authors never nest the pair by hand.
+
 ```html
-<sem-code id="c-rotate" lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap">
-<pre><code>export function rotate(pair: Pair): Pair {
+<sem-code id="c-rotate" lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap">export function rotate(pair: Pair): Pair {
   const next = mint();
   retire(pair.refresh);
   return next;
-}</code></pre>
-</sem-code>
+}</sem-code>
 ```
 
+The explicit form — one `<pre>` wrapping one `<code>` — is equivalent and
+still supported (a `<pre>` child is never rewritten; the flat form is
+adopted only when no `<pre>` is authored):
+
+```html
+<sem-code lang="sh"><pre><code>npm run build</code></pre></sem-code>
+```
+
+One leading newline directly after the open tag, and the trailing
+whitespace before the close tag, are authoring layout and are stripped
+from the listing; interior whitespace stays byte-identical.
+
 Class-form alias (conventions Appendix A): `div.sem-code[data-lang][data-filename][data-mark][data-wrap][data-controls]`
-with the same `<pre><code>` child. Parameters are read as `data-<name>`
-first, then bare `<name>`.
+with the listing as its own text or as the same `<pre><code>` child.
+Parameters are read as `data-<name>` first, then bare `<name>`.
 
 Every attribute is optional: the authoring forms below are all the same
 element, chosen to suit the listing.
 
 ```html
 <!-- smallest valid listing: default controls (copy only), no chrome labels -->
-<sem-code><pre><code>npm run build</code></pre></sem-code>
+<sem-code>npm run build</sem-code>
 
 <!-- the defaults soften for a listing wider than the pane -->
-<sem-code lang="sh"><pre><code>curl -sS … | jq -r '.access_token'</code></pre></sem-code>
+<sem-code lang="sh">curl -sS … | jq -r '.access_token'</sem-code>
 
 <!-- start soft-wrapped; the Wrap control renders pressed -->
-<sem-code lang="json" filename="config.json" wrap controls="copy,wrap">
-<pre><code>{ "retry": { "attempts": 5 } }</code></pre>
-</sem-code>
+<sem-code lang="json" filename="config.json" wrap controls="copy,wrap">{ "retry": { "attempts": 5 } }</sem-code>
 ```
 
-- Child: **exactly one `<pre>`**, conventionally wrapping one `<code>`. The
-  listing is the `<code>`'s text (the `<pre>`'s when no `<code>` is
-  authored). A `<code>` that already holds element children (author-side
-  highlighting) is left as authored — no line spans or `<mark>` are
-  generated over it.
+- Child: the listing — authored flat (the element's own text) or as
+  **at most one `<pre>`**, conventionally wrapping one `<code>`. Flat
+  text with no `<pre>` is adopted into `<pre><code>` at enhance time; a
+  host that already has a `<pre>` child is left as authored. A `<code>`
+  that already holds element children (author-side highlighting) is left
+  as authored — no line spans or `<mark>` are generated over it. More
+  than one `<pre>` child is an error (schema `childRules`).
 - `lang` (optional): language token, rendered as a badge.
 - `filename` (optional): provenance label.
 - `mark` (optional): emphasised lines, 1-based, comma list of numbers
@@ -61,7 +74,7 @@ element, chosen to suit the listing.
 
 ### Enhanced (reading handler, `src/reading/code.ts`; the Lit
 component `SemCode` claims `data-sem-upgraded` at connect and runs the
-same function once its `<pre>` child exists)
+same function once its children are parsed)
 
 - `.sem-code-chrome` is inserted as the element's **first child**: filename
   (`.sem-code-filename`), language badge (`.sem-code-lang`), then the
@@ -114,7 +127,9 @@ None.
   - `lang` / `filename`: attribute strings, `""` when absent.
   - `marks`: the parsed, expanded, ascending line numbers.
   - `source`: the listing **verbatim** — the `<code>` text content with
-    its whitespace intact. This is a recorded exception to the "text is
+    its whitespace intact; in the flat form, the element's own text minus
+    the two structural trims (the same bytes the element wraps into
+    `<pre><code>`). This is a recorded exception to the "text is
     normalised" rule (like `sem-progress`'s derived text): a listing whose
     indentation was collapsed would be a different program.
 - `text` = the normalised single-line form of the source (whitespace runs
