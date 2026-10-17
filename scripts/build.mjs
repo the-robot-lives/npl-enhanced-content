@@ -154,10 +154,31 @@ const targets = [
     // 96 → 256 KB: the canvas-everywhere terminal renderer raise (commit
     // 6b34053 updated ROADMAP "Size budgets" but not this constant — the
     // build table has disagreed with the recorded budget since).
+    // Advisory since the packages round (user decision, 2026-10-17): the
+    // shell is demo/agent tooling, not a main package — its size is
+    // reported, never blocking. Reader bundles (semtext.js / npl.js / the
+    // lazy loaders) keep hard budgets.
     budgetKb: 256,
     // Opt-in tool bundle, uncapped by user decision 2026-10-17: the budget
     // row reports, `--strict-budget` never fails on it.
     budgetReportOnly: true,
+    required: true,
+    advisory: true,
+    // The nano editor body stays out of the shell: the LazyNano stub's
+    // dynamic `import('./nano-app.js')` must survive the IIFE build, so the
+    // specifier is marked external and the chunk below ships it separately
+    // (shell-v3 r3, r3-nano cross-lane patch — measured −~18 KB gross).
+    rollupExternal: [/nano-app\.js$/],
+  },
+  {
+    // The nano editor body as its own IIFE chunk, loaded on first `nano`
+    // invocation (see the shell target's rollupExternal note). The file
+    // name MUST stay `nano-app.js` — the stub's relative specifier resolves
+    // against it with zero runtime changes.
+    name: 'nano-app.js',
+    entry: 'src/terminal/apps/nano/nano-app.ts',
+    global: 'SemTextNano',
+    budgetKb: 24,
     required: true,
   },
   {
@@ -189,6 +210,39 @@ const targets = [
     editorSchema: true,
   },
 ];
+
+/* Command packages (packages round, LANE=pkg-infra): every
+ * `src/terminal/packages/<pkg>/index.ts` auto-chunks to
+ * `semtext-pkg-<pkg>.js` next to the shell bundle — no per-lane build
+ * edit, registration is just the manifest.ts lines. ES-module format: a
+ * package stub loads its chunk with a runtime dynamic `import()` (the
+ * @vite-ignore pattern, src/terminal/packages/lazy.ts), which needs real
+ * exports; the IIFE shell cannot carry them. Chunks are self-contained by
+ * contract (index.ts imports only types from outside its directory), so
+ * one lib build per package, no shared-chunk factoring. `required: false`
+ * — a half-landed package (no index.ts yet) is skipped, never fatal; a
+ * worker referenced as `new Worker(new URL('./x.js', import.meta.url))`
+ * inside the chunk's graph is emitted as its own file next to it. */
+const packagesDir = resolve(root, 'src/terminal/packages');
+if (existsSync(packagesDir)) {
+  for (const entry of readdirSync(packagesDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const entryRel = `src/terminal/packages/${entry.name}/index.ts`;
+    if (!existsSync(resolve(root, entryRel))) continue;
+    const pascal = entry.name.replace(/(^|-)([a-z])/g, (_, __, c) => c.toUpperCase());
+    targets.push({
+      name: `semtext-pkg-${entry.name}.js`,
+      entry: entryRel,
+      global: `SemTextPkg${pascal}`,
+      formats: ['es'],
+      budgetKb: 64,
+      required: false,
+      // Package chunks are report-only too (same user decision): the
+      // contract keeps LOAD lazy, and bytes never block the build.
+      advisory: true,
+    });
+  }
+}
 
 /** Vite plugin: resolve elements.json to the editor's slim projection. Test
  *  runs (vitest) import the real file; only the built bundle is slimmed. */
@@ -247,12 +301,34 @@ for (const target of targets) {
     root,
     configFile: false,
     logLevel: 'warn',
+    // Package targets are ES modules: the stubs' runtime dynamic `import()`
+    // reads the chunks' named exports (`commands`, `manPages`) — an IIFE
+    // chunk has none and would fail to load in every browser.
+    ...(target.formats ? { base: './' } : {}),
+    // The editor bundle swaps elements.json for its slim projection.
     ...(target.editorSchema ? { plugins: [editorSchemaSlim()] } : {}),
+    // Module workers (the wasm chunk's runner) keep their own build; pin
+    // the emitted file FLAT and stable so it sits next to the chunk —
+    // `worker-wasm.js`, no hash, no /assets/ subdir.
+    ...(target.formats
+      ? {
+          worker: {
+            format: 'es',
+            rollupOptions: { output: { entryFileNames: 'worker-wasm.js', chunkFileNames: 'worker-[name].js' } },
+          },
+        }
+      : {}),
     build: {
       target: 'es2022',
       outDir: distDir,
       emptyOutDir: false,
-      lib: { entry, formats: ['iife'], name: target.global, fileName: () => target.name },
+      lib: { entry, formats: target.formats ?? ['iife'], name: target.global, fileName: () => target.name },
+      // Per-target external specifiers (shell keeps `nano-app.js` lazy).
+      ...(target.rollupExternal ? { rollupOptions: { external: target.rollupExternal } } : {}),
+      // Package chunks: assets (the wasm worker) land FLAT and relative —
+      // `worker-wasm.js` next to the chunk, no hash, no /assets/ absolute
+      // path (the no-fetch-outside-bundle-dir rule).
+      ...(target.formats ? { rollupOptions: { output: { assetFileNames: '[name][extname]' } } } : {}),
     },
   });
 
@@ -261,10 +337,13 @@ for (const target of targets) {
   const gzip = gzipSync(readFileSync(file)).length;
   const budget = target.budgetKb * 1024;
   const over = bytes > budget;
-  // Report-only budgets (shell + editor, uncapped opt-in tools) print ✗ OVER
-  // but never trip the --strict-budget exit; reader budgets always do.
-  if (over && !target.budgetReportOnly) overBudget = true;
-  results.push({ name: target.name, bytes, gzip, budget, ok: !over, reportOnly: target.budgetReportOnly === true });
+  // Report-only budgets (shell + editor + package chunks — uncapped opt-in
+  // tools per the user decision 2026-10-17) print ✗ OVER but never trip
+  // the --strict-budget exit; reader budgets always do. `advisory` is the
+  // packages-round spelling of the same flag.
+  const reportOnly = target.budgetReportOnly === true || target.advisory === true;
+  if (over && !reportOnly) overBudget = true;
+  results.push({ name: target.name, bytes, gzip, budget, over, ok: !over, reportOnly });
 }
 
 /* js-shell manifest — both terminal tags ship in the one standalone bundle
@@ -273,7 +352,16 @@ for (const target of targets) {
  * manifests so a consumer can resolve either tag without hardcoding. */
 writeFileSync(
   resolve(distDir, 'semtext-js-shell-manifest.json'),
-  JSON.stringify({ 'sem-terminal': 'semtext-js-shell.js', 'sem-shell': 'semtext-js-shell.js' }, null, 2) + '\n',
+  JSON.stringify(
+    {
+      'sem-terminal': 'semtext-js-shell.js',
+      'sem-shell': 'semtext-js-shell.js',
+      // the lazy nano editor chunk (loaded by the shell's LazyNano stub)
+      'nano-app': 'nano-app.js',
+    },
+    null,
+    2,
+  ) + '\n',
 );
 
 /* ---------------------------------------------------------------------------
@@ -416,7 +504,7 @@ for (const lazy of LAZY_TARGETS) {
   const gzip = gzipSync(readFileSync(lazyPath)).length;
   const budget = lazy.budgetKb * 1024;
   if (bytes > budget) overBudget = true;
-  results.push({ name: `${lazy.id}.js`, bytes, gzip, budget, ok: bytes <= budget });
+  results.push({ name: `${lazy.id}.js`, bytes, gzip, budget, over: bytes > budget, ok: bytes <= budget, reportOnly: false });
   const shared = readdirSync(resolve(distDir, lazy.chunkDir)).filter(
     (f) => !Object.values(lazyManifest).includes(`${lazy.chunkDir}/${f}`),
   );

@@ -230,7 +230,7 @@ export class CookedLine implements LineDiscipline {
     this.onChange(this.#buffer, this.#caret);
   }
 
-  /** Tab completion — v1 `#complete`: extend, or list capped at 8. */
+  /** Tab completion — v1 `#complete`: extend, or list capped at 12. */
   #complete(): void {
     if (this.#buffer === '') return; // empty line: Tab keeps its focus meaning
     const outcome = completeLine(this.#buffer, this.core());
@@ -238,7 +238,8 @@ export class CookedLine implements LineDiscipline {
     this.#buffer = outcome.line;
     this.#caret = outcome.line.length;
     if (outcome.kind === 'list') {
-      const shown = outcome.candidates.slice(0, 8);
+      // 12 fits the theme gallery (`render-card --themes`) on one line.
+      const shown = outcome.candidates.slice(0, 12);
       const rest = outcome.candidates.length - shown.length;
       this.host.emit(shown.join('  ') + (rest > 0 ? `  … +${rest} more` : ''));
     }
