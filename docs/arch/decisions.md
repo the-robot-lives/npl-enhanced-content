@@ -14,11 +14,12 @@ class list to tokenise, no prefix to strip (conventions.md §8). The v0.4
 class form survives as a mechanical compatibility alias (Appendix A) that
 every tier keeps accepting.
 
-**Why Lit-thin-wrappers-over-fallback.** Zero React by policy. Lit
+**Why Lit-thin-wrappers-over-vanilla.** Zero React by policy. Lit
 components upgrade authored elements in place, carry content in the light
 DOM, and own only shadow-DOM chrome — so the upgrade path cannot fork the
-document or break extraction. Any behavior the fallback can provide, the
-upgrade supersedes rather than replaces.
+document or break extraction. Any behavior the vanilla handlers provide
+(the former fallback core, `src/vanilla/` since 0.9.0), the upgrade
+supersedes rather than replaces.
 
 **Why XHTML over Markdown.** The document is the data: qualifying
 attributes on semantic children make every datum self-describing for agents

@@ -127,7 +127,7 @@ export class SemFacts extends SemElement {
         });
       });
     }
-    // Deep link into a card (fallback/target): make it the current one.
+    // Deep link into a card (vanilla/target): make it the current one.
     this.addEventListener('sem-activate', (e) => {
       const k = items.indexOf(e.target as Element);
       if (k >= 0 && k !== i) { i = k; render(); }

@@ -50,7 +50,7 @@ npm run serve           # vite preview on :4173
 ## How It Works
 
 - Author XHTML using the SemText conventions/spec; the one bundle (`semtext/lit` → `dist/semtext.js`) registers custom elements and runs the vanilla handlers that progressively enhance it in the browser, and pulls the plain-text/structural reduction via `SemText.extractRecords` / `SemText.extractText`. With the script absent, the document reads as plain prose.
-- Top-level directories are domains: `spec/`, `src/` (`lit/`, `fallback/`, `reading/`, `md/`, `extract/`, `shared/`), `themes/` (kept top-level as a subpath export + CDN asset), `web/`, `test/`, `scripts/`, `docs/`.
+- Top-level directories are domains: `spec/`, `src/` (`lit/`, `vanilla/`, `reading/`, `md/`, `extract/`, `shared/`), `themes/` (kept top-level as a subpath export + CDN asset), `web/`, `test/`, `scripts/`, `docs/`.
 - Builds enforce a size budget (`build:strict`); theme CSS doubles as a CDN asset.
 
 ## Agent toolkit (`semtext-agent`)

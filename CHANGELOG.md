@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-10-18 (0.9.0 — fallback tier removal)
+
+- **Breaking (0.8.3 → 0.9.0): the standalone fallback tier is gone.** The retired
+  artifacts (`dist/semtext-fallback.js`, the `./fallback`/`./reading`/`./extract`/`./md`
+  package exports, the `sem:inline fallback` marker, its budget row) had already left the
+  build on the one-bundle line — 0.9.0 removes their last references: the CI CDN-payload
+  `cp` now copies the files the build actually emits (`semtext.js`, `semtext-lazy.js`,
+  `semtext-manifest.json`, plus `semtext-editor.js`), `stamp-version.mjs` FILES drops the
+  retired names, and the docs (PROJ-SCHEMA, PROJ-LAYOUT, PROJ-ARCH, arch/bundles,
+  arch/vocabulary, ROADMAP invariants) tell the one-bundle story.
+- **`data-sem-fallback` removed (not deprecated).** Nothing external sets it. `renderError`
+  no longer stamps it, `sem-data-visualizer` no longer clears it, the sem-reveal
+  `::before`-suppression rule gates on `[data-sem-upgraded]` alone (JS-off documents keep
+  the caption — the no-JS readability invariant is unchanged and still e2e-asserted), the
+  spec contradiction (conventions said gone, data-visualizer/sem-data-source listed it) is
+  resolved in favour of "removed as of 0.9.0", and `src/reading/source.ts`'s no-snapshot
+  warning now says "load semtext.js first".
+- **`src/fallback/` renamed to `src/vanilla/`** — the dir was misnamed ever since the
+  standalone tier retired: its handlers (sem-views/progress/audiences, deep links, the
+  sem-source snapshot pass, alias mirror) are core, not degradation. `FallbackHandler` →
+  `VanillaHandler`; the fallback-tag-form/lit-sem-reveal/properties test suites renamed to
+  vanilla-*. Lit-free rule unchanged. Editor `schema/fallback.ts` (descriptors — unrelated)
+  untouched.
+- **Editor style blocks no longer carry an `id`.** The shell and insert style-injection
+  sites set `style.id` (`sem-ed-shell-css` / `sem-ed-insert-css`); under Hologram's
+  hydration-era head reconciliation those id-carrying blocks vanish, which left semtext.dev's
+  Instrument editor unstyled on prod (site workaround: semtext.dev#110). The ids are dropped
+  (presence guards use the `data-sem-editor-css` + `data-sem-ed-block` attributes, which
+  already carried the uniqueness), so the site workaround can go later.
+
 ## 2026-10-18
 
 - release: package version 0.8.2 → 0.8.3 (package.json + lockfile root; `specVersion` stays "0.7") carrying the exprRegex escaping contract fix (#50) — semtext.dev re-vendors `/semtext/v0.8.3/` and repoints /editor on release.

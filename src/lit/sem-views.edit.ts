@@ -10,7 +10,7 @@
  * noted in the lane report; the per-view wizard still collects them.
  *
  * No `rerender`: the tab bar is built by the page's reading pass
- * (fallback/views enhanceViews) and never exists in the editor canvas
+ * (vanilla/views enhanceViews) and never exists in the editor canvas
  * (authored form canonical — see sem-reveal.edit.ts).
  */
 

@@ -67,14 +67,10 @@ const vDir = resolve(distDir, `v${version}`);
 rmSync(vDir, { recursive: true, force: true });
 mkdirSync(vDir, { recursive: true });
 
-/** Top-level artifacts, copied only when present (semtext-fallback.js is
- *  retired upstream; a build that no longer emits it just doesn't ship it). */
+/** Top-level artifacts, copied only when present (a retired filename that
+ *  a stale build still emits just doesn't ship). */
 const FILES = [
   'semtext.js',
-  'semtext-fallback.js',
-  'semtext-reading.js',
-  'semtext-extract.js',
-  'semtext-md.js',
   'semtext.css',
   'semtext-lazy.js',
   'semtext-manifest.json',
