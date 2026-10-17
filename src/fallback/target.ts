@@ -22,6 +22,8 @@
  *
  * Print: `beforeprint` opens every reveal `<details>` and `afterprint`
  * closes the ones it opened — CSS cannot open a closed `<details>`.
+ * The tag form's component control is clicked instead (one-way — a
+ * component reveal stays revealed after the print).
  */
 
 import { bareSegments } from '../shared/state.js';
@@ -64,8 +66,14 @@ function run(): void {
     for (let el: Element | null = target; el; el = el.parentElement) chain.unshift(el);
     chain.forEach((el) => {
       // The reveal's <details> is its child, so it is opened from the reveal
-      // whether the target is the reveal itself or something inside it.
-      if (el.matches(REVEAL)) el.querySelector(':scope > details')?.setAttribute('open', '');
+      // whether the target is the reveal itself or something inside it. The
+      // tag form has no <details> — the component's control is clicked
+      // instead (the reveal is one-way there; print takes the same path).
+      if (el.matches(REVEAL)) {
+        const details = el.querySelector<HTMLDetailsElement>(':scope > details');
+        if (details) details.setAttribute('open', '');
+        else el.querySelector<HTMLElement>(':scope > button.sem-reveal-control')?.click();
+      }
       // A wrapper showing its markup hides the target: switch it back to rendered.
       // Prefer the chrome (keeps aria-pressed in step); without the reading
       // bundle the attribute is presentation-only, so flip it directly.
@@ -98,6 +106,11 @@ export function enhanceTarget(scope: ParentNode): void {
   window.addEventListener('beforeprint', () => {
     opened = Array.from(document.querySelectorAll(REVEAL + ' > details:not([open])'));
     opened.forEach((d) => d.setAttribute('open', ''));
+    // Component-path reveals are one-way: print shows everything, and a
+    // revealed component stays revealed after the print.
+    document.querySelectorAll<HTMLElement>(
+      REVEAL + ':not([data-revealed]) > button.sem-reveal-control',
+    ).forEach((b) => b.click());
   });
   window.addEventListener('afterprint', () => {
     opened.forEach((d) => d.removeAttribute('open'));

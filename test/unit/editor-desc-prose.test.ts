@@ -221,19 +221,29 @@ describe('sem-code — edits', () => {
   const ORIGINAL =
     'export function rotate(pair: Pair): Pair {\n  const next = mint();\n  retire(pair.refresh);\n  return next;\n}';
 
+// The edit-slot machinery targets the NESTED authoring form (`pre > code`
+// stays supported; slots bind the authored DOM, and the flat form's minted
+// nodes are outside the attach-time model). The schema example is the flat
+// form, so these edit tests pin their own nested fixture.
+const CODE_NESTED = [
+  '<sem-code id="c-rotate" lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap">',
+  '<pre><code>' + ORIGINAL + '</code></pre>',
+  '</sem-code>',
+].join('\n');
+
   it('text edit changes ONLY the listing; attributes preserved', async () => {
-    const { el, ctx, c } = make(CODE_EXAMPLE);
+    const { el, ctx, c } = make(CODE_NESTED);
     const code = el.querySelector(':scope > pre > code');
     expect(code).not.toBeNull();
     expect(commitSlotText(ctx, c.binding, code!, 'ROTATED')).toBe(true);
     await flush();
-    expect(ctx.doc.serialize()).toBe(CODE_EXAMPLE.replace(ORIGINAL, 'ROTATED'));
+    expect(ctx.doc.serialize()).toBe(CODE_NESTED.replace(ORIGINAL, 'ROTATED'));
     ctx.doc.undo();
-    expect(ctx.doc.serialize()).toBe(CODE_EXAMPLE);
+    expect(ctx.doc.serialize()).toBe(CODE_NESTED);
   });
 
   it('a second edit after the re-render still maps (chrome stamped, not indexed)', async () => {
-    const { el, ctx, c } = make(CODE_EXAMPLE);
+    const { el, ctx, c } = make(CODE_NESTED);
     const code = el.querySelector(':scope > pre > code')!;
     commitSlotText(ctx, c.binding, code, 'FIRST');
     await flush(); // re-render re-establishes + stamps the chrome
@@ -243,7 +253,7 @@ describe('sem-code — edits', () => {
     expect(code2).not.toBeNull();
     expect(commitSlotText(ctx, c.binding, code2!, 'SECOND')).toBe(true);
     await flush();
-    expect(ctx.doc.serialize()).toBe(CODE_EXAMPLE.replace(ORIGINAL, 'SECOND'));
+    expect(ctx.doc.serialize()).toBe(CODE_NESTED.replace(ORIGINAL, 'SECOND'));
   });
 
   it('attribute edit changes ONLY that attribute', async () => {
