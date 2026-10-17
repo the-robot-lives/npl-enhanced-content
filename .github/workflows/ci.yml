@@ -43,6 +43,9 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm run build
+      # spec/conventions.html is generated from spec/conventions.md — fail the
+      # unit job when the committed page is stale relative to the .md
+      - run: npm run gen:conventions:check
       - run: npm run test:unit:cover
       - uses: actions/upload-artifact@v4
         if: always()
