@@ -26,21 +26,26 @@ import { extractRecords, extractText } from '../../src/extract/records';
 const clone = (v) => JSON.parse(JSON.stringify(v));
 const extract = () => cy.document().then((doc) => clone(extractRecords(doc)));
 
+// Dual spelling per entry (:is(tag, .class)): the demo authors most
+// elements as classed divs, and the round-2 fixtures (r-component,
+// d-note, a-token) use the custom-element spelling.
 const RECORD_SELECTOR = [
-  '.sem-agent',
-  '.sem-note',
-  '.sem-facts',
-  '.sem-fact',
-  '.sem-details',
-  '.sem-detail',
-  '.sem-procedure',
-  '.sem-step',
-  '.sem-properties',
-  '.sem-property',
-  '.sem-views',
-  '.sem-view',
-  '.sem-reveal',
-  '.sem-progress'
+  ':is(sem-agent, .sem-agent)',
+  ':is(sem-note, .sem-note)',
+  ':is(sem-facts, .sem-facts)',
+  ':is(sem-fact, .sem-fact)',
+  ':is(sem-details, .sem-details)',
+  ':is(sem-detail, .sem-detail)',
+  ':is(sem-procedure, .sem-procedure)',
+  ':is(sem-step, .sem-step)',
+  ':is(sem-properties, .sem-properties)',
+  ':is(sem-property, .sem-property)',
+  ':is(sem-views, .sem-views)',
+  ':is(sem-view, .sem-view)',
+  ':is(sem-reveal, .sem-reveal)',
+  ':is(sem-progress, .sem-progress)',
+  ':is(sem-tag-def, .sem-tag-def)',
+  ':is(sem-api-call, .sem-api-call)'
 ].join(', ');
 
 // Document order of web/demo/index.html, per spec/extraction.md §3.1.
@@ -57,12 +62,16 @@ const EXPECTED_TYPES = [
   'sem-properties', 'sem-property', 'sem-property', 'sem-property',
   'sem-properties', 'sem-property', 'sem-property',
   'sem-views', 'sem-view', 'sem-view',
-  'sem-reveal', 'sem-reveal',
+  'sem-reveal', 'sem-reveal', 'sem-reveal',
   'sem-progress', 'sem-progress',
   // W0 fixtures (audience trio, margin note) — appended after the last
   // Tier-0 record so every index above stays valid.
   'sem-note', 'sem-note', 'sem-note',
-  'sem-note'
+  'sem-note',
+  // reference-definition cards (round 2) — last on purpose: they mint
+  // records, and every index above stays valid.
+  'sem-tag-def', 'sem-tag-def',
+  'sem-api-call'
 ];
 
 // The built scripts-stripped artifact is the genuine JS-off surface; the
@@ -260,6 +269,13 @@ describe('extraction', () => {
         expect(derived.fields.summarySource).to.equal('derived');
         expect(derived.fields.summary.length).to.be.at.most(60);
         expect(derived.text).to.contain('retires the presented token');
+
+        // The tag form upgrades to the Lit component; extraction reads the
+        // same .sem-reveal-body the component builds.
+        const component = byId(records, 'r-component');
+        expect(component.fields.summarySource).to.equal('authored');
+        expect(component.fields.summary).to.equal('Why session storage?');
+        expect(component.text).to.contain('dies with the tab');
       });
     });
 
@@ -427,6 +443,58 @@ describe('extraction', () => {
 
       extract().then((after) => {
         expect(after).to.deep.equal(before);
+      });
+    });
+  });
+
+  describe('reference definitions (round 2)', () => {
+    beforeEach(() => cy.visit('/demo/index.html'));
+
+    it('a tag definition extracts as one structured record', () => {
+      extract().then((records) => {
+        const d = byId(records, 'd-note');
+        expect(d.type).to.equal('sem-tag-def');
+        expect(d.fields.tag).to.equal('sem-note');
+        expect(d.fields.name).to.equal('Note');
+        expect(d.fields.group).to.equal('annotation');
+        expect(d.fields.children).to.deep.equal(['sem-note-summary']);
+        const attrs = d.fields.attributes;
+        expect(attrs).to.have.length(2);
+        expect(attrs[0]).to.include({
+          name: 'variant', type: 'string', required: false, default: 'tip',
+        });
+        expect(attrs[0].allowed).to.deep.equal(['tip', 'warning', 'danger']);
+        expect(attrs[1]).to.include({ name: 'collapsed', required: true });
+        expect(d.text).to.equal(
+          'sem-note (Note) — An inline annotation with an optional variant and a collapsible body.'
+        );
+      });
+    });
+
+    it('an API call extracts with the method uppercased and ordered params', () => {
+      extract().then((records) => {
+        const a = byId(records, 'a-token');
+        expect(a.type).to.equal('sem-api-call');
+        expect(a.fields).to.include({
+          name: 'Create token', method: 'POST', endpoint: '/oauth/token', status: '200',
+        });
+        const params = a.fields.params;
+        expect(params).to.have.length(3);
+        expect(params[0]).to.include({
+          name: 'grant_type', in: 'body', type: 'string', required: true,
+        });
+        expect(params[0].allowed).to.deep.equal(['authorization_code', 'refresh_token']);
+        expect(params[2]).to.include({ name: 'ttl', in: 'response', type: 'integer', required: false });
+      });
+    });
+
+    it('the class-form tag definition extracts identically to the tag form', () => {
+      extract().then((records) => {
+        const d = byId(records, 'd-attr-class');
+        expect(d.type).to.equal('sem-tag-def');
+        expect(d.fields.tag).to.equal('sem-tag-attr');
+        expect(d.fields.attributes.map((a) => a.name)).to.deep.equal(['name', 'type']);
+        expect(d.fields.attributes[0].required).to.equal(true);
       });
     });
   });

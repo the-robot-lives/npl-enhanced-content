@@ -309,11 +309,14 @@ describe('desc-npl-b: item add/remove touch only the list', () => {
     if (!addItem(h.ctx, h.binding)) expect.unreachable('addItem refused');
     await flush();
     const added = '<npl-thought type="observation">The thought</npl-thought>';
-    const anchor = '<npl-thought type="balloon">unknown — degrades to plain text</npl-thought>';
+    // The item list is `:scope > npl-thought` — every child, including the
+    // trailing untyped sub-container the v0.7 example documents. Add
+    // appends after the LAST item, so the new thought lands at the end.
+    const anchor = '<npl-thought>no type — a sub-container; its children survive untouched</npl-thought>';
     expect(h.ctx.doc.serialize()).toBe(
       spliced(h.example, anchor, `${anchor}${added}`),
     );
-    const last = h.el.querySelectorAll(':scope > npl-thought')[3]!;
+    const last = h.el.querySelectorAll(':scope > npl-thought')[4]!;
     expect(removeItem(h.ctx, h.binding, last)).toBe(true);
     await flush();
     expect(h.ctx.doc.serialize()).toBe(h.example);

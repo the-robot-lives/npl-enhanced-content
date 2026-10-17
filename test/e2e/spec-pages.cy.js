@@ -50,7 +50,7 @@ const PAGES = [
       ['sem-facts', 'sem-facts > .sem-facts-chrome'],
       ['sem-details[view-as="quiz"]', 'sem-details .sem-occluded'],
       ['sem-views', 'sem-views > .sem-views-tabs[role="tablist"]'],
-      ['sem-reveal', 'sem-reveal > details > summary'],
+      ['sem-reveal', 'sem-reveal > .sem-reveal-control'],
       ['sem-progress', 'sem-progress > .sem-progress-track'],
       ['sem-code', 'sem-code > .sem-code-chrome'],
       ['sem-table[controls]', 'sem-table th .sem-table-sort'],
@@ -251,7 +251,7 @@ PAGES.forEach((page) => {
       // interact: flip an example to source, switch a tab, open a reveal, sort the table
       cy.get('#s-facts [data-act="source"]').click();
       cy.get('#x-deploy .sem-views-tabs button').last().click();
-      cy.get('#x-reveal summary').click();
+      cy.get('#x-reveal .sem-reveal-control').click();
       cy.get('#x-table th .sem-table-sort').first().click();
       records().then((r) => expect(r, 'after interaction').to.deep.equal(off));
     });

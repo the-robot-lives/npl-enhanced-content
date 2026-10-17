@@ -50,6 +50,21 @@ describe('editor entry (§9.2)', () => {
     expect(api.tryParse('<sem-note>').ok).toBe(false);
   });
 
+  it('wires a sem-editor-code appended AFTER open (hydration-style programmatic mount)', async () => {
+    const ed = mount('<sem-note id="n1" variant="tip"><span class="sem-note-body">Hello</span></sem-note>');
+    await flush();
+    const ctx = (ed as unknown as { ctx: { doc: { serialize(): string } } }).ctx;
+    expect(ctx).not.toBeNull();
+    // the host page adds the code lane after the editor connected + wired
+    const lane = document.createElement('sem-editor-code');
+    ed.appendChild(lane);
+    await flush();
+    const l = lane as unknown as { host: { tryParse: unknown } | null; source?: string };
+    expect(l.host).not.toBeNull();
+    expect(typeof l.host!.tryParse).toBe('function');
+    expect(l.source).toContain('variant="tip"');
+  });
+
   it('authored children open as a document; top-level hosts get controllers', async () => {
     const ed = mount('<sem-note id="n1" variant="tip"><span class="sem-note-body">Hello</span></sem-note>');
     await flush();

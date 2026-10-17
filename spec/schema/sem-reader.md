@@ -5,17 +5,17 @@ Contract per conventions.md v0.6. BDD source of truth for
 
 ## Scope semantics
 
-The reading chrome of a long document: an outline, a reading-progress bar,
-and the reader-side controls a printed page cannot offer — focus mode,
-type size and face, colour scheme, print, audience. It is
-**chrome, not content**: it mints no record, its outline is derived from
-the document's headings, and a document without it loses nothing a machine
-could read. It exists as one element (rather than one per control) because
-every control shares a host, a persistence policy and an a11y contract, and
-because the planned `sem-themes` picker collapses into its `theme` control
-(R/W3 — not in this wave).
+Reading chrome for a long document: an outline, a reading-progress bar,
+and reader controls (focus mode, type size, colour scheme, print,
+audience). Chrome, not content: it mints no record, and a document
+without it loses nothing a machine could read.
 
 One per document, a direct child of the root wrapper.
+
+It is one element rather than one per control because every control
+shares a host, a persistence policy and an a11y contract, and because
+the planned `sem-themes` picker collapses into its `theme` control
+(R/W3 — not in this wave).
 
 ## Authoring form
 

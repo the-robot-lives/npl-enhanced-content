@@ -62,13 +62,16 @@ describe('print & reduced motion', () => {
     });
 
     it('opens reveal disclosures for printing and restores them after', () => {
+      // round 2: every reveal starts closed (`open` opts in) — print opens
+      // them all, afterprint closes exactly the ones print opened.
       cy.get('#r-storage details').should('not.have.attr', 'open');
+      cy.get('#r-derived details').should('not.have.attr', 'open');
       cy.window().then((win) => win.dispatchEvent(new win.Event('beforeprint')));
       cy.get('#r-storage details').should('have.attr', 'open');
       cy.get('#r-derived details').should('have.attr', 'open');
       cy.window().then((win) => win.dispatchEvent(new win.Event('afterprint')));
       cy.get('#r-storage details').should('not.have.attr', 'open');
-      cy.get('#r-derived details').should('have.attr', 'open');
+      cy.get('#r-derived details').should('not.have.attr', 'open');
     });
 
     it('reads occluded highlights as text', () => {
