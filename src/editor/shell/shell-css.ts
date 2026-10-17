@@ -12,8 +12,6 @@
  * `<style data-sem-editor-css data-sem-ed-block="shell">`.
  */
 
-export const SHELL_CSS_ID = 'sem-ed-shell-css';
-
 export const SHELL_CSS = `
 sem-editor {
   display: block;

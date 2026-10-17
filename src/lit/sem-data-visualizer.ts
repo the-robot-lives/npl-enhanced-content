@@ -16,7 +16,6 @@ export class SemDataVisualizer extends SemElement {
     void this.whenChildrenReady(DATA_SOURCE).then(() => {
       enhanceDataVisualizerElement(this);
       this.setAttribute('data-sem-upgraded', '');
-      this.removeAttribute('data-sem-fallback');
     });
   }
 }

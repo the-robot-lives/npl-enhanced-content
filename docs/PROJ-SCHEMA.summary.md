@@ -33,6 +33,6 @@ Events: none. Light DOM (searchable). BDD source for `test/e2e/sem-note.cy.js`.
 | Item | Kind |
 |------|------|
 | `spec/conventions.md` (v0.5) + `.html` | canonical spec (md source; the .html is hand-authored as a tag-form SemText document mirroring it section for section — `scripts/build-standalone.mjs` copies it to `dist/spec/` and `test/e2e/spec-pages.cy.js` enforces heading and table parity) |
-| `web/demo/index.html` | reference impl: core CSS + Tailwind CDN layer + vanilla fallback JS |
-| `package.json` exports | subpaths only — `./lit` `./fallback` `./extract` `./themes/*` (no `.`); files `dist`, `themes`; dep `lit ^3.3.3` |
+| `web/demo/index.html` | reference impl: core CSS + Tailwind CDN layer + vanilla JS |
+| `package.json` exports | subpaths only — `./lit` `./lazy` `./npl` `./npl-lazy` `./agent` `./themes/*` (no `.`); files `dist`, `themes`; dep `lit ^3.3.3` |
 | `vite.config.ts` / `tsconfig.json` / `cypress.config.js` | build / types / e2e config |

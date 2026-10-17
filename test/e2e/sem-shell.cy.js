@@ -1,5 +1,5 @@
 // sem-shell end to end — the terminal, completion, storage, and the
-// no-JS fallback, against the BUILT pages in dist/demo/.
+// the no-JS document, against the BUILT pages in dist/demo/.
 //
 // Feature: the prompt
 //   Scenario: Escape hands the terminal back from a scripted demo
@@ -162,7 +162,7 @@ describe('sem-shell', () => {
     });
   });
 
-  describe('the no-JS fallback', () => {
+  describe('the no-JS document', () => {
     it('renders the static transcript with no bundle', () => {
       cy.visit('/demo/shell-storage.nojs.html');
       cy.get(log).should('contain.text', 'mkdir -p notes');

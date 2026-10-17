@@ -1,6 +1,6 @@
 import { SemElement } from './base.js';
 import { enhanceSourceElement } from '../reading/source.js';
-import { snapshotSourceElement } from '../fallback/source.js';
+import { snapshotSourceElement } from '../vanilla/source.js';
 
 /**
  * sem-source — thin Lit wrapper over src/reading/source.ts.

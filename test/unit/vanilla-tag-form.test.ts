@@ -14,7 +14,7 @@
 //   Scenario: a Lit-upgraded element is left to the Lit tier
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { enhance } from '../../src/fallback/index.js';
+import { enhance } from '../../src/vanilla/index.js';
 
 const DOC = `
 <sem-enhanced-document>
@@ -34,7 +34,7 @@ const DOC = `
   <sem-note id="both" variant="info" data-variant="warning"></sem-note>
 </sem-enhanced-document>`;
 
-describe('fallback core on the tag form', () => {
+describe('vanilla core on the tag form', () => {
   beforeEach(() => {
     document.body.innerHTML = DOC;
     enhance(document);

@@ -117,7 +117,7 @@ None.
   the schema JSON is an inert `application/json` script child, so no
   attribute quoting/escaping mangles it.
 - Runtime state uses `data-*`: `data-sem-source-index` row stamps,
-  `data-nullable` header marker, tier markers (`data-sem-fallback` /
-  `data-sem-upgraded`).
+  `data-nullable` header marker, the `data-sem-upgraded` runtime
+  marker.
 - Editing and view switches are session-only presentation state: the
   authored markup is never rewritten and extraction stays invariant.
