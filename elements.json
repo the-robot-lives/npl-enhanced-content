@@ -5,6 +5,7 @@
     "spec/schema/sem-api-call.md",
     "spec/schema/sem-audiences.md",
     "spec/schema/sem-browser.md",
+    "spec/schema/sem-changelogs.md",
     "spec/schema/sem-chronology.md",
     "spec/schema/sem-code.md",
     "spec/schema/sem-data-join.md",
@@ -12,21 +13,35 @@
     "spec/schema/sem-data-source.md",
     "spec/schema/sem-data-visualizer.md",
     "spec/schema/sem-details.md",
+    "spec/schema/sem-eval.md",
     "spec/schema/sem-facts.md",
+    "spec/schema/sem-faqs.md",
     "spec/schema/sem-file-tree.md",
+    "spec/schema/sem-guard-rails.md",
+    "spec/schema/sem-howto.md",
+    "spec/schema/sem-kb.md",
     "spec/schema/sem-md.md",
+    "spec/schema/sem-mockup.md",
     "spec/schema/sem-note.md",
+    "spec/schema/sem-philosophy.md",
+    "spec/schema/sem-plan.md",
     "spec/schema/sem-procedure.md",
     "spec/schema/sem-progress.md",
     "spec/schema/sem-properties.md",
     "spec/schema/sem-reader.md",
     "spec/schema/sem-references.md",
+    "spec/schema/sem-requirement.md",
     "spec/schema/sem-reveal.md",
+    "spec/schema/sem-rubric.md",
+    "spec/schema/sem-runbook.md",
     "spec/schema/sem-site-tree.md",
     "spec/schema/sem-source.md",
+    "spec/schema/sem-summary.md",
     "spec/schema/sem-table.md",
     "spec/schema/sem-tag-def.md",
+    "spec/schema/sem-threat-model.md",
     "spec/schema/sem-tldr.md",
+    "spec/schema/sem-tsgs.md",
     "spec/schema/sem-views.md",
     "spec/schema/sem-workflow.md",
     "spec/schema/npl/cot.md",
@@ -50,7 +65,7 @@
     "spec/schema/npl/npl-thought.md",
     "spec/schema/npl/npl-vos.md"
   ],
-  "tagCount": 58,
+  "tagCount": 77,
   "tags": [
     {
       "name": "npl-agent",
@@ -1285,6 +1300,68 @@
       "example": "<sem-browser src=\"/demo/example-deck.sem.html\" label=\"the deck\">\n  <!-- zero-JS fallback chrome: inert glyphs, address pill, framed deck -->\n  <figure class=\"code-window\">\n    <div aria-hidden=\"true\">← → ⟳</div>\n    <div>demo/example-deck.sem.html</div>\n    <iframe src=\"/demo/example-deck.sem.html\" title=\"the deck\" loading=\"lazy\"></iframe>\n  </figure>\n</sem-browser>"
     },
     {
+      "name": "sem-changelog",
+      "family": "sem",
+      "source": "spec/schema/sem-changelogs.md",
+      "summary": "A changelog collection and its entries.",
+      "description": "A changelog collection and its entries. Family A — static knowledge/doc containers; display stubs (no CSS-only elements: the Lit components exist and claim `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [],
+      "children": [],
+      "example": "<sem-changelogs id=\"cl-auth\" kind=\"spec\">\n  <sem-changelog date=\"2026-10-18\" name=\"rotation\" title=\"Per-session JWT rotation\">\n    Rotation landed behind the release train; the refresh grant\n    issues a fresh pair.\n    <tags>auth, tokens</tags>\n  </sem-changelog>\n  <sem-changelog date=\"2026-10-17\" impacted=\"deploy\">\n    Chart-tag bumps moved fully to CI; agents never touch chart\n    tags for release.\n  </sem-changelog>\n</sem-changelogs>",
+      "optionsIn": "sem-changelogs"
+    },
+    {
+      "name": "sem-changelogs",
+      "family": "sem",
+      "source": "spec/schema/sem-changelogs.md",
+      "summary": "A changelog collection and its entries.",
+      "description": "A changelog collection and its entries. Family A — static knowledge/doc containers; display stubs (no CSS-only elements: the Lit components exist and claim `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "date",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "per entry; the authored stamp (YYYY-MM-DD), drawn into the entry heading chrome."
+        },
+        {
+          "name": "name",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "`title`: per the global/standard attribute catalog — entry heading qualifiers, drawn into the entry chrome."
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-changelogs id=\"cl-auth\" kind=\"spec\">\n  <sem-changelog date=\"2026-10-18\" name=\"rotation\" title=\"Per-session JWT rotation\">\n    Rotation landed behind the release train; the refresh grant\n    issues a fresh pair.\n    <tags>auth, tokens</tags>\n  </sem-changelog>\n  <sem-changelog date=\"2026-10-17\" impacted=\"deploy\">\n    Chart-tag bumps moved fully to CI; agents never touch chart\n    tags for release.\n  </sem-changelog>\n</sem-changelogs>"
+    },
+    {
       "name": "sem-chronology",
       "family": "sem",
       "source": "spec/schema/sem-chronology.md",
@@ -1788,6 +1865,53 @@
       "example": "<sem-details id=\"oidc-docs\">\n  <sem-detail>\n    The OIDC token travels in the\n    <highlight>Authorization</highlight> header.\n  </sem-detail>\n</sem-details>"
     },
     {
+      "name": "sem-eval",
+      "family": "sem",
+      "source": "spec/schema/sem-eval.md",
+      "summary": "An evaluation-spec container: inputs, expected outputs and criteria are authored inside as sections or prose.",
+      "description": "An evaluation-spec container: inputs, expected outputs and criteria are authored inside as sections or prose. Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional qualifier drawn into the label chrome (display-only sugar)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "",
+          "allowedValues": [
+            "draft",
+            "approved",
+            "implemented"
+          ],
+          "default": null,
+          "description": "one of `draft`, `approved`, `implemented` — lifecycle token, drawn as a status chip (display-only)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-eval id=\"ev-rotate\" kind=\"recall\" status=\"draft\">\n  <section>\n    <h2>Inputs</h2>\n    <p>A refreshed token pair and a 20-minute-old access token.</p>\n  </section>\n  <section>\n    <h2>Expected</h2>\n    <p>The client mints a fresh pair without a re-sign-in.</p>\n  </section>\n</sem-eval>"
+    },
+    {
       "name": "sem-event",
       "family": "sem",
       "source": "spec/schema/sem-chronology.md",
@@ -1859,6 +1983,61 @@
       "example": "<sem-facts id=\"auth-facts\" view-as=\"flashcards\">\n  <sem-fact id=\"f-rotate\">\n    <statement>JWTs rotate per session</statement>\n    <conclusion>Short-lived access tokens; the refresh\n      grant issues a new pair.</conclusion>\n    <incorrect-statement>Store tokens in localStorage.</incorrect-statement>\n  </sem-fact>\n  <sem-fact id=\"f-expiry\">\n    <statement>Access tokens expire after 15 minutes</statement>\n    <conclusion>The client mints a new pair from the refresh\n      grant; the user never re-signs-in mid-session.</conclusion>\n    <incorrect-statement>The user must sign in again every 15\n      minutes.</incorrect-statement>\n  </sem-fact>\n  <sem-fact id=\"f-secret\">\n    <statement>Client secrets never reach the browser</statement>\n    <conclusion>The confidential client holds the secret\n      server-side; the browser only ever sees tokens.</conclusion>\n    <incorrect-statement>Embed the client secret in the SPA\n      bundle.</incorrect-statement>\n  </sem-fact>\n</sem-facts>"
     },
     {
+      "name": "sem-faq",
+      "family": "sem",
+      "source": "spec/schema/sem-faqs.md",
+      "summary": "A FAQ collection and its entries.",
+      "description": "A FAQ collection and its entries. Family A — static knowledge/doc containers; display stubs (no CSS-only elements: the Lit components exist and claim `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [],
+      "children": [
+        {
+          "name": "question",
+          "note": "`<question>` — required per entry; the asked question."
+        },
+        {
+          "name": "answer",
+          "note": "`<answer>` — required per entry; the authored answer."
+        }
+      ],
+      "example": "<sem-faqs id=\"faq-auth\" kind=\"auth\">\n  <sem-faq id=\"q-expiry\">\n    <question>Do access tokens expire mid-session?</question>\n    <answer>No — the client mints a fresh pair from the refresh\n    grant; the user never re-signs-in mid-session.</answer>\n  </sem-faq>\n  <sem-faq id=\"q-secret\">\n    <question>Where do client secrets live?</question>\n    <answer>Server-side, in the confidential client — the browser\n    only ever sees tokens.</answer>\n  </sem-faq>\n</sem-faqs>",
+      "optionsIn": "sem-faqs"
+    },
+    {
+      "name": "sem-faqs",
+      "family": "sem",
+      "source": "spec/schema/sem-faqs.md",
+      "summary": "A FAQ collection and its entries.",
+      "description": "A FAQ collection and its entries. Family A — static knowledge/doc containers; display stubs (no CSS-only elements: the Lit components exist and claim `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "collection qualifier drawn into the label chrome (display-only sugar)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-faqs id=\"faq-auth\" kind=\"auth\">\n  <sem-faq id=\"q-expiry\">\n    <question>Do access tokens expire mid-session?</question>\n    <answer>No — the client mints a fresh pair from the refresh\n    grant; the user never re-signs-in mid-session.</answer>\n  </sem-faq>\n  <sem-faq id=\"q-secret\">\n    <question>Where do client secrets live?</question>\n    <answer>Server-side, in the confidential client — the browser\n    only ever sees tokens.</answer>\n  </sem-faq>\n</sem-faqs>"
+    },
+    {
       "name": "sem-file-tree",
       "family": "sem",
       "source": "spec/schema/sem-file-tree.md",
@@ -1881,6 +2060,142 @@
         }
       ],
       "example": "<sem-file-tree mode=\"text\" label=\"Assets\">\n<pre>\nassets/\n├── icons/\n│   └── logo.svg\n├── main.css\n└── app.js\n</pre>\n</sem-file-tree>"
+    },
+    {
+      "name": "sem-guard-rail",
+      "family": "sem",
+      "source": "spec/schema/sem-guard-rails.md",
+      "summary": "A guard-rails collection and its entries.",
+      "description": "A guard-rails collection and its entries. Family A — static knowledge/doc containers; display stubs (no CSS-only elements: the Lit components exist and claim `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [],
+      "children": [],
+      "example": "<sem-guard-rails id=\"gr-api\" kind=\"api\">\n  <sem-guard-rail severity=\"block\" scope=\"public endpoints\">\n    Never return raw provider errors; wrap them in the error envelope.\n  </sem-guard-rail>\n  <sem-guard-rail severity=\"warn\">\n    Pagination defaults to 50 items — page explicitly in production.\n  </sem-guard-rail>\n</sem-guard-rails>",
+      "optionsIn": "sem-guard-rails"
+    },
+    {
+      "name": "sem-guard-rails",
+      "family": "sem",
+      "source": "spec/schema/sem-guard-rails.md",
+      "summary": "A guard-rails collection and its entries.",
+      "description": "A guard-rails collection and its entries. Family A — static knowledge/doc containers; display stubs (no CSS-only elements: the Lit components exist and claim `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "collection qualifier drawn into the label chrome (display-only sugar)."
+        },
+        {
+          "name": "severity",
+          "required": null,
+          "type": "",
+          "allowedValues": [
+            "info",
+            "warn",
+            "block"
+          ],
+          "default": "info",
+          "description": "(per entry): one of `info` (default), `warn`, `block` — selects the rail color; display-only sugar, extraction is identical under every severity."
+        },
+        {
+          "name": "scope",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "(per entry): `string` — free token naming where the rule applies; drawn into the entry's label chrome."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-guard-rails id=\"gr-api\" kind=\"api\">\n  <sem-guard-rail severity=\"block\" scope=\"public endpoints\">\n    Never return raw provider errors; wrap them in the error envelope.\n  </sem-guard-rail>\n  <sem-guard-rail severity=\"warn\">\n    Pagination defaults to 50 items — page explicitly in production.\n  </sem-guard-rail>\n</sem-guard-rails>"
+    },
+    {
+      "name": "sem-howto",
+      "family": "sem",
+      "source": "spec/schema/sem-howto.md",
+      "summary": "A how-to guide container: a `<name>` heading child, free contents, and an optional `<tags>` child.",
+      "description": "A how-to guide container: a `<name>` heading child, free contents, and an optional `<tags>` child. Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-howto id=\"how-rotate\">\n  <name>Rotate a JWT pair</name>\n  <p>Exchange the refresh grant for a fresh access/refresh pair.</p>\n  <tags>auth, tokens</tags>\n</sem-howto>"
+    },
+    {
+      "name": "sem-kb",
+      "family": "sem",
+      "source": "spec/schema/sem-kb.md",
+      "summary": "A knowledge-base article container: the authored inner content IS the article.",
+      "description": "A knowledge-base article container: the authored inner content IS the article. Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional topical qualifier, drawn into the label chrome (display-only sugar; extraction is identical either way)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-kb id=\"kb-jwt\" kind=\"auth\">\n  <section>\n    <h2>Rotation</h2>\n    <p>JWTs rotate <strong>per session</strong>; refresh tokens stay\n    server-side.</p>\n  </section>\n  <sem-references></sem-references>\n</sem-kb>"
     },
     {
       "name": "sem-md",
@@ -1950,6 +2265,52 @@
       "example": "<sem-md id=\"m-lifetimes\" label=\"Token lifetimes\" controls=\"toggle,copy\">\n  | Token   | Lifetime | Rotates |\n  | :------ | -------: | :-----: |\n  | access  | 15 min   | no      |\n  | refresh | 30 days  | yes     |\n</sem-md>"
     },
     {
+      "name": "sem-mockup",
+      "family": "sem",
+      "source": "spec/schema/sem-mockup.md",
+      "summary": "A text-or-HTML mockup container (draftamo-style).",
+      "description": "A text-or-HTML mockup container (draftamo-style). Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "mode",
+          "required": null,
+          "type": "",
+          "allowedValues": [
+            "text",
+            "html"
+          ],
+          "default": "text",
+          "description": "one of `text` (default), `html` — presentation selector; display-only sugar."
+        },
+        {
+          "name": "kind",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional qualifier drawn into the label chrome."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-mockup id=\"mock-shell\" kind=\"wireframe\">\n  +-------+---------------------------+\n  | nav   |  hero                     |\n  |       |  [ call to action ]       |\n  +-------+---------------------------+\n</sem-mockup>"
+    },
+    {
       "name": "sem-note",
       "family": "sem",
       "source": "spec/schema/sem-note.md",
@@ -2014,6 +2375,84 @@
       ],
       "children": [],
       "example": "<sem-note variant=\"warning\">The migration job expects the MinIO port-forward on 127.0.0.1:9000 — start it before you apply.</sem-note>\n<sem-note variant=\"tip\" collapsed>Snapshot the volume first; once the rotation job starts, the old keys are gone for good.</sem-note>"
+    },
+    {
+      "name": "sem-philosophy",
+      "family": "sem",
+      "source": "spec/schema/sem-philosophy.md",
+      "summary": "A principles/philosophy container (spelled with the h).",
+      "description": "A principles/philosophy container (spelled with the h). Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional qualifier drawn into the label chrome (display-only sugar)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-philosophy id=\"phil-velocity\" kind=\"engineering\">\n  <p>Velocity-first, integrity-absolute: ship aggressively, never\n  gamble data.</p>\n</sem-philosophy>"
+    },
+    {
+      "name": "sem-plan",
+      "family": "sem",
+      "source": "spec/schema/sem-plan.md",
+      "summary": "A solution/chain-of-thought plan container.",
+      "description": "A solution/chain-of-thought plan container. Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional qualifier drawn into the label chrome (display-only sugar)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global catalog (`done`, `current`, `todo`, `blocked`, `pass`, `fail`) — drawn as a status chip (display-only)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-plan id=\"plan-rotate\" kind=\"solution\" status=\"current\">\n  <p>1. Snapshot the current chart tag.</p>\n  <p>2. Land the rotation fix behind the release train.</p>\n  <p>3. Confirm the pod image, not just ArgoCD sync.</p>\n</sem-plan>"
     },
     {
       "name": "sem-procedure",
@@ -2313,6 +2752,65 @@
       "example": "<p>Rotate refresh tokens per use<a href=\"#r-rfc\">[1]</a>.</p>\n\n<sem-references id=\"refs\" kind=\"bibliography\" role=\"list\">\n  <sem-reference id=\"r-rfc\" role=\"listitem\"\n       href=\"https://www.rfc-editor.org/rfc/rfc6749\" cite=\"RFC 6749\">\n    The OAuth 2.0 Authorization Framework, §10.4.\n  </sem-reference>\n  <sem-reference id=\"r-note\" role=\"listitem\">\n    A footnote with no external target.\n  </sem-reference>\n</sem-references>"
     },
     {
+      "name": "sem-requirement",
+      "family": "sem",
+      "source": "spec/schema/sem-requirement.md",
+      "summary": "A requirement statement container.",
+      "description": "A requirement statement container. Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [
+            "functional",
+            "non-functional",
+            "constraint"
+          ],
+          "default": null,
+          "description": "one of `functional`, `non-functional`, `constraint` — the requirement class, drawn into the label chrome."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "",
+          "allowedValues": [
+            "draft",
+            "approved",
+            "implemented"
+          ],
+          "default": null,
+          "description": "one of `draft`, `approved`, `implemented` — lifecycle token, drawn as a status chip (display-only)."
+        },
+        {
+          "name": "priority",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "free token (e.g. `high`); drawn into the status chip when present."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-requirement id=\"req-session-rotate\" kind=\"functional\"\n  status=\"approved\" priority=\"high\">\n  Access tokens MUST rotate at most 15 minutes after issue.\n</sem-requirement>"
+    },
+    {
       "name": "sem-reveal",
       "family": "sem",
       "source": "spec/schema/sem-reveal.md",
@@ -2370,6 +2868,92 @@
       ],
       "children": [],
       "example": "<sem-reveal summary=\"Why not localStorage?\">\n  Tokens in localStorage are readable by any script on the page…\n</sem-reveal>"
+    },
+    {
+      "name": "sem-rubric",
+      "family": "sem",
+      "source": "spec/schema/sem-rubric.md",
+      "summary": "A scoring rubric container: the criteria × levels grid is authored inside as a plain table or row prose — the container does not constrain the decomposition.",
+      "description": "A scoring rubric container: the criteria × levels grid is authored inside as a plain table or row prose — the container does not constrain the decomposition. Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "max-score",
+          "required": null,
+          "type": "number",
+          "allowedValues": [],
+          "default": null,
+          "description": "the scale ceiling (minimum 0); drawn into the label chrome as a chip when present."
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-rubric id=\"rub-doc\" kind=\"grading\" max-score=\"10\">\n  <table>\n    <tr><th>criterion</th><th>0</th><th>5</th><th>10</th></tr>\n    <tr><td>accuracy</td><td>wrong</td><td>partial</td><td>exact</td></tr>\n  </table>\n</sem-rubric>"
+    },
+    {
+      "name": "sem-runbook",
+      "family": "sem",
+      "source": "spec/schema/sem-runbook.md",
+      "summary": "An operational runbook container: preconditions, procedure and references are authored inside with the existing elements; the container adds chrome + label.",
+      "description": "An operational runbook container: preconditions, procedure and references are authored inside with the existing elements; the container adds chrome + label. Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional qualifier drawn into the label chrome (display-only sugar)."
+        },
+        {
+          "name": "audience",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "`any` — per the global catalog (`sem-audiences`); the runbook itself does no audience gating, the document profiles do."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-runbook id=\"rb-rotate\" kind=\"ops\" audience=\"on-call\">\n  <p><strong>Preconditions:</strong> port-forward to the admin DB.</p>\n  <sem-procedure>\n    <sem-step>Snapshot the current chart tag.</sem-step>\n    <sem-step>Bump and deploy.</sem-step>\n  </sem-procedure>\n  <sem-references></sem-references>\n</sem-runbook>"
     },
     {
       "name": "sem-site-tree",
@@ -2460,6 +3044,41 @@
       ],
       "example": "<sem-procedure kind=\"runbook\" role=\"list\">\n  <sem-step role=\"listitem\" status=\"done\">provision Infisical path</sem-step>\n  <sem-step role=\"listitem\" status=\"current\">port-forward MinIO</sem-step>\n  <sem-step role=\"listitem\">run migrations</sem-step>\n  <sem-step role=\"listitem\" status=\"blocked\">cut release — waiting on CI</sem-step>\n</sem-procedure>",
       "optionsIn": "sem-procedure"
+    },
+    {
+      "name": "sem-summary",
+      "family": "sem",
+      "source": "spec/schema/sem-summary.md",
+      "summary": "A summary container.",
+      "description": "A summary container. Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional qualifier drawn into the label chrome (display-only sugar)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-summary id=\"sum-auth\" kind=\"executive\">\n  <p>Tokens rotate per session; secrets never reach the browser; the\n  client mints fresh pairs from the refresh grant.</p>\n</sem-summary>"
     },
     {
       "name": "sem-table",
@@ -2607,6 +3226,49 @@
       "example": "<sem-tag-def tag=\"sem-note\" name=\"Note\" group=\"annotation\"\n             children=\"sem-note-body sem-note-summary\">\n  An inline annotation with an optional variant and a collapsible body.\n  <sem-tag-attr name=\"variant\" type=\"string\" allowed=\"tip,warning,danger\" default=\"tip\">Display variant.</sem-tag-attr>\n  <sem-tag-attr name=\"collapsed\" type=\"boolean\">Starts hidden.</sem-tag-attr>\n</sem-tag-def>"
     },
     {
+      "name": "sem-threat-model",
+      "family": "sem",
+      "source": "spec/schema/sem-threat-model.md",
+      "summary": "A threat-model container: assets, threats and mitigations are authored inside as authored `<section>`s or `sem-list`-style prose; the container adds chrome + label.",
+      "description": "A threat-model container: assets, threats and mitigations are authored inside as authored `<section>`s or `sem-list`-style prose; the container adds chrome + label. Family A — static knowledge/doc containers; a no-logic display stub (no CSS-only elements: the Lit component exists and claims `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional methodology qualifier drawn into the label chrome (display-only sugar)."
+        },
+        {
+          "name": "scope",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "free token naming the modelled boundary; drawn into the label chrome when present."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-threat-model id=\"tm-portal\" kind=\"stride\" scope=\"infra portal\">\n  <section>\n    <h2>Assets</h2>\n    <p>Session tokens; the Infisical-backed secret store.</p>\n  </section>\n  <section>\n    <h2>Mitigations</h2>\n    <p>Tokens rotate per session; secrets never reach the browser.</p>\n  </section>\n</sem-threat-model>"
+    },
+    {
       "name": "sem-tldr",
       "family": "sem",
       "source": "spec/schema/sem-tldr.md",
@@ -2615,6 +3277,52 @@
       "attributes": [],
       "children": [],
       "example": "<sem-tldr id=\"t-auth\">\n  Rotate JWTs per session; keep refresh tokens server-side.\n</sem-tldr>"
+    },
+    {
+      "name": "sem-tsg",
+      "family": "sem",
+      "source": "spec/schema/sem-tsgs.md",
+      "summary": "A troubleshooting-guide collection and its entries.",
+      "description": "A troubleshooting-guide collection and its entries. Family A — static knowledge/doc containers; display stubs (no CSS-only elements: the Lit components exist and claim `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [],
+      "children": [],
+      "example": "<sem-tsgs id=\"tsg-deploy\" kind=\"deploys\">\n  <sem-tsg>\n    <name>stale-image</name>\n    <title>Pod serves the old image after a green sync</title>\n    <description>ArgoCD reports Synced/Healthy but the rollout\n    did not change.</description>\n    <tags>deploy, argocd</tags>\n    <when>right after a release merge</when>\n    Confirm the pod image spec per container — Synced/Healthy alone\n    can serve a stale image.\n  </sem-tsg>\n  <sem-tsg>\n    <name>port-forward</name>\n    <title>Admin MinIO unreachable for terragrunt</title>\n    Port-forward 127.0.0.1:9000 before any --all run.\n  </sem-tsg>\n</sem-tsgs>",
+      "optionsIn": "sem-tsgs"
+    },
+    {
+      "name": "sem-tsgs",
+      "family": "sem",
+      "source": "spec/schema/sem-tsgs.md",
+      "summary": "A troubleshooting-guide collection and its entries.",
+      "description": "A troubleshooting-guide collection and its entries. Family A — static knowledge/doc containers; display stubs (no CSS-only elements: the Lit components exist and claim `data-sem-upgraded`; everything visible is vocabulary CSS).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "collection qualifier drawn into the label chrome (display-only sugar)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<sem-tsgs id=\"tsg-deploy\" kind=\"deploys\">\n  <sem-tsg>\n    <name>stale-image</name>\n    <title>Pod serves the old image after a green sync</title>\n    <description>ArgoCD reports Synced/Healthy but the rollout\n    did not change.</description>\n    <tags>deploy, argocd</tags>\n    <when>right after a release merge</when>\n    Confirm the pod image spec per container — Synced/Healthy alone\n    can serve a stale image.\n  </sem-tsg>\n  <sem-tsg>\n    <name>port-forward</name>\n    <title>Admin MinIO unreachable for terragrunt</title>\n    Port-forward 127.0.0.1:9000 before any --all run.\n  </sem-tsg>\n</sem-tsgs>"
     },
     {
       "name": "sem-view",

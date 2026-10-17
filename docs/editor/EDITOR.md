@@ -242,10 +242,11 @@ already ships: `{ specVersion, tags: [{ name, family, summary, description,
 attributes[{name, required, type, allowedValues, default, description}], children[{name,
 note}], example, optionsIn? }] }`). Notes the editor depends on:
 
-- 58 tags today (sem + npl; the `semext-*` / `agent-kit-*` namespaces are wired
+- 77 tags today (sem + npl; the `semext-*` / `agent-kit-*` namespaces are wired
   but carry no schema contracts yet), `tagCount` is advisory — never hard-code it. Companion child tags
   (`sem-fact`, `sem-property`, `sem-detail`, `sem-view`, `sem-step`, `sem-event`,
-  `sem-profile`, `sem-reference`, the `npl-*` parts) list their options via `optionsIn`
+  `sem-profile`, `sem-reference`, `sem-guard-rail`, `sem-tsg`, `sem-faq`,
+  `sem-changelog`, the `npl-*` parts) list their options via `optionsIn`
   pointing at the container tag.
 - **`sem-chat` is not in `elements.json`** (it is an agent-kit element outside the
   normative schema). Its descriptor ships hand-written (§3.3, data bucket) and the
