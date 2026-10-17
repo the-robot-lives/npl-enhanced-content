@@ -19,6 +19,7 @@ import type { CommandContext, CommandSpec, CompletionContext } from '../../termi
 import { highlightAnsi } from '../../sh-highlight.js';
 import { resolvePath } from '../../vfs.js';
 import { batApp } from '../../apps/bat/bat-app.js';
+import { nanoCommand } from '../../apps/nano/nano-command.js';
 
 /* ------------------------------------------------------------------ *
  * shared helpers
@@ -838,6 +839,26 @@ const MAN: Record<string, string[]> = {
     'A directory dest copies each src INTO it (basename kept). Directories',
     'need -r; copying a directory into itself is refused.',
   ],
+  nano: [
+    'nano — a small full-screen editor',
+    '',
+    'SYNOPSIS',
+    '  nano [file]',
+    '',
+    'On a terminal nano takes over the screen with a title bar, a status line',
+    'and the two-row shortcut footer. Keys: arrows, Home/End, PgUp/PgDn move',
+    '(Ctrl+A / Ctrl+E: line start/end); typing, Backspace, Delete and Enter',
+    'edit; ^O writes (prompting for the name), ^X exits (asking Y/N when the',
+    'buffer is modified — Esc cancels), ^W searches (Alt+W repeats), ^K cuts',
+    'a line and ^U pastes it back; Alt+U / Alt+E undo and redo; Alt+C shows',
+    'the cursor location (Ctrl+C is the terminal-wide interrupt); ^G opens a',
+    'key-help overlay. Long lines scroll sideways — wrapping is off. The',
+    'mouse places the cursor and the wheel scrolls. Missing files open as a',
+    'new buffer on save; read-only mounts open read-only. HTML-family files',
+    '(html, xml, svg, sem.html) are coloured by the built-in highlighter.',
+    'Without a terminal nano refuses to run: "standard input is not a',
+    'terminal".',
+  ],
 };
 
 const man: CommandSpec = {
@@ -1060,5 +1081,6 @@ export const posixCommands: CommandSpec[] = [
   touchCmd,
   rmCmd,
   cpCmd,
+  nanoCommand,
 ];
 export default posixCommands;

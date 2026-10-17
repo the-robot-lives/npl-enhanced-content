@@ -8,7 +8,7 @@
 // Feature: the core stays SemText-free
 //   Scenario: a bare <sem-terminal> has no demo commands
 // Feature: the demo plugin on <sem-shell>
-//   Scenario: boot reports the local mount and runs no CDN demo fetch
+//   Scenario: boot reports the local mount and the refused CDN demo plugin
 //   Scenario: ls / semtext run through the prompt
 // Feature: terminal mechanics
 //   Scenario: up/down history with draft restore; Ctrl+L clears
@@ -106,17 +106,16 @@ describe('the core stays SemText-free', () => {
 });
 
 describe('<sem-shell> — the demo plugin', () => {
-  it('boots with the local mount, no refused-CDN boot line, and no demo fetch', async () => {
+  it('boots with the local mount and the refused CDN demo plugin', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     const el = await attach('sem-shell');
     expect(el.lines.some((l) => l.text.includes('semtext-demo 0.1.0 mounted'))).toBe(true);
-    // The boot-time CDN-refusal demo is gone: a fresh shell prints no
-    // stderr, records no load errors, and never reaches the network.
-    await new Promise((r) => setTimeout(r, 50));
-    expect(el.lines.some((l) => l.kind === 'stderr')).toBe(false);
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(el.core.loadErrors).toHaveLength(0);
+    await vi.waitFor(() =>
+      expect(el.lines.some((l) => l.kind === 'stderr' && l.text.includes('integrity'))).toBe(true),
+    );
+    expect(fetchMock).not.toHaveBeenCalled(); // refused before any network request
+    expect(el.core.loadErrors).toHaveLength(1);
     expect(el.core.hasCommand('semtext')).toBe(true);
   });
 
@@ -325,7 +324,7 @@ describe('storage + Tab completion', () => {
     const note = el.lines[el.lines.length - 1];
     expect(note?.kind).toBe('comment'); // candidates listed as one comment line
     expect(note?.text).toContain('token-rotation.html'); // listed inline
-    expect(note?.text).toContain('more'); // capped display above 8 candidates
+    expect(note?.text).not.toContain('more'); // 10 candidates fit under the 12 cap (shell-v3-tabs-ui)
   });
 });
 

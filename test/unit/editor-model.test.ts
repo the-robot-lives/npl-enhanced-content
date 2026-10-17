@@ -79,6 +79,28 @@ describe('trivia preservation', () => {
     expect(doc.serialize()).toBe(src);
   });
 
+  it('makes an EDITED comment body safe: -- and --> cannot survive emission', () => {
+    const doc = parse('<!-- original --><p>x</p>');
+    const walk = (n: { kind: string; children?: unknown[] }): { kind: string } | null => {
+      if (n.kind === 'comment') return n;
+      for (const c of (n.children ?? []) as { kind: string; children?: unknown[] }[]) {
+        const hit = walk(c);
+        if (hit) return hit;
+      }
+      return null;
+    };
+    const comment = walk(doc.root as never);
+    if (!comment || comment.kind !== 'comment') throw new Error('expected a comment node');
+    // An editor-typed body (the setText-for-comments path marks `edited`):
+    // raw dashes would emit `-->` early or an invalid `--->`.
+    (comment as unknown as { edited: boolean; value: string }).edited = true;
+    (comment as unknown as { edited: boolean; value: string }).value = 'a -- b --> c -';
+    const out = doc.serialize();
+    expect(out).toContain('<!--a - - b - -> c - -->');
+    const body = out.slice(out.indexOf('<!--') + 4, out.lastIndexOf('-->'));
+    expect(body).not.toContain('--'); // well-formed: no double dash in the body
+  });
+
   it('treats script/style bodies as raw text (no entity decode, no child parse)', () => {
     const src = '<script type="application/json">{"a": 1 < 2, "b": "x & y"}</script>';
     const doc = parse(src);

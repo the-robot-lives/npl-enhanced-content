@@ -83,13 +83,23 @@ export function attachEditor(el: SemElement, ctx: EditorContext): EditController
     // attributes) is unrecoverable here, so undo restores canonical bytes.
     // Authored-faithful editing goes through `createContext({ source })`.
     // Lit runtime markers (empty + `?lit$` comments) are chrome, never
-    // authored content — strip before the model ever sees them (§2.4), as
-    // is SemSource's runtime fence (`template.sem-source-raw`).
-    const source = el.outerHTML
-      .replace(/<!--(?:\\?lit\$[^>]*)?-->/g, '')
-      .replace(/<template[^>]*\\bsem-source-raw\\b[^>]*>[\\s\\S]*?<\/template>/gi, '')
-      // Runtime-only attrs (base.ts's claim marker et al.) never export.
-      .replace(/\\sdata-sem-upgraded(?:="[^"]*"|='[^']*'|=[^\\s>]*)?(?=[\\s>])/gi, '');
+    // authored content (§2.4), as is SemSource's runtime fence
+    // (`template.sem-source-raw`). ALL comments are dropped on live capture:
+    // the canonical serialization cannot preserve authored comment
+    // formatting any more than whitespace; `data-sem-upgraded` stays (the
+    // lossless round-trip re-emits it — editor-desc-recall contract).
+    // Markers are removed at the DOM level on a cloned subtree —
+    // string-replace "sanitizers" can never be complete by CodeQL's model
+    // (an unterminated `<!--` in an attribute value defeats any pair
+    // regex); the DOM walk is exact. The authored-faithful path —
+    // `createContext({ source })` — keeps comments.
+    const clone = el.cloneNode(true) as Element;
+    const walker = clone.ownerDocument.createTreeWalker(clone, NodeFilter.SHOW_COMMENT);
+    const doomed: Comment[] = [];
+    while (walker.nextNode()) doomed.push(walker.currentNode as Comment);
+    for (const c of doomed) c.parentNode?.removeChild(c);
+    clone.querySelectorAll('template[sem-source-raw]').forEach((n) => n.remove());
+    const source = clone.outerHTML;
     const parsed = tryParse(source);
     if (!parsed.ok) {
       ctx.announce(`Cannot edit ${el.tagName.toLowerCase()}: failed to parse`);

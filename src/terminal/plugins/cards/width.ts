@@ -1,63 +1,31 @@
 /**
  * cards plugin — display-width aware text layout.
  *
- * Terminal columns are not characters: CJK ideographs, Hangul and most
- * emoji render two cells wide, combining marks and zero-width characters
- * render none. The frame and the wrapper below measure in DISPLAY columns
- * so a card never spills past its border, whatever script the body uses.
+ * MEASUREMENT is delegated to the screen model's one width table
+ * (`screen/width.ts`, CORE-V2 §4.1/§8.3: "grid math and paint agree") — a
+ * card is measured exactly like everything else the terminal prints. This
+ * module keeps only the LAYOUT helpers the card frame needs: SGR-stripping
+ * width/truncate/pad and the display-column wrapper.
  *
- * Pragmatic by design (no grapheme clustering): East Asian Wide/Fullwidth
- * and the common emoji blocks count 2, combining marks / ZWJ / variation
- * selectors count 0, everything else 1. Regional-indicator pairs (flags)
- * count 1 each so a flag pair totals the two cells it renders as; a lone
- * indicator is a degenerate input. Documented limitation, not a bug.
+ * Terminal columns are not characters: CJK ideographs, Hangul and most
+ * emoji render two cells wide, combining marks fold onto the previous cell
+ * and render none. The frame and the wrapper below measure in DISPLAY
+ * columns so a card never spills past its border, whatever script the body
+ * uses. Pragmatic by design (no grapheme clustering): a lone regional
+ * indicator or a ZWJ emoji sequence may measure short — the documented
+ * screen-model limitation, shared, not a cards bug.
  */
 
-const WIDE_RANGES: ReadonlyArray<readonly [number, number]> = [
-  [0x1100, 0x115f], // Hangul Jamo
-  [0x2e80, 0x303e], // CJK Radicals .. CJK Symbols
-  [0x3041, 0x33ff], // Hiragana .. CJK Compatibility
-  [0x3400, 0x4dbf], // CJK Ext A
-  [0x4e00, 0x9fff], // CJK Unified
-  [0xa000, 0xa4cf], // Yi
-  [0xa960, 0xa97f], // Hangul Jamo Extended-A
-  [0xac00, 0xd7a3], // Hangul Syllables
-  [0xf900, 0xfaff], // CJK Compatibility Ideographs
-  [0xfe10, 0xfe19], // Vertical forms
-  [0xfe30, 0xfe6f], // CJK Compatibility Forms
-  [0xff00, 0xff60], // Fullwidth forms
-  [0xffe0, 0xffe6], // Fullwidth signs
-  [0x1f300, 0x1f64f], // Misc emoji (faces, hands)
-  [0x1f680, 0x1f6ff], // Transport
-  [0x1f900, 0x1f9ff], // Supplemental symbols
-  [0x1fa70, 0x1faff], // Extended-A symbols
-  [0x20000, 0x2fffd], // CJK Ext B-F
-  [0x30000, 0x3fffd],
-];
+import { charWidth, isCombining } from '../../screen/width.js';
 
-const ZERO_RANGES: ReadonlyArray<readonly [number, number]> = [
-  [0x0300, 0x036f], // Combining diacritics
-  [0x0483, 0x0489], // Combining Cyrillic
-  [0x0591, 0x05bd], // Hebrew points (common case)
-  [0x064b, 0x065f], // Arabic diacritics
-  [0x200b, 0x200f], // Zero-width space/marks, RLM/LRM
-  [0x200d, 0x200d], // ZWJ
-  [0x2060, 0x2064], // Word joiner etc.
-  [0x20d0, 0x20f0], // Combining symbols
-  [0xfe00, 0xfe0f], // Variation selectors
-  [0xfeff, 0xfeff], // BOM
-];
-
-function inRanges(cp: number, ranges: ReadonlyArray<readonly [number, number]>): boolean {
-  for (const [lo, hi] of ranges) if (cp >= lo && cp <= hi) return true;
-  return false;
-}
-
-/** Display columns of one code point. */
+/**
+ * Display columns of one code point, under the screen model's table.
+ * Combining marks count 0 (they fold onto the preceding cell); wide
+ * glyphs count 2; everything else 1.
+ */
 export function codePointWidth(cp: number): number {
-  if (inRanges(cp, ZERO_RANGES)) return 0;
-  if (inRanges(cp, WIDE_RANGES)) return 2;
-  return 1;
+  if (isCombining(cp)) return 0;
+  return charWidth(cp);
 }
 
 const SGR_PATTERN = /\x1b\[[0-9;]*[A-Za-z]/g;

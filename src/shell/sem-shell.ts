@@ -1,14 +1,15 @@
-import type { ShellLine } from '../terminal/terminal-core.js';
 import type { PropertyValues } from 'lit';
 import { SemElement } from '../lit/base.js';
 import { SemTerminal } from '../terminal/sem-terminal.js';
+import type { ShellLine, TerminalCore } from '../terminal/terminal-core.js';
 import { lineText } from '../terminal/screen/screen.js';
 import { demoPlugin } from '../terminal/plugins/demo/plugin.js';
 import { posixPlugin } from '../terminal/plugins/posix/plugin.js';
 import { cardsPlugin } from '../terminal/plugins/cards/plugin.js';
+import { PACKAGES, applyPackageMan, mountPackages } from '../terminal/packages/manifest.js';
 import { attachAutostart } from '../terminal/script/autostart.js';
 import type { AutostartHandle } from '../terminal/script/autostart.js';
-import { looksLikeScriptPath } from '../terminal/script/demo-format.js';
+import { looksLikeScriptPath, resolveScriptValue } from '../terminal/script/demo-format.js';
 import type { DemoDriver } from '../terminal/script/demo-runner.js';
 import {
   nullViewControl,
@@ -70,6 +71,16 @@ export class SemShell extends SemTerminal {
   #shellBooted = false;
   #autostart: AutostartHandle | null = null;
   #autoRunning = false;
+  /** Only the first session gets the boot novelty lines (§11.2: tabs are quiet). */
+  #firstSessionHooked = false;
+  /** The CDN-refusal demo plays once per element, not once per tab. */
+  #cdnDemoShown = false;
+  /**
+   * The fetched start-script FILE body (r2 follow-up): kept so the replay
+   * button can re-attach the same demo — `#hasScript` alone can't, the
+   * autostart handle consumed the fetched text.
+   */
+  #fetchedScript: string | null = null;
 
   /** The view the element paints right now (§8.5). */
   #view: RendererChoice = 'dom';
@@ -102,10 +113,30 @@ export class SemShell extends SemTerminal {
     if (this.#shellBooted) return;
     this.#shellBooted = true;
     this.setAttribute('aria-label', 'SemText shell');
+    // Plugin mounting happens in configureSessionCore — EVERY session core
+    // (each tab) needs the bundled command set, and the base class hooks
+    // session 1 during its own connectedCallback above.
+    this.#attachAutostart();
+    this.#resolveView();
+  }
 
+  /**
+   * Per-session command setup (§11.2): the bundled manifests mount on every
+   * tab's core, so `help`/`ls`/`bat` work everywhere. The boot novelty —
+   * the "type help" banner and the CDN-refusal demo — stays with the FIRST
+   * session; a new tab is a fresh shell, not a fresh demo.
+   */
+  protected override configureSessionCore(core: TerminalCore, emit: (lines: ShellLine[]) => void): void {
     const lines: ShellLine[] = [];
+    // Base plugins first — packages mount AFTER them (packages round): each
+    // package is its own manifest via mountPackages, which lets a package
+    // supersede a base command (declared in the stub's `supersedes`, or
+    // last-wins with a warning) so a name clash never kills a mount. `man`
+    // picks up the packages' pages (applyPackageMan is identity for
+    // manifests that carry no `man` command). Registration is appending to
+    // src/terminal/packages/manifest.ts — nothing else changes here.
     for (const manifest of [posixPlugin, demoPlugin, cardsPlugin]) {
-      const mounted = this.core.mountPlugin(manifest);
+      const mounted = core.mountPlugin(applyPackageMan(manifest));
       if (mounted.ok) {
         lines.push({
           kind: 'stdout',
@@ -115,10 +146,31 @@ export class SemShell extends SemTerminal {
         lines.push({ kind: 'stderr', text: `plugin ${manifest.name}: ${mounted.error}` });
       }
     }
-    lines.push({ kind: 'stdout', text: 'type help to begin — or press replay to watch the demo.' });
-    this.appendLines(lines);
-    this.#attachAutostart();
-    this.#resolveView();
+    for (const pm of mountPackages(core)) {
+      const pkg = PACKAGES.find((p) => p.name === pm.pkg);
+      const count = pkg?.commands.length ?? 0;
+      if (pm.ok) {
+        lines.push({ kind: 'stdout', text: `package ${pm.pkg} mounted — ${count} command${count === 1 ? '' : 's'} (lazy)` });
+      } else {
+        lines.push({ kind: 'stderr', text: `package ${pm.pkg}: ${pm.error}` });
+      }
+    }
+    if (!this.#firstSessionHooked) {
+      this.#firstSessionHooked = true;
+      lines.push({ kind: 'stdout', text: 'type help to begin — or press replay to watch the demo.' });
+    }
+    emit(lines);
+    // The CDN-rule demo: absolute https, no integrity — refused pre-fetch.
+    // Asserted via core.loadErrors in the unit tests (session 1's core is
+    // the active `el.core` at boot).
+    if (!this.#cdnDemoShown) {
+      this.#cdnDemoShown = true;
+      void core.loadPluginFromUrl('https://cdn.noizu.com/semtext/plugins/extra/manifest.json').then((result) => {
+        if (!result.ok) {
+          emit([{ kind: 'stderr', text: `plugin https://cdn.noizu.com/…: ${result.error}` }]);
+        }
+      });
+    }
   }
 
   /**
@@ -219,6 +271,9 @@ export class SemShell extends SemTerminal {
     this.#autostart = attachAutostart(this, this.#demoDriver(), {
       onRunning: (running) => this.#autoRunningChanged(running),
     });
+    // The attribute resolved to a real script → the replay button shows
+    // (the boot playback path marks itself the same way).
+    if (resolveScriptValue(value) !== null) this.markScripted();
   }
 
   async #fetchStartScript(path: string): Promise<void> {
@@ -238,6 +293,8 @@ export class SemShell extends SemTerminal {
       // A late fetch after a disconnect (which nulls the handle) must not
       // re-attach into a detached element; nor double-attach on reconnect.
       if (this.#autostart !== null || !this.isConnected) return;
+      this.#fetchedScript = body;
+      this.markScripted(); // r2 follow-up: the FETCH flow never set #hasScript
       this.#autostart = attachAutostart(this, this.#demoDriver(), {
         script: body,
         onRunning: (running) => this.#autoRunningChanged(running),
@@ -246,6 +303,26 @@ export class SemShell extends SemTerminal {
       // No fetchable script (offline, 404, blocked): the static fallback
       // transcript stays; never throw from a landing page.
     }
+  }
+
+  /**
+   * The replay button. A fetched start-script file re-attaches its saved
+   * body (the autostart handle consumed the text; the attribute alone is
+   * just a path). Any other scripted flow — the boot `script`/`playback`
+   * attributes, or an inline start-script — falls back to the terminal's
+   * boot playback restart.
+   */
+  protected override replayScript(): void {
+    if (this.#fetchedScript === null) {
+      super.replayScript();
+      return;
+    }
+    this.#autostart?.dispose();
+    this.#autostart = null;
+    this.#autostart = attachAutostart(this, this.#demoDriver(), {
+      script: this.#fetchedScript,
+      onRunning: (running) => this.#autoRunningChanged(running),
+    });
   }
 
   /** The script owns the keyboard while it runs; the reader takes it back. */
