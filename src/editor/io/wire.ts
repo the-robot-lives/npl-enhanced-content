@@ -61,6 +61,9 @@ export interface WireIoOptions {
   saveKey?: boolean;
   /** Restore-prompt override (tests, custom dialogs). */
   confirm?: (message: string) => boolean;
+  /** Called after a save the user can rely on: a successful export, or a
+   *  successful autosave slot write. The shell clears its dirty state here. */
+  onSaved?: () => void;
   /** Open surface: shell dialog hook (drafts + store files). */
   onOpenRequest?: (info: OpenRequestInfo) => void;
   /** v1 no-dialog fallback: restore the accepted draft. */
@@ -102,6 +105,7 @@ export function wireIo(opts: WireIoOptions): IoHandle {
           key: opts.draftsKey,
           storage: effectiveStorage,
           getMode: opts.getMode,
+          onSave: opts.onSaved,
         })
       : null;
 
@@ -114,6 +118,7 @@ export function wireIo(opts: WireIoOptions): IoHandle {
     const filename = filenameFor();
     try {
       (opts.download ?? downloadSource)(source, filename);
+      opts.onSaved?.();
       ctx.announce(`Exported ${filename}`);
     } catch (cause) {
       ctx.announce(`Export failed: ${cause instanceof Error ? cause.message : String(cause)}`);

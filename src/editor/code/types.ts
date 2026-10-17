@@ -72,6 +72,9 @@ export interface CodeViewHost {
   offsetToPos(offset: number): DocPos | null;
   /** Caret/selection moved in the code view (rAF-throttled). */
   onCodeSelection?(selection: CodeSelection): void;
+  /** Issue strip state changed (after each parse / external source push) —
+   *  the shell mirrors it in the status bar + problems panel (§5.5). */
+  onIssues?(issues: ParseIssue[], failed: boolean): void;
   /** Editor-wide polite announcement (§7 `sem-ed-live`). */
   announce?(message: string): void;
 }
