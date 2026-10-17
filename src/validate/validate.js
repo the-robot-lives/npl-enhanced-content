@@ -352,16 +352,31 @@ export function validateSource(source, schema, { filename = '<input>' } = {}) {
     }
     const def = defs[defName];
 
-    // Attribute contracts. Known set = global catalog + element def +
-    // standard HTML/ARIA. data-* is the alias spelling of every parameter.
-    const known = new Set([...Object.keys(x.globalAttributes), ...Object.keys(def.attributes || {}), ...x.standardAttributes]);
+    // Child-form branching (schema `childForms`): a parent def can carry
+    // per-child contracts that only apply in that parent's context — e.g.
+    // `<sem-step>` grows action/gate/check/… under `<sem-workflow>`, while
+    // a sem-procedure step keeps its plain status-only contract, and
+    // `<node>` requires `path` only inside a tree container. The branch's
+    // attributes merge OVER the child def's own (branch keys win); its
+    // presence does not touch children/childRules/partOf.
+    const parentEl = el.parentElement;
+    const parentDefName = parentEl ? defNameFor(parentEl, defs) : null;
+    const parentDef = parentDefName ? defs[parentDefName] : null;
+    const form = parentDef && parentDef.childForms ? parentDef.childForms[defName] : null;
+    const defAttributes =
+      form && form.attributes ? { ...(def.attributes || {}), ...form.attributes } : def.attributes || {};
+
+    // Attribute contracts. Known set = global catalog + element def (+
+    // the context child-form, above) + standard HTML/ARIA. data-* is the
+    // alias spelling of every parameter.
+    const known = new Set([...Object.keys(x.globalAttributes), ...Object.keys(defAttributes), ...x.standardAttributes]);
     const hasBare = (n) => el.hasAttribute(n);
     for (const a of Array.from(el.attributes)) {
       const aname = a.name.toLowerCase();
       const value = a.value;
       if (aname.startsWith('data-')) {
         const base = aname.slice(5);
-        const contract = (def.attributes || {})[base] || x.globalAttributes[base];
+        const contract = defAttributes[base] || x.globalAttributes[base];
         if (contract !== undefined && hasBare(base)) {
           push(x.spelling.dualSpellingSeverity, 'dual-spelling', `both "${base}" and "${aname}" present — writing both spellings is an authoring error (conventions.md §2; data- wins)`, line);
         }
@@ -371,7 +386,7 @@ export function validateSource(source, schema, { filename = '<input>' } = {}) {
         continue;
       }
       if (known.has(aname)) {
-        const contract = (def.attributes || {})[aname] || x.globalAttributes[aname];
+        const contract = defAttributes[aname] || x.globalAttributes[aname];
         const severity = (contract && contract.severityOnUnknown) || 'error';
         for (const p of valueCheck(contract, value, aname)) push(severity, 'attribute-value', p, line);
         if (contract && contract.forbidden) {
@@ -382,8 +397,9 @@ export function validateSource(source, schema, { filename = '<input>' } = {}) {
       push(x.unknownAttributeSeverity, 'unknown-attribute', `unknown attribute "${aname}" on <${defName === tag ? tag : tag + ' [sem-' + defName + ']'}>`, line);
     }
 
-    // required / recommended
-    for (const [attr, contract] of Object.entries(def.attributes || {})) {
+    // required / recommended (child-form contracts included — a required
+    // branch attribute, e.g. a tree node's path, enforces here)
+    for (const [attr, contract] of Object.entries(defAttributes)) {
       if (contract.forbidden) continue;
       const present = el.hasAttribute(attr) || el.hasAttribute('data-' + attr);
       if (!present && contract.required) {

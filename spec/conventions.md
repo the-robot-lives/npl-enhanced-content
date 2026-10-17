@@ -47,6 +47,7 @@ listed with its full entry in [SS5](#5-element-entries).
 | **Facts & recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `incorrect-statement`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
 | **Data & tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
 | **Sequences & progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
+| **Interactive containers** | `sem-workflow` / `sem-step`, `sem-site-tree` / `node`, `sem-file-tree` / `node` | Steps with gate/check/if-no branches, and site/file trees (structured or text-authored) with collapse, filter and find |
 | **Definitions & citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference`, `sem-tag-def` / `sem-tag-attr`, `sem-api-call` / `sem-api-param` | Closed key/value assertions, the numbered works the prose cites, and the reference-definition cards that document a vocabulary's tags and an API's endpoints |
 | **NPL** | `npl-agent`, `npl-directive`, `npl-section`, `npl-rubric`, `npl-critique`, `npl-declaration`, `npl-example`, `npl-flag` / `npl-flags`, `npl-hormones`, `npl-mindread`, `npl-mode`, `npl-mood`, `npl-poa`, `npl-ref`, `npl-thought`, `npl-vos`, `npl-artifact`, `npl-cot`, `npl-intent` | NPL prompt-engineering elements; loaded by `npl.js` / `npl-lazy.js` on top of the SemText core |
 
@@ -605,6 +606,63 @@ text-only via CSS `attr()` -- no fake bar; the caption is gated on the
 so it never duplicates the script-free text. `status="done"` ? 1 by
 convention.
 
+### Interactive containers
+
+**sem-workflow / sem-step** -- ordered steps carrying operational
+metadata: `action` (required in workflow context), `description`,
+`gate`, `check`, `if-no` (underscore `if_no` accepted by the
+component), `output`; the shared `status` catalog applies.
+**Normative: `spec/schema/sem-workflow.md`.**
+```html
+<sem-workflow kind="release" duration="45m">
+  <sem-step action="Build images" gate="CI green" check="gh run view"
+    if-no="fix CI, then re-run" output="dist/*.tar">push the tag</sem-step>
+</sem-workflow>
+```
+JS-off: CSS-ordered list; ordinals are workflow-scoped counters; gate
+(`⛨`) and check (`▸`) badges are `::before`/`::after` `attr()` chrome.
+JS-on: an `if-no` step grows a collapsible branch (button with
+`aria-expanded`/`aria-controls`), gated on the container's
+`data-sem-upgraded` marker. The workflow step parameters are a
+per-parent schema childForm: a sem-procedure step keeps its plain
+status-only contract, and `action` outside a workflow is an
+unknown-attribute warning.
+
+**sem-site-tree / node** -- a tree authored as nested bare `<node
+path label kind collapsed>` children (class form `div.sem-node`).
+**Normative: `spec/schema/sem-site-tree.md`.**
+```html
+<sem-site-tree label="Monorepo layout">
+  <node path="src" label="Source" kind="dir">
+    <node path="src/lit" kind="dir"><node path="src/lit/app.ts"></node></node>
+  </node>
+</sem-site-tree>
+```
+JS-off: a static nested list purely via CSS (guides, counters,
+`attr()` labels). JS-on: one shared engine (per-node collapse with
+`aria-expanded`, filter box that keeps ancestor chains, find with
+`data-match` marks and an Enter-cycled current match), all gated on
+the `data-sem-upgraded` marker. `path` is required in tree context
+(schema childForm); a stray `node` is an orphan-part warning.
+
+**sem-file-tree** -- the same tree model authored as text: an
+indented (box-drawing or whitespace) tree inside a `<pre>`, wrapped by
+`<sem-file-tree mode="text">`.
+**Normative: `spec/schema/sem-file-tree.md`.**
+```html
+<sem-file-tree mode="text"><pre>
+assets/
+├── icons/
+│   └── logo.svg
+</pre></sem-file-tree>
+```
+The pre **is** the record: JS-off it renders verbatim, nothing
+fabricated; JS-on the shared engine parses the indentation (4-column
+box segments, or the smallest whitespace indent unit; trailing `/`
+marks a directory) and renders generated view rows with the same
+collapse/filter/find chrome. A structured `<node>` form is also
+accepted (dispatched on content).
+
 ### Definitions & citations
 
 **sem-properties / sem-property** -- definition/properties block.
@@ -828,6 +886,9 @@ exception: `<incorrect-statement>`'s class form is the unprefixed
 | `<sem-reader controls outline-depth>` > optional `<nav aria-label="Contents">` | `div.sem-reader[data-controls][data-outline-depth]` > same optional nav; chrome, mints nothing |
 | `<sem-md label view-as="rendered\|raw" controls>` > Markdown text | `div.sem-md[data-label][data-view-as][data-controls]` > Markdown text |
 | `<sem-table controls sticky>` > `<table>` | `div.sem-table[data-controls][data-sticky]` > authored `<table>` (`<th scope="col">`, `td[data-value]` sort keys) |
+| `<sem-workflow kind duration label>` / `<sem-step action description gate check if-no output status>` | `div.sem-workflow[data-kind][data-duration][data-label]` > `div.sem-step[data-action][data-description][data-gate][data-check][data-if-no][data-output][data-status]` |
+| `<sem-site-tree label mode>` / `<node path label kind collapsed>` | `div.sem-site-tree[data-label][data-mode]` > `div.sem-node[data-path][data-label][data-kind]`, nested |
+| `<sem-file-tree mode label>` | `div.sem-file-tree[data-mode][data-label]`; text form keeps the authored `<pre>`, structured form nests `div.sem-node[data-path]` |
 | `<sem-browser src label>` > fallback figure | `div.sem-browser[data-src]` > the fallback children — with no script the div IS the framed document |
 
 Rules the alias inherits unchanged: a `data-*` parameter wins over a bare

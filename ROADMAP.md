@@ -73,7 +73,7 @@ guardrail discipline they document.
 
 | Artifact | Budget | Measured (2026-10-13) |
 |---|---|---|
-| `semtext.js` (one bundle) | **145 KB** (raised from 126 — user decision 2026-10-14; 144 → 145 after family A, 2026-10-18) | 144.3 raw post family A — in budget |
+| `semtext.js` (one bundle) | **152 KB** (raised from 126 — user decision 2026-10-14; 144 → 145 after family A containers, 2026-10-18; 145 → 152 after the interactive containers joined the single bundle the same day) | 151.5 raw / 47.1 gzipped with both lanes merged — in budget |
 | `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
 | `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
 | `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
@@ -136,6 +136,15 @@ grown to 143.1 by parallel lanes) measured 144.3 raw; the coordinator raised
 the line to 145 KB post-measure (semext/agent-kit remain separate bundles).
 Any future bump still goes through this section and
 `scripts/build.mjs` together.
+
+Core bundle budget (2026-10-18) raised `semtext.js` 145 → 152 KB raw: the
+interactive containers (sem-workflow / sem-site-tree / sem-file-tree and the
+shared tree engine they lazy-ship) joined the single bundle per the
+no-CSS-only-tags registration contract (`lit-all-tags-registered.test.ts` —
+every schema tag answers `customElements.get()` once the core loads), the same
+sem-browser wiring, measured on the family A base. Measured 150.1 raw / 46.6
+gzipped on that base; 151.5 raw / 47.1 gzipped once both lanes merged — inside
+the new line.
 
 
 ## History (recorded decisions — preserved)

@@ -16,6 +16,7 @@
     "spec/schema/sem-eval.md",
     "spec/schema/sem-facts.md",
     "spec/schema/sem-faqs.md",
+    "spec/schema/sem-file-tree.md",
     "spec/schema/sem-guard-rails.md",
     "spec/schema/sem-howto.md",
     "spec/schema/sem-kb.md",
@@ -33,6 +34,7 @@
     "spec/schema/sem-reveal.md",
     "spec/schema/sem-rubric.md",
     "spec/schema/sem-runbook.md",
+    "spec/schema/sem-site-tree.md",
     "spec/schema/sem-source.md",
     "spec/schema/sem-summary.md",
     "spec/schema/sem-table.md",
@@ -41,6 +43,7 @@
     "spec/schema/sem-tldr.md",
     "spec/schema/sem-tsgs.md",
     "spec/schema/sem-views.md",
+    "spec/schema/sem-workflow.md",
     "spec/schema/npl/cot.md",
     "spec/schema/npl/intent.md",
     "spec/schema/npl/npl-agent.md",
@@ -62,7 +65,7 @@
     "spec/schema/npl/npl-thought.md",
     "spec/schema/npl/npl-vos.md"
   ],
-  "tagCount": 74,
+  "tagCount": 77,
   "tags": [
     {
       "name": "npl-agent",
@@ -2035,6 +2038,30 @@
       "example": "<sem-faqs id=\"faq-auth\" kind=\"auth\">\n  <sem-faq id=\"q-expiry\">\n    <question>Do access tokens expire mid-session?</question>\n    <answer>No — the client mints a fresh pair from the refresh\n    grant; the user never re-signs-in mid-session.</answer>\n  </sem-faq>\n  <sem-faq id=\"q-secret\">\n    <question>Where do client secrets live?</question>\n    <answer>Server-side, in the confidential client — the browser\n    only ever sees tokens.</answer>\n  </sem-faq>\n</sem-faqs>"
     },
     {
+      "name": "sem-file-tree",
+      "family": "sem",
+      "source": "spec/schema/sem-file-tree.md",
+      "summary": "A file listing authored as text: an indented tree (box-drawing `├──`/`└──`/`│` or plain whitespace) inside a `<pre>`, wrapped by `<sem-file-tree mode=\"text\">`.",
+      "description": "A file listing authored as text: an indented tree (box-drawing `├──`/`└──`/`│` or plain whitespace) inside a `<pre>`, wrapped by `<sem-file-tree mode=\"text\">`. The pre **is** the record — JS-off nothing is fabricated; JS-on the same engine as sem-site-tree parses the indentation to the shared model and adds collapse/filter/find over generated view rows. A structured `<node>` authoring form is also accepted (dispatched on content, like sem-site-tree).",
+      "attributes": [
+        {
+          "name": "label",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "mode",
+          "note": "`text` | `structured` (default); explicit `mode` overrides content dispatch."
+        }
+      ],
+      "example": "<sem-file-tree mode=\"text\" label=\"Assets\">\n<pre>\nassets/\n├── icons/\n│   └── logo.svg\n├── main.css\n└── app.js\n</pre>\n</sem-file-tree>"
+    },
+    {
       "name": "sem-guard-rail",
       "family": "sem",
       "source": "spec/schema/sem-guard-rails.md",
@@ -2929,6 +2956,34 @@
       "example": "<sem-runbook id=\"rb-rotate\" kind=\"ops\" audience=\"on-call\">\n  <p><strong>Preconditions:</strong> port-forward to the admin DB.</p>\n  <sem-procedure>\n    <sem-step>Snapshot the current chart tag.</sem-step>\n    <sem-step>Bump and deploy.</sem-step>\n  </sem-procedure>\n  <sem-references></sem-references>\n</sem-runbook>"
     },
     {
+      "name": "sem-site-tree",
+      "family": "sem",
+      "source": "spec/schema/sem-site-tree.md",
+      "summary": "A site/file tree as authored structure: nested bare `<node>` entries with `path`, optional `label` and `kind`.",
+      "description": "A site/file tree as authored structure: nested bare `<node>` entries with `path`, optional `label` and `kind`. One internal model shared with sem-file-tree (which authors the same model as text); the same engine serves both. Children: `node` entries — bare element children (nested freely), or the Appendix A class form. A `node` outside a tree container (or whose parent is not another node) is an orphan-part warning; inside a tree, `path` is required (schema childForm).",
+      "attributes": [
+        {
+          "name": "label",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "mode",
+          "note": "`structured` (default) | `text`; text selects the pre-form parse (see sem-file-tree.md — the same dispatch serves both tags)."
+        },
+        {
+          "name": "node",
+          "note": ""
+        }
+      ],
+      "example": "<sem-site-tree label=\"Monorepo layout\">\n  <node path=\"src\" label=\"Source\" kind=\"dir\">\n    <node path=\"src/lit\" kind=\"dir\" collapsed>\n      <node path=\"src/lit/sem-workflow.ts\" kind=\"file\"></node>\n      <node path=\"src/lit/sem-tree.ts\" kind=\"file\"></node>\n    </node>\n  </node>\n  <node path=\"themes\" kind=\"dir\"></node>\n</sem-site-tree>"
+    },
+    {
       "name": "sem-source",
       "family": "sem",
       "source": "spec/schema/sem-source.md",
@@ -3314,6 +3369,58 @@
       ],
       "children": [],
       "example": "<sem-views id=\"deploy\">\n  <sem-view name=\"Helm\" active>content…</sem-view>\n  <sem-view name=\"ArgoCD\">content…</sem-view>\n</sem-views>"
+    },
+    {
+      "name": "sem-workflow",
+      "family": "sem",
+      "source": "spec/schema/sem-workflow.md",
+      "summary": "An ordered workflow whose steps carry operational metadata: what to do, how to verify it (gate + check), and what to do when the check fails (`if-no`).",
+      "description": "An ordered workflow whose steps carry operational metadata: what to do, how to verify it (gate + check), and what to do when the check fails (`if-no`). The same `sem-step` element sem-procedure uses; the workflow-context parameters are a per-parent childForm in the machine schema, so a sem-procedure step's contract is untouched. Children: one `sem-step` per step, in DOM execution order — ordinals are positional (CSS counters), never authored.",
+      "attributes": [
+        {
+          "name": "label",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "duration",
+          "note": "free token (`45m`, `2h` …); whole-workflow estimate."
+        },
+        {
+          "name": "sem-step",
+          "note": ""
+        }
+      ],
+      "example": "<sem-workflow kind=\"release\" duration=\"45m\" label=\"Cut a release\">\n  <sem-step id=\"s1\" action=\"Build images\" description=\"sha-tagged via CI\"\n    gate=\"CI green\" check=\"gh run view\" output=\"dist/*.tar\">push the tag</sem-step>\n  <sem-step id=\"s2\" action=\"Deploy stage\" gate=\"images present\"\n    check=\"gh-wait deploy\" if-no=\"fix CI, then re-run the release workflow\">merge to stage</sem-step>\n</sem-workflow>"
     }
   ],
   "gaps": []

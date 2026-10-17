@@ -1143,6 +1143,112 @@
       "children": [
         "tags"
       ]
+    },
+
+    "sem-workflow": {
+      "source": "spec/schema/sem-workflow.md",
+      "record": true,
+      "attributes": {
+        "duration": { "type": "token" },
+        "label": { "type": "token" }
+      },
+      "children": [
+        "sem-step"
+      ],
+      "childForms": {
+        "sem-step": {
+          "description": "The sem-step contract, as authored inside a workflow: the workflow-context parameters (action/description/gate/check/if-no/output) are per-parent, so sem-procedure steps are untouched. The shared status catalog still applies.",
+          "attributes": {
+            "action": { "type": "token", "required": true },
+            "description": { "type": "token" },
+            "gate": { "type": "token" },
+            "check": { "type": "token" },
+            "if-no": { "type": "token" },
+            "if_no": { "type": "token" },
+            "output": { "type": "token" }
+          }
+        }
+      }
+    },
+    "sem-site-tree": {
+      "source": "spec/schema/sem-site-tree.md",
+      "extends": "container",
+      "record": true,
+      "attributes": {
+        "mode": {
+          "type": "token",
+          "values": ["structured", "text"],
+          "default": "structured"
+        }
+      },
+      "children": [
+        "node"
+      ],
+      "childForms": {
+        "node": {
+          "description": "A tree entry as authored inside a site tree: path is required in tree context (a bare node elsewhere is an unknown-attribute warning).",
+          "attributes": {
+            "path": { "type": "token", "required": true }
+          }
+        }
+      }
+    },
+    "sem-file-tree": {
+      "source": "spec/schema/sem-file-tree.md",
+      "extends": "container",
+      "record": true,
+      "attributes": {
+        "mode": {
+          "type": "token",
+          "values": ["structured", "text"],
+          "default": "structured"
+        }
+      },
+      "children": [
+        "node"
+      ],
+      "childForms": {
+        "node": {
+          "description": "A tree entry as authored inside a file tree: path is required in tree context; mode=text carries no node children at all (the authored pre is the record).",
+          "attributes": {
+            "path": { "type": "token", "required": true }
+          }
+        }
+      }
+    },
+    "node": {
+      "source": "spec/schema/sem-site-tree.md",
+      "record": false,
+      "partOf": ["sem-site-tree", "sem-file-tree", "node"],
+      "classAliases": ["div.sem-node"],
+      "attributes": {
+        "kind": {
+          "type": "token",
+          "values": [
+            "dir",
+            "file",
+            "symlink"
+          ]
+        }
+      },
+      "childForms": {
+        "node": {
+          "description": "A node nested inside another node — the same tree-node form, one level deeper.",
+          "attributes": {
+            "path": { "type": "token", "required": true },
+            "label": { "type": "token" },
+            "kind": {
+              "type": "token",
+              "values": [
+                "dir",
+                "file",
+                "symlink"
+              ]
+            }
+          }
+        }
+      }
     }
+
   }
 }

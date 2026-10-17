@@ -116,10 +116,13 @@ const targets = [
     // in ROADMAP "Size budgets".
     // 126 → 144 KB (2026-10-14, user decision): docs-overhaul content landed
     // at 132.3 raw. Recorded in ROADMAP "Size budgets".
-    // 145.0: measured 144.3 after family A containers (19 tags, +1.2KB) —
-    // budget set deliberately post-measure per ROADMAP; semext/agent-kit are
-    // separate bundles.
-    budgetKb: 145.0,
+    // 144 → 145.0 KB (2026-10-18, family A containers: 19 tags, +1.2 KB,
+    // measured 144.3) then → 152 KB (2026-10-18, interactive containers:
+    // sem-workflow / sem-site-tree / sem-file-tree + the shared tree engine
+    // joined the single bundle per the no-CSS-only-tags registration
+    // contract — 150.1 on that base, 151.5 after the family A merge).
+    // Recorded in ROADMAP "Size budgets".
+    budgetKb: 152,
     required: true,
   },
   {

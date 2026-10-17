@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · interactive containers — workflows &amp; trees</title>
+<!-- sem:inline theme minimal-tech-light -->
+<!-- sem:inline vocabulary -->
+<style>
+  .sem-enhanced-document { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+</style>
+<!-- Family A part 2 (spec/schema/sem-workflow.md, sem-site-tree.md,
+     sem-file-tree.md): the interactive containers demo. JS-off the page
+     is a static record (CSS counters, guides, attr badges); JS-on the
+     lazy chunks add the if-no branches and the tree chrome. -->
+<!-- sem:inline bundle -->
+</head>
+<body>
+<div class="sem-enhanced-document">
+  <h1>Interactive containers — workflows &amp; trees</h1>
+
+  <h2>sem-workflow / sem-step</h2>
+  <sem-workflow id="w-release" kind="release" duration="45m" label="Cut a release">
+    <sem-step id="ws-1" action="Build images" description="sha-tagged via CI" gate="CI green" check="gh run view" output="dist/*.tar" status="done">push the tag</sem-step>
+    <sem-step id="ws-2" action="Deploy stage" gate="images present" check="gh-wait deploy" if-no="fix CI, then re-run the release workflow">merge to stage</sem-step>
+    <sem-step id="ws-3" action="Promote to main" if_no="stop and page the release captain" status="current">open the stage→main PR</sem-step>
+  </sem-workflow>
+
+  <p>Class form (Appendix A) — same record, div spelling:</p>
+  <div class="sem-workflow" id="w-class" data-kind="recipe">
+    <div class="sem-step" data-action="Warm the pan" data-gate="butter foams">medium heat</div>
+    <div class="sem-step" data-action="Whisk the eggs" data-check="no streaks remain">six eggs, thirty seconds</div>
+  </div>
+
+  <h2>sem-site-tree (structured nodes)</h2>
+  <sem-site-tree id="t-site" label="Monorepo layout" role="tree">
+    <node path="src" label="Source" kind="dir" role="treeitem">
+      <node path="src/lit" kind="dir" role="group">
+        <node path="src/lit/sem-workflow.ts" kind="file" role="treeitem"></node>
+        <node path="src/lit/sem-tree.ts" kind="file" role="treeitem"></node>
+      </node>
+      <node path="src/validate" kind="dir" collapsed role="group">
+        <node path="src/validate/validate.js" kind="file" role="treeitem"></node>
+      </node>
+    </node>
+    <node path="themes" kind="dir" role="treeitem">
+      <node path="themes/_vocabulary.css" kind="file" role="treeitem"></node>
+    </node>
+  </sem-site-tree>
+
+  <h2>sem-file-tree (text mode — the authored pre is the record)</h2>
+  <sem-file-tree id="t-files" mode="text" label="Assets" role="tree">
+<pre>
+assets/
+├── icons/
+│   └── logo.svg
+├── main.css
+└── app.js
+</pre>
+  </sem-file-tree>
+
+  <h2>sem-file-tree (structured nodes — same engine)</h2>
+  <sem-file-tree id="t-files-structured" label="Crate tree" role="tree">
+    <node path="crates" kind="dir" role="group">
+      <node path="crates/core" kind="dir" role="treeitem">
+        <node path="crates/core/lib.rs" kind="file" role="treeitem"></node>
+      </node>
+    </node>
+  </sem-file-tree>
+
+  <p><a href="./index.html">← back to the demo index</a></p>
+</div>
+</body>
+</html>
