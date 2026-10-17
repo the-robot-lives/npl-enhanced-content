@@ -65,7 +65,7 @@ beforeEach(() => {
   core.vfs.mountFile('/page.html', '<!doctype html>\n<html>\n<h1>Hi</h1>\n</html>\n'); // 42 bytes
 });
 
-describe.skip('find — walking and predicates', () => {
+describe('find — walking and predicates', () => {
   it('paths print as given; a . start prints ./…; preorder (dir before contents)', () => {
     expect(pipe('find /docs')).toEqual([
       '/docs',
@@ -133,7 +133,15 @@ describe.skip('find — walking and predicates', () => {
     core.vfs.mountFile('/big.bin', 'x'.repeat(1200)); // ceil(1200/1024) = 2 blocks
     expect(pipe('find / -size +1k -type f')).toEqual(['/big.bin']);
     expect(pipe('find / -size 2k -type f')).toEqual(['/big.bin']);
-    expect(pipe('find / -size 1k -type f')).toEqual([]); // 2 blocks is not exactly 1
+    // -size counts whole units ROUNDED UP (GNU): every nonzero file under
+    // 1k is exactly 1 kibibyte; big.bin (1200 B) is 2 and does not match.
+    expect(pipe('find / -size 1k -type f')).toEqual([
+      '/README.md',
+      '/docs/alpha.txt',
+      '/docs/beta.txt',
+      '/docs/nested/deep.txt',
+      '/page.html',
+    ]);
   });
 
   it('expression errors exit 1 with GNU-style wording', () => {
@@ -148,7 +156,7 @@ describe.skip('find — walking and predicates', () => {
   });
 });
 
-describe.skip('find — actions', () => {
+describe('find — actions', () => {
   it('an explicit -print behaves like the implicit one; predicates chain', () => {
     expect(pipe('find /docs -name alpha.txt -print')).toEqual(['/docs/alpha.txt']);
     expect(pipe('find /docs -name alpha.txt -type d -print')).toEqual([]); // name hits, type stops the chain
@@ -200,7 +208,7 @@ describe.skip('find — actions', () => {
   });
 });
 
-describe.skip('sed — substitute and friends', () => {
+describe('sed — substitute and friends', () => {
   it('s/// replaces the first match per line; g hits all', () => {
     expect(pipe("echo hello | sed 's/l/L/'")).toEqual(['heLlo']);
     expect(pipe("echo 'a-b-a' | sed 's/a/X/g'")).toEqual(['X-b-X']);
@@ -248,7 +256,7 @@ describe.skip('sed — substitute and friends', () => {
   });
 });
 
-describe.skip('sed — addresses and commands', () => {
+describe('sed — addresses and commands', () => {
   it('line numbers, $, /re/, ranges, steps — each negatable with !', () => {
     expect(pipe("printf '1\\n2\\n3\\n' | sed '2d'")).toEqual(['1', '3']);
     expect(pipe("printf '1\\n2\\n3\\n' | sed '$d'")).toEqual(['1', '2']);
@@ -284,7 +292,7 @@ describe.skip('sed — addresses and commands', () => {
   });
 });
 
-describe.skip('sed — the editor around the script', () => {
+describe('sed — the editor around the script', () => {
   it('the first word after the options is the script; -e chains; -f reads a file', () => {
     expect(pipe("echo a | sed 's/a/b/'")).toEqual(['b']);
     expect(pipe("printf 'a\\nb\\n' | sed -e 's/a/X/' -e 's/b/Y/'")).toEqual(['X', 'Y']);
@@ -334,7 +342,7 @@ describe.skip('sed — the editor around the script', () => {
   });
 });
 
-describe.skip('man', () => {
+describe('man', () => {
   it('find and sed have pages; the env pages still resolve', () => {
     expect(out(core.execLine('man find')).join('\n')).toMatch(/walk the file system/);
     expect(out(core.execLine('man sed')).join('\n')).toMatch(/stream editor/);

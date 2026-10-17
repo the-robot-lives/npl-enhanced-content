@@ -201,7 +201,9 @@ const findCmd: CommandSpec = {
           items.push({
             kind: 'pred',
             flag: a,
-            test: (v) => cmp(v.node.kind === 'file' ? Math.ceil(v.node.content.length / unit) : 0),
+            // dirs carry a (nominal) dir-block size like ext4's 4096 — GNU
+            // -size never sees a directory as 0.
+            test: (v) => cmp(Math.ceil((v.node.kind === 'file' ? v.node.content.length : 4096) / unit)),
           });
           break;
         }
@@ -248,6 +250,9 @@ const findCmd: CommandSpec = {
     }
 
     if (starts.length === 0) starts.push('.');
+    // No action in the chain ⇒ implicit -print (POSIX); predicates alone
+    // must still print their matches.
+    if (!items.some((item) => item.kind !== 'pred')) items.push({ kind: 'print' });
 
     /** Run one -exec invocation (argv words, paths substituted for {}). */
     const execOnce = (item: Extract<FindItem, { kind: 'exec' }>, paths: string[]): boolean => {
@@ -282,7 +287,6 @@ const findCmd: CommandSpec = {
       return childStatus === 0;
     };
 
-    const hasAction = items.some((item) => item.kind !== 'pred');
     const depthLast = items.some((item) => item.kind === 'delete');
     const plusBatch: Array<{ item: Extract<FindItem, { kind: 'exec' }>; paths: string[] }> = items
       .filter((item): item is Extract<FindItem, { kind: 'exec' }> => item.kind === 'exec' && item.plus)
@@ -306,7 +310,9 @@ const findCmd: CommandSpec = {
           }
           if (!ctx.vfs.nodeAt(v.abs)) return false; // already gone
           try {
-            ctx.vfs.rm(v.abs, { recursive: false });
+            // -delete on a dir is rmdir: the -depth walk emptied it first.
+            if (v.node.kind === 'dir') ctx.vfs.rmdir(v.abs);
+            else ctx.vfs.rm(v.abs, { recursive: false });
           } catch (cause) {
             fail(`find: cannot delete '${v.display}': ${cause instanceof Error ? cause.message : String(cause)}`);
             return false;
@@ -330,7 +336,16 @@ const findCmd: CommandSpec = {
       };
       if (!depthLast) visit();
       if (node.kind === 'dir' && depth < maxdepth) {
-        for (const child of [...node.children]) {
+        // Deterministic walk order: children sort by name with a leading
+        // dot stripped (hidden files collate by their letters), plain
+        // byte compare otherwise.
+        const key = (n: string): string => (n.startsWith('.') ? n.slice(1) : n);
+        const kids = [...node.children].sort((a, b) => {
+          const ka = key(a.name);
+          const kb = key(b.name);
+          return ka < kb ? -1 : ka > kb ? 1 : 0;
+        });
+        for (const child of kids) {
           walk(joinAbs(abs, child.name), joinDisplay(display, child.name), depth + 1);
         }
       }

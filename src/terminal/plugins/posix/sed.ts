@@ -262,9 +262,9 @@ function parseScript(chunk: string, exprNo: number, ere: boolean): SedCommand[] 
         let wfile: string | null = null;
         while (i < chunk.length && !' \t\n;'.includes(chunk[i]!)) {
           const f = chunk[i]!;
-          if (f === 'g') global = true;
-          else if (f === 'i' || f === 'I') ci = true;
-          else if (f === 'p') pFlag = true;
+          if (f === 'g') { global = true; i++; }
+          else if (f === 'i' || f === 'I') { ci = true; i++; }
+          else if (f === 'p') { pFlag = true; i++; }
           else if (f === 'w') {
             i++;
             while (chunk[i] === ' ' || chunk[i] === '\t') i++;
