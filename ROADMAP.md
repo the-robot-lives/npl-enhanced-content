@@ -73,7 +73,7 @@ guardrail discipline they document.
 
 | Artifact | Budget | Measured (2026-10-13) |
 |---|---|---|
-| `semtext.js` (one bundle) | **144 KB** (raised from 126 — user decision 2026-10-14) | 132.3 raw / 41.9 gzipped — in budget |
+| `semtext.js` (one bundle) | **145 KB** (raised from 126 — user decision 2026-10-14; 144 → 145 after family A, 2026-10-18) | 144.3 raw post family A — in budget |
 | `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
 | `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
 | `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
@@ -131,7 +131,10 @@ IIFE. Measured today: 74.8 raw / 26.2 gzipped.
 Core bundle budget (2026-10-14) raised `semtext.js` 126 → 144 KB raw (user
 decision): the docs-overhaul content (spec v0.7 reference/tag review, sem-shell,
 sem-browser, npl class form) measured 132.3 raw / 41.9 gzipped — inside the
-new line. Any future bump still goes through this section and
+new line. 2026-10-18: the family A containers (19 tags, +1.2 KB on a base
+grown to 143.1 by parallel lanes) measured 144.3 raw; the coordinator raised
+the line to 145 KB post-measure (semext/agent-kit remain separate bundles).
+Any future bump still goes through this section and
 `scripts/build.mjs` together.
 
 
