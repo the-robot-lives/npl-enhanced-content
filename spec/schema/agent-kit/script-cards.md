@@ -1,4 +1,4 @@
-# Schema — `agent-kit-cypress` + `agent-kit-cucumber`
+# Schema — `agent-kit-cypress` / `agent-kit-cucumber`
 
 The cached script cards; the authored spec source displays as written.
 

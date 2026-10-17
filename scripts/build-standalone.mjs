@@ -105,6 +105,8 @@ function expand(kind, arg) {
   switch (kind) {
     case 'bundle':
       return `<script>\n${readOrDie(resolve(root, 'dist/semtext.js'), 'bundle')}\n</script>`;
+    case 'ext':
+      return `<script>\n${readOrDie(resolve(root, 'dist/semext.js'), 'ext')}\n</script>`;
     case 'shell':
       return `<script>\n${readOrDie(resolve(root, 'dist/semtext-js-shell.js'), 'shell')}\n</script>`;
     case 'agent-kit':

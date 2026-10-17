@@ -243,7 +243,9 @@
       "source": "spec/conventions.md#1",
       "record": false,
       "partOf": [
-        "agent"
+        "agent",
+        "sem-howto",
+        "sem-tsg"
       ],
       "classAliases": [
         "div.sem-agent-name",
@@ -896,6 +898,450 @@
         },
         "id": {}
       }
+    },
+    "sem-kb": {
+      "source": "spec/schema/sem-kb.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-references",
+        "sem-code"
+      ]
+    },
+    "sem-runbook": {
+      "source": "spec/schema/sem-runbook.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-procedure",
+        "sem-references"
+      ]
+    },
+    "sem-howto": {
+      "source": "spec/schema/sem-howto.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "name",
+        "tags"
+      ]
+    },
+    "sem-requirement": {
+      "source": "spec/schema/sem-requirement.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "kind": {
+          "type": "token",
+          "values": [
+            "functional",
+            "non-functional",
+            "constraint"
+          ]
+        },
+        "status": {
+          "type": "token",
+          "values": [
+            "draft",
+            "approved",
+            "implemented"
+          ]
+        },
+        "priority": {
+          "type": "token"
+        }
+      }
+    },
+    "sem-threat-model": {
+      "source": "spec/schema/sem-threat-model.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "scope": {
+          "type": "token"
+        }
+      },
+      "children": []
+    },
+    "sem-guard-rails": {
+      "source": "spec/schema/sem-guard-rails.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-guard-rail"
+      ]
+    },
+    "sem-guard-rail": {
+      "source": "spec/schema/sem-guard-rails.md",
+      "record": true,
+      "extends": "container",
+      "partOf": [
+        "sem-guard-rails"
+      ],
+      "attributes": {
+        "severity": {
+          "type": "token",
+          "values": [
+            "info",
+            "warn",
+            "block"
+          ]
+        },
+        "scope": {
+          "type": "token"
+        }
+      }
+    },
+    "sem-mockup": {
+      "source": "spec/schema/sem-mockup.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "mode": {
+          "type": "token",
+          "values": [
+            "text",
+            "html"
+          ],
+          "default": "text"
+        }
+      }
+    },
+    "sem-rubric": {
+      "source": "spec/schema/sem-rubric.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "max-score": {
+          "type": "number",
+          "min": 0
+        }
+      },
+      "children": []
+    },
+    "sem-eval": {
+      "source": "spec/schema/sem-eval.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "status": {
+          "type": "token",
+          "values": [
+            "draft",
+            "approved",
+            "implemented"
+          ]
+        }
+      },
+      "children": []
+    },
+    "sem-philosophy": {
+      "source": "spec/schema/sem-philosophy.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {}
+    },
+    "sem-summary": {
+      "source": "spec/schema/sem-summary.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {}
+    },
+    "sem-plan": {
+      "source": "spec/schema/sem-plan.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {}
+    },
+    "sem-tsgs": {
+      "source": "spec/schema/sem-tsgs.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-tsg"
+      ]
+    },
+    "sem-tsg": {
+      "source": "spec/schema/sem-tsgs.md",
+      "record": true,
+      "extends": "container",
+      "partOf": [
+        "sem-tsgs"
+      ],
+      "attributes": {},
+      "children": [
+        "name",
+        "title",
+        "description",
+        "tags",
+        "when"
+      ]
+    },
+    "sem-faqs": {
+      "source": "spec/schema/sem-faqs.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-faq"
+      ]
+    },
+    "sem-faq": {
+      "source": "spec/schema/sem-faqs.md",
+      "record": true,
+      "extends": "container",
+      "partOf": [
+        "sem-faqs"
+      ],
+      "attributes": {},
+      "children": [
+        "question",
+        "answer"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "question",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "answer",
+          "severity": "error"
+        }
+      ]
+    },
+    "sem-changelogs": {
+      "source": "spec/schema/sem-changelogs.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-changelog"
+      ]
+    },
+    "sem-changelog": {
+      "source": "spec/schema/sem-changelogs.md",
+      "record": true,
+      "extends": "container",
+      "partOf": [
+        "sem-changelogs"
+      ],
+      "attributes": {
+        "date": {
+          "type": "token"
+        },
+        "impacted": {
+          "type": "flaglist"
+        }
+      },
+      "children": [
+        "tags"
+      ]
+    },
+
+    "sem-workflow": {
+      "source": "spec/schema/sem-workflow.md",
+      "record": true,
+      "attributes": {
+        "duration": { "type": "token" },
+        "label": { "type": "token" }
+      },
+      "children": [
+        "sem-step"
+      ],
+      "childForms": {
+        "sem-step": {
+          "description": "The sem-step contract, as authored inside a workflow: the workflow-context parameters (action/description/gate/check/if-no/output) are per-parent, so sem-procedure steps are untouched. The shared status catalog still applies.",
+          "attributes": {
+            "action": { "type": "token", "required": true },
+            "description": { "type": "token" },
+            "gate": { "type": "token" },
+            "check": { "type": "token" },
+            "if-no": { "type": "token" },
+            "if_no": { "type": "token" },
+            "output": { "type": "token" }
+          }
+        }
+      }
+    },
+    "sem-site-tree": {
+      "source": "spec/schema/sem-site-tree.md",
+      "extends": "container",
+      "record": true,
+      "attributes": {
+        "mode": {
+          "type": "token",
+          "values": ["structured", "text"],
+          "default": "structured"
+        }
+      },
+      "children": [
+        "node"
+      ],
+      "childForms": {
+        "node": {
+          "description": "A tree entry as authored inside a site tree: path is required in tree context (a bare node elsewhere is an unknown-attribute warning).",
+          "attributes": {
+            "path": { "type": "token", "required": true }
+          }
+        }
+      }
+    },
+    "sem-file-tree": {
+      "source": "spec/schema/sem-file-tree.md",
+      "extends": "container",
+      "record": true,
+      "attributes": {
+        "mode": {
+          "type": "token",
+          "values": ["structured", "text"],
+          "default": "structured"
+        }
+      },
+      "children": [
+        "node"
+      ],
+      "childForms": {
+        "node": {
+          "description": "A tree entry as authored inside a file tree: path is required in tree context; mode=text carries no node children at all (the authored pre is the record).",
+          "attributes": {
+            "path": { "type": "token", "required": true }
+          }
+        }
+      }
+    },
+    "node": {
+      "source": "spec/schema/sem-site-tree.md",
+      "record": false,
+      "partOf": ["sem-site-tree", "sem-file-tree", "node"],
+      "classAliases": ["div.sem-node"],
+      "attributes": {
+        "kind": {
+          "type": "token",
+          "values": [
+            "dir",
+            "file",
+            "symlink"
+          ]
+        }
+      },
+      "childForms": {
+        "node": {
+          "description": "A node nested inside another node — the same tree-node form, one level deeper.",
+          "attributes": {
+            "path": { "type": "token", "required": true },
+            "label": { "type": "token" },
+            "kind": {
+              "type": "token",
+              "values": [
+                "dir",
+                "file",
+                "symlink"
+              ]
+            }
+          }
+        }
+      }
+    },
+
+    "semext-annotate": {
+      "description": "Visitor comment threads, service-backed: the ONE semext element with a client live read (anonymous-read, text-only rendering of untrusted comment bodies). Snapshot mode renders the authored thread record; live mode fetches <endpoint>/threads?site&page once, no credentials, and falls back to the authored view on failure.",
+      "source": "spec/schema/semext/annotate.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "site": { "type": "token" },
+        "page": { "type": "token" }
+      }
+    },
+    "semext-docptr": {
+      "description": "A doc-pointer card from a cached snapshot (static; refresh is the CLI lane). The snapshot mirrors .meta/pointers.yaml entries; marker/uuid/token select the entry, file narrows by path.",
+      "source": "spec/schema/semext/docptr.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "marker": { "type": "token" },
+        "uuid": { "type": "token" },
+        "token": { "type": "token" },
+        "file": { "type": "token" }
+      }
+    },
+    "semext-media-prompt": {
+      "description": "An authored .media.prompt YAML record with an output cache region the refresh CLI fills; the component never fetches or generates — it reports the region state (filled asset list or not-generated placeholder chrome).",
+      "source": "spec/schema/semext/media-prompt.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "model": { "type": "token" },
+        "aspect": { "type": "token" },
+        "assets-dir": { "type": "token" }
+      }
+    },
+    "semext-sig-logs": {
+      "description": "A SigNoz log-line snapshot + deep-link chrome (cached + link; livePolicy never, no client credentials). Link built from query/range/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-logs.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "query": { "type": "token" },
+        "range": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-sig-metrics": {
+      "description": "A SigNoz metrics-table snapshot + deep-link chrome (cached + link; livePolicy never, no client credentials). Link built from query/range/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-metrics.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "query": { "type": "token" },
+        "range": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-sig-synthetic-monitor": {
+      "description": "A SigNoz synthetic-monitor DEFINITION card + link chrome (definition + link; live execution is an EE service surface, deliberately deferred). Link built from monitor/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-synthetic-monitor.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "monitor": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-sig-traces": {
+      "description": "A SigNoz trace-list snapshot + deep-link chrome (cached + link; livePolicy never, no client credentials). Link built from query/range/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-traces.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "query": { "type": "token" },
+        "range": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-styleguide-theme": {
+      "description": "A theme token card from a cached snapshot (static): name, key color swatches, typography sample, and a \"Preview theme CSS\" link whose href is the authored src.",
+      "source": "spec/schema/semext/styleguide-theme.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "theme": { "type": "token" },
+        "src": { "type": "token" }
+      }
+    },
+    "semext-styleguide-themes": {
+      "description": "Collection wrapper of the styleguide-theme pair: authored semext-styleguide-theme entries; the wrapper renders only a summary line from its snapshot (theme slugs) or its authored children.",
+      "source": "spec/schema/semext/styleguide-theme.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {}
     },
     "agent-kit-issue": {
       "source": "spec/schema/agent-kit/tickets.md",

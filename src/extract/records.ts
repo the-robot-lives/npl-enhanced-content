@@ -141,6 +141,18 @@ const CHROME_CLASSES = [
   'sem-md-chrome',
   'sem-md-body',
   'sem-md-raw',
+  // interactive containers: the workflow branch (built from the step's
+  // if-no ATTRIBUTE) and the tree chrome are generated — the record is the
+  // authored content only
+  'sem-step-branch',
+  'sem-step-branch-toggle',
+  'sem-step-branch-label',
+  'sem-step-branch-body',
+  'sem-tree-chrome',
+  'sem-tree-toggle',
+  'sem-tree-label',
+  'sem-file-tree-view',
+  'sem-tree-view-row',
   // agent-kit-* components: EVERY fabricated node sits inside one
   // `agent-kit-chrome` container (src/lit/agent-kit/chrome.ts), and the
   // cached-embed base renders its snapshot enrichment into

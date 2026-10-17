@@ -1510,6 +1510,112 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
 /* first component inserts its display line here, e.g.
    semext-canvas, .semext-canvas { display: block; } */
 
+/* Family B (feat/semext-embeds): the nine service-backed embeds over the
+   cached-embed base. Cards use the vocabulary tokens only (var(--sem-*));
+   nothing hard-coded. */
+
+semext-annotate, .semext-annotate { display: block; }
+semext-docptr, .semext-docptr { display: block; }
+semext-media-prompt, .semext-media-prompt { display: block; }
+semext-sig-logs, .semext-sig-logs { display: block; }
+semext-sig-metrics, .semext-sig-metrics { display: block; }
+semext-sig-synthetic-monitor, .semext-sig-synthetic-monitor { display: block; }
+semext-sig-traces, .semext-sig-traces { display: block; }
+semext-styleguide-theme, .semext-styleguide-theme { display: block; }
+semext-styleguide-themes, .semext-styleguide-themes { display: block; }
+
+/* shared card chrome — the cached-embed chrome div + the sig cards */
+.sem-cached-embed-chrome {
+  margin-top: .5rem;
+  border: 1px solid color-mix(in srgb, var(--sem-border) 70%, transparent);
+  border-radius: .375rem;
+  padding: .625rem .75rem;
+  font-size: .875rem; }
+.sem-cached-embed-chrome[data-sem-chrome-source="error"] {
+  color: var(--sem-muted); font-style: italic; }
+
+/* docptr — pointer locator card */
+.semext-docptr-card { margin: 0; }
+.semext-docptr-locator {
+  font-family: var(--sem-mono, ui-monospace, monospace);
+  font-size: .8125rem; font-weight: 600; }
+.semext-docptr-kind, .semext-docptr-class, .semext-docptr-fn, .semext-docptr-marker {
+  font-variant-caps: all-small-caps; letter-spacing: .06em;
+  color: var(--sem-muted); margin-right: .5rem; }
+.semext-docptr-desc { margin: .25rem 0 0; }
+.semext-docptr-snippet {
+  margin: .5rem 0 0; padding: .5rem;
+  background: color-mix(in srgb, var(--sem-border) 22%, transparent);
+  border-radius: .25rem; overflow-x: auto; }
+.semext-docptr-missing { color: var(--sem-muted); font-style: italic; margin: 0; }
+
+/* styleguide — theme token cards */
+.semext-styleguide-theme-card { margin: 0; }
+.semext-styleguide-theme-card h3 { margin: 0 0 .25rem; font-size: 1rem; }
+.semext-styleguide-theme-swatches { list-style: none; display: flex; gap: .375rem; padding: 0; margin: .25rem 0; }
+.semext-styleguide-theme-dot {
+  display: inline-block; width: 1rem; height: 1rem;
+  border-radius: 50%; border: 1px solid color-mix(in srgb, var(--sem-border) 80%, transparent); }
+.semext-styleguide-theme-typo { margin: .25rem 0; color: var(--sem-muted); font-size: .8125rem; }
+.semext-styleguide-theme-preview { font-size: .8125rem; }
+.semext-styleguide-themes-summary { color: var(--sem-muted); font-size: .8125rem; margin: 0; }
+
+/* annotate — visitor threads (text-only chrome) */
+.semext-annotate-head { color: var(--sem-muted); font-size: .8125rem; margin: 0 0 .375rem; }
+.semext-annotate-empty { color: var(--sem-muted); font-style: italic; margin: 0; }
+.semext-annotate-thread { border-top: 1px solid color-mix(in srgb, var(--sem-border) 55%, transparent); padding: .375rem 0; margin: 0; }
+.semext-annotate-thread:first-of-type { border-top: 0; }
+.semext-annotate-status {
+  font-variant-caps: all-small-caps; letter-spacing: .06em;
+  color: var(--sem-muted); margin-right: .375rem; }
+.semext-annotate-title { font-weight: 600; margin-right: .375rem; }
+.semext-annotate-anchor {
+  margin: .25rem 0; padding: .25rem .5rem;
+  border-left: 2px solid color-mix(in srgb, var(--sem-border) 70%, transparent);
+  color: var(--sem-muted); font-style: italic; }
+.semext-annotate-comment { margin: .25rem 0 0; }
+.semext-annotate-author { font-weight: 600; margin-right: .375rem; }
+.semext-annotate-when { color: var(--sem-muted); font-size: .75rem; margin-right: .375rem; }
+
+/* sig — metrics / traces / logs cards */
+.semext-sig-card { margin: 0; }
+.semext-sig-title { margin: 0 0 .25rem; font-size: 1rem; }
+.semext-sig-table { width: 100%; border-collapse: collapse; font-size: .8125rem; }
+.semext-sig-table th, .semext-sig-table td {
+  text-align: left; padding: .25rem .5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--sem-border) 50%, transparent); }
+.semext-sig-traces, .semext-sig-monitor-asserts { list-style: none; padding: 0; margin: 0; }
+.semext-sig-trace { padding: .25rem 0; border-bottom: 1px solid color-mix(in srgb, var(--sem-border) 50%, transparent); }
+.semext-sig-trace:last-child { border-bottom: 0; }
+.semext-sig-trace[data-error="true"] .semext-sig-trace-root { font-weight: 600; }
+.semext-sig-trace-id { font-family: var(--sem-mono, ui-monospace, monospace); font-size: .75rem; margin-right: .5rem; }
+.semext-sig-trace-root { font-weight: 500; margin-right: .5rem; }
+.semext-sig-trace-meta { color: var(--sem-muted); font-size: .8125rem; }
+.semext-sig-loglines { list-style: none; padding: 0; margin: 0; font-family: var(--sem-mono, ui-monospace, monospace); font-size: .75rem; }
+.semext-sig-logline { padding: .125rem 0; display: flex; gap: .5rem; flex-wrap: wrap; }
+.semext-sig-log-ts { color: var(--sem-muted); }
+.semext-sig-log-sev::before { content: "["; }
+.semext-sig-log-sev::after { content: "]"; }
+.semext-sig-logline[data-severity="error"] .semext-sig-log-sev { font-weight: 700; }
+.semext-sig-monitor-interval { color: var(--sem-muted); font-size: .8125rem; margin: 0; }
+.semext-sig-linkline { margin: .5rem 0 0; }
+.semext-sig-link { font-size: .8125rem; }
+
+/* media-prompt — authored prompt + output cache region */
+.semext-media-prompt-chrome { margin-top: .5rem; }
+.semext-media-prompt-params { margin: 0 0 .25rem; display: flex; gap: .375rem; flex-wrap: wrap; }
+.semext-media-prompt-param {
+  font-variant-caps: all-small-caps; letter-spacing: .06em;
+  border: 1px solid color-mix(in srgb, var(--sem-border) 70%, transparent);
+  border-radius: 999px; padding: 0 .5rem; font-size: .75rem; }
+.semext-media-prompt-dir { font-family: var(--sem-mono, ui-monospace, monospace); font-size: .75rem; }
+.semext-media-prompt-state { color: var(--sem-muted); font-size: .8125rem; margin: 0; }
+.semext-media-prompt-empty {
+  color: var(--sem-muted); font-style: italic; font-size: .8125rem; margin: 0;
+  border: 1px dashed color-mix(in srgb, var(--sem-border) 80%, transparent);
+  border-radius: .25rem; padding: .375rem .5rem; }
+semext-media-prompt[data-semext-cache-region="empty"] > pre { opacity: .85; }
+
 /* ============================================================
    agent-kit-* — agent-kit components (src/lit/agent-kit/; recipe: that
    barrel's header). Introduced EMPTY by the epic.semext-components
@@ -2172,6 +2278,795 @@ sem-terminal .sem-window-tab-new:focus-visible, sem-shell .sem-window-tab-new:fo
   sem-terminal .sem-window-tab-new, sem-shell .sem-window-tab-new { transition: none; }
 }
 /* ── end shell-v3-tabs-ui ── */
+
+/* ── sem-containers family A ──
+   Static knowledge/doc containers (spec/schema/sem-{kb,runbook,howto,
+   requirement,threat-model,guard-rails,mockup,rubric,eval,philosophy,
+   summary,plan,tsgs,faqs,changelogs}.md). Every element registers a Lit
+   display stub (no CSS-only elements) that claims `data-sem-upgraded`;
+   ALL visible chrome here is pseudo-element CSS whose ::before/::after
+   content sits outside textContent, so the conventions §8 extraction
+   invariant holds: byte-identical with the script on or off, and the
+   same boxes draw in the .nojs artifacts. Each rule carries its own
+   display:block (the shared enumeration above is append-only for other
+   lanes). Dual-form: custom element + .sem-<name> class alias. */
+
+/* knowledge-base article */
+:is(sem-kb, .sem-kb) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-kb, .sem-kb)::before {
+  content: "knowledge base";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-kb, .sem-kb)[kind]::before {
+  content: "knowledge base · " attr(kind);
+}
+
+/* runbook */
+:is(sem-runbook, .sem-runbook) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-runbook, .sem-runbook)::before {
+  content: "runbook";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-runbook, .sem-runbook)[kind]::before {
+  content: "runbook · " attr(kind);
+}
+:is(sem-runbook, .sem-runbook)[audience]::after {
+  content: "for " attr(audience);
+  display: block;
+  width: fit-content;
+  margin-top: 0.45rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--sem-border);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  color: var(--sem-muted);
+}
+
+/* how-to guide */
+:is(sem-howto, .sem-howto) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-howto, .sem-howto)::before {
+  content: "how-to";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-howto, .sem-howto) > :is(name, .sem-name) {
+  display: block;
+  font-size: 1.05em;
+  font-weight: 650;
+  margin: 0 0 0.3rem;
+}
+:is(sem-howto, .sem-howto) > :is(tags, .sem-tags) {
+  display: block;
+  color: var(--sem-muted);
+  font-size: 0.85em;
+  margin-top: 0.4rem;
+}
+
+/* requirement statement */
+:is(sem-requirement, .sem-requirement) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-left: 3px solid var(--sem-accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--sem-surface);
+  padding: 0.6rem 0.9rem 0.7rem;
+  margin: 0.7rem 0;
+}
+:is(sem-requirement, .sem-requirement)::before {
+  content: "requirement";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-accent);
+  margin-bottom: 0.25rem;
+}
+:is(sem-requirement, .sem-requirement)[kind]::before {
+  content: "requirement · " attr(kind);
+}
+:is(sem-requirement, .sem-requirement)[status]::after {
+  content: attr(status);
+  display: block;
+  width: fit-content;
+  margin-top: 0.45rem;
+  padding: 0.05rem 0.55rem;
+  border: 1px solid var(--sem-border);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--sem-muted);
+}
+
+/* threat model */
+:is(sem-threat-model, .sem-threat-model) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-threat-model, .sem-threat-model)::before {
+  content: "threat model";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-threat-model, .sem-threat-model)[kind]::before {
+  content: "threat model · " attr(kind);
+}
+:is(sem-threat-model, .sem-threat-model)[scope]::after {
+  content: "scope: " attr(scope);
+  display: block;
+  width: fit-content;
+  margin-top: 0.45rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--sem-border);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  color: var(--sem-muted);
+}
+
+/* guard rails: collection + entries */
+:is(sem-guard-rails, .sem-guard-rails) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-guard-rails, .sem-guard-rails)::before {
+  content: "guard rails";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-guard-rails, .sem-guard-rails)[kind]::before {
+  content: "guard rails · " attr(kind);
+}
+:is(sem-guard-rail, .sem-guard-rail) {
+  display: block;
+  border-left: 3px solid var(--sem-note-info);
+  background: color-mix(in srgb, var(--sem-note-info) 6%, transparent);
+  border-radius: 0 6px 6px 0;
+  padding: 0.45rem 0.8rem 0.55rem;
+  margin: 0.5rem 0;
+}
+:is(sem-guard-rail, .sem-guard-rail)[severity="warn"] {
+  border-left-color: var(--sem-note-warning);
+  background: color-mix(in srgb, var(--sem-note-warning) 8%, transparent);
+}
+:is(sem-guard-rail, .sem-guard-rail)[severity="block"] {
+  border-left-color: var(--sem-note-danger);
+  background: color-mix(in srgb, var(--sem-note-danger) 8%, transparent);
+}
+:is(sem-guard-rail, .sem-guard-rail)[severity]::before {
+  content: attr(severity);
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.15rem;
+}
+:is(sem-guard-rail, .sem-guard-rail)[scope]::after {
+  content: "scope: " attr(scope);
+  display: block;
+  font-size: 0.72rem;
+  color: var(--sem-muted);
+  margin-top: 0.25rem;
+}
+
+/* mockup (mode text = preformatted mono; mode html = normal flow) */
+:is(sem-mockup, .sem-mockup) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-mockup, .sem-mockup)::before {
+  content: "mockup";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-mockup, .sem-mockup)[kind]::before {
+  content: "mockup · " attr(kind);
+}
+:is(sem-mockup, .sem-mockup):not([mode]),
+:is(sem-mockup, .sem-mockup)[mode="text"] {
+  font-family: var(--sem-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* rubric */
+:is(sem-rubric, .sem-rubric) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-rubric, .sem-rubric)::before {
+  content: "rubric";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-rubric, .sem-rubric)[kind]::before {
+  content: "rubric · " attr(kind);
+}
+:is(sem-rubric, .sem-rubric)[max-score]::after {
+  content: "max " attr(max-score);
+  display: block;
+  width: fit-content;
+  margin-top: 0.45rem;
+  padding: 0.05rem 0.55rem;
+  border: 1px solid var(--sem-border);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--sem-muted);
+}
+
+/* evaluation spec */
+:is(sem-eval, .sem-eval) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-eval, .sem-eval)::before {
+  content: "evaluation";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-eval, .sem-eval)[kind]::before {
+  content: "evaluation · " attr(kind);
+}
+:is(sem-eval, .sem-eval)[status]::after {
+  content: attr(status);
+  display: block;
+  width: fit-content;
+  margin-top: 0.45rem;
+  padding: 0.05rem 0.55rem;
+  border: 1px solid var(--sem-border);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--sem-muted);
+}
+
+/* philosophy (spelled with the h) */
+:is(sem-philosophy, .sem-philosophy) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-left: 3px solid var(--sem-accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--sem-surface);
+  padding: 0.6rem 0.9rem 0.7rem;
+  margin: 0.7rem 0;
+}
+:is(sem-philosophy, .sem-philosophy)::before {
+  content: "philosophy";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-accent);
+  margin-bottom: 0.25rem;
+}
+:is(sem-philosophy, .sem-philosophy)[kind]::before {
+  content: "philosophy · " attr(kind);
+}
+
+/* summary (heavier document-level wrap; sem-tldr is the light skim) */
+:is(sem-summary, .sem-summary) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-summary, .sem-summary)::before {
+  content: "summary";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-summary, .sem-summary)[kind]::before {
+  content: "summary · " attr(kind);
+}
+
+/* plan (record, not workflow — no transitions, no engine) */
+:is(sem-plan, .sem-plan) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-plan, .sem-plan)::before {
+  content: "plan";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-plan, .sem-plan)[kind]::before {
+  content: "plan · " attr(kind);
+}
+:is(sem-plan, .sem-plan)[status]::after {
+  content: attr(status);
+  display: block;
+  width: fit-content;
+  margin-top: 0.45rem;
+  padding: 0.05rem 0.55rem;
+  border: 1px solid var(--sem-border);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--sem-muted);
+}
+
+/* troubleshooting guides: collection + entries */
+:is(sem-tsgs, .sem-tsgs) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-tsgs, .sem-tsgs)::before {
+  content: "troubleshooting";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-tsgs, .sem-tsgs)[kind]::before {
+  content: "troubleshooting · " attr(kind);
+}
+:is(sem-tsg, .sem-tsg) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.8rem 0.6rem;
+  margin: 0.5rem 0;
+}
+:is(sem-tsg, .sem-tsg) > :is(name, .sem-name) {
+  display: block;
+  font-weight: 650;
+}
+:is(sem-tsg, .sem-tsg) > :is(title, .sem-title) {
+  display: block;
+  font-weight: 600;
+  margin: 0.1rem 0 0.2rem;
+}
+:is(sem-tsg, .sem-tsg) > :is(description, .sem-description) {
+  display: block;
+  color: var(--sem-muted);
+}
+:is(sem-tsg, .sem-tsg) > :is(when, .sem-when) {
+  display: block;
+  margin-top: 0.25rem;
+}
+:is(sem-tsg, .sem-tsg) > :is(when, .sem-when)::before {
+  content: "when · ";
+  color: var(--sem-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+:is(sem-tsg, .sem-tsg) > :is(tags, .sem-tags) {
+  display: block;
+  color: var(--sem-muted);
+  font-size: 0.85em;
+  margin-top: 0.3rem;
+}
+
+/* FAQs: collection + entries (never a disclosure — Q and A both visible) */
+:is(sem-faqs, .sem-faqs) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-faqs, .sem-faqs)::before {
+  content: "FAQ";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-faqs, .sem-faqs)[kind]::before {
+  content: "FAQ · " attr(kind);
+}
+:is(sem-faq, .sem-faq) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.8rem 0.6rem;
+  margin: 0.5rem 0;
+}
+:is(sem-faq, .sem-faq) > :is(question, .sem-question) {
+  display: block;
+  font-weight: 650;
+  margin-bottom: 0.2rem;
+}
+:is(sem-faq, .sem-faq) > :is(question, .sem-question)::before {
+  content: "Q · ";
+  color: var(--sem-accent);
+  font-weight: 700;
+}
+:is(sem-faq, .sem-faq) > :is(answer, .sem-answer) {
+  display: block;
+}
+:is(sem-faq, .sem-faq) > :is(answer, .sem-answer)::before {
+  content: "A · ";
+  color: var(--sem-muted);
+  font-weight: 700;
+}
+
+/* changelogs: collection + entries */
+:is(sem-changelogs, .sem-changelogs) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 8px;
+  background: var(--sem-surface);
+  padding: 0.7rem 0.95rem 0.8rem;
+  margin: 0.8rem 0;
+}
+:is(sem-changelogs, .sem-changelogs)::before {
+  content: "changelog";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sem-muted);
+  margin-bottom: 0.3rem;
+}
+:is(sem-changelogs, .sem-changelogs)[kind]::before {
+  content: "changelog · " attr(kind);
+}
+:is(sem-changelog, .sem-changelog) {
+  display: block;
+  border: 1px solid var(--sem-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.8rem 0.6rem;
+  margin: 0.5rem 0;
+}
+:is(sem-changelog, .sem-changelog)::before {
+  content: attr(date);
+  display: block;
+  font-family: var(--sem-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--sem-muted);
+  margin-bottom: 0.2rem;
+}
+:is(sem-changelog, .sem-changelog)[name]::before {
+  content: attr(date) " · " attr(name);
+}
+:is(sem-changelog, .sem-changelog)[title]::before {
+  content: attr(date) " · " attr(title);
+}
+:is(sem-changelog, .sem-changelog)[title][name]::before {
+  content: attr(date) " · " attr(title);
+}
+:is(sem-changelog, .sem-changelog) > :is(tags, .sem-tags) {
+  display: block;
+  color: var(--sem-muted);
+  font-size: 0.85em;
+  margin-top: 0.3rem;
+}
+:is(sem-changelog, .sem-changelog):not([date])::before {
+  content: attr(name);
+}
+:is(sem-changelog, .sem-changelog):not([date])[title]::before {
+  content: attr(title);
+}
+/* ── end sem-containers family A ── */
+/* ── sem-workflow / sem-site-tree / sem-file-tree ──
+   Interactive containers (spec/schema/sem-workflow.md, sem-site-tree.md,
+   sem-file-tree.md). Family A part 2: the authored DOM is the record —
+   every label/badge here is ::before/::after attr() chrome or gated
+   generated-class styling; nothing JS-on hides or rewrites authored
+   content without the container's [data-sem-upgraded] marker (D12). */
+
+/* container blocks */
+:is(sem-workflow, .sem-workflow),
+:is(sem-site-tree, .sem-site-tree),
+:is(sem-file-tree, .sem-file-tree) { display: block; margin: 1rem 0; }
+:is(node, .sem-node) { display: block; }
+
+/* -- workflow: JS-off ordered list (own counter scope, so procedure and
+      workflow sequences never share a number) -------------------------- */
+:is(sem-workflow, .sem-workflow) { counter-reset: sem-wf-step; }
+:is(sem-workflow, .sem-workflow) :is(sem-step, .sem-step)::before {
+  counter-increment: sem-wf-step;
+  content: counter(sem-wf-step);
+}
+/* check badge rides the ordinal pseudo (the ordinal pseudo is otherwise
+   unused for steps that carry no check) */
+:is(sem-workflow, .sem-workflow) :is(sem-step, .sem-step):is([check], [data-check])::before {
+  content: counter(sem-wf-step) " ▸ " attr(check);
+}
+:is(sem-workflow, .sem-workflow) :is(sem-step, .sem-step)[data-check]:not([check])::before {
+  content: counter(sem-wf-step) " ▸ " attr(data-check);
+}
+/* gate badge takes the status glyph's slot (::after) — a gated step
+   shows the gate, the status stays on the attribute (machine-readable) */
+:is(sem-workflow, .sem-workflow) :is(sem-step, .sem-step):is([gate], [data-gate])::after {
+  content: " ⛨ " attr(gate);
+  color: var(--sem-muted);
+  font-size: .8rem;
+}
+:is(sem-workflow, .sem-workflow) :is(sem-step, .sem-step)[data-gate]:not([gate])::after {
+  content: " ⛨ " attr(data-gate);
+  color: var(--sem-muted);
+  font-size: .8rem;
+}
+
+/* -- workflow: JS-on if-no branch (generated chrome; gated) ------------- */
+:is(sem-workflow, .sem-workflow)[data-sem-upgraded] .sem-step-branch-toggle {
+  display: inline-block;
+  margin-left: .4rem;
+  padding: 0 .3rem;
+  font: inherit;
+  font-size: .75rem;
+  color: var(--sem-muted);
+  background: none;
+  border: 1px solid var(--sem-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+:is(sem-workflow, .sem-workflow)[data-sem-upgraded] .sem-step-branch-toggle::before {
+  content: "if-no ";
+  font-style: italic;
+}
+:is(sem-workflow, .sem-workflow)[data-sem-upgraded] .sem-step-branch-toggle[aria-expanded="true"] {
+  color: var(--sem-fg);
+  border-color: var(--sem-accent);
+}
+:is(sem-workflow, .sem-workflow)[data-sem-upgraded] .sem-step-branch {
+  display: block;
+  margin: .35rem 0 0;
+  padding: .35rem .6rem;
+  border-left: 2px dashed var(--sem-accent);
+  color: var(--sem-muted);
+  font-size: .85rem;
+}
+:is(sem-workflow, .sem-workflow)[data-sem-upgraded] .sem-step-branch-label {
+  display: block;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* -- trees: JS-off static structure (guides + counters + attr labels) --- */
+:is(sem-site-tree, .sem-site-tree),
+:is(sem-file-tree, .sem-file-tree) { counter-reset: sem-tree-node; }
+:is(sem-site-tree, .sem-site-tree) :is(node, .sem-node),
+:is(sem-file-tree, .sem-file-tree) :is(node, .sem-node) {
+  counter-increment: sem-tree-node;
+  margin: .15rem 0 .15rem .35rem;
+  padding: .1rem 0 .1rem .9rem;
+  border-left: 1px solid var(--sem-border);
+}
+/* the label is ::before chrome (counter + label/path); shown JS-off only —
+   JS-on the engine renders label buttons/spans instead */
+:is(sem-site-tree, .sem-site-tree):not([data-sem-upgraded]) :is(node, .sem-node)::before,
+:is(sem-file-tree, .sem-file-tree):not([data-sem-upgraded]) :is(node, .sem-node)::before {
+  content: counter(sem-tree-node) ". " attr(label);
+  color: var(--sem-fg);
+}
+:is(sem-site-tree, .sem-site-tree):not([data-sem-upgraded]) :is(node, .sem-node)[data-label]:not([label])::before,
+:is(sem-file-tree, .sem-file-tree):not([data-sem-upgraded]) :is(node, .sem-node)[data-label]:not([label])::before {
+  content: counter(sem-tree-node) ". " attr(data-label);
+}
+:is(sem-site-tree, .sem-site-tree):not([data-sem-upgraded]) :is(node, .sem-node):not([label]):not([data-label])[path]::before,
+:is(sem-file-tree, .sem-file-tree):not([data-sem-upgraded]) :is(node, .sem-node):not([label]):not([data-label])[path]::before {
+  content: counter(sem-tree-node) ". " attr(path);
+}
+:is(sem-site-tree, .sem-site-tree):not([data-sem-upgraded]) :is(node, .sem-node):not([label]):not([data-label])[data-path]:not([path])::before,
+:is(sem-file-tree, .sem-file-tree):not([data-sem-upgraded]) :is(node, .sem-node):not([label]):not([data-label])[data-path]:not([path])::before {
+  content: counter(sem-tree-node) ". " attr(data-path);
+}
+/* text form: the authored pre IS the record; verbatim, nothing fabricated */
+:is(sem-file-tree, .sem-file-tree) > pre { margin: .25rem 0; }
+
+/* -- trees: JS-on chrome (collapse / filter / find; all gated) ---------- */
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] :is(node, .sem-node)[collapsed] > :is(node, .sem-node),
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] :is(node, .sem-node)[collapsed] > :is(node, .sem-node) { display: none; }
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-file-tree-view .sem-tree-view-row[data-branch-hidden],
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-file-tree-view .sem-tree-view-row[data-branch-hidden] { display: none; }
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] > pre,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] > pre { display: none; }
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] [data-filter-hidden],
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] [data-filter-hidden] { display: none; }
+
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-tree-chrome,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-chrome {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  align-items: center;
+  margin: 0 0 .4rem;
+}
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-tree-filter,
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-tree-find,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-filter,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-find {
+  font: inherit;
+  font-size: .8rem;
+  color: var(--sem-fg);
+  background: var(--sem-surface);
+  border: 1px solid var(--sem-border);
+  border-radius: 6px;
+  padding: .15rem .45rem;
+  min-width: 8rem;
+}
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-tree-toggle,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-toggle {
+  display: inline-block;
+  margin: 0;
+  padding: 0 .15rem;
+  font: inherit;
+  color: var(--sem-fg);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-tree-toggle::before,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-toggle::before {
+  content: "▾ ";
+  color: var(--sem-muted);
+}
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-tree-toggle[aria-expanded="false"]::before,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-toggle[aria-expanded="false"]::before {
+  content: "▸ ";
+}
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-tree-label,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-label {
+  color: var(--sem-fg);
+}
+/* kind glyph on generated rows (text form); structured kinds ride the
+   same selector via the authored node */
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-tree-toggle::after,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-toggle::after {
+  content: "";
+  color: var(--sem-muted);
+}
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] :is(node, .sem-node)[data-kind="file"] .sem-tree-label::after,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-view-row[data-kind="file"] .sem-tree-label::after {
+  content: " ·file";
+  color: var(--sem-muted);
+  font-size: .75rem;
+}
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] :is(node, .sem-node)[data-kind="dir"] .sem-tree-label::after,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-view-row[data-kind="dir"] .sem-tree-label::after {
+  content: " ·dir";
+  color: var(--sem-muted);
+  font-size: .75rem;
+}
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-tree-count,
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-tree-count {
+  font-size: .75rem;
+  color: var(--sem-muted);
+  white-space: nowrap;
+}
+/* find marks */
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] [data-match],
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] [data-match] {
+  outline: 2px dotted var(--sem-accent);
+  outline-offset: 1px;
+}
+:is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] [data-match-current],
+:is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] [data-match-current] {
+  background: var(--sem-accent);
+  color: var(--sem-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(sem-workflow, .sem-workflow)[data-sem-upgraded] .sem-step-branch,
+  :is(sem-site-tree, .sem-site-tree)[data-sem-upgraded] .sem-file-tree-view,
+  :is(sem-file-tree, .sem-file-tree)[data-sem-upgraded] .sem-file-tree-view { transition: none; }
+}
+/* ── end sem-workflow / sem-site-tree / sem-file-tree ── */
 
 /* ── agent-kit card chrome ────────────────────────────────────────
    One named section per component family, APPENDED below the last —

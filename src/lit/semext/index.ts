@@ -49,9 +49,29 @@
  */
 
 /* Components — alphabetical; one two-line pair each, nothing shared.
- * The namespace is intentionally empty at introduction: the walking
- * skeleton ships the bundle/loader/manifest/contract machinery only.
- * Drop the first component's two-line pair right below this comment. */
+ * Family B (feat/semext-embeds): the nine service-backed embeds over the
+ * cached-embed base (src/lit/shared/cached-embed.ts). All snapshot-backed
+ * embeds keep `livePolicy: 'never'`; semext-annotate is the one element
+ * with a client live read ('anonymous-read', text-only rendering). */
+
+export { SemextAnnotate } from './semext-annotate.js';
+import './semext-annotate.js';
+export { SemextDocptr } from './semext-docptr.js';
+import './semext-docptr.js';
+export { SemextMediaPrompt } from './semext-media-prompt.js';
+import './semext-media-prompt.js';
+export { SemextSigLogs } from './semext-sig-logs.js';
+import './semext-sig-logs.js';
+export { SemextSigMetrics } from './semext-sig-metrics.js';
+import './semext-sig-metrics.js';
+export { SemextSigSyntheticMonitor } from './semext-sig-synthetic-monitor.js';
+import './semext-sig-synthetic-monitor.js';
+export { SemextSigTraces } from './semext-sig-traces.js';
+import './semext-sig-traces.js';
+export { SemextStyleguideTheme } from './semext-styleguide-theme.js';
+import './semext-styleguide-theme.js';
+export { SemextStyleguideThemes } from './semext-styleguide-themes.js';
+import './semext-styleguide-themes.js';
 
 /* Namespace helpers (src/lit/semext/shared.ts). */
 

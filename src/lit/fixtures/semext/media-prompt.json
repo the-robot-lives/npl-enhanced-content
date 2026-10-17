@@ -1,0 +1,11 @@
+{
+  "model": "z-image-turbo",
+  "aspect": "16:9",
+  "output": {
+    "generated": true,
+    "assets": [
+      { "path": "assets/hero-banner-16x9-v1.png", "kind": "image" },
+      { "path": "assets/hero-banner-16x9-v1.webp", "kind": "image" }
+    ]
+  }
+}

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · family A containers (static knowledge/doc)</title>
+<!-- sem:inline theme minimal-tech-light -->
+<!-- sem:inline vocabulary -->
+<style>
+  .sem-enhanced-document { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+</style>
+<!-- The one bundle. Family A elements are no-logic display stubs that ship
+     in the core bundle; every visible label here is vocabulary CSS chrome
+     (::before/::after — outside textContent), so the .nojs artifact of this
+     page renders the identical boxes and text. -->
+<!-- sem:inline bundle -->
+</head>
+<body>
+<div class="sem-enhanced-document">
+  <h1>Family A — static knowledge/doc containers</h1>
+  <p>Nineteen tags, fifteen contracts: eleven single containers, plus
+  the four collection/entry pairs (guard-rails, tsgs, faqs, changelogs).</p>
+
+  <sem-kb id="ca-kb" kind="auth">
+    <section>
+      <h2>Tokens</h2>
+      <p>Access tokens live 15 minutes; refresh pairs rotate per session.</p>
+    </section>
+    <sem-references>
+      <ul><li><a href="#ca-runbook">Rotation runbook</a></li></ul>
+    </sem-references>
+  </sem-kb>
+
+  <sem-runbook id="ca-runbook" kind="token-rotation" audience="on-call">
+    <p>1. Confirm the pod image, not just ArgoCD sync.</p>
+    <p>2. Rotate the signing key behind the release train.</p>
+  </sem-runbook>
+
+  <sem-howto id="ca-howto" kind="ops">
+    <name>Mint a scoped token</name>
+    <p>Call the admin endpoint with the service credential and read the
+    pair from the response envelope.</p>
+    <tags>auth, tokens</tags>
+  </sem-howto>
+
+  <sem-requirement id="ca-req" kind="functional" status="draft" priority="high">
+    The client mints a fresh token pair from the refresh grant without a
+    re-sign-in.
+  </sem-requirement>
+
+  <sem-threat-model id="ca-tm" kind="stride" scope="public endpoints">
+    <section>
+      <h2>Assets</h2>
+      <p>Signing keys stay server-side; the browser only sees tokens.</p>
+    </section>
+  </sem-threat-model>
+
+  <sem-guard-rails id="ca-gr" kind="api">
+    <sem-guard-rail severity="block" scope="public endpoints">
+      Never return raw provider errors; wrap them in the error envelope.
+    </sem-guard-rail>
+    <sem-guard-rail severity="warn">
+      Pagination defaults to 50 items — page explicitly in production.
+    </sem-guard-rail>
+  </sem-guard-rails>
+
+  <sem-mockup id="ca-mockup" kind="wireframe">
+    +-------+---------------------+
+    | nav   |  hero               |
+    |       |  [ call to action ] |
+    +-------+---------------------+
+  </sem-mockup>
+
+  <sem-rubric id="ca-rubric" kind="grading" max-score="10">
+    <table>
+      <tr><th>criterion</th><th>0</th><th>5</th><th>10</th></tr>
+      <tr><td>accuracy</td><td>wrong</td><td>partial</td><td>exact</td></tr>
+      <tr><td>clarity</td><td>opaque</td><td>workable</td><td>crisp</td></tr>
+    </table>
+  </sem-rubric>
+
+  <sem-eval id="ca-eval" kind="recall" status="draft">
+    <section>
+      <h2>Inputs</h2>
+      <p>A refreshed token pair and a 20-minute-old access token.</p>
+    </section>
+    <section>
+      <h2>Expected</h2>
+      <p>A fresh pair mints without a re-sign-in.</p>
+    </section>
+  </sem-eval>
+
+  <sem-philosophy id="ca-philosophy" kind="engineering">
+    <p>Velocity-first, integrity-absolute: ship aggressively, never
+    gamble data.</p>
+  </sem-philosophy>
+
+  <sem-summary id="ca-summary" kind="executive">
+    <p>Tokens rotate per session; secrets never reach the browser; the
+    client mints fresh pairs from the refresh grant.</p>
+  </sem-summary>
+
+  <sem-plan id="ca-plan" kind="solution" status="current">
+    <p>1. Snapshot the current chart tag.</p>
+    <p>2. Land the rotation fix behind the release train.</p>
+    <p>3. Confirm the pod image, not just ArgoCD sync.</p>
+  </sem-plan>
+
+  <sem-tsgs id="ca-tsgs" kind="deploys">
+    <sem-tsg>
+      <name>stale-image</name>
+      <title>Pod serves the old image after a green sync</title>
+      <description>ArgoCD reports Synced/Healthy but the rollout did not
+      change.</description>
+      <tags>deploy, argocd</tags>
+      <when>right after a release merge</when>
+      Confirm the pod image spec per container — Synced/Healthy alone can
+      serve a stale image.
+    </sem-tsg>
+  </sem-tsgs>
+
+  <sem-faqs id="ca-faqs" kind="auth">
+    <sem-faq id="q-expiry">
+      <question>Do access tokens expire mid-session?</question>
+      <answer>No — the client mints a fresh pair from the refresh grant;
+      the user never re-signs-in mid-session.</answer>
+    </sem-faq>
+    <sem-faq id="q-secret">
+      <question>Where do client secrets live?</question>
+      <answer>Server-side, in the confidential client — the browser only
+      ever sees tokens.</answer>
+    </sem-faq>
+  </sem-faqs>
+
+  <sem-changelogs id="ca-changelogs" kind="spec">
+    <sem-changelog date="2026-10-18" name="rotation" title="Per-session JWT rotation">
+      Rotation landed behind the release train; the refresh grant issues
+      a fresh pair.
+      <tags>auth, tokens</tags>
+    </sem-changelog>
+    <sem-changelog date="2026-10-17" impacted="deploy">
+      Chart-tag bumps moved fully to CI; agents never touch chart tags
+      for release.
+    </sem-changelog>
+  </sem-changelogs>
+
+  <p><a href="index.html">← demo index</a></p>
+</div>
+</body>
+</html>
