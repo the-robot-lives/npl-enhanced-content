@@ -49,6 +49,9 @@ write (`data-active`, `data-view-as` after a toggle, tier markers) is always
 | `<sem-reveal summary open>` | `div.sem-reveal[data-summary][open]` (hidden until the reader acts; `open` starts revealed — `collapsed` accepted, no-op; conventions §2) |
 | `<sem-tag-def tag name group children>` › `<sem-tag-attr name type required default allowed>` | `div.sem-tag-def[data-tag][data-name][data-group][data-children]` › `div.sem-tag-attr[data-name][data-type][data-required][data-default][data-allowed]` (reference card: native-table render, one structured record) |
 | `<sem-api-call name method endpoint status>` › `<sem-api-param name in type required default allowed>` | `div.sem-api-call[data-name][data-method][data-endpoint][data-status]` › `div.sem-api-param[data-name][data-in][data-type][data-required][data-default][data-allowed]` (`in` = query\|header\|body\|response) |
+| `<sem-workflow kind duration label>` › `<sem-step action description gate check if-no output status>` | `div.sem-workflow[data-kind][data-duration][data-label]` › `div.sem-step[data-action][…][data-status]` (`action` required in workflow context — validator childForm; JS-on `if-no` branch) |
+| `<sem-site-tree label mode>` › `<node path label kind collapsed>` | `div.sem-site-tree[data-label][data-mode]` › `div.sem-node[data-path][data-label][data-kind]`, nested (`path` required in tree context; JS-off a static nested list) |
+| `<sem-file-tree mode label>` › `<pre>` (text form) | `div.sem-file-tree[data-mode][data-label]`; the authored `<pre>` IS the record — JS-on view rows + collapse/filter/find share the sem-site-tree engine |
 | `<sem-progress value label>` | `div.sem-progress[data-value][data-label]` |
 | `<sem-audiences>` › `<sem-profile id label implies>`; `audience="…"` | `div.sem-audiences` › `div.sem-profile[id][data-label][data-implies]`; `data-audience` |
 
