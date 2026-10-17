@@ -692,13 +692,26 @@ export class Screen implements ScreenModel, ScreenTextSource {
       walked += span;
     }
 
-    // Rebuild ring + viewport from the re-wrapped logical lines.
+    // Rebuild ring + viewport from the re-wrapped logical lines. When the
+    // re-wrap is taller than the viewport the stream scrolls: the leading
+    // rows move INTO the ring (append at its end) and the new row lands at
+    // the viewport bottom — pushing the overflow tail to the ring instead
+    // would reorder the stream (tail rows ahead of viewport rows) and
+    // break every cursor-row computed from ring+viewport coordinates.
+    // Blank groups strictly BELOW the cursor's line are viewport padding,
+    // not content: re-wrapping them as rows would scroll real content
+    // into the ring and shift the tail up on every metrics settle.
     this.#ring = [];
     this.primary.lines = [];
-    for (const logical of before) {
+    for (let group = 0; group < before.length; group++) {
+      const logical = before[group]!;
+      if (group > logicalIndex && isBlankGroup(logical)) break;
       for (const line of wrapLogical(logical, cols)) {
         if (this.primary.lines.length < rows) this.primary.lines.push(line);
-        else this.#pushRing(line);
+        else {
+          this.#pushRing(this.primary.lines.shift()!);
+          this.primary.lines.push(line);
+        }
       }
     }
     while (this.primary.lines.length < rows) this.primary.lines.push(blankLine(cols));
@@ -711,19 +724,27 @@ export class Screen implements ScreenModel, ScreenTextSource {
     for (let index = 0; index < after.length; index++) {
       const logical = after[index]!;
       if (index === logicalIndex) {
+        // The stream row is the re-wrapped rows of every logical line
+        // ABOVE the cursor's, plus the wrap-row offset within its own —
+        // `within` alone is the offset inside one logical line and is 0
+        // for any unwrapped line, which parked the cursor on the top row
+        // and made the next writes clobber the screen head (round-2
+        // semtext.dev feedback: boot lines overwritten by start-script
+        // output). The cursor's line is an absolute stream row (ring
+        // rows first), so place it directly; a row scrolled into the
+        // ring or below the fold falls back to the bottom row.
         const within = Math.max(0, Math.min(floorDiv(logicalCol, cols), logical.rows.length - 1));
-        const absRow = this.#ring.length + within;
-        if (absRow >= this.#ring.length && within < rows) placedRow = within;
+        const streamRow = seen + within;
+        const ringHold = this.#ring.length;
+        if (streamRow >= ringHold && streamRow < ringHold + rows) placedRow = streamRow - ringHold;
         else placedRow = Math.max(0, rows - 1);
         placedCol = clampIndex(logicalCol - within * cols, cols - 1);
         break;
       }
       seen += logical.rows.length;
     }
-    void seen;
     this.cursor.line = this.#ring.length + placedRow;
-    this.cursor.col = placedCol;
-    if (this.#scrollOffset >= 0) this.#scrollOffset = clampIndex(this.#scrollOffset, Math.max(0, this.totalLines() - rows));
+    this.cursor.col = placedCol;    if (this.#scrollOffset >= 0) this.#scrollOffset = clampIndex(this.#scrollOffset, Math.max(0, this.totalLines() - rows));
   }
 
   #redimension(buffer: Buffer, cols: number, rows: number): void {
@@ -879,6 +900,16 @@ export function logicalLines(lines: readonly Line[]): LogicalGroup[] {
   }
   if (current.length > 0) groups.push({ rows: current });
   return groups;
+}
+
+/** A logical group whose rows carry no printable cell (viewport padding). */
+function isBlankGroup(group: LogicalGroup): boolean {
+  for (const row of group.rows) {
+    for (let index = 0; index < row.cols; index++) {
+      if (row.codes[index] !== 0) return false;
+    }
+  }
+  return true;
 }
 
 /** Re-wrap one logical line at `cols`; wide glyphs never straddle. */

@@ -46,7 +46,9 @@ write (`data-active`, `data-view-as` after a toggle, tier markers) is always
 | `<sem-md label view-as controls>` › Markdown text | `div.sem-md[data-label][data-view-as][data-controls]` › Markdown text (`data-view-as` runtime-mutable) |
 | `<sem-procedure kind>` › `<sem-step status>` | `div.sem-procedure[data-kind]` › `div.sem-step[data-status]` |
 | `<sem-views id>` › `<sem-view name active>` | `div.sem-views[id]` › `div.sem-view[data-name][data-active]` (`id` is the global HTML attribute, spelled the same in both forms) |
-| `<sem-reveal summary collapsed>` | `div.sem-reveal[data-summary][collapsed]` (`collapsed`, like `id`, is a global boolean spelled the same in both forms — conventions §2) |
+| `<sem-reveal summary open>` | `div.sem-reveal[data-summary][open]` (hidden until the reader acts; `open` starts revealed — `collapsed` accepted, no-op; conventions §2) |
+| `<sem-tag-def tag name group children>` › `<sem-tag-attr name type required default allowed>` | `div.sem-tag-def[data-tag][data-name][data-group][data-children]` › `div.sem-tag-attr[data-name][data-type][data-required][data-default][data-allowed]` (reference card: native-table render, one structured record) |
+| `<sem-api-call name method endpoint status>` › `<sem-api-param name in type required default allowed>` | `div.sem-api-call[data-name][data-method][data-endpoint][data-status]` › `div.sem-api-param[data-name][data-in][data-type][data-required][data-default][data-allowed]` (`in` = query\|header\|body\|response) |
 | `<sem-progress value label>` | `div.sem-progress[data-value][data-label]` |
 | `<sem-audiences>` › `<sem-profile id label implies>`; `audience="…"` | `div.sem-audiences` › `div.sem-profile[id][data-label][data-implies]`; `data-audience` |
 
