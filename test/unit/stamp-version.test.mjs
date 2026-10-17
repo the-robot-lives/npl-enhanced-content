@@ -34,9 +34,19 @@ for (const f of [
   'semtext-pkg-text.js',
   'worker-wasm.js',
   'worker-parse.js',
+  'semext.js',
+  'semext-lazy.js',
+  'semext-manifest.json',
+  'agent-kit.js',
+  'agent-kit-lazy.js',
+  'agent-kit-manifest.json',
   'semtext-not-stamped.txt', // not a bundle family: must NOT be copied
 ]) {
   writeFileSync(join(sandbox, 'dist', f), `// ${f}\n`);
+}
+for (const d of ['chunks', 'npl-chunks', 'semext-chunks', 'agent-kit-chunks', 'themes']) {
+  mkdirSync(join(sandbox, 'dist', d), { recursive: true });
+  writeFileSync(join(sandbox, 'dist', d, 'keep.js'), `// ${d}/keep.js\n`);
 }
 
 const ran = execFileSync(process.execPath, [scriptPath, '--root', sandbox], { encoding: 'utf8' });
@@ -67,6 +77,22 @@ describe('stamp-version', () => {
   it('stamps every worker-*.js module worker', () => {
     for (const f of ['worker-wasm.js', 'worker-parse.js']) {
       expect(existsSync(join(vDir, f)), f).toBe(true);
+    }
+  });
+
+  it('stamps the Phase-7 extension families (semext, agent-kit)', () => {
+    for (const f of [
+      'semext.js',
+      'semext-lazy.js',
+      'semext-manifest.json',
+      'agent-kit.js',
+      'agent-kit-lazy.js',
+      'agent-kit-manifest.json',
+    ]) {
+      expect(existsSync(join(vDir, f)), f).toBe(true);
+    }
+    for (const d of ['semext-chunks', 'agent-kit-chunks']) {
+      expect(existsSync(join(vDir, d, 'keep.js')), d).toBe(true);
     }
   });
 

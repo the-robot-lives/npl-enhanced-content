@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-18 (0.9.3 — first family-complete versioned snapshot)
+
+- **Re-cut release.** #68 landed after 0.9.2 and set `package.json` back to
+  0.9.1 (its branch was cut before the 0.9.2 rename) — this release takes
+  0.9.3 to clear both taken numbers and because its whole point is the
+  artifact set: `dist/v0.9.3/` is the FIRST versioned snapshot that carries
+  the Phase-7 families (`semext.js/-lazy/-manifest` + chunks,
+  `agent-kit.js/-lazy/-manifest` + chunks). No runtime source changes.
+- **stamp-version + publish-cdn carry the families** (found re-vendoring
+  0.9.2): `stamp-version.mjs` copied only core + npl into
+  `dist/v<version>/`, so the `semext-*` / `agent-kit-*` lazy surface had no
+  immutable versioned URL; its FILES/DIRS lists now include the six family
+  bundles + `semext-chunks/` + `agent-kit-chunks/`, covered by
+  `stamp-version.test.mjs`. The `publish-cdn` payload stages the same set —
+  npl was missing there too.
+
 ## 2026-10-18 (0.9.1 — SEMTEX high-bug wave)
 
 - **Late DOM now upgrades (MutationObserver rescan).** The bundle scanned once at
