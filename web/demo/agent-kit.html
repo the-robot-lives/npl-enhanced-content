@@ -190,6 +190,39 @@ call_sign: loom</agent-kit-persona-metadata>
     </script>
   </agent-kit-board>
 
+  <h2>Reference cards &amp; chatroom</h2>
+  <p>Slug-addressable reference cards — the authored name and
+  description are the record; the footer links derive from the
+  reference quartet. The chatroom is sem-chat's cached twin: authored
+  messages only, no composer, no endpoint.</p>
+
+  <agent-kit-organization kind="reference" tags="acme" org="acme">
+    <agent-kit-name>Acme Corporation</agent-kit-name>
+    <agent-kit-description>
+      The umbrella org for the SemText family workspaces.
+    </agent-kit-description>
+  </agent-kit-organization>
+
+  <agent-kit-project kind="reference" tags="authoring" org="acme" key="semtext">
+    <agent-kit-name>SemText</agent-kit-name>
+    <agent-kit-description>
+      The XHTML-first rich-content spec and component kit.
+    </agent-kit-description>
+  </agent-kit-project>
+
+  <agent-kit-chatroom kind="chatroom" tags="authoring" org="acme" project="semtext" key="room-authoring">
+    <agent-kit-chatroom-name>Authoring stand-up</agent-kit-chatroom-name>
+    <agent-kit-chat-msg author="Ada" role="user" at="2026-10-17T09:00:00Z">
+      Board's wired — three columns land today.
+    </agent-kit-chat-msg>
+    <agent-kit-chat-msg author="Loom" role="assistant" at="2026-10-17T09:01:00Z">
+      Watched. The refs scroll their cards into view.
+    </agent-kit-chat-msg>
+    <agent-kit-chat-msg author="Ada" role="user" at="2026-10-17T09:02:00Z">
+      And the snapshot stamp renders JS-on only — the record never changes.
+    </agent-kit-chat-msg>
+  </agent-kit-chatroom>
+
 </div>
 </body>
 </html>

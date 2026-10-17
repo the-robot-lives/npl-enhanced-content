@@ -1291,7 +1291,9 @@
       "agent-kit-bug",
       "agent-kit-user-story",
       "agent-kit-task",
-      "agent-kit-sub-task"
+      "agent-kit-sub-task",
+      "agent-kit-organization",
+      "agent-kit-project"
       ],
       "classAliases": [
         "div.agent-kit-description",
@@ -1590,6 +1592,113 @@
       "classAliases": [
         "div.agent-kit-column",
         "span.agent-kit-column"
+      ]
+    },
+    "agent-kit-organization": {
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-name",
+        "agent-kit-description"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-description",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-project": {
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-name",
+        "agent-kit-description"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-description",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-name": {
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-organization",
+      "agent-kit-project"
+      ],
+      "classAliases": [
+        "div.agent-kit-name",
+        "span.agent-kit-name"
+      ]
+    },
+    "agent-kit-chatroom": {
+      "source": "spec/schema/agent-kit/chatroom.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-chatroom-name",
+        "agent-kit-chat-msg"
+      ]
+    },
+    "agent-kit-chatroom-name": {
+      "source": "spec/schema/agent-kit/chatroom.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-chatroom"
+      ],
+      "classAliases": [
+        "div.agent-kit-chatroom-name",
+        "span.agent-kit-chatroom-name"
+      ]
+    },
+    "agent-kit-chat-msg": {
+      "source": "spec/schema/agent-kit/chatroom.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-chatroom"
+      ],
+      "attributes": {
+        "author": {
+          "type": "token"
+        },
+        "role": {
+          "type": "token",
+          "values": ["user", "assistant"]
+        },
+        "at": {
+          "type": "token"
+        }
+      },
+      "classAliases": [
+        "div.agent-kit-chat-msg",
+        "span.agent-kit-chat-msg"
       ]
     }
   }

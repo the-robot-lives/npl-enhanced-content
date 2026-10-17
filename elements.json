@@ -48,12 +48,14 @@
     "spec/schema/npl/npl-vos.md",
     "spec/schema/agent-kit/acceptance-criteria.md",
     "spec/schema/agent-kit/board.md",
+    "spec/schema/agent-kit/chatroom.md",
     "spec/schema/agent-kit/custom-assert.md",
     "spec/schema/agent-kit/personas.md",
+    "spec/schema/agent-kit/reference-cards.md",
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 67,
+  "tagCount": 70,
   "tags": [
     {
       "name": "agent-kit-acceptance-criteria",
@@ -277,6 +279,94 @@
       "children": [],
       "example": "<agent-kit-issue org=\"acme\" project=\"semtext\" key=\"AKIT-001\"\n                 uuid=\"7c1e...\" state=\"open\" labels=\"auth,extract\">\n  <agent-kit-title>Extractor drops class-form parts</agent-kit-title>\n  <agent-kit-description>\n    `extractRecords` misses `.agent-kit-title` aliases when the class\n    appears on a wrapper element.\n  </agent-kit-description>\n  <agent-kit-last-updated>2026-10-17T09:24:00Z</agent-kit-last-updated>\n</agent-kit-issue>",
       "optionsIn": "agent-kit-issue"
+    },
+    {
+      "name": "agent-kit-chatroom",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/chatroom.md",
+      "summary": "The cached chatroom transcript card; the authored messages are the record.",
+      "description": "The cached chatroom transcript card; the authored messages are the record. One contract for the chatroom renderer: a cached-embed display stub (`src/lit/agent-kit/agent-kit-chatroom.ts`, `AkitChatroom`) that reuses sem-chat's rendering approach — authored message markup is the record, the enhancer annotates without fabricating — against a CACHED transcript only. It has NO composer and NO endpoint mode; live chat stays with `sem-chat`. Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-reference.test.ts`.",
+      "attributes": [
+        {
+          "name": "fixtures",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin JSON path naming a cached snapshot for enrichment (cached-embed preset; a fixture source vetoes any `endpoint`)."
+        },
+        {
+          "name": "endpoint",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin API path; NEVER fetched by this element (Live-fetch policy below) — declared for the authoring pipeline only. There is no send path: unlike `sem-chat`, this element has no composer at all."
+        },
+        {
+          "name": "last-refreshed",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "authored ISO-8601 stamp of the most recent sync (cached-embed preset)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "fresh",
+            "stale",
+            "error"
+          ],
+          "default": null,
+          "description": "one of `fresh`, `stale`, `error` (cached-embed preset)."
+        },
+        {
+          "name": "org",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "`project`, `key`: `string` — the reference quartet (schema `reference` preset) — see Reference attributes below."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "agent-kit-chatroom-name",
+          "note": "`<agent-kit-chatroom-name>` — the room's display name; optional, one (renders as a heading in both modes)."
+        },
+        {
+          "name": "agent-kit-chat-msg",
+          "note": "`<agent-kit-chat-msg>` — one transcript message; author at least one (the count is displayed by the chrome chip, never enforced by a childRule). Content is free-form authored markup (plain text, links, inline sem-* markup — the prose is the message). Message attributes, all strings: - `author` — the speaker label, rendered through the message's CSS `::before` (visible with styles on or off, never part of any extracted record). - `role` — `user` or `assistant`; drives the side accent in CSS. - `at` — authored ISO-8601 stamp of the message (machine format)."
+        }
+      ],
+      "example": "<agent-kit-chatroom org=\"acme\" project=\"semtext\" key=\"room-authoring\">\n  <agent-kit-chatroom-name>Authoring stand-up</agent-kit-chatroom-name>\n  <agent-kit-chat-msg author=\"Ada\" role=\"user\" at=\"2026-10-17T09:00:00Z\">\n    Board's wired — three columns land today.\n  </agent-kit-chat-msg>\n  <agent-kit-chat-msg author=\"Loom\" role=\"assistant\" at=\"2026-10-17T09:01:00Z\">\n    Watched. The refs scroll their cards into view.\n  </agent-kit-chat-msg>\n</agent-kit-chatroom>"
     },
     {
       "name": "agent-kit-custom-assert",
@@ -522,6 +612,113 @@
       ],
       "children": [],
       "example": "<agent-kit-issue org=\"acme\" project=\"semtext\" key=\"AKIT-001\"\n                 uuid=\"7c1e...\" state=\"open\" labels=\"auth,extract\">\n  <agent-kit-title>Extractor drops class-form parts</agent-kit-title>\n  <agent-kit-description>\n    `extractRecords` misses `.agent-kit-title` aliases when the class\n    appears on a wrapper element.\n  </agent-kit-description>\n  <agent-kit-last-updated>2026-10-17T09:24:00Z</agent-kit-last-updated>\n</agent-kit-issue>"
+    },
+    {
+      "name": "agent-kit-organization",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "summary": "The two reference-card tags — one generic renderer parameterized by kind; the authored inner content is the record.",
+      "description": "The two reference-card tags — one generic renderer parameterized by kind; the authored inner content is the record. One contract for the reference cards: a single generic renderer (`src/lit/agent-kit/reference-shared.ts`, `AkitReferenceCard`) — the authored `<agent-kit-name>` / `<agent-kit-description>` parts (the shared part defs) are the record. The primary tag is `agent-kit-organization`; `agent-kit-project` differs in the rendered kind chip and the footer link shape (`optionsIn`). Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-reference.test.ts`.",
+      "attributes": [
+        {
+          "name": "uuid",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the upstream record UUID (informational)."
+        },
+        {
+          "name": "fixtures",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin JSON path naming a cached snapshot for enrichment (cached-embed preset; a fixture source vetoes any `endpoint`)."
+        },
+        {
+          "name": "endpoint",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin API path; NEVER fetched by these elements (Live-fetch policy below) — declared for the authoring pipeline only."
+        },
+        {
+          "name": "last-refreshed",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "authored ISO-8601 stamp of the most recent sync (cached-embed preset)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "fresh",
+            "stale",
+            "error"
+          ],
+          "default": null,
+          "description": "one of `fresh`, `stale`, `error` (cached-embed preset)."
+        },
+        {
+          "name": "org",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "`project`, `key`: `string` — the reference quartet (schema `reference` preset): for the organization card the `org` attribute IS the record's slug; for the project card `org` + `key` name the owning organization and the project slug."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<agent-kit-project org=\"acme\" key=\"semtext\">\n  <agent-kit-name>SemText</agent-kit-name>\n  <agent-kit-description>\n    The XHTML-first rich-content spec and component kit.\n  </agent-kit-description>\n</agent-kit-project>"
+    },
+    {
+      "name": "agent-kit-project",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "summary": "The two reference-card tags — one generic renderer parameterized by kind; the authored inner content is the record.",
+      "description": "The two reference-card tags — one generic renderer parameterized by kind; the authored inner content is the record. One contract for the reference cards: a single generic renderer (`src/lit/agent-kit/reference-shared.ts`, `AkitReferenceCard`) — the authored `<agent-kit-name>` / `<agent-kit-description>` parts (the shared part defs) are the record. The primary tag is `agent-kit-organization`; `agent-kit-project` differs in the rendered kind chip and the footer link shape (`optionsIn`). Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-reference.test.ts`.",
+      "attributes": [],
+      "children": [
+        {
+          "name": "agent-kit-name",
+          "note": "`<agent-kit-name>` — the display name; exactly one."
+        },
+        {
+          "name": "agent-kit-description",
+          "note": "`<agent-kit-description>` — the description prose; optional, one."
+        }
+      ],
+      "example": "<agent-kit-project org=\"acme\" key=\"semtext\">\n  <agent-kit-name>SemText</agent-kit-name>\n  <agent-kit-description>\n    The XHTML-first rich-content spec and component kit.\n  </agent-kit-description>\n</agent-kit-project>",
+      "optionsIn": "agent-kit-organization"
     },
     {
       "name": "agent-kit-sub-task",

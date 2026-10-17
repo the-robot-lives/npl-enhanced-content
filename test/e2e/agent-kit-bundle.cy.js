@@ -34,10 +34,11 @@ const PERSONA_TYPES = [
 // Document order of the structured-lists section (below the personas).
 const LIST_TYPES = ['agent-kit-acceptance-criteria', 'agent-kit-custom-assert'];
 
-// The board section (last) — one record; its columns/refs never mint.
+// The board + reference sections (last) — the refs/columns never mint.
 const BOARD_TYPES = ['agent-kit-board'];
+const REFERENCE_TYPES = ['agent-kit-organization', 'agent-kit-project', 'agent-kit-chatroom'];
 
-const ALL_TYPES = [...TICKET_TYPES, ...PERSONA_TYPES, ...LIST_TYPES, ...BOARD_TYPES];
+const ALL_TYPES = [...TICKET_TYPES, ...PERSONA_TYPES, ...LIST_TYPES, ...BOARD_TYPES, ...REFERENCE_TYPES];
 
 describe('agent-kit bundle — tickets (sub-batch 1)', () => {
   it('INVARIANT: JS-off extraction deep-equals JS-on extraction', () => {
@@ -255,5 +256,49 @@ describe('agent-kit bundle — board (sub-batch 4)', () => {
       const before = window.getComputedStyle($c[0], '::before').content;
       expect(before).to.equal('"In progress"');
     });
+  });
+});
+
+describe('agent-kit bundle — reference cards + chatroom (sub-batch 5)', () => {
+  it('cards and chatroom mint plain records; chrome and labels stay out', () => {
+    cy.visit('/demo/agent-kit.html');
+    extract().then((records) => {
+      expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
+      const room = records[records.length - 1];
+      expect(room.kind).to.equal('chatroom');
+      expect(room.text).to.contain("Board's wired");
+      expect(room.text).to.contain('Authoring stand-up');
+      expect(room.text).not.to.contain('Ada:');
+      expect(room.text).not.to.contain('Chatroom ·');
+      const org = records[records.length - 3];
+      expect(org.text).to.contain('Acme Corporation');
+      expect(org.text).not.to.contain('Open in agent-kit');
+    });
+  });
+
+  it('kind chips, footer links and the transcript render JS-on; prose stands alone JS-off', () => {
+    cy.visit('/demo/agent-kit.html');
+    cy.get('agent-kit-organization .agent-kit-reference-kind').should('have.text', 'Organization');
+    cy.get('agent-kit-organization a.agent-kit-reference-open')
+      .should('have.attr', 'href', '/app/acme');
+    cy.get('agent-kit-project a.agent-kit-reference-open')
+      .should('have.attr', 'href', '/app/acme/projects/semtext');
+    cy.get('agent-kit-chatroom .agent-kit-chatroom-chip')
+      .should('have.attr', 'data-message-count', '3')
+      .and('contain', 'Chatroom · 3 messages');
+    cy.get('agent-kit-chatroom agent-kit-chat-msg').should('have.length', 3);
+    // author labels ride ::before even JS-off
+    cy.get('agent-kit-chatroom agent-kit-chat-msg')
+      .first()
+      .then(($m) => {
+        const before = window.getComputedStyle($m[0], '::before').content;
+        expect(before).to.equal('"Ada: "');
+      });
+    cy.visit('/demo/agent-kit.nojs.html');
+    cy.get('.agent-kit-reference-kind').should('not.exist');
+    cy.get('a.agent-kit-reference-open').should('not.exist');
+    cy.get('.agent-kit-chatroom-chip').should('not.exist');
+    cy.get('agent-kit-chatroom agent-kit-chat-msg').should('have.length', 3);
+    cy.get('agent-kit-organization agent-kit-name').should('have.text', 'Acme Corporation');
   });
 });

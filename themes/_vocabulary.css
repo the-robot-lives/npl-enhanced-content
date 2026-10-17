@@ -1531,9 +1531,12 @@ agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria { display: block; 
 agent-kit-agent-persona, .agent-kit-agent-persona { display: block; }
 agent-kit-board, .agent-kit-board { display: block; }
 agent-kit-bug, .agent-kit-bug { display: block; }
+agent-kit-chatroom, .agent-kit-chatroom { display: block; }
 agent-kit-custom-assert, .agent-kit-custom-assert { display: block; }
 agent-kit-epic, .agent-kit-epic { display: block; }
 agent-kit-issue, .agent-kit-issue { display: block; }
+agent-kit-organization, .agent-kit-organization { display: block; }
+agent-kit-project, .agent-kit-project { display: block; }
 agent-kit-sub-task, .agent-kit-sub-task { display: block; }
 agent-kit-task, .agent-kit-task { display: block; }
 agent-kit-ticket-ref, .agent-kit-ticket-ref { display: block; }
@@ -2588,3 +2591,117 @@ agent-kit-ticket-ref[data-sem-upgraded], .agent-kit-ticket-ref[data-sem-upgraded
   font-size: 0.85em;
 }
 /* ── end agent-kit board ── */
+
+/* ── agent-kit reference cards + chatroom ─────────────────────────
+   agent-kit-organization / agent-kit-project: one generic reference
+   renderer (spec/schema/agent-kit/reference-cards.md) — authored
+   name/description parts are the record; chrome = kind chip + slug
+   footer. agent-kit-chatroom (chatroom.md): authored messages are the
+   record; author labels ride the attribute through ::before. Tokens
+   only; dual spellings throughout.
+   ============================================================ */
+
+/* reference cards: the card frame, shared by both tags */
+:is(agent-kit-organization, .agent-kit-organization),
+:is(agent-kit-project, .agent-kit-project) {
+  box-sizing: border-box;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--sem-surface, #ffffff);
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 8px;
+  color: var(--sem-fg, #1e293b);
+}
+:is(agent-kit-organization, .agent-kit-organization) > :is(agent-kit-name, .agent-kit-name),
+:is(agent-kit-project, .agent-kit-project) > :is(agent-kit-name, .agent-kit-name) {
+  display: block;
+  margin: 0 0 0.25rem;
+  font-size: 1.05em;
+  font-weight: 600;
+}
+:is(agent-kit-organization, .agent-kit-organization) > :is(agent-kit-description, .agent-kit-description),
+:is(agent-kit-project, .agent-kit-project) > :is(agent-kit-description, .agent-kit-description) {
+  display: block;
+  margin: 0;
+}
+.agent-kit-reference-chrome .agent-kit-reference-head {
+  margin: 0 0 0.5rem;
+}
+.agent-kit-reference-chrome .agent-kit-reference-kind {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-accent, #2563eb);
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+}
+.agent-kit-reference-chrome .agent-kit-reference-foot {
+  margin: 0.5rem 0 0;
+}
+.agent-kit-reference-chrome .agent-kit-reference-open {
+  color: var(--sem-accent, #2563eb);
+  font-size: 0.9em;
+}
+.agent-kit-reference-chrome .agent-kit-reference-snapshot {
+  display: inline-block;
+  margin: 0.5rem 0 0;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.85em;
+}
+
+/* chatroom: transcript card */
+:is(agent-kit-chatroom, .agent-kit-chatroom) {
+  box-sizing: border-box;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--sem-surface, #ffffff);
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 8px;
+  color: var(--sem-fg, #1e293b);
+}
+:is(agent-kit-chatroom, .agent-kit-chatroom) > :is(agent-kit-chatroom-name, .agent-kit-chatroom-name) {
+  display: block;
+  margin: 0 0 0.5rem;
+  font-size: 1.05em;
+  font-weight: 600;
+}
+:is(agent-kit-chatroom, .agent-kit-chatroom) > :is(agent-kit-chat-msg, .agent-kit-chat-msg) {
+  display: block;
+  margin: 0.35rem 0;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--sem-bg, #fafafa);
+}
+/* the author label rides the attribute — visible with styles on or
+   off, never part of any extracted record */
+:is(agent-kit-chatroom, .agent-kit-chatroom) > :is(agent-kit-chat-msg, .agent-kit-chat-msg)::before {
+  content: attr(author) ': ';
+  display: block;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+  font-weight: 600;
+}
+:is(agent-kit-chatroom, .agent-kit-chatroom) > :is(agent-kit-chat-msg, .agent-kit-chat-msg)[role='assistant'] {
+  border-left: 3px solid var(--sem-accent, #2563eb);
+}
+.agent-kit-chatroom-chrome .agent-kit-chatroom-chip {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+}
+.agent-kit-chatroom-chrome .agent-kit-chatroom-snapshot {
+  display: inline-block;
+  margin: 0.5rem 0 0;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.85em;
+}
+/* ── end agent-kit reference cards + chatroom ── */
