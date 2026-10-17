@@ -552,9 +552,10 @@
       },
       "childRules": [
         {
-          "rule": "exactlyOne",
+          "rule": "atMostOne",
           "selector": "pre",
-          "severity": "error"
+          "severity": "error",
+          "description": "the listing's <pre> — authored directly, or minted by the element when the listing is authored flat (no <pre>); more than one is an error"
         }
       ]
     },

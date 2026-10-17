@@ -404,14 +404,15 @@ aside on wide viewports, inline otherwise. Light DOM, `role="note"`.
 **sem-code** -- verbatim listing with provenance and copy / wrap.
 **Normative: `spec/schema/sem-code.md`.**
 ```html
-<sem-code lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap">
-<pre><code>...</code></pre>
-</sem-code>
+<sem-code lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap">...</sem-code>
 ```
-The script adds `.sem-code-chrome` (filename, lang, buttons, status
-region), wraps lines (`span|mark.sem-code-line`, text byte-identical),
-`tabindex="0"` on an overflowing `<pre>`. JS-off: plain `<pre>` with a
-CSS caption. Extraction keeps `source` **verbatim**.
+The listing is authored flat -- the element's own text; the element
+wraps it in `<pre><code>` when it enhances. The explicit `<pre><code>`
+child form is equivalent and still supported. The script adds
+`.sem-code-chrome` (filename, lang, buttons, status region), wraps
+lines (`span|mark.sem-code-line`, text byte-identical), `tabindex="0"`
+on an overflowing `<pre>`. JS-off: plain `<pre>` with a CSS caption.
+Extraction keeps `source` **verbatim**.
 
 **sem-browser** -- chrome-like document window; renders another SemText
 document live (the window-frame sibling of `sem-code`).

@@ -76,6 +76,7 @@ const FILES = [
   'npl-manifest.json',
   'semtext-js-shell.js',
   'semtext-js-shell-manifest.json',
+  'semtext-editor.js', // semtext.dev pins it per version (editor page)
 ];
 const DIRS = ['chunks', 'npl-chunks', 'themes'];
 

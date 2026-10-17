@@ -1196,8 +1196,8 @@
       "name": "sem-code",
       "family": "sem",
       "source": "spec/schema/sem-code.md",
-      "summary": "A source listing with provenance.",
-      "description": "A source listing with provenance. The element exists because plain `<pre><code>` cannot carry a filename, a language, or a set of emphasised lines that a machine can read back, and because copy / wrap are reading affordances that need JS. The listing itself is **verbatim**: whitespace inside `<code>` is content, never normalised.",
+      "summary": "A source listing with provenance: a filename, a language, emphasised lines a machine can read back, and copy / wrap controls plain `<pre><code>` cannot carry.",
+      "description": "A source listing with provenance: a filename, a language, emphasised lines a machine can read back, and copy / wrap controls plain `<pre><code>` cannot carry. The listing itself is **verbatim**: whitespace is content, never normalised.",
       "attributes": [
         {
           "name": "lang",
@@ -1275,14 +1275,14 @@
       "children": [
         {
           "name": "pre",
-          "note": "Child: **exactly one `<pre>`**, conventionally wrapping one `<code>`. The listing is the `<code>`'s text (the `<pre>`'s when no `<code>` is authored)."
+          "note": "Child: the listing — authored flat (the element's own text) or as **at most one `<pre>`**, conventionally wrapping one `<code>`. Flat text with no `<pre>` is adopted into `<pre><code>` at enhance time; a host that already has a `<pre>` child is left as authored. A `<code>` that already holds element children (author-side highlighting) is left as authored — no line spans or `<mark>` are generated over it. More than one `<pre>` child is an error (schema `childRules`)."
         },
         {
           "name": "code",
-          "note": "Child: **exactly one `<pre>`**, conventionally wrapping one `<code>`. The listing is the `<code>`'s text (the `<pre>`'s when no `<code>` is authored)."
+          "note": "Child: the listing — authored flat (the element's own text) or as **at most one `<pre>`**, conventionally wrapping one `<code>`. Flat text with no `<pre>` is adopted into `<pre><code>` at enhance time; a host that already has a `<pre>` child is left as authored. A `<code>` that already holds element children (author-side highlighting) is left as authored — no line spans or `<mark>` are generated over it. More than one `<pre>` child is an error (schema `childRules`)."
         }
       ],
-      "example": "<sem-code id=\"c-rotate\" lang=\"ts\" filename=\"src/rotate.ts\" mark=\"2,4-5\" controls=\"copy,wrap\">\n<pre><code>export function rotate(pair: Pair): Pair {\n  const next = mint();\n  retire(pair.refresh);\n  return next;\n}</code></pre>\n</sem-code>"
+      "example": "<sem-code id=\"c-rotate\" lang=\"ts\" filename=\"src/rotate.ts\" mark=\"2,4-5\" controls=\"copy,wrap\">export function rotate(pair: Pair): Pair {\n  const next = mint();\n  retire(pair.refresh);\n  return next;\n}</sem-code>"
     },
     {
       "name": "sem-data-join",
@@ -1970,8 +1970,8 @@
       "name": "sem-reader",
       "family": "sem",
       "source": "spec/schema/sem-reader.md",
-      "summary": "The reading chrome of a long document: an outline, a reading-progress bar, and the reader-side controls a browser can offer that a printed page cannot — focus mode, type size and face, colour scheme, ",
-      "description": "The reading chrome of a long document: an outline, a reading-progress bar, and the reader-side controls a browser can offer that a printed page cannot — focus mode, type size and face, colour scheme, print, audience. It is **chrome, not content**: it mints no record, its outline is derived from the document's headings, and a document without it loses nothing a machine could read. It exists as one element (rather than one per control) because every control shares a host, a persistence policy and an a11y contract, and because the planned `sem-themes` picker collapses into its `theme` control (R/W3 — not in this wave).",
+      "summary": "Reading chrome for a long document: an outline, a reading-progress bar, and reader controls (focus mode, type size, colour scheme, print, audience).",
+      "description": "Reading chrome for a long document: an outline, a reading-progress bar, and reader controls (focus mode, type size, colour scheme, print, audience). Chrome, not content: it mints no record, and a document without it loses nothing a machine could read.",
       "attributes": [
         {
           "name": "controls",
