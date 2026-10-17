@@ -6,8 +6,6 @@
  * inject. Motion gates on `prefers-reduced-motion` (§7).
  */
 
-export const INSERT_CSS_ID = 'sem-ed-insert-css';
-
 export const INSERT_CSS = `
 /* ── block-inserter panel (dialog) ─────────────────────────────────────── */
 .sem-ed-ins-search { margin: 0.4rem 0.9rem 0.2rem; }

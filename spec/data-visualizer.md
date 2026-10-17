@@ -32,8 +32,8 @@ the build status of each phase.
   `.sem-data-pending`, `.sem-data-views`, `.sem-data-query-chrome`,
   `.sem-data-query-results`, `.sem-data-query-status` — never another
   element's classes (conventions §2). Runtime state uses `data-*`:
-  `data-sem-source-index` row stamps, `data-nullable` header marker, tier
-  markers (`data-sem-fallback` / `data-sem-upgraded`).
+  `data-sem-source-index` row stamps, `data-nullable` header marker, the
+  `data-sem-upgraded` runtime marker.
 
 ## 1. Requirements coverage (the full arc)
 

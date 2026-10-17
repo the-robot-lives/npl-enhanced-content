@@ -337,6 +337,5 @@ function renderError(src: Element, message: string): void {
   p.setAttribute('role', 'alert');
   p.textContent = 'sem-data-source: ' + message;
   src.appendChild(p);
-  src.setAttribute('data-sem-fallback', '');
   warn('sem-data-source: ' + message);
 }

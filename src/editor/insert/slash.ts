@@ -19,7 +19,7 @@
 import type { EditorContext } from '../controller/types.js';
 import { bindingFor } from '../controller/attach.js';
 import { modelIdFor } from '../controller/map.js';
-import { INSERT_CSS, INSERT_CSS_ID } from './insert-css.js';
+import { INSERT_CSS } from './insert-css.js';
 import { entriesForTarget, filterEntries } from './catalog.js';
 import { allowedTagsAt, indexAmongChildren } from './placement.js';
 import { insertEntryAt } from './apply.js';
@@ -101,7 +101,6 @@ export function resolveSlashTarget(ctx: EditorContext, editable: Element): Inser
 function injectCss(doc: Document): void {
   if (doc.querySelector(`style[data-sem-editor-css][data-sem-ed-block="insert"]`) !== null) return;
   const style = doc.createElement('style');
-  style.id = INSERT_CSS_ID;
   style.setAttribute('data-sem-editor-css', '');
   style.setAttribute('data-sem-ed-block', 'insert');
   style.textContent = INSERT_CSS;

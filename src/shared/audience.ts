@@ -2,14 +2,14 @@
  * audience — profile declarations and visibility matching.
  *
  * Contract: spec/schema/sem-audiences.md. Pure functions only: nothing here
- * touches the DOM beyond reading it. Callers (fallback/audience, lit/base)
+ * touches the DOM beyond reading it. Callers (vanilla/audience, lit/base)
  * decide what to do with a `false`.
  *
  * Failure policy is fail-OPEN throughout. A document is a readable artifact
  * first; an authoring typo must never make content unreachable, so an
  * unrecognized audience token warns and shows the content.
  *
- * Written tight on purpose: this ships inside the fallback bundle, whose raw
+ * Written tight on purpose: this ships inside the vanilla bundle, whose raw
  * size is what a file:// document carries.
  */
 
@@ -24,14 +24,14 @@ export interface Profile {
 /** id → every id it satisfies, transitively, including itself. */
 export type AudienceClosure = Map<string, Set<string>>;
 
-/** Warning channel — same voice as the fallback's duplicate-`data-key` check. */
+/** Warning channel — same voice as the vanilla's duplicate-`data-key` check. */
 export function warn(message: string): void {
   if (typeof console !== 'undefined') console.warn('semtext: ' + message);
 }
 
 function attr(el: Element, name: string): string | null {
   // conventions.md §2: `data-<name>` wins when both spellings are present —
-  // read it first. (fallback/attrs mirrors bare→data-* only when absent, so
+  // read it first. (vanilla/attrs mirrors bare→data-* only when absent, so
   // a both-spelled element must not resolve to the bare value here.)
   return el.getAttribute('data-' + name) ?? el.getAttribute(name);
 }

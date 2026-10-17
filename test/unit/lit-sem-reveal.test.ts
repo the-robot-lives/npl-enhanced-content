@@ -8,11 +8,11 @@
 //   Scenario: clicking the control reveals the body and retires the control (one-way)
 //   Scenario: open starts revealed — no control, nothing hidden
 //   Scenario: collapsed is a no-op — the reveal still starts hidden
-//   Scenario: the fallback handler skips an element the component claimed
+//   Scenario: the vanilla handler skips an element the component claimed
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SemReveal } from '../../src/lit/sem-reveal.js';
-import { enhanceReveal } from '../../src/fallback/reveal.js';
+import { enhanceReveal } from '../../src/vanilla/reveal.js';
 import { deriveSummary, normalize } from '../../src/shared/summary.js';
 
 const LABEL = 'Why not localStorage?';
@@ -100,7 +100,7 @@ describe('sem-reveal component', () => {
   });
 });
 
-describe('sem-reveal fallback handoff', () => {
+describe('sem-reveal vanilla handoff', () => {
   it('enhanceReveal skips an element the component claimed', async () => {
     const el = await mount(`<p>Component-wired.</p>`);
     expect(el.querySelectorAll('details').length).toBe(0);

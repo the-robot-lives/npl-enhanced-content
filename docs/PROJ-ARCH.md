@@ -90,8 +90,9 @@ Brief; rationale in the linked file.
 - **Three tiers, bottom tier is the contract** — zero-JS pages force semantics
   into the document itself. → [arch/decisions.md](arch/decisions.md)
 - **Tag form canonical** — bare attributes, no `data-*`; XML-consumer-clean. → [arch/decisions.md](arch/decisions.md)
-- **Lit-thin-wrappers-over-fallback** — upgrade in place, light-DOM content,
-  chrome mints nothing. → [arch/decisions.md](arch/decisions.md)
+- **One runtime, one marker** — Lit components and the vanilla handlers agree
+  on `data-sem-upgraded`; light-DOM content, chrome mints nothing. →
+  [arch/decisions.md](arch/decisions.md)
 - **XHTML over Markdown** — the document is the data; no preprocessing layer. → [arch/decisions.md](arch/decisions.md)
 - **Extraction as test-enforced contract** — chrome leakage fails CI, not consumers. → [arch/extraction.md](arch/extraction.md)
 
