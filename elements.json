@@ -46,11 +46,40 @@
     "spec/schema/npl/npl-section.md",
     "spec/schema/npl/npl-thought.md",
     "spec/schema/npl/npl-vos.md",
+    "spec/schema/agent-kit/personas.md",
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 62,
+  "tagCount": 64,
   "tags": [
+    {
+      "name": "agent-kit-agent-persona",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/personas.md",
+      "summary": "The two persona tags — one generic renderer parameterized by kind; the authored inner content is the record.",
+      "description": "The two persona tags — one generic renderer parameterized by kind; the authored inner content is the record. One contract for the two persona tags: a single generic renderer (`src/lit/agent-kit/persona-shared.ts`, `AkitPersona`) shaped like the tobor Persona record — name, role, bio, avatar, metadata. The primary tag is `agent-kit-user-persona`; `agent-kit-agent-persona` differs only in the rendered kind chip (`optionsIn`). Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-personas.test.ts`.",
+      "attributes": [],
+      "children": [
+        {
+          "name": "agent-kit-persona-name",
+          "note": "`<agent-kit-persona-name>` — the display name; exactly one."
+        },
+        {
+          "name": "agent-kit-persona-role",
+          "note": "`<agent-kit-persona-role>` — the role line; optional, one."
+        },
+        {
+          "name": "agent-kit-persona-bio",
+          "note": "`<agent-kit-persona-bio>` — the bio prose; optional, one."
+        },
+        {
+          "name": "agent-kit-persona-metadata",
+          "note": "`<agent-kit-persona-metadata>` — prose metadata lines (`key: value`); optional, one."
+        }
+      ],
+      "example": "<agent-kit-user-persona org=\"acme\" project=\"semtext\" key=\"persona-ada\"\n                        avatar=\"/fixtures/agent-kit/avatars/ada.png\">\n  <agent-kit-persona-name>Ada Lovelace</agent-kit-persona-name>\n  <agent-kit-persona-role>Product manager</agent-kit-persona-role>\n  <agent-kit-persona-bio>\n    Owns the SemText roadmap; reviews authoring ergonomics.\n  </agent-kit-persona-bio>\n  <agent-kit-persona-metadata>team: authoring\ntimezone: UTC+0</agent-kit-persona-metadata>\n</agent-kit-user-persona>",
+      "optionsIn": "agent-kit-user-persona"
+    },
     {
       "name": "agent-kit-bug",
       "family": "agent-kit",
@@ -299,6 +328,93 @@
       ],
       "children": [],
       "example": "<agent-kit-ticket-ref key=\"AKIT-001\">extractor drops class-form parts</agent-kit-ticket-ref>"
+    },
+    {
+      "name": "agent-kit-user-persona",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/personas.md",
+      "summary": "The two persona tags — one generic renderer parameterized by kind; the authored inner content is the record.",
+      "description": "The two persona tags — one generic renderer parameterized by kind; the authored inner content is the record. One contract for the two persona tags: a single generic renderer (`src/lit/agent-kit/persona-shared.ts`, `AkitPersona`) shaped like the tobor Persona record — name, role, bio, avatar, metadata. The primary tag is `agent-kit-user-persona`; `agent-kit-agent-persona` differs only in the rendered kind chip (`optionsIn`). Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-personas.test.ts`.",
+      "attributes": [
+        {
+          "name": "avatar",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the CACHED avatar URL. The chrome header renders an `<img>` from it verbatim; the element never fetches, resolves, or substitutes anything (no placeholder services), and with JavaScript off no image element exists."
+        },
+        {
+          "name": "uuid",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the upstream persona UUID (informational; the reference quartet identifies the record)."
+        },
+        {
+          "name": "fixtures",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin JSON path naming a cached snapshot for enrichment (cached-embed preset; a fixture source vetoes any `endpoint`)."
+        },
+        {
+          "name": "endpoint",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin API path; NEVER fetched by these elements (Live-fetch policy below) — declared for the authoring pipeline only."
+        },
+        {
+          "name": "last-refreshed",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "authored ISO-8601 stamp of the most recent sync (cached-embed preset)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "fresh",
+            "stale",
+            "error"
+          ],
+          "default": null,
+          "description": "one of `fresh`, `stale`, `error` (cached-embed preset)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<agent-kit-user-persona org=\"acme\" project=\"semtext\" key=\"persona-ada\"\n                        avatar=\"/fixtures/agent-kit/avatars/ada.png\">\n  <agent-kit-persona-name>Ada Lovelace</agent-kit-persona-name>\n  <agent-kit-persona-role>Product manager</agent-kit-persona-role>\n  <agent-kit-persona-bio>\n    Owns the SemText roadmap; reviews authoring ergonomics.\n  </agent-kit-persona-bio>\n  <agent-kit-persona-metadata>team: authoring\ntimezone: UTC+0</agent-kit-persona-metadata>\n</agent-kit-user-persona>"
     },
     {
       "name": "agent-kit-user-story",

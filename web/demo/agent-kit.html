@@ -101,6 +101,51 @@
   <agent-kit-ticket-ref key="akit-9">this one</agent-kit-ticket-ref>
   stays inert prose with a console warning.</p>
 
+  <h2>Personas</h2>
+  <p>One generic renderer, two tags. The avatar attribute is the CACHED
+  URL — the chrome header renders an <code>img</code> from it verbatim,
+  and with JavaScript off there is no image at all.</p>
+
+  <agent-kit-user-persona kind="persona" tags="authoring" org="acme" project="semtext" key="persona-ada"
+                          avatar="https://picsum.photos/seed/ada-persona/96/96">
+    <agent-kit-persona-name>Ada Lovelace</agent-kit-persona-name>
+    <agent-kit-persona-role>Product manager</agent-kit-persona-role>
+    <agent-kit-persona-bio>
+      Owns the SemText roadmap; reviews authoring ergonomics.
+    </agent-kit-persona-bio>
+    <agent-kit-persona-metadata>team: authoring
+timezone: UTC+0</agent-kit-persona-metadata>
+  </agent-kit-user-persona>
+
+  <p>The agent persona carries a cached snapshot: its <code>metadata</code>
+  object renders as chrome chips under the upgrade claim — the authored
+  metadata part below stays the JS-off record.</p>
+
+  <agent-kit-agent-persona kind="persona" tags="orchestration" org="acme" project="semtext" key="persona-loom"
+                           avatar="https://picsum.photos/seed/loom-persona/96/96">
+    <agent-kit-persona-name>Loom</agent-kit-persona-name>
+    <agent-kit-persona-role>The weaver</agent-kit-persona-role>
+    <agent-kit-persona-bio>
+      Coordinates the agent fleet; every thread runs through the loom.
+    </agent-kit-persona-bio>
+    <agent-kit-persona-metadata>kind: orchestrator
+call_sign: loom</agent-kit-persona-metadata>
+    <script type="application/json">
+      { "metadata": { "kind": "orchestrator", "call_sign": "loom" } }
+    </script>
+  </agent-kit-agent-persona>
+
+  <p>A persona with no avatar attribute renders no image — the card is
+  the prose:</p>
+
+  <agent-kit-agent-persona kind="persona" tags="docs" org="acme" project="semtext" key="persona-scribe">
+    <agent-kit-persona-name>Scribe</agent-kit-persona-name>
+    <agent-kit-persona-role>Documentation keeper</agent-kit-persona-role>
+    <agent-kit-persona-bio>
+      Turns merged threads into contracts and changelogs.
+    </agent-kit-persona-bio>
+  </agent-kit-agent-persona>
+
 </div>
 </body>
 </html>

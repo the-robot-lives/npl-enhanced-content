@@ -1527,12 +1527,14 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
    here — nothing shared is ever edited, so parallel component branches
    merge clean. Do NOT convert this into one comma list.
    ============================================================ */
+agent-kit-agent-persona, .agent-kit-agent-persona { display: block; }
 agent-kit-bug, .agent-kit-bug { display: block; }
 agent-kit-epic, .agent-kit-epic { display: block; }
 agent-kit-issue, .agent-kit-issue { display: block; }
 agent-kit-sub-task, .agent-kit-sub-task { display: block; }
 agent-kit-task, .agent-kit-task { display: block; }
 agent-kit-ticket-ref, .agent-kit-ticket-ref { display: block; }
+agent-kit-user-persona, .agent-kit-user-persona { display: block; }
 agent-kit-user-story, .agent-kit-user-story { display: block; }
 
 /* ── sem-code ── */
@@ -2319,3 +2321,105 @@ agent-kit-ticket-ref[data-sem-upgraded], .agent-kit-ticket-ref[data-sem-upgraded
   outline: none;
 }
 /* ── end agent-kit tickets ── */
+
+/* ── agent-kit personas ───────────────────────────────────────────
+   agent-kit-user-persona / agent-kit-agent-persona — one generic
+   renderer behind both tags (spec/schema/agent-kit/personas.md).
+   The authored body (persona-name/role/bio/metadata parts) is the
+   record; the chrome header (avatar from the CACHED url attr + the
+   kind chip) and the snapshot metadata strip live inside the
+   agent-kit-chrome container. Tokens only; dual spellings throughout.
+   ============================================================ */
+
+/* personas: the card frame, shared by both tags */
+:is(agent-kit-user-persona, .agent-kit-user-persona),
+:is(agent-kit-agent-persona, .agent-kit-agent-persona) {
+  box-sizing: border-box;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--sem-surface, #ffffff);
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 8px;
+  color: var(--sem-fg, #1e293b);
+}
+
+/* persona part tags read as their authored role before enhancement */
+:is(agent-kit-user-persona, .agent-kit-user-persona) > :is(agent-kit-persona-name, .agent-kit-persona-name),
+:is(agent-kit-agent-persona, .agent-kit-agent-persona) > :is(agent-kit-persona-name, .agent-kit-persona-name) {
+  display: block;
+  margin: 0 0 0.25rem;
+  font-size: 1.05em;
+  font-weight: 600;
+}
+:is(agent-kit-user-persona, .agent-kit-user-persona) > :is(agent-kit-persona-role, .agent-kit-persona-role),
+:is(agent-kit-agent-persona, .agent-kit-agent-persona) > :is(agent-kit-persona-role, .agent-kit-persona-role) {
+  display: block;
+  margin: 0 0 0.5rem;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.95em;
+}
+:is(agent-kit-user-persona, .agent-kit-user-persona) > :is(agent-kit-persona-bio, .agent-kit-persona-bio),
+:is(agent-kit-agent-persona, .agent-kit-agent-persona) > :is(agent-kit-persona-bio, .agent-kit-persona-bio) {
+  display: block;
+  margin: 0 0 0.5rem;
+}
+:is(agent-kit-user-persona, .agent-kit-user-persona) > :is(agent-kit-persona-metadata, .agent-kit-persona-metadata),
+:is(agent-kit-agent-persona, .agent-kit-agent-persona) > :is(agent-kit-persona-metadata, .agent-kit-persona-metadata) {
+  display: block;
+  margin: 0;
+  white-space: pre-line;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  color: var(--sem-muted, #64748b);
+}
+
+/* chrome: header row — round cached avatar + kind chip */
+.agent-kit-persona-chrome .agent-kit-persona-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+.agent-kit-persona-chrome .agent-kit-persona-avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  object-fit: cover;
+  background: var(--sem-bg, #fafafa);
+}
+.agent-kit-persona-chrome .agent-kit-persona-kind {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+}
+.agent-kit-persona-chrome .agent-kit-persona-kind[data-persona-kind='agent'] {
+  color: var(--sem-accent, #2563eb);
+}
+
+/* chrome: snapshot metadata chip strip (enrichment only) */
+.agent-kit-persona-chrome .agent-kit-persona-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+}
+.agent-kit-persona-chrome .agent-kit-persona-meta-item {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-fg, #1e293b);
+  font-size: 0.85em;
+}
+.agent-kit-persona-chrome .agent-kit-persona-meta-item b {
+  color: var(--sem-muted, #64748b);
+  font-weight: 600;
+}
+/* ── end agent-kit personas ── */

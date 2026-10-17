@@ -56,6 +56,8 @@
  * (chrome.ts) carry no registrations of their own — only the per-tag
  * files below do. */
 
+export { AkitAgentPersona } from './agent-kit-agent-persona.js';
+import './agent-kit-agent-persona.js';
 export { AkitBug } from './agent-kit-bug.js';
 import './agent-kit-bug.js';
 export { AkitEpic } from './agent-kit-epic.js';
@@ -68,6 +70,8 @@ export { AkitTask } from './agent-kit-task.js';
 import './agent-kit-task.js';
 export { AkitTicketRef } from './agent-kit-ticket-ref.js';
 import './agent-kit-ticket-ref.js';
+export { AkitUserPersona } from './agent-kit-user-persona.js';
+import './agent-kit-user-persona.js';
 export { AkitUserStory } from './agent-kit-user-story.js';
 import './agent-kit-user-story.js';
 

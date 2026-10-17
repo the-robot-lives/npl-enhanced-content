@@ -24,6 +24,15 @@ const TICKET_TYPES = [
   'agent-kit-user-story',
 ];
 
+// Document order of the personas section (below the tickets).
+const PERSONA_TYPES = [
+  'agent-kit-user-persona',
+  'agent-kit-agent-persona',
+  'agent-kit-agent-persona',
+];
+
+const ALL_TYPES = [...TICKET_TYPES, ...PERSONA_TYPES];
+
 describe('agent-kit bundle — tickets (sub-batch 1)', () => {
   it('INVARIANT: JS-off extraction deep-equals JS-on extraction', () => {
     let jsOff;
@@ -31,7 +40,7 @@ describe('agent-kit bundle — tickets (sub-batch 1)', () => {
     extract().then((records) => {
       jsOff = records;
       // the authored tickets really do mint records JS-off
-      expect(records.map((r) => r.type)).to.deep.equal(TICKET_TYPES);
+      expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
     });
     cy.visit('/demo/agent-kit.html');
     extract().then((jsOn) => {
@@ -44,7 +53,7 @@ describe('agent-kit bundle — tickets (sub-batch 1)', () => {
 
     it('tickets mint one plain record each, carrying the global qualifiers', () => {
       extract().then((records) => {
-        expect(records.map((r) => r.type)).to.deep.equal(TICKET_TYPES);
+        expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
         const issue = records[0];
         expect(issue.id).to.equal('ticket-akit-001');
         expect(issue.kind).to.equal('ticket');
@@ -117,6 +126,54 @@ describe('agent-kit bundle — tickets (sub-batch 1)', () => {
         expect($el[0].hasAttribute('tabindex')).to.equal(false);
         expect($el[0].textContent.trim()).to.equal('the extractor issue');
       });
+    });
+  });
+});
+
+describe('agent-kit bundle — personas (sub-batch 2)', () => {
+  describe('JS-on records', () => {
+    beforeEach(() => cy.visit('/demo/agent-kit.html'));
+
+    it('personas mint plain records after the tickets, in document order', () => {
+      extract().then((records) => {
+        expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
+        const ada = records[TICKET_TYPES.length];
+        expect(ada.kind).to.equal('persona');
+        expect(ada.tags).to.deep.equal(['authoring']);
+        expect(ada.text).to.contain('Ada Lovelace');
+        expect(ada.text).to.contain('Product manager');
+        // chrome never leaks: the kind chip and the avatar URL
+        expect(ada.text).not.to.contain('User persona');
+        expect(ada.text).not.to.contain('picsum');
+      });
+    });
+  });
+
+  describe('chrome under the upgrade claim', () => {
+    it('avatar img + kind chip render from the cached URL and the tag', () => {
+      cy.visit('/demo/agent-kit.html');
+      cy.get('agent-kit-user-persona img.agent-kit-persona-avatar')
+        .should('have.attr', 'src', 'https://picsum.photos/seed/ada-persona/96/96')
+        .and('have.attr', 'alt', 'Ada Lovelace avatar');
+      cy.get('agent-kit-user-persona .agent-kit-persona-kind').should('have.text', 'User persona');
+      cy.get('agent-kit-agent-persona[key="persona-loom"] .agent-kit-persona-kind')
+        .should('have.attr', 'data-persona-kind', 'agent')
+        .and('have.text', 'Agent persona');
+      // the Loom snapshot's metadata object renders as chips
+      cy.get('agent-kit-agent-persona[key="persona-loom"] .agent-kit-persona-meta-item')
+        .should('have.length', 2)
+        .first()
+        .should('contain', 'orchestrator');
+      // the avatarless persona renders no image at all
+      cy.get('agent-kit-agent-persona[key="persona-scribe"] img').should('not.exist');
+    });
+
+    it('nothing is fabricated JS-off — no image, no chips', () => {
+      cy.visit('/demo/agent-kit.nojs.html');
+      cy.get('agent-kit-user-persona img').should('not.exist');
+      cy.get('.agent-kit-persona-kind').should('not.exist');
+      cy.get('.agent-kit-persona-meta').should('not.exist');
+      cy.get('agent-kit-user-persona agent-kit-persona-name').should('have.text', 'Ada Lovelace');
     });
   });
 });

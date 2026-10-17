@@ -1329,6 +1329,136 @@
         "div.agent-kit-labels",
         "span.agent-kit-labels"
       ]
+    },
+    "agent-kit-user-persona": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "avatar": {
+          "type": "token"
+        },
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-persona-name",
+        "agent-kit-persona-role",
+        "agent-kit-persona-bio",
+        "agent-kit-persona-metadata"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-persona-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-role",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-bio",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-metadata",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-agent-persona": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "avatar": {
+          "type": "token"
+        },
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-persona-name",
+        "agent-kit-persona-role",
+        "agent-kit-persona-bio",
+        "agent-kit-persona-metadata"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-persona-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-role",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-bio",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-metadata",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-persona-name": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-name",
+        "span.agent-kit-persona-name"
+      ]
+    },
+    "agent-kit-persona-role": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-role",
+        "span.agent-kit-persona-role"
+      ]
+    },
+    "agent-kit-persona-bio": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-bio",
+        "span.agent-kit-persona-bio"
+      ]
+    },
+    "agent-kit-persona-metadata": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-metadata",
+        "span.agent-kit-persona-metadata"
+      ]
     }
   }
 }
