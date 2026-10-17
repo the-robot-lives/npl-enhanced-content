@@ -39,6 +39,7 @@
     "test:unit:cover": "vitest run --coverage",
     "test:extension": "node test/e2e/extension-raw-banner.mjs",
     "validate": "node bin/semtext-validate.mjs \"web/**/*.html\" \"spec/*.html\"",
+    "refresh": "node bin/semtext-refresh.mjs",
     "build:elements-index": "node scripts/build-elements-index.mjs",
     "build:prompts": "node scripts/build-prompts.mjs",
     "serve": "vite preview --outDir dist --port 4173 --strictPort"

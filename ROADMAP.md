@@ -252,6 +252,11 @@ Recorded wave decisions (abridged, kept for precedent):
 - **Distribution:** apply + seed `cdn.derobot.is` (infra committed on monorepo develop
   e8e2d35b, not yet applied — see monorepo runbook). Assets get `Cache-Control=immutable`
   for hashed names. Portfolio docs reference the CDN instead of vendoring bundles.
+- **Refresh tooling:** `bin/semtext-refresh.mjs` (`npm run refresh`) — the authoring-plan
+  Phase 7 cache-region splicer: pure offset-based splices inside
+  `<!-- semtext:cache:start <tag> <key> -->` markers only, `--check` drift detection with
+  timestamp-normalized compare, `--seed` region authoring, and lazy fail-soft adapters
+  (agentkit / docptr / styleguide / annotate / media).
 - **npm publish prep:** package metadata, versioning policy (additive-safe / reductive-
   breaking), deprecation story published with v0.1.
 - **Exit:** zero React, MHTML round-trip verified, CDN serving `semtext.js`, npm pack clean.
