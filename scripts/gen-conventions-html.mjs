@@ -767,15 +767,11 @@ function generate(mdOverride) {
       }
       if (section === '7') {
         w(`  <sem-properties id="${DISTRIBUTION.container}" kind="distribution-forms">`);
+        let noteItem = null; // the danger note trails the container (properties 1,2,3,5 inside — the old hand-authored shape)
         b.items.forEach((item, k) => {
           const n = k + 1;
           if (DISTRIBUTION.note.item === n) {
-            // the note stays INSIDE the container: closing here (the #66 bug)
-            // left item 5 orphaned and emitted a stray second close — the
-            // committed page was malformed HTML and the editor round-trip
-            // test could not parse it back to the same tree.
-            w(`  <sem-note id="${DISTRIBUTION.note.id}" variant="${DISTRIBUTION.note.variant}">${renderInline(item, ctx)}</sem-note>`);
-            use(`dist:${DISTRIBUTION.note.id}`);
+            noteItem = item;
             return;
           }
           const [id, key] = DISTRIBUTION.items[n];
@@ -784,6 +780,10 @@ function generate(mdOverride) {
           use(`dist:${id}`);
         });
         w('  </sem-properties>');
+        if (noteItem !== null) {
+          w(`  <sem-note id="${DISTRIBUTION.note.id}" variant="${DISTRIBUTION.note.variant}">${renderInline(noteItem, ctx)}</sem-note>`);
+          use(`dist:${DISTRIBUTION.note.id}`);
+        }
         w('');
         continue;
       }
