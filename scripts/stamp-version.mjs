@@ -79,12 +79,20 @@ const FILES = [
   'npl-manifest.json',
   'semtext-js-shell.js',
   'semtext-js-shell-manifest.json',
+  // Phase 7 families: the semext-* / agent-kit-* lazy surface must serve
+  // from a versioned URL like the core and npl bundles do.
+  'semext.js',
+  'semext-lazy.js',
+  'semext-manifest.json',
+  'agent-kit.js',
+  'agent-kit-lazy.js',
+  'agent-kit-manifest.json',
   // opt-in bundles: not on the reader path, but a versioned URL must
   // serve them too (shell/editor/agent land together).
   'semtext-editor.js',
   'semtext-agent.js',
 ];
-const DIRS = ['chunks', 'npl-chunks', 'themes'];
+const DIRS = ['chunks', 'npl-chunks', 'semext-chunks', 'agent-kit-chunks', 'themes'];
 
 const stamped = [];
 for (const f of FILES) {
