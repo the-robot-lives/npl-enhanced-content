@@ -8,7 +8,7 @@
  * loader (../lazy.ts) swaps it in exactly like any other package. The
  * re-export is the README's documented exception to the type-only import
  * rule — the wasm sources ARE the payload. The worker reference inside
- * runner.ts (`new Worker(new URL('./worker-main.js', import.meta.url))`)
+ * runner.ts (`new Worker(new URL('./worker-wasm.js', import.meta.url))`)
  * is emitted by the build as its own file next to this chunk.
  *
  * The PoC §6 bridge sketch (Object.assign onto a spec in the posix

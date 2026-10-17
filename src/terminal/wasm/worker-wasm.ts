@@ -1,5 +1,5 @@
 /**
- * wasm/worker-main — the dedicated-worker side of startWasiJob.
+ * wasm/worker-wasm — the dedicated-worker side of startWasiJob.
  *
  * Protocol (mirrors runner.ts):
  *   ← run    {bytes, args, env, preopens}

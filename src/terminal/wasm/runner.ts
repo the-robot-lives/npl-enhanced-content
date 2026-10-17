@@ -8,7 +8,7 @@
  * same WasiJob protocol in both cases — occupancy is a placement choice,
  * not a correctness one (CORE-V2 Appendix A constraint).
  *
- * Worker notes: the worker URL is `new URL('./worker-main.js', …)` so the
+ * Worker notes: the worker URL is `new URL('./worker-wasm.js', …)` so the
  * pair stays colocated under src/terminal/wasm/. vite only emits a worker
  * chunk when this module is in an entry graph — the shell bundle does not
  * import it (see docs/terminal/WASM-POC.md, productionization), so the
@@ -121,7 +121,7 @@ export function startWasiJob(bytes: Uint8Array, opts: WasiJobOptions, events: Wa
   if (typeof Worker === 'undefined') return startInThread(bytes, opts, events);
   let worker: Worker;
   try {
-    worker = new Worker(new URL('./worker-main.js', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./worker-wasm.js', import.meta.url), { type: 'module' });
   } catch {
     return startInThread(bytes, opts, events);
   }

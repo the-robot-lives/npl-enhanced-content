@@ -108,7 +108,7 @@ Never build to `dist/` (shared) — private builds only. No `npm install`;
 Package chunks build as **ES modules** (not IIFE): a dynamic `import()`
 needs real exports. Each chunk is self-contained (its own build). If the
 package needs a worker (the `wasm` package does), reference it with
-`new Worker(new URL('./worker-main.js', import.meta.url), { type: 'module' })`
+`new Worker(new URL('./worker-wasm.js', import.meta.url), { type: 'module' })`
 from inside the chunk's module graph — the build emits it as its own file
 next to the chunk.
 

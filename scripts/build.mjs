@@ -309,12 +309,12 @@ for (const target of targets) {
     ...(target.editorSchema ? { plugins: [editorSchemaSlim()] } : {}),
     // Module workers (the wasm chunk's runner) keep their own build; pin
     // the emitted file FLAT and stable so it sits next to the chunk —
-    // `worker-main.js`, no hash, no /assets/ subdir.
+    // `worker-wasm.js`, no hash, no /assets/ subdir.
     ...(target.formats
       ? {
           worker: {
             format: 'es',
-            rollupOptions: { output: { entryFileNames: 'worker-main.js', chunkFileNames: 'worker-[name].js' } },
+            rollupOptions: { output: { entryFileNames: 'worker-wasm.js', chunkFileNames: 'worker-[name].js' } },
           },
         }
       : {}),
@@ -326,7 +326,7 @@ for (const target of targets) {
       // Per-target external specifiers (shell keeps `nano-app.js` lazy).
       ...(target.rollupExternal ? { rollupOptions: { external: target.rollupExternal } } : {}),
       // Package chunks: assets (the wasm worker) land FLAT and relative —
-      // `worker-main.js` next to the chunk, no hash, no /assets/ absolute
+      // `worker-wasm.js` next to the chunk, no hash, no /assets/ absolute
       // path (the no-fetch-outside-bundle-dir rule).
       ...(target.formats ? { rollupOptions: { output: { assetFileNames: '[name][extname]' } } } : {}),
     },

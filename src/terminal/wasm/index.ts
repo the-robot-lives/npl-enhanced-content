@@ -4,7 +4,7 @@
  *   engine.ts    batch + JSPI execution over the WASI shim
  *   wasi.ts      the wasi_snapshot_preview1 host (fd table, preopens)
  *   runner.ts    one program as a job, worker-first / in-thread
- *   worker-main  the worker side of that protocol
+ *   worker-wasm   the worker side of that protocol
  *   app.ts       `wasm <module>` as a full-screen TerminalApp
  *   command.ts   the CommandSpec (tty: app; piped: batch run)
  *
