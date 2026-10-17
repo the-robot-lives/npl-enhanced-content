@@ -1,10 +1,12 @@
 /**
  * sem-code — edit descriptor (prose bucket, Phase 2).
  *
- * The listing is the authored `<pre><code>` (one text node — whitespace is
- * content), so the slots target it directly and positional mapping works;
- * the `:scope > pre` fallback covers the no-`<code>` authoring form
- * (elements.json: "the `<pre>`'s when no `<code>` is authored").
+ * The listing resolves after the element's own enhance pass, which adopts
+ * the flat authoring form (the listing as the element's text) into
+ * `<pre><code>` first — so the slots below target the enhanced DOM and
+ * positional mapping works for both authoring forms. A flat element whose
+ * enhance has not run yet exposes no listing slot (attributes still edit);
+ * the `:scope > pre` fallback covers the no-`<code>` nested form.
  *
  * `rerender` is the one-shot-wrapper seam (EDITOR.md §3.3): SemCode latches
  * its enhance behind `#wired`, so the §4.4 re-render needs the descriptor
@@ -51,27 +53,21 @@ registerDescriptor({
       label: 'Code listing',
       group: 'Prose',
       xml:
-        '<sem-code lang="${1:ts}" filename="${2:src/example.ts}">\n' +
-        '<pre><code>${3:source}</code></pre>\n' +
-        '</sem-code>',
+        '<sem-code lang="${1:ts}" filename="${2:src/example.ts}">${3:source}</sem-code>',
     },
     {
       id: 'sem-code-marks',
       label: 'Listing with marked lines',
       group: 'Prose',
       xml:
-        '<sem-code lang="${1:ts}" mark="${2:2,4-5}">\n' +
-        '<pre><code>${3:source}</code></pre>\n' +
-        '</sem-code>',
+        '<sem-code lang="${1:ts}" mark="${2:2,4-5}">${3:source}</sem-code>',
     },
     {
       id: 'sem-code-wrap',
       label: 'Soft-wrapped listing',
       group: 'Prose',
       xml:
-        '<sem-code lang="${1:ts}" wrap controls="copy,wrap">\n' +
-        '<pre><code>${2:source}</code></pre>\n' +
-        '</sem-code>',
+        '<sem-code lang="${1:ts}" wrap controls="copy,wrap">${2:source}</sem-code>',
     },
   ],
 });

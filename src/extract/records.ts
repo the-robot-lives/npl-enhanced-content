@@ -75,7 +75,12 @@ const RECORD_TYPES = [
   // R/W2 (spec/schema/sem-table.md); sem-reader is chrome and is NOT here
   'sem-table',
   // R/W2.2 (spec/schema/sem-md.md)
-  'sem-md'
+  'sem-md',
+  // reference definitions (spec/schema/sem-tag-def.md, sem-api-call.md):
+  // the container mints the record; its row children
+  // (sem-tag-attr / sem-api-param) are captured INSIDE it, never mint
+  'sem-tag-def',
+  'sem-api-call'
 ] as const;
 
 /**
@@ -118,6 +123,17 @@ const CHROME_CLASSES = [
   // it) and the core's template snapshot are never content
   'sem-source-chrome',
   'sem-source-fence',
+  // reference-definition cards (sem-tag-def / sem-api-call Lit render):
+  // the generated header row, table and children chips are chrome; the
+  // description prose stays content
+  'sem-tagdef-head',
+  'sem-tagdef-table',
+  'sem-tagdef-children',
+  'sem-tagdef-source',
+  'sem-apicall-head',
+  'sem-apicall-table',
+  'sem-apicall-groups',
+  'sem-apicall-source',
   'sem-source-raw',
   // sem-md: the toggle/copy chrome, the rendered body and the raw fence
   // (the sem-code inside it included) are never content
@@ -503,10 +519,16 @@ function buildEvent(el: Element): Payload {
 function buildCode(el: Element): Payload {
   // `source` is VERBATIM — the one field whose whitespace is content
   // (spec/schema/sem-code.md, machine contract). Line-wrapping spans and
-  // <mark> are read through; chrome is skipped.
+  // <mark> are read through; chrome is skipped. The flat authoring form
+  // (no `<pre>` child — the listing is the element's own text) is read
+  // off the host itself; a host that renders no listing yields "".
   const pre = el.querySelector('pre');
   const code = pre ? pre.querySelector('code') || pre : null;
-  const source = code ? collectText(code, isChrome) : '';
+  // Flat form: the same two structural trims the runtime's adopt applies
+  // (one leading newline after the open tag, trailing whitespace before
+  // the close tag) so authored and enhanced `source` agree byte-for-byte.
+  const flat = code ? null : collectText(el, isChrome).replace(/^\n/, '').replace(/\s+$/, '');
+  const source = code ? collectText(code, isChrome) : flat ?? '';
   const lines = source === '' ? 0 : source.split('\n').length;
   return {
     fields: {
@@ -579,6 +601,65 @@ function buildTable(el: Element): Payload {
   return { fields: { caption: caption, columns: columns, rows: rows }, text: caption };
 }
 
+/** The prose of a definition container, skipping its row children. */
+function descProse(el: Element, rowSel: string): string {
+  return norm(collectText(el, (n) => proseSkip(n) || n.matches(rowSel)));
+}
+
+/** One sem-tag-attr / sem-api-param row as a plain record. */
+function buildParamRow(el: Element, inKey: string | null): Record<string, unknown> {
+  const row: Record<string, unknown> = { name: norm(param(el, 'name') || '') };
+  const inValue = inKey === null ? null : param(el, inKey);
+  if (inValue !== null) row.in = inValue;
+  const type = param(el, 'type');
+  if (type !== null) row.type = type;
+  row.required = hasParam(el, 'required');
+  const dflt = param(el, 'default');
+  if (dflt !== null) row.default = dflt;
+  const allowed = param(el, 'allowed');
+  if (allowed !== null) {
+    row.allowed = allowed.split(',').map((v) => v.trim()).filter(Boolean);
+  }
+  row.description = prose(el);
+  return row;
+}
+
+const DEF_ROWS = 'sem-tag-attr, .sem-tag-attr';
+const API_ROWS = 'sem-api-param, .sem-api-param';
+
+function buildTagDef(el: Element): Payload {
+  const tag = norm(param(el, 'tag') || '');
+  const name = norm(param(el, 'name') || '');
+  const fields: Record<string, unknown> = {
+    tag: tag,
+    name: name || tag,
+    attributes: parts(el, 'sem-tag-attr', 'sem-tag-attr').map((a) => buildParamRow(a, null))
+  };
+  const group = param(el, 'group');
+  if (group !== null) fields.group = group;
+  const children = (param(el, 'children') || '').trim();
+  if (children) fields.children = children.split(/[\s,]+/).filter(Boolean);
+  const desc = descProse(el, DEF_ROWS);
+  const label = name && name !== tag ? tag + ' (' + name + ')' : tag;
+  return { fields: fields, text: label ? label + ' — ' + desc : desc };
+}
+
+function buildApiCall(el: Element): Payload {
+  const name = norm(param(el, 'name') || '');
+  const method = (param(el, 'method') || 'GET').trim().toUpperCase();
+  const endpoint = norm(param(el, 'endpoint') || '');
+  const fields: Record<string, unknown> = {
+    name: name,
+    method: method,
+    endpoint: endpoint,
+    params: parts(el, 'sem-api-param', 'sem-api-param').map((a) => buildParamRow(a, 'in'))
+  };
+  const status = param(el, 'status');
+  if (status !== null) fields.status = status;
+  const desc = descProse(el, API_ROWS);
+  return { fields: fields, text: name + ' — ' + method + ' ' + endpoint + (desc ? ' — ' + desc : '') };
+}
+
 function buildContainer(el: Element): Payload {
   return { fields: {}, text: '' };
 }
@@ -615,6 +696,10 @@ function payloadFor(type: string, el: Element): Payload {
       return buildReference(el);
     case 'sem-md':
       return buildMd(el);
+    case 'sem-tag-def':
+      return buildTagDef(el);
+    case 'sem-api-call':
+      return buildApiCall(el);
     case 'sem-table':
       return buildTable(el);
     case 'sem-facts':
@@ -760,7 +845,9 @@ const TEXTUAL_FIELDS: Record<string, string[]> = {
   'sem-code': ['lang', 'filename'],
   'sem-reference': ['href', 'cite'],
   'sem-table': ['columns'],
-  'sem-md': []
+  'sem-md': [],
+  'sem-tag-def': ['group', 'children'],
+  'sem-api-call': ['method', 'endpoint', 'status']
 };
 
 /**
