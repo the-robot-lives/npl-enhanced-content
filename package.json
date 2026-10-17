@@ -1,8 +1,8 @@
 {
   "name": "semtext",
-  "version": "0.1.0",
+  "version": "0.7.1",
   "//specVersion": "Draft revision of spec/conventions.{html,md} that the demo pages and landing copy self-label. Bump it WITH the spec, not with releases \u2014 `version` is the package, `specVersion` is the format draft.",
-  "specVersion": "0.6",
+  "specVersion": "0.7",
   "description": "SemText \u2014 XHTML-first semantic markup: one document that reads as a styled interactive page, a structural record for LLMs, and plain text in a terminal. One Lit bundle (dist/semtext.js + its stylesheet + themes); degrades to plain prose with JavaScript off. Zero React.",
   "type": "module",
   "//exports": "Two full bundles, two lazy loaders. `./lit` is the core bundle \u2014 a classic IIFE that installs the global `SemText` (the sem-* custom elements, the vanilla handlers, extraction as SemText.extractRecords/SemText.extractText) and exports NOTHING \u2014 consume it as a <script src> tag / CDN asset, or as a side-effect ESM import (`import 'semtext/lit'`, which registers the custom elements and runs the handlers). Named imports are not available from it. `./npl` is the npl-* namespace as its own IIFE (global `NPL`) \u2014 optional, loaded on top of the core only by NPL documents; core carries no npl code. `./lazy` and `./npl-lazy` are the on-demand surfaces \u2014 ES modules for pages served over http(s) that import only the component chunks the document's sem-* / npl-* tags use (dist/chunks/ and dist/npl-chunks/, generated manifests; never from file:// \u2014 saved single files use `./lit` / `./npl`). `./themes/*` is raw CSS; the built vocabulary ships as dist/semtext.css inside `files`. The former ./fallback, ./reading, ./extract and ./md subpaths are retired with their artifacts \u2014 everything they installed is a name on the one global. There is deliberately no '.' export: ROADMAP debt D9 was 'type: module' advertising an ESM package whose root mapped to a non-importable script. Dropping '.' removes the false promise rather than papering over it.",

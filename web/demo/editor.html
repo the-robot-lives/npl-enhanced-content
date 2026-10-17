@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · editor (the whole editor bundle over one document)</title>
+<link rel="stylesheet" href="../semtext.css">
+<style>
+  body { max-width: 60rem; margin: 0 auto; padding: 2.5rem 1rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 .5rem; }
+  p.lede { margin: .6rem 0 1.2rem; }
+  sem-editor { display: block; }
+</style>
+</head>
+<body>
+<h1>sem-editor</h1>
+<p class="lede">The <code>semtext-editor.js</code> bundle (EDITOR.md §9):
+model, shell, controllers, insert roads, drag &amp; drop, io and the full
+descriptor registry over one authored document. Edit below — the paragraph
+and the note round-trip byte-identically through the Code pane
+(<code>sem-editor-code</code>), export/import and undo/redo.</p>
+
+<sem-editor id="demo-editor">
+  <sem-heading id="top-h" level="2">Three records</sem-heading>
+  <sem-paragraph id="top-p">Double-click any text to edit it; press
+  <strong>Escape</strong> to commit. The plus button inserts a sibling;
+  Alt+Shift+Arrow moves the selected element.</sem-paragraph>
+  <sem-note id="top-note" variant="tip">
+    <sem-paragraph id="note-p">The descriptor registry resolves titles,
+    hints, item lists and insert templates for every vocabulary element.</sem-paragraph>
+    <sem-md id="note-md">**SemText** packets stay self-describing.</sem-md>
+  </sem-note>
+  <sem-facts id="top-facts" kind="glossary">
+    <sem-fact id="fact-1">
+      <term>packet</term>
+      <definition>A self-describing record; the unit SemText stores.</definition>
+    </sem-fact>
+    <sem-fact id="fact-2">
+      <term>record</term>
+      <definition>The serialized form of a packet on the wire.</definition>
+    </sem-fact>
+  </sem-facts>
+  <sem-data-visualizer id="top-viz">
+    <sem-data-source id="viz-src">[{"term":"packet"},{"term":"record"}]</sem-data-source>
+  </sem-data-visualizer>
+  <sem-data-source id="loose-src">[{"term":"moves"},{"term":"freely"}]</sem-data-source>
+  <sem-editor-code slot="code-view"></sem-editor-code>
+</sem-editor>
+
+<script src="../semtext.js"></script>
+<script src="../semtext-editor.js"></script>
+</body>
+</html>

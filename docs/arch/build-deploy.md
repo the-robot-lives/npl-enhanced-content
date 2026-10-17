@@ -13,7 +13,7 @@ Two scripts, one command each:
   variant of every page (all `<script>` elements stripped), and expands
   `<!-- sem:inline … -->` markers — the bundle, theme/vocabulary CSS, measured
   size labels, and version labels sourced from `package.json`
-  (`specVersion` → "v0.6", `version` → "0.1.0") plus the short checkout SHA.
+  (`specVersion` → "v0.7", `version` → "0.7.1") plus the short checkout SHA.
   Pages self-label; no size or version is hardcoded in copy.
 
 `npm run build` before `npm test`: Cypress runs against the built pages in

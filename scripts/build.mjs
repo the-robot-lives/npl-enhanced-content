@@ -46,7 +46,11 @@
  *
  * The target declares a size budget; the build prints measured size against
  * it and fails only if `--strict-budget` is passed, so a budget overrun is
- * always visible but never silently blocks local work. The budget history is
+ * always visible but never silently blocks local work. Targets flagged
+ * `budgetReportOnly: true` (the shell and editor bundles — opt-in tools,
+ * deliberately uncapped per user decision 2026-10-17) print their budget
+ * row but never set the failure flag; every reader bundle's budget stays a
+ * hard fail. The budget history is
  * recorded in ROADMAP.md ("R — Reading experience"); change both together.
  *
  * `--out <dir>` writes every artifact into <dir> instead of dist/ and never
@@ -155,6 +159,9 @@ const targets = [
     // reported, never blocking. Reader bundles (semtext.js / npl.js / the
     // lazy loaders) keep hard budgets.
     budgetKb: 256,
+    // Opt-in tool bundle, uncapped by user decision 2026-10-17: the budget
+    // row reports, `--strict-budget` never fails on it.
+    budgetReportOnly: true,
     required: true,
     advisory: true,
     // The nano editor body stays out of the shell: the LazyNano stub's
@@ -173,6 +180,34 @@ const targets = [
     global: 'SemTextNano',
     budgetKb: 24,
     required: true,
+  },
+  {
+    // The editor (shell + controller + insert/dnd/io + descriptors, §9).
+    // Loaded on demand by the core hook (src/lit/edit-hook.ts); core pays
+    // only the queue + one dynamic import. `editorSchema` swaps the bundled
+    // elements.json import for a slim build-time projection (examples and
+    // prose descriptions dropped — ~14 KB of example text + prose the editor
+    // never reads; insert templates come from the descriptor registry, not
+    // the schema).
+    //
+    // 128 → 256 KB (2026-10-14, integrate): the §9.1 estimate assumed the
+    // schema dominated the payload. The integrated editor measures 245.1 raw
+    // / 69.8 gzipped with the slim schema in place — 12.8 K lines across
+    // model/shell/controller/insert/dnd/io/code/descriptors, of which ~34 KB
+    // is injected CSS that minification cannot shrink. A lazy descriptor
+    // split was evaluated and rejected for now: side-effect registration
+    // needs one registry instance, so a second IIFE would have to re-plumb
+    // all 55 descriptor modules through a global shim. History in ROADMAP
+    // "Size budgets".
+    name: 'semtext-editor.js',
+    entry: 'src/editor/index.ts',
+    global: 'SemTextEditor',
+    budgetKb: 256,
+    // Opt-in tool bundle, uncapped by user decision 2026-10-17: the budget
+    // row reports, `--strict-budget` never fails on it.
+    budgetReportOnly: true,
+    required: true,
+    editorSchema: true,
   },
 ];
 
@@ -209,6 +244,43 @@ if (existsSync(packagesDir)) {
   }
 }
 
+/** Vite plugin: resolve elements.json to the editor's slim projection. Test
+ *  runs (vitest) import the real file; only the built bundle is slimmed. */
+function editorSchemaSlim() {
+  return {
+    name: 'editor-slim-schema',
+    enforce: 'pre',
+    resolveId(id) {
+      if (id.endsWith('elements.json')) return '\0semtext-editor-elements-slim';
+      return null;
+    },
+    load(id) {
+      if (id !== '\0semtext-editor-elements-slim') return null;
+      const raw = JSON.parse(readFileSync(resolve(root, 'elements.json'), 'utf8'));
+      const slim = {
+        specVersion: raw.specVersion,
+        tagCount: raw.tagCount,
+        tags: (raw.tags ?? []).map((t) => ({
+          name: t.name,
+          family: t.family,
+          summary: t.summary,
+          attributes: (t.attributes ?? []).map((a) => ({
+            name: a.name,
+            required: a.required === true ? true : null,
+            type: a.type,
+            allowedValues: a.allowedValues,
+            default: a.default,
+            description: a.description,
+          })),
+          children: (t.children ?? []).map((c) => ({ name: c.name })),
+          optionsIn: t.optionsIn,
+        })),
+      };
+      return `export default ${JSON.stringify(slim)};`;
+    },
+  };
+}
+
 rmSync(distDir, { recursive: true, force: true });
 
 const results = [];
@@ -233,6 +305,8 @@ for (const target of targets) {
     // reads the chunks' named exports (`commands`, `manPages`) — an IIFE
     // chunk has none and would fail to load in every browser.
     ...(target.formats ? { base: './' } : {}),
+    // The editor bundle swaps elements.json for its slim projection.
+    ...(target.editorSchema ? { plugins: [editorSchemaSlim()] } : {}),
     // Module workers (the wasm chunk's runner) keep their own build; pin
     // the emitted file FLAT and stable so it sits next to the chunk —
     // `worker-main.js`, no hash, no /assets/ subdir.
@@ -263,10 +337,13 @@ for (const target of targets) {
   const gzip = gzipSync(readFileSync(file)).length;
   const budget = target.budgetKb * 1024;
   const over = bytes > budget;
-  // Advisory budgets (shell + package chunks) are reported, never blocking
-  // — even under --strict-budget (user decision, packages round 2026-10-17).
-  if (over && !target.advisory) overBudget = true;
-  results.push({ name: target.name, bytes, gzip, budget, over, advisory: !!target.advisory });
+  // Report-only budgets (shell + editor + package chunks — uncapped opt-in
+  // tools per the user decision 2026-10-17) print ✗ OVER but never trip
+  // the --strict-budget exit; reader budgets always do. `advisory` is the
+  // packages-round spelling of the same flag.
+  const reportOnly = target.budgetReportOnly === true || target.advisory === true;
+  if (over && !reportOnly) overBudget = true;
+  results.push({ name: target.name, bytes, gzip, budget, over, ok: !over, reportOnly });
 }
 
 /* js-shell manifest — both terminal tags ship in the one standalone bundle
@@ -427,7 +504,7 @@ for (const lazy of LAZY_TARGETS) {
   const gzip = gzipSync(readFileSync(lazyPath)).length;
   const budget = lazy.budgetKb * 1024;
   if (bytes > budget) overBudget = true;
-  results.push({ name: `${lazy.id}.js`, bytes, gzip, budget, over: bytes > budget, advisory: false });
+  results.push({ name: `${lazy.id}.js`, bytes, gzip, budget, over: bytes > budget, ok: bytes <= budget, reportOnly: false });
   const shared = readdirSync(resolve(distDir, lazy.chunkDir)).filter(
     (f) => !Object.values(lazyManifest).includes(`${lazy.chunkDir}/${f}`),
   );
@@ -465,8 +542,9 @@ console.log('\n  artifact              size     gzip    budget');
 console.log('  ------------------------------------------------');
 for (const r of results) {
   const kb = (n) => (n / 1024).toFixed(1).padStart(6) + ' KB';
-  const verdict = r.over ? (r.advisory ? '✗ OVER (report-only)' : '✗ OVER') : '✓';
-  console.log(`  ${r.name.padEnd(20)}${kb(r.bytes)}${kb(r.gzip)}${kb(r.budget)}  ${verdict}`);
+  console.log(
+    `  ${r.name.padEnd(20)}${kb(r.bytes)}${kb(r.gzip)}${kb(r.budget)}  ${r.ok ? '✓' : r.reportOnly ? '✗ OVER (report-only)' : '✗ OVER'}`,
+  );
 }
 for (const c of cssCopies) console.log(`  ${c.from.padEnd(20)}      → ${c.to}`);
 console.log('');
