@@ -1534,6 +1534,8 @@ agent-kit-asset, .agent-kit-asset { display: block; }
 agent-kit-board, .agent-kit-board { display: block; }
 agent-kit-bug, .agent-kit-bug { display: block; }
 agent-kit-chatroom, .agent-kit-chatroom { display: block; }
+agent-kit-cucumber, .agent-kit-cucumber { display: block; }
+agent-kit-cypress, .agent-kit-cypress { display: block; }
 agent-kit-custom-assert, .agent-kit-custom-assert { display: block; }
 agent-kit-epic, .agent-kit-epic { display: block; }
 agent-kit-issue, .agent-kit-issue { display: block; }
@@ -1542,6 +1544,8 @@ agent-kit-project, .agent-kit-project { display: block; }
 agent-kit-review, .agent-kit-review { display: block; }
 agent-kit-sub-task, .agent-kit-sub-task { display: block; }
 agent-kit-task, .agent-kit-task { display: block; }
+agent-kit-test-case, .agent-kit-test-case { display: block; }
+agent-kit-test-suite, .agent-kit-test-suite { display: block; }
 agent-kit-ticket-ref, .agent-kit-ticket-ref { display: block; }
 agent-kit-user-persona, .agent-kit-user-persona { display: block; }
 agent-kit-user-story, .agent-kit-user-story { display: block; }
@@ -2854,3 +2858,137 @@ agent-kit-ticket-ref[data-sem-upgraded], .agent-kit-ticket-ref[data-sem-upgraded
   font-size: 0.85em;
 }
 /* ── end agent-kit media ── */
+
+/* ── agent-kit testing (suite, case, cypress, cucumber) ───────────
+   The suite totals its authored branch rows; the case lists steps to
+   an expectation; the script pair displays its authored text/plain
+   source verbatim (plain CSS promotion — identical JS-off).
+   Tokens only; dual spellings throughout.
+   ============================================================ */
+
+:is(agent-kit-test-suite, .agent-kit-test-suite),
+:is(agent-kit-test-case, .agent-kit-test-case),
+:is(agent-kit-cypress, .agent-kit-cypress),
+:is(agent-kit-cucumber, .agent-kit-cucumber) {
+  box-sizing: border-box;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--sem-surface, #ffffff);
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 8px;
+  color: var(--sem-fg, #1e293b);
+}
+
+/* suite — branch rows with attribute-borne stats */
+:is(agent-kit-test-suite, .agent-kit-test-suite) > :is(agent-kit-branch, .agent-kit-branch) {
+  display: block;
+  margin: 0.35rem 0;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--sem-bg, #fafafa);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}
+:is(agent-kit-test-suite, .agent-kit-test-suite) > :is(agent-kit-branch, .agent-kit-branch)::after {
+  content: ' — ' attr(passed) ' passed, ' attr(failed) ' failed';
+  color: var(--sem-muted, #64748b);
+}
+.agent-kit-suite-chrome .agent-kit-suite-totals {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+}
+.agent-kit-suite-chrome .agent-kit-suite-snapshot {
+  display: inline-block;
+  margin: 0.35rem 0 0;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.85em;
+}
+
+/* case — ordered steps to one expectation */
+:is(agent-kit-test-case, .agent-kit-test-case) > :is(agent-kit-step, .agent-kit-step) {
+  display: block;
+  margin: 0.3rem 0;
+  padding-left: 1.6rem;
+  position: relative;
+}
+:is(agent-kit-test-case, .agent-kit-test-case) > :is(agent-kit-step, .agent-kit-step)::before {
+  content: counter(agent-kit-step) '. ';
+  counter-increment: agent-kit-step;
+  position: absolute;
+  left: 0;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.85em;
+}
+:is(agent-kit-test-case, .agent-kit-test-case) {
+  counter-reset: agent-kit-step;
+}
+:is(agent-kit-test-case, .agent-kit-test-case) > :is(agent-kit-expected, .agent-kit-expected) {
+  display: block;
+  margin: 0.5rem 0 0;
+  padding: 0.4rem 0.7rem;
+  border-left: 3px solid var(--sem-accent, #2563eb);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-fg, #1e293b);
+}
+:is(agent-kit-test-case, .agent-kit-test-case) > :is(agent-kit-expected, .agent-kit-expected)::before {
+  content: '→ expect: ';
+  color: var(--sem-muted, #64748b);
+  font-size: 0.85em;
+}
+.agent-kit-case-chrome .agent-kit-case-count {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+}
+
+/* script cards — the authored text/plain source, promoted by plain CSS
+   (author origin beats the UA's script { display: none }): browsing the
+   page with JavaScript DISABLED shows the panel exactly the same; the
+   .nojs BUILD artifact strips scripts wholesale (its own invariant), so
+   only there the panel is absent */
+:is(agent-kit-cypress, .agent-kit-cypress) > script[type='text/plain'][data-agent-kit-script],
+:is(agent-kit-cucumber, .agent-kit-cucumber) > script[type='text/plain'][data-agent-kit-script] {
+  display: block;
+  margin: 0.5rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--sem-bg, #fafafa);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8em;
+  white-space: pre-wrap;
+}
+.agent-kit-script-chrome .agent-kit-script-kind {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-accent, #2563eb);
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+}
+.agent-kit-script-chrome .agent-kit-script-file {
+  margin-left: 0.5rem;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+}
+.agent-kit-script-chrome .agent-kit-script-file code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.agent-kit-script-chrome .agent-kit-script-inline {
+  margin-left: 0.5rem;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+}
+/* ── end agent-kit testing ── */

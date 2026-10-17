@@ -258,6 +258,45 @@ The record is the authored body — never the network.</agent-kit-artifact-conte
     </agent-kit-comment>
   </agent-kit-review>
 
+  <h2>Testing</h2>
+  <p>
+    Suite, case and the runner specs: authored rows, steps and script
+    sources are the records; totals chips and the script panel are
+    chrome. The Run affordance is deferred — no dead buttons.
+  </p>
+
+  <agent-kit-test-suite kind="suite" tags="authoring" org="acme" project="semtext" key="suite-authoring">
+    <agent-kit-branch passed="18" failed="0">main</agent-kit-branch>
+    <agent-kit-branch passed="17" failed="1">develop</agent-kit-branch>
+    <script type="application/json">{ "updated_at": "2026-10-17T14:00:00Z" }</script>
+  </agent-kit-test-suite>
+
+  <agent-kit-test-case kind="case" tags="authoring" org="acme" project="semtext" key="case-board-refs">
+    <agent-kit-step>Open the board demo.</agent-kit-step>
+    <agent-kit-step>Extract without JavaScript.</agent-kit-step>
+    <agent-kit-step>Compare the record sets.</agent-kit-step>
+    <agent-kit-expected>Both passes agree, record for record.</agent-kit-expected>
+  </agent-kit-test-case>
+
+  <agent-kit-cypress kind="script" tags="authoring" org="acme" project="semtext" key="spec-board" file="test/e2e/agent-kit-bundle.cy.js">
+    <script type="text/plain" data-agent-kit-script>describe('agent-kit board', () => {
+  it('mints one record for the board', () => {
+    cy.visit('/demo/agent-kit.html');
+    extract().then((records) => {
+      expect(records.filter((r) => r.type === 'agent-kit-board').length).to.equal(1);
+    });
+  });
+});</script>
+  </agent-kit-cypress>
+
+  <agent-kit-cucumber kind="script" tags="authoring" org="acme" project="semtext" key="feature-extraction">
+    <script type="text/plain" data-agent-kit-script>Feature: extraction
+  Scenario: JS-off equals JS-on
+    Given an authored board
+    When the records are extracted
+    Then both passes agree, record for record</script>
+  </agent-kit-cucumber>
+
 </div>
 </body>
 </html>

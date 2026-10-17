@@ -55,10 +55,13 @@
     "spec/schema/agent-kit/personas.md",
     "spec/schema/agent-kit/reference-cards.md",
     "spec/schema/agent-kit/review.md",
+    "spec/schema/agent-kit/script-cards.md",
+    "spec/schema/agent-kit/test-case.md",
+    "spec/schema/agent-kit/test-suite.md",
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 73,
+  "tagCount": 76,
   "tags": [
     {
       "name": "agent-kit-acceptance-criteria",
@@ -665,6 +668,98 @@
       "example": "<agent-kit-custom-assert org=\"acme\" project=\"semtext\" key=\"assert-extract\">\n  <agent-kit-assert-expr>extractRecords(doc)</agent-kit-assert-expr>\n  <agent-kit-assert-expect>deep-equals the JS-off set</agent-kit-assert-expect>\n  <agent-kit-assert-expr>norm(text)</agent-kit-assert-expr>\n  <agent-kit-assert-expect>collapses authored whitespace only</agent-kit-assert-expect>\n</agent-kit-custom-assert>"
     },
     {
+      "name": "agent-kit-cypress",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/script-cards.md",
+      "summary": "The cached script cards; the authored spec source displays as written.",
+      "description": "The cached script cards; the authored spec source displays as written. One contract for the script-card pair (`src/lit/agent-kit/ script-shared.ts`, `AkitScriptCard`; `agent-kit-cypress.ts`, `agent-kit-cucumber.ts`): the runner spec lives in an authored `<script type=\"text/plain\" data-agent-kit-script>` child or a `file` attribute, and DISPLAYS as authored — the vocabulary stylesheet promotes the text/plain block to a preformatted panel with JavaScript on or off. The element never parses, re-renders, or executes it. Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-testing.test.ts`.",
+      "attributes": [
+        {
+          "name": "file",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin path of the spec source when the script is not inline; the chrome renders it as a `source:` reference chip. NEVER fetched by this element (Live-fetch policy below) — declared so the reader (and the driver lane, later) can find the source."
+        },
+        {
+          "name": "fixtures",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin JSON path naming a cached snapshot for enrichment (cached-embed preset; a fixture source vetoes any `endpoint`). The pair defines no snapshot shape — declared for family symmetry only."
+        },
+        {
+          "name": "endpoint",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin API path; NEVER fetched by this element (Live-fetch policy below) — declared for the authoring pipeline only."
+        },
+        {
+          "name": "last-refreshed",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "authored ISO-8601 stamp of the most recent sync (cached-embed preset)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "fresh",
+            "stale",
+            "error"
+          ],
+          "default": null,
+          "description": "one of `fresh`, `stale`, `error` (cached-embed preset)."
+        },
+        {
+          "name": "org",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "`project`, `key`: `string` — the reference quartet (schema `reference` preset) — see Reference attributes below."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "script",
+          "note": "`<script type=\"text/plain\" data-agent-kit-script>` — the spec source, inline (at most one). NOT a schema child part: the element never touches it, and the validator has no rule for script children. The document's own escaping governs; the vocabulary stylesheet promotes the block to a preformatted panel (`themes/_vocabulary.css`, agent-kit section) so it displays identically with JavaScript on or off."
+        }
+      ],
+      "example": "<agent-kit-cypress kind=\"script\" tags=\"authoring\" file=\"cypress/e2e/board.cy.js\">\n  <script type=\"text/plain\" data-agent-kit-script>\n    describe('board', () => { it('mints refs', () => { … }) })\n  </script>\n</agent-kit-cypress>\n\n<agent-kit-cucumber kind=\"script\" tags=\"authoring\"\n                    org=\"acme\" project=\"semtext\" key=\"feature-extraction\">\n  <script type=\"text/plain\" data-agent-kit-script>\n    Feature: extraction\n      Scenario: JS-off equals JS-on\n        Given an authored board\n        When the records are extracted\n        Then both passes agree\n  </script>\n</agent-kit-cucumber>"
+    },
+    {
       "name": "agent-kit-epic",
       "family": "agent-kit",
       "source": "spec/schema/agent-kit/tickets.md",
@@ -1046,6 +1141,178 @@
       "children": [],
       "example": "<agent-kit-issue org=\"acme\" project=\"semtext\" key=\"AKIT-001\"\n                 uuid=\"7c1e...\" state=\"open\" labels=\"auth,extract\">\n  <agent-kit-title>Extractor drops class-form parts</agent-kit-title>\n  <agent-kit-description>\n    `extractRecords` misses `.agent-kit-title` aliases when the class\n    appears on a wrapper element.\n  </agent-kit-description>\n  <agent-kit-last-updated>2026-10-17T09:24:00Z</agent-kit-last-updated>\n</agent-kit-issue>",
       "optionsIn": "agent-kit-issue"
+    },
+    {
+      "name": "agent-kit-test-case",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/test-case.md",
+      "summary": "The cached test-case card; the authored steps and expectation are the record.",
+      "description": "The cached test-case card; the authored steps and expectation are the record. One contract for the case renderer: a cached-embed card (`src/lit/agent-kit/agent-kit-test-case.ts`, `AkitTestCase`) — authored `<agent-kit-step>` entries in document order plus the `<agent-kit-expected>` part stated once. Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-testing.test.ts`.",
+      "attributes": [
+        {
+          "name": "fixtures",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin JSON path naming a cached snapshot for enrichment (cached-embed preset; a fixture source vetoes any `endpoint`)."
+        },
+        {
+          "name": "endpoint",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin API path; NEVER fetched by this element (Live-fetch policy below) — declared for the authoring pipeline only."
+        },
+        {
+          "name": "last-refreshed",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "authored ISO-8601 stamp of the most recent sync (cached-embed preset)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "fresh",
+            "stale",
+            "error"
+          ],
+          "default": null,
+          "description": "one of `fresh`, `stale`, `error` (cached-embed preset)."
+        },
+        {
+          "name": "org",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "`project`, `key`: `string` — the reference quartet (schema `reference` preset) — see Reference attributes below."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "agent-kit-step",
+          "note": "`<agent-kit-step>` — one step; author at least one (the count drives the chrome chip, never a childRule). No attributes."
+        },
+        {
+          "name": "agent-kit-expected",
+          "note": "`<agent-kit-expected>` — the expectation, stated once (exactly one)."
+        }
+      ],
+      "example": "<agent-kit-test-case kind=\"case\" tags=\"authoring\"\n                     org=\"acme\" project=\"semtext\" key=\"case-board-refs\">\n  <agent-kit-step>Open the board demo.</agent-kit-step>\n  <agent-kit-step>Extract without JavaScript.</agent-kit-step>\n  <agent-kit-expected>The records equal the JS-on set.</agent-kit-expected>\n</agent-kit-test-case>"
+    },
+    {
+      "name": "agent-kit-test-suite",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/test-suite.md",
+      "summary": "The cached test-suite card; the authored per-branch rows are the record.",
+      "description": "The cached test-suite card; the authored per-branch rows are the record. One contract for the suite renderer: a cached-embed card (`src/lit/agent-kit/agent-kit-test-suite.ts`, `AkitTestSuite`) — authored `<agent-kit-branch passed failed>` rows, one per branch, the branch name as text and the stats as attributes. The chrome chip totals the rows (real arithmetic over the authored attributes). Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-testing.test.ts`.",
+      "attributes": [
+        {
+          "name": "fixtures",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin JSON path naming a cached snapshot for enrichment (cached-embed preset; a fixture source vetoes any `endpoint`)."
+        },
+        {
+          "name": "endpoint",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin API path; NEVER fetched by this element (Live-fetch policy below) — declared for the authoring pipeline only."
+        },
+        {
+          "name": "last-refreshed",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "authored ISO-8601 stamp of the most recent sync (cached-embed preset)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "fresh",
+            "stale",
+            "error"
+          ],
+          "default": null,
+          "description": "one of `fresh`, `stale`, `error` (cached-embed preset)."
+        },
+        {
+          "name": "org",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "`project`, `key`: `string` — the reference quartet (schema `reference` preset) — see Reference attributes below."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "agent-kit-branch",
+          "note": "`<agent-kit-branch>` — one per-branch stats row; author at least one (the count drives the totals chip, never a childRule). Branch attributes, all strings: - `passed` — non-negative integer (authored); totalled by the chrome chip. Non-numeric or missing totals as 0. - `failed` — non-negative integer (authored); totalled by the chrome chip. Non-numeric or missing totals as 0. The branch NAME is the row's text content — the record, extracted; the stats ride attributes (visible through the row's CSS `::after`, never part of any extracted record)."
+        }
+      ],
+      "example": "<agent-kit-test-suite kind=\"suite\" tags=\"authoring\"\n                      org=\"acme\" project=\"semtext\" key=\"suite-authoring\">\n  <agent-kit-branch passed=\"14\" failed=\"0\">main</agent-kit-branch>\n  <agent-kit-branch passed=\"13\" failed=\"1\">develop</agent-kit-branch>\n</agent-kit-test-suite>"
     },
     {
       "name": "agent-kit-ticket-ref",

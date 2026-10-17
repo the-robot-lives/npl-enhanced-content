@@ -1802,6 +1802,91 @@
         "div.agent-kit-comment",
         "span.agent-kit-comment"
       ]
+    },
+    "agent-kit-test-suite": {
+      "source": "spec/schema/agent-kit/test-suite.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-branch"
+      ]
+    },
+    "agent-kit-test-case": {
+      "source": "spec/schema/agent-kit/test-case.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-step",
+        "agent-kit-expected"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-expected",
+          "severity": "error"
+        }
+      ]
+    },
+    "agent-kit-cypress": {
+      "source": "spec/schema/agent-kit/script-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "file": {
+          "type": "token"
+        }
+      }
+    },
+    "agent-kit-cucumber": {
+      "source": "spec/schema/agent-kit/script-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "file": {
+          "type": "token"
+        }
+      }
+    },
+    "agent-kit-branch": {
+      "source": "spec/schema/agent-kit/test-suite.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-test-suite"
+      ],
+      "attributes": {
+        "passed": {
+          "type": "token"
+        },
+        "failed": {
+          "type": "token"
+        }
+      },
+      "classAliases": [
+        "div.agent-kit-branch",
+        "span.agent-kit-branch"
+      ]
+    },
+    "agent-kit-step": {
+      "source": "spec/schema/agent-kit/test-case.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-test-case"
+      ],
+      "classAliases": [
+        "div.agent-kit-step",
+        "span.agent-kit-step"
+      ]
+    },
+    "agent-kit-expected": {
+      "source": "spec/schema/agent-kit/test-case.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-test-case"
+      ],
+      "classAliases": [
+        "div.agent-kit-expected",
+        "span.agent-kit-expected"
+      ]
     }
   }
 }

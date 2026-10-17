@@ -34,10 +34,17 @@ const PERSONA_TYPES = [
 // Document order of the structured-lists section (below the personas).
 const LIST_TYPES = ['agent-kit-acceptance-criteria', 'agent-kit-custom-assert'];
 
-// The board + reference + media sections (last) — the refs/columns never mint.
+// The board + reference + media + testing sections (last) — the
+// refs/columns never mint.
 const BOARD_TYPES = ['agent-kit-board'];
 const REFERENCE_TYPES = ['agent-kit-organization', 'agent-kit-project', 'agent-kit-chatroom'];
 const MEDIA_TYPES = ['agent-kit-asset', 'agent-kit-artifact', 'agent-kit-review'];
+const TESTING_TYPES = [
+  'agent-kit-test-suite',
+  'agent-kit-test-case',
+  'agent-kit-cypress',
+  'agent-kit-cucumber',
+];
 
 const ALL_TYPES = [
   ...TICKET_TYPES,
@@ -46,6 +53,7 @@ const ALL_TYPES = [
   ...BOARD_TYPES,
   ...REFERENCE_TYPES,
   ...MEDIA_TYPES,
+  ...TESTING_TYPES,
 ];
 
 describe('agent-kit bundle — tickets (sub-batch 1)', () => {
@@ -272,14 +280,14 @@ describe('agent-kit bundle — reference cards + chatroom (sub-batch 5)', () => 
     cy.visit('/demo/agent-kit.html');
     extract().then((records) => {
       expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
-      // the media trio tails the page; the chatroom is the record before it
-      const room = records[records.length - 4];
+      // the testing quartet tails the page; the chatroom rides before media
+      const room = records[records.length - 8];
       expect(room.kind).to.equal('chatroom');
       expect(room.text).to.contain("Board's wired");
       expect(room.text).to.contain('Authoring stand-up');
       expect(room.text).not.to.contain('Ada:');
       expect(room.text).not.to.contain('Chatroom ·');
-      const org = records[records.length - 6];
+      const org = records[records.length - 10];
       expect(org.text).to.contain('Acme Corporation');
       expect(org.text).not.to.contain('Open in agent-kit');
     });
@@ -317,7 +325,8 @@ describe('agent-kit bundle — media cards (sub-batch 6)', () => {
     cy.visit('/demo/agent-kit.html');
     extract().then((records) => {
       expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
-      const last3 = records.slice(-3);
+      // the testing quartet tails the page; media sits right before it
+      const last3 = records.slice(-7, -4);
       expect(last3.map((r) => r.type)).to.deep.equal(MEDIA_TYPES);
       expect(last3[0].text).to.contain('The board cover');
       expect(last3[0].text).not.to.contain('image/svg+xml');
@@ -353,5 +362,47 @@ describe('agent-kit bundle — media cards (sub-batch 6)', () => {
     cy.get('agent-kit-artifact agent-kit-artifact-content').should('contain.text', 'authored body');
     cy.get('agent-kit-review agent-kit-comment').should('have.length', 2);
     cy.get('agent-kit-asset agent-kit-caption').should('contain.text', 'The board cover');
+  });
+});
+
+describe('agent-kit bundle — testing quartet (sub-batch 7)', () => {
+  it('suite, case and script cards mint plain records; totals and payloads stay out', () => {
+    cy.visit('/demo/agent-kit.html');
+    extract().then((records) => {
+      expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
+      const last4 = records.slice(-4);
+      expect(last4.map((r) => r.type)).to.deep.equal(TESTING_TYPES);
+      expect(last4[0].text).to.contain('main');
+      expect(last4[0].text).not.to.contain('35 passed');
+      expect(last4[1].text).to.contain('Both passes agree');
+      expect(last4[2].text).not.to.contain('describe(');
+      expect(last4[3].text).not.to.contain('Feature:');
+    });
+  });
+
+  it('totals chips, step ordinals and the script panel render; nothing hides JS-off', () => {
+    cy.visit('/demo/agent-kit.html');
+    cy.get('agent-kit-test-suite .agent-kit-suite-totals')
+      .should('have.attr', 'data-passed-total', '35')
+      .and('contain', '2 branches · 35 passed · 1 failed');
+    cy.get('agent-kit-test-case .agent-kit-case-count').should('contain', 'Test case · 3 steps');
+    cy.get('agent-kit-cypress .agent-kit-script-kind').should('have.text', 'Cypress spec');
+    cy.get('agent-kit-cypress .agent-kit-script-file').should('contain', 'test/e2e/agent-kit-bundle.cy.js');
+    cy.get('agent-kit-cypress a[href]').should('not.exist'); // no dead Run affordance, no link
+    cy.get('agent-kit-cypress script[data-agent-kit-script]').then(($s) => {
+      const shown = window.getComputedStyle($s[0]).display;
+      expect(shown).to.not.equal('none'); // the CSS promotion
+    });
+    cy.visit('/demo/agent-kit.nojs.html');
+    cy.get('.agent-kit-suite-totals').should('not.exist');
+    cy.get('.agent-kit-case-count').should('not.exist');
+    cy.get('.agent-kit-script-kind').should('not.exist');
+    cy.get('agent-kit-test-suite agent-kit-branch').should('have.length', 2);
+    cy.get('agent-kit-test-case agent-kit-step').should('have.length', 3);
+    // the .nojs BUILD strips every <script> (hard build invariant), so the
+    // panel is absent here — real JS-off browsing keeps it via the CSS
+    // promotion asserted above
+    cy.get('agent-kit-cypress script[data-agent-kit-script]').should('not.exist');
+    cy.get('agent-kit-test-case agent-kit-expected').should('contain.text', 'Both passes agree');
   });
 });
