@@ -50,15 +50,26 @@ export function attachPlusZones(opts: PlusZoneOptions): () => void {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'sem-ed-ins-plus';
-      button.textContent = '+';
       button.tabIndex = 0; // keyboard parity: the zones are tab stops (§7)
+      const glyph = document.createElement('span');
+      glyph.className = 'sem-ed-ins-plus-glyph';
+      glyph.setAttribute('aria-hidden', 'true');
+      glyph.textContent = '+';
+      const label = document.createElement('span');
+      label.className = 'sem-ed-ins-plus-label';
+      // Instrument: the "+" is never unexplained — a visible "Add block"
+      // label rides with the glyph (always on touch widths, on hover/focus
+      // elsewhere) and the accessible name carries the boundary.
+      label.textContent = 'Add block';
+      button.appendChild(glyph);
+      button.appendChild(label);
       button.setAttribute(
         'aria-label',
         i === 0
-          ? 'Insert block at the beginning'
+          ? 'Add block at the beginning'
           : i === authored.length
-            ? 'Insert block at the end'
-            : `Insert block between position ${i} and ${i + 1}`,
+            ? 'Add block at the end'
+            : `Add block between position ${i} and ${i + 1}`,
       );
       button.addEventListener('click', () => {
         openPanel({ parentId: rootId, index: i }, button);

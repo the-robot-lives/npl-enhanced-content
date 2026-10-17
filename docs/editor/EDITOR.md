@@ -524,27 +524,66 @@ with one smoke test.
 
 ## 5. Editor shell — `<sem-editor>` (`src/editor/shell/`)
 
-### 5.1 Frame
+### 5.1 Frame (Instrument shell)
 
 `<sem-editor>` is itself a `SemElement` (light DOM, registered via
-`SemElement.register`). Its frame adopts `src/shared/window-chrome.ts`:
+`SemElement.register`). The Instrument frame is a single rounded panel filling its
+host — **no window chrome** (`sem-window` / `createWindowTitlebar` were the
+phase-3 prototype and are gone). Structure, top to bottom (all built imperatively;
+the only `innerHTML` in the shell is the static `ICONS` SVG map — every model value
+goes through `createElement`/`textContent`):
 
-- `createWindowTitlebar({ title, tone, actions })` rendered imperatively as first child —
-  sem-editor owns its children (the document moves into the viewport), the same altitude
-  as sem-browser. `title` = document name (`<title>`, else filename, else "Untitled").
-- Content region gets class `sem-window-viewport` (the scrollable, focusable region).
-- Frame element: `sem-window`; `size`/`data-size` presets behave as documented there.
-- The editor's toolbar is the second row (not window-chrome actions — those keep host
-  controls): Undo · Redo · mode toggle (segmented `WYSIWYG | Code | Split`,
-  `role="radiogroup"`) · Insert ▸ · Export ▸ · Open ▸. Toolbar buttons carry
-  `aria-keyshortcuts` and tooltips via `title` + `aria-label`.
+- `.sem-ed-frame` — flex column on the `sem-editor` host, a `sem-editor`
+  **container** (container queries below, not viewport — the editor is embeddable).
+  Host reflects `data-mode` (`wysiwyg|code|split`), `readonly`, and the frame carries
+  `data-outline-open` / `data-inspector-open`.
+- Top bar `role="toolbar"` (`.sem-ed-topbar`): left — saved/dirty dot
+  (`.sem-ed-dot[data-on]`, amber when dirty) + borderless document-name input
+  (`aria-label="Document name"`; renaming writes through to the `<title>` node's
+  text via one `setText` op); center — mode segmented control `role="radiogroup"`
+  with arrow-key roving (§5.2); right — Undo (`aria-keyshortcuts` Control+Z
+  Meta+Z), Redo (Control+Shift+Z Meta+Shift+Z), Outline toggle (`aria-expanded`),
+  Insert, Properties toggle (`aria-expanded`), Export, Open. Buttons expose
+  `aria-label` + `title` ("Export (Ctrl+S)") + `aria-keyshortcuts`; roving tab
+  order covers buttons only (the name input keeps its own stop).
+- Breadcrumb row (§5.3) under the top bar.
+- `.sem-ed-main`: outline host + `.sem-ed-outline-resizer` (`role="separator"`,
+  pointer drag 180–400 px persisted in `localStorage["semtext-editor:outline-width"]`,
+  arrow keys ±16 px) + `.sem-ed-panes` viewport (`role="region"`, "Document canvas")
+  + inspector host.
+- Problems panel (collapsed; §5.1a), status bar `role="status"` — mode label ·
+  word/element counts · problems button ("parsed OK" / "N problems", accent when
+  non-zero) · read-only flag · saved state — and a `aria-live="polite"` region.
+
+Container queries on `sem-editor`: ≥ 900 px split is side-by-side (§5.2); < 700 px
+the outline and inspector become bottom sheets (toolbar button labels hide; the
+frame is `position: relative`). `prefers-reduced-motion` kills transitions.
+
+Dirty/saved: the dot + "Saved HH:MM" / "Unsaved changes" track `#savedVersion` vs
+`doc.version`; `markSaved()` is wired to IO (`onSaved` after each autosave write and
+after a successful export, §12). While dirty the shell binds `beforeunload`
+(readonly never binds).
+
+#### 5.1a Problems panel
+
+`reportIssues(issues, failed)` receives the code view's parse issues
+(`onIssues` on the `CodeViewHost` seam) and the document's own issues at open.
+The status-bar problems button toggles the panel — a `role="region"` list of jump
+buttons (severity · message · line:col) that call `jumpToOffset`
+(switches to split, forces a re-parse, sets the code selection, focuses the
+textarea). `failed` (unparseable source) reads "source has errors — showing last
+good tree".
 
 ### 5.2 Modes
 
-- `wysiwyg` (default): canvas only. `code`: source only. `split`: side-by-side ≥ 900 px,
-  stacked below (container query, not viewport — the editor is embeddable).
-- Mode is reflected as `data-mode` on `<sem-editor>`; `sem-edit-mode` announces it.
-  Split shares one model; both panes project it; §2.6 pins selection arbitration.
+- `wysiwyg` (default): canvas only. `code`: source only. `split`: side-by-side ≥ 900 px
+  (container query, not viewport — the editor is embeddable), stacked below.
+- Mode is reflected as `data-mode` on `<sem-editor>`; `sem-edit-mode` announces it;
+  the status bar mirrors the label. `Ctrl/Cmd+Shift+E` cycles modes anywhere in the
+  frame; the radiogroup itself roves with ←/→. Split shares one model; both panes
+  project it; §2.6 pins selection arbitration — selecting in the canvas syncs the
+  code caret via `rangeOf(id)`, a code-caret move selects the element at that offset
+  (`elementAtOffset`), one-way-on-typing per the 250 ms drive window.
 - Document content source: children authored inside `<sem-editor>` (move-on-connect into
   the model — the element's light-DOM children are parsed once on attach and re-projected;
   the authored source is preserved byte-for-byte by the model, not by leaving the
@@ -553,15 +592,45 @@ with one smoke test.
 
 ### 5.3 Outline and breadcrumb
 
-- Outline pane (left rail, collapsible, hidden < 700 px): tree from `doc` ancestor walks
-  (`ancestorsOf`) of
-  element nodes with descriptors (`title` + tag), keyboard-navigable listbox; Enter
-  selects + scrolls into view; F2 / Enter-again opens properties; Delete removes with the
-  §7 confirm path. Current selection follows the canvas.
-- Breadcrumb row above the canvas: `ancestorsOf(selection)` as `nav[aria-label="Breadcrumb"]`
-  links; clicking an ancestor selects it.
+- Outline pane (left rail, resizable §5.1, bottom sheet < 700 px): a semantic
+  **tree** — `role="tree"`, rows `role="treeitem"` with `aria-level` /
+  `aria-expanded`. Only meaningful blocks are rows: `sem-*`, the vocabulary's
+  `heading` element and bare h1–h6, and `section`. Presentational wrappers
+  (`p`, `div`, `strong`, …) and document metadata (`title`) never become rows —
+  but their semantic descendants still surface.
+- Labels are content-derived (`outlineLabelFor`): headings show their words
+  (truncated, fallback `Heading N`); `sem-*` rows show the descriptor title plus a
+  distinguishing qualifier — `variant`, else `label`/`name`/`title`, else the first
+  text (32 chars) — e.g. "Note — info". Descriptors unwired → the tag is the base.
+- Rows collapse (`aria-expanded` + twisty; hidden subtrees stay unmounted-state);
+  keyboard: ↑/↓/Home/End move (roving focus), → expands or descends, ← collapses or
+  ascends, Enter selects (again opens properties), F2 properties, Delete removes
+  (§7 confirm path). Selection follows the canvas both ways. Empty state:
+  "No blocks yet — use Add block to insert one."
+- Breadcrumb row above the canvas: `ancestorsOf(selection)` as
+  `nav[aria-label="Breadcrumb"]` buttons via the same `outlineLabelFor`; clicking an
+  ancestor selects it; the current location carries `aria-current="location"`.
 
-### 5.4 Property modal
+### 5.4 Inspector and property modal
+
+**Docked inspector** (right rail `.sem-ed-inspector`, `aria-label="Properties
+inspector"`; bottom sheet < 700 px; toggled by the Properties button): for the
+selected element it renders schema-driven fields from
+`SchemaProvider.schemaFor(tag).attrs` and **applies live** — every change is its
+own one-op transaction (one undo entry), so tweaking `variant` updates the canvas
+as you go:
+
+- widget mapping matches the modal exactly: `allowedValues` → `<select>` ((not
+  set) / enum / `(current) (custom)` / `custom…` reveal), `boolean` → bare-attribute
+  checkbox (present = true), `integer|number` → number input, else text; required
+  fields marked `*`.
+- unknown-on-node attributes land under an `Advanced (n)` disclosure with text
+  inputs + remove buttons (runtime `data-sem-*` chrome is excluded).
+- "All properties…" opens the full modal below for the same node (item lists, JSON
+  payloads, wizards stay modal-only).
+- No selection: "Select an element to inspect its properties."
+
+**Property modal** (unchanged contract, opened from the inspector or context menu):
 
 - `<dialog>` (native, `showModal()`) titled `Properties — <descriptor.title>`.
 - Fields: every schema attribute (plus global catalog) → widget by `type`:
@@ -585,8 +654,10 @@ with one smoke test.
 
 Four roads, one op:
 
-1. **`+` between blocks**: hovering the gap between element-level children reveals a
-   `+` button (`data-sem-chrome`); click opens the block inserter popover scoped to
+1. **"Add block" between blocks**: hovering the gap between element-level children
+   reveals a labelled pill — `+` glyph + "Add block" (`data-sem-chrome`; keyboard
+   focus keeps it visible, `@media (hover: hover)` gates the hover reveal); click
+   opens the block inserter popover scoped to
    containers the schema permits at that position.
 2. **`/` slash**: typing `/` at the start of an empty text slot opens a filterable
    template menu (arrows + Enter); Esc dismisses; a `/` typed with any preceding text is
@@ -649,10 +720,10 @@ render a `+`.
   Alt+=/Alt+Delete; modal open/close ⇄ Enter/Esc; mode toggle ⇄ Cmd/Ctrl+Shift+E cycles;
   undo/redo ⇄ Cmd/Ctrl+Z / Cmd/Ctrl+Shift+Z; save(export) ⇄ Cmd/Ctrl+S; outline focus ⇄
   Cmd/Ctrl+Shift+O; code view ⇄ Cmd/Ctrl+Shift+C.
-- **Focus**: roving tabindex in menu (controller's own), outline listbox, toolbar
-  (toolbar = one tab stop, arrows inside), modal fields; focus restored to the invoker on
-  close; `:focus-visible` styles from the editor stylesheet; the frame reuses
-  `sem-window`'s `:focus-within` convention.
+- **Focus**: roving tabindex in menu (controller's own), outline tree (§5.3), toolbar
+  (roving over buttons; the document-name input keeps its own tab stop), modal fields;
+  focus restored to the invoker on
+  close; `:focus-visible` styles from the editor stylesheet.
 - **Announcements**: one `aria-live="polite"` region per editor (`sem-ed-live`) fed by a
   single `announce(msg)` helper — commits ("Renamed attribute…"), moves, deletions, insert
   results, parse error counts. Destructive actions (Delete of a subtree with > 1 node)
@@ -802,7 +873,9 @@ reaches into model internals).
 - Autosave: debounced (1 s) post-change write to `localStorage['semtext-editor:draft:<key>']`
   (`{ source, savedAt, mode }`); drafts list on Open (`semtext-editor:drafts` index);
   restore loads source through `parse` (errors surface like any import); delete is
-  undoable only within the session (localStorage has no history).
+  undoable only within the session (localStorage has no history). `AutosaveOptions.onSave`
+  and `WireIoOptions.onSaved` fire after each successful slot write / export — the shell
+  clears its dirty dot through them (§5.1).
 - VFS: `EditorStore` interface `{ read(path): Promise<string>; write(path, source): Promise<void>;
   list(dir?): Promise<FileInfo[]>; delete(path): Promise<void> }` implemented over the
   existing backends in `src/terminal/backends/**` (memory, localStorage, S3). Open/Save
