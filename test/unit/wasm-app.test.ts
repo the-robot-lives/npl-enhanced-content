@@ -34,6 +34,11 @@ const binDir = resolve(here, '../../poc/wasm/bin');
 
 const fixtureBytes = (name: string): Uint8Array => new Uint8Array(readFileSync(resolve(binDir, `${name}.wasm`)));
 
+/** Bounded condition wait — fixed sleeps raced the guest on the CI runner. */
+const waitUntil = async (cond: () => boolean, ms = 2_000): Promise<void> => {
+  const deadline = Date.now() + ms;
+  while (!cond() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 10));
+};
 /** Binary string (VFS file-content convention) for a bytes payload. */
 const binaryString = (bytes: Uint8Array): string => {
   let out = '';
@@ -202,14 +207,14 @@ describe('wasm app — AppRunner harness (in-thread engine)', () => {
     await new Promise((r) => setTimeout(r, 20));
     for (const ch of 'echo me') runner.key(key(ch));
     runner.key(key('Enter'));
-    await new Promise((r) => setTimeout(r, 30));
-    let frame = Array.from({ length: screen.rows }, (_, r) => lineText(screen.alternate.lines[r]!));
-    expect(frame.some((l) => l.includes('echo me'))).toBe(true);
+    const frame = (): string[] => Array.from({ length: screen.rows }, (_, r) => lineText(screen.alternate.lines[r]!));
+    await waitUntil(() => frame().some((l) => l.includes('echo me')));
+    expect(frame().some((l) => l.includes('echo me'))).toBe(true);
     runner.key(key('d', true)); // Ctrl+D
-    await new Promise((r) => setTimeout(r, 30));
+    await waitUntil(() => app.a11ySummary().includes('exit 0'));
     expect(app.a11ySummary()).toContain('exit 0');
     runner.key(key('Enter'));
-    await new Promise((r) => setTimeout(r, 10));
+    await waitUntil(() => exits.length > 0);
     expect(exits).toEqual([[0, null]]);
   });
 
@@ -222,8 +227,9 @@ describe('wasm app — AppRunner harness (in-thread engine)', () => {
     const exits: Array<[number, string | null]> = [];
     const runner = new AppRunner(feed, screen, new RawLine(), (code, crash) => exits.push([code, crash]));
     expect(runner.spawn(app)).toBe(true);
-    await new Promise((r) => setTimeout(r, 20));
+    await waitUntil(() => screen.alternate.lines.some(Boolean));
     runner.key(key('c', true));
+    await waitUntil(() => exits.length > 0);
     expect(exits).toEqual([[130, null]]);
     expect(app.a11ySummary()).toContain('input line ready'); // stop() ran, no crash path claimed
   });
