@@ -193,7 +193,7 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           rm -rf cdn-payload
           mkdir -p cdn-payload/themes
-          cp dist/semtext.js dist/semtext-fallback.js dist/semtext-reading.js dist/semtext-extract.js dist/semtext-md.js cdn-payload/
+          cp dist/semtext.js dist/semtext-lazy.js dist/semtext-manifest.json cdn-payload/
           cp themes/*.css cdn-payload/themes/
           find cdn-payload -type f | sort
       - name: Install mc

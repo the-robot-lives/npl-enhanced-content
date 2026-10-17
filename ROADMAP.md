@@ -32,14 +32,15 @@ nobody outside the team has been interviewed.
 
 1. **Canonical artifact = standalone XHTML document.** file:// double-click is the
    zero-th acceptance bar; IIFE classic scripts only, no runtime fetch, no ES modules.
-2. **Fallback-first.** The universal inline vanilla handler ships with (or before) every
-   behavior. Lit upgrades in place: sets `data-sem-upgraded`, removes `data-sem-fallback`.
-   Both surfaces are BDD-asserted tiers per element — never one without the other.
+2. **One runtime, one marker.** The vanilla handlers and the Lit components ship in one
+   bundle; Lit "upgrades in place" only in the sense that both surfaces claim the same
+   `data-sem-upgraded` marker and agree on one runtime state. (The former fallback tier
+   and its `data-sem-fallback` handoff marker are retired as of 0.9.0.)
 3. **Light DOM for content, shadow DOM for chrome only.** Text stays searchable/copyable.
 4. **Zero React. Ever.** (PRD non-goal.)
 5. **BDD-before-code.** Schema `.md` + cypress spec co-authored before implementation;
    green before the next element (PRD §9, binding).
-6. **JS-off documents stay readable.** Hide-rules gated on `data-sem-fallback`; no
+6. **JS-off documents stay readable.** Hide-rules gated on `data-sem-upgraded`; no
    content is unreachable without JS.
 
 ## Epic & wave plan
@@ -89,7 +90,7 @@ share the single bundle budget:
 
 | Artifact | Budget | Measured |
 |---|---|---|
-| `semtext-fallback.js` | 64 KB (raised from 14 KB — tier-2 fallback budget, user decision 2026-10-14; the shipped copy is a frozen legacy artifact) | 13.0 |
+| `semtext-fallback.js` | 64 KB (raised from 14 KB — tier-2 fallback budget, user decision 2026-10-14). **Removed 0.9.0**: the handlers live in `src/vanilla/` inside the single bundle; row kept for history. | 13.0 |
 | `semtext-reading.js` | 19.5 KB | 19.4 — at the line |
 | `semtext.js` (Lit only) | 56 KB | 49.5 |
 | `semtext-extract.js` | 12 KB | 9.7 |
@@ -251,6 +252,11 @@ Recorded wave decisions (abridged, kept for precedent):
 - **Distribution:** apply + seed `cdn.derobot.is` (infra committed on monorepo develop
   e8e2d35b, not yet applied — see monorepo runbook). Assets get `Cache-Control=immutable`
   for hashed names. Portfolio docs reference the CDN instead of vendoring bundles.
+- **Refresh tooling:** `bin/semtext-refresh.mjs` (`npm run refresh`) — the authoring-plan
+  Phase 7 cache-region splicer: pure offset-based splices inside
+  `<!-- semtext:cache:start <tag> <key> -->` markers only, `--check` drift detection with
+  timestamp-normalized compare, `--seed` region authoring, and lazy fail-soft adapters
+  (agentkit / docptr / styleguide / annotate / media).
 - **npm publish prep:** package metadata, versioning policy (additive-safe / reductive-
   breaking), deprecation story published with v0.1.
 - **Exit:** zero React, MHTML round-trip verified, CDN serving `semtext.js`, npm pack clean.

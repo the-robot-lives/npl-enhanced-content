@@ -453,12 +453,12 @@ mark.sem-code-line { display: inline-block; width: 100%; color: inherit;
 :is(sem-reveal, .sem-reveal) details:not([open]) .sem-reveal-body { display: none; }
 /* Once a script has built the <details>, its <summary> carries the
    question; the ::before caption above is the JS-off rendering of the same
-   string and would duplicate it. Gated on the tier marker like every other
-   rule that depends on a script having run (D12). Either attribute
-   spelling suppresses: the caption may have come from bare `summary`
-   where the data-* mirror never ran (a pane that enhances without the
-   attrs pass) — the <summary> carries the same string either way. */
-:is(sem-reveal, .sem-reveal):is([data-sem-upgraded], [data-sem-fallback]):is([data-summary], [summary])::before { content: none; }
+   string and would duplicate it. Gated on the upgrade marker like every
+   other rule that depends on a script having run (D12); the bare-`summary`
+   spelling is accepted too — the caption may come from bare `summary`
+   where the attrs pass never ran, and the <summary> carries the same
+   string either way. */
+:is(sem-reveal, .sem-reveal)[data-sem-upgraded]:is([data-summary], [summary])::before { content: none; }
 :is(sem-reveal, .sem-reveal) summary { padding: .6rem .9rem; cursor: pointer; font-weight: 600; }
 :is(sem-reveal, .sem-reveal) summary::marker { color: var(--sem-muted); }
 /* The summary is the disclosure control: hover tints the row so the

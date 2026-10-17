@@ -10,8 +10,8 @@
  * localStorage (fail-open) for the per-reader preferences. It never sets
  * `hidden` and never touches content — extraction skips it entirely.
  *
- * Outline links are plain `#id` anchors: the fallback core's deep-link
- * resolver (fallback/target.ts) answers the resulting `hashchange` and
+ * Outline links are plain `#id` anchors: the vanilla core's deep-link
+ * resolver (vanilla/target.ts) answers the resulting `hashchange` and
  * opens whatever encloses the heading (closed reveal, inactive view), so
  * the outline stays complete instead of skipping hidden headings.
  *

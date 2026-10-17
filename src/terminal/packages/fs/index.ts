@@ -1351,9 +1351,40 @@ const isIntegerText = (text: string): boolean => /^[+-]?\d+$/.test(text.trim());
 function exprRegex(pattern: string): RegExp | null {
   // BRE-flavoured: \( \) are capture groups, bare ( ) are literals;
   // matching is anchored at the start, like GNU expr.
-  const js = pattern.replace(/\\\(/g, '§').replace(/\\\)/g, '¥').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/§/g, '(').replace(/¥/g, ')');
+  //
+  // Backslash contract (the reason this is a scanner, not a replace chain):
+  // \\ is a literal backslash, \<char> is a literal <char>, and a trailing
+  // bare \ is a literal backslash. DELIBERATE DEVIATION from GNU regex: the
+  // \b/\w/\s/\d extension escapes are literal characters here, not classes —
+  // nothing from the pattern ever reaches the RegExp as a metasequence the
+  // user did not spell (CodeQL js/incomplete-sanitization, flagged
+  // 2026-10-18 on the vendored dist). Only the documented BRE syntax stays
+  // active: . * [ ^ $ and \( \) groups. The user's own §/¥ characters
+  // cannot collide with group placeholders either (the old §/¥ alphabet
+  // let a literal § in the pattern become a group); the placeholders are
+  // NUL/\x01, neutralised in the input in turn, so no input byte survives
+  // as a group.
+  const meta = /[.*+?^${}()|[\]\\]/;
+  const safe = pattern.replace(/\x00/g, '\\x00').replace(/\x01/g, '\\x01');
+  let js = '';
+  for (let i = 0; i < safe.length; i++) {
+    const c = safe[i];
+    if (c === '\\' && i + 1 < safe.length) {
+      const n = safe[++i];
+      if (n === '(') js += '\x00'; // BRE group open  → JS group open
+      else if (n === ')') js += '\x01'; // BRE group close → JS group close
+      else if (n === '\\') js += '\\\\'; // literal backslash
+      else js += meta.test(n) ? '\\' + n : n; // \<char> is a literal char
+    } else if (c === '(') {
+      js += '\\('; // bare parens are literals in BRE
+    } else if (c === ')') {
+      js += '\\)';
+    } else {
+      js += c; // BRE-active metas (. * [ ^ $) pass through with their meaning
+    }
+  }
   try {
-    return new RegExp('^' + js);
+    return new RegExp('^' + js.replace(/\x00/g, '(').replace(/\x01/g, ')'));
   } catch {
     return null;
   }

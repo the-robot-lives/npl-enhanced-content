@@ -1,6 +1,6 @@
 {
   "name": "semtext",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "//specVersion": "Draft revision of spec/conventions.{html,md} that the demo pages and landing copy self-label. Bump it WITH the spec, not with releases \u2014 `version` is the package, `specVersion` is the format draft.",
   "specVersion": "0.7",
   "description": "SemText \u2014 XHTML-first semantic markup: one document that reads as a styled interactive page, a structural record for LLMs, and plain text in a terminal. One Lit bundle (dist/semtext.js + its stylesheet + themes); degrades to plain prose with JavaScript off. Zero React.",
@@ -41,6 +41,7 @@
     "validate": "node bin/semtext-validate.mjs \"web/**/*.html\" \"spec/*.html\"",
     "gen:conventions": "node scripts/gen-conventions-html.mjs",
     "gen:conventions:check": "node scripts/gen-conventions-html.mjs --check",
+    "refresh": "node bin/semtext-refresh.mjs",
     "build:elements-index": "node scripts/build-elements-index.mjs",
     "build:prompts": "node scripts/build-prompts.mjs",
     "serve": "vite preview --outDir dist --port 4173 --strictPort"

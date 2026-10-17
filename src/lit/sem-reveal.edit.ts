@@ -8,7 +8,7 @@
  * shapes: derived summary, explicit summary, starts-collapsed.
  *
  * No `regions`/`rerender`: the `<details>`/`<summary>` wrapper is built by
- * the page's reading pass (fallback/reveal enhanceReveal), which MOVES the
+ * the page's reading pass (vanilla/reveal enhanceReveal), which MOVES the
  * authored children into `details > .sem-reveal-body`. Inside the editor
  * canvas the authored form is canonical (documents load via IO, the inert
  * projection never runs enhancers), so the wrapper never exists here; a

@@ -16,7 +16,7 @@
  */
 
 import { registerDescriptor } from '../editor/schema/registry.js';
-import { snapshotSourceElement } from '../fallback/source.js';
+import { snapshotSourceElement } from '../vanilla/source.js';
 
 function refreshSnapshot(el: HTMLElement): void {
   snapshotSourceElement(el);

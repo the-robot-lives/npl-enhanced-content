@@ -1,8 +1,8 @@
 /**
  * SemText — core vanilla handlers (one-bundle surface, spec v0.6).
  *
- * This module and everything it imports must stay free of Lit. It no longer
- * ships alone: `src/index.ts` imports it into `dist/semtext.js`, where these
+ * This module and everything it imports must stay free of Lit. It ships
+ * only inside `dist/semtext.js` (`src/index.ts` imports it), where these
  * handlers drive the elements no component defines (`sem-views`,
  * `sem-reveal`, `sem-progress`, audience gating, deep links, the alias
  * mirror, the `sem-source` snapshot pass) — the former standalone
@@ -35,7 +35,7 @@ import { enhanceProgress } from './progress.js';
 import { enhanceAudience } from './audience.js';
 import { enhanceTarget } from './target.js';
 
-export type FallbackHandler = (scope: ParentNode) => void;
+export type VanillaHandler = (scope: ParentNode) => void;
 
 /**
  * Registry order is the original inline handler's order and is load-bearing:
@@ -46,7 +46,7 @@ export type FallbackHandler = (scope: ParentNode) => void;
  * `sem-activate` on views and cards), which must exist before it resolves
  * the hash.
  */
-export const handlers: FallbackHandler[] = [
+export const handlers: VanillaHandler[] = [
   enhanceSource, // FIRST: snapshots sem-source markup before anything touches it
   enhanceAttrs, // then: bare tag-form attributes get their data-* twin
   enhanceFacts,

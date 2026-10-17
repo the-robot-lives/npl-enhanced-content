@@ -14,11 +14,11 @@ must know *which tier currently owns an element*. Two mechanisms do this
 
 - **Dual spelling selectors** — every rule targets `:is(sem-x, .sem-x)`, so
   tag-form and class-form documents get identical treatment.
-- **Tier markers** — scripts stamp `data-sem-fallback` when the fallback core
-  takes an element and `data-sem-upgraded` when the Lit upgrade replaces it.
-  Hide rules that would otherwise leave JS-off pages empty are gated on
-  `:not([data-sem-fallback], [data-sem-upgraded])`, so they render only on
-  the JS-off tier.
+- **Runtime marker** — scripts stamp `data-sem-upgraded` on every element they
+  wire (vanilla handlers and Lit components alike; `data-sem-fallback` is
+  retired as of 0.9.0). Hide rules that would otherwise leave JS-off pages
+  empty are gated on `:not([data-sem-upgraded])`, so they render only when
+  no script has run.
 
 The JS-off tier stays text-only by construction: pseudo-element content is
 plain `attr()` only (the fallback-argument `attr()` form is not yet
@@ -30,8 +30,8 @@ attributes, never a fake bar (see the progress rules around
 
 1. **JS-off** — theme + `_vocabulary.css` only: accent borders, attribute
    labels, presentable, no layout shift when a later tier activates.
-2. **Fallback** — `SemTextFallback` claims elements (`data-sem-fallback`),
-   full baseline interactivity, zero Lit.
+2. **Vanilla core** — the handlers in `src/vanilla/` claim elements
+   (`data-sem-upgraded`), full baseline interactivity, zero Lit.
 3. **Reading** — `SemTextReading` adds prose chrome; chrome mints nothing
    (extraction-safe).
 4. **Upgraded** — Lit components register, set `data-sem-upgraded`, own

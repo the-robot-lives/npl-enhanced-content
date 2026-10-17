@@ -48,7 +48,7 @@ import type { EditorDocument, ElementNode, NodeId, ParseIssue } from '../model/t
 import { OutlineList } from './outline.js';
 import { InspectorPanel } from './inspector.js';
 import { openPropertiesModal } from './property-modal.js';
-import { SHELL_CSS, SHELL_CSS_ID } from './shell-css.js';
+import { SHELL_CSS } from './shell-css.js';
 
 export const EDITOR_TAG = 'sem-editor';
 
@@ -417,7 +417,6 @@ export class SemEditor extends SemElement {
   #injectCss(doc: Document): void {
     if (doc.querySelector(`style[data-sem-editor-css][data-sem-ed-block="shell"]`) !== null) return;
     const style = doc.createElement('style');
-    style.id = SHELL_CSS_ID;
     style.setAttribute('data-sem-editor-css', '');
     style.setAttribute('data-sem-ed-block', 'shell');
     style.textContent = SHELL_CSS;
