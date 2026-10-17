@@ -26,6 +26,11 @@ export default defineConfig({
   // floored) — raise it as unit coverage grows; see docs/TEST-HEALTH.md.
   test: {
     include: ['test/unit/**/*.test.{ts,mjs,js}'],
+    // Every spec fails fast instead of hanging the shared fork worker —
+    // a sync loop cannot be interrupted by timers inside the test, but a
+    // 5s ceiling keeps any wedge to one red spec, not a stuck run
+    // (shell-v3 integration; see test/unit/shell-find-sed.test.ts).
+    testTimeout: 5_000,
     alias: {
       // The lazy loaders' tag→chunk manifests are injected virtually by the
       // build (scripts/build.mjs, one plugin per namespace). The build
