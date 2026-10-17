@@ -7,7 +7,7 @@ import { SemElement } from './base.js';
  * rendered behaviour already lives in the theme vocabulary (they are
  * CSS-first blocks: records, steps, events, views, meters, references…)
  * and — where a vanilla handler wires interaction (sem-views tabs,
- * sem-progress meter, sem-facts decks) — in `src/fallback/*`, which runs
+ * sem-progress meter, sem-facts decks) — in `src/vanilla/*`, which runs
  * after the bundle scan and skips nothing it still needs (its guards key
  * on the CONTAINER, and the views/progress handlers have no marker guard
  * to skip through). A stub therefore does exactly one thing: exist as the

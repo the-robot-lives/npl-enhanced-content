@@ -2,7 +2,8 @@
  * lazy/scan — find the SemText vocabulary in a DOM subtree.
  *
  * The loader scans the WHOLE document: any element whose tag starts with
- * `sem-` or `npl-` may be a component, wherever it sits — the `<sem-text>`
+ * one of the vocabulary prefixes (`sem-`, `npl-`, `semext-`, `agent-kit-`)
+ * may be a component, wherever it sits — the `<sem-text>`
  * wrapper is an authoring convenience, not the scan boundary. Which of
  * those tags actually have a component is the manifest's job (generated at
  * build time from the component list, see scripts/build.mjs) — the scan
@@ -20,7 +21,14 @@
  * that triggers the chunk download.
  */
 
-export const VOCABULARY_TAG = /^(?:sem|npl)-[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/**
+ * Every namespace prefix of the vocabulary. Alternation order is safe:
+ * the `(?:semext|sem|npl|agent-kit)` branch list puts `semext` before
+ * `sem` so `semext-note` can never mis-match as `sem` + `ext-note` — the
+ * trailing `-` in the pattern anchors each prefix at a hyphen, so `sem-`
+ * requires the hyphen and `semext-` consumes the longer prefix first.
+ */
+export const VOCABULARY_TAG = /^(?:semext|sem|npl|agent-kit)-[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** A vocabulary tag name under `pattern`. Each shipped loader narrows the
  *  default (both namespaces) to its own prefix — semtext-lazy scans

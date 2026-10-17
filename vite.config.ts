@@ -43,6 +43,12 @@ export default defineConfig({
       'virtual:npl-manifest': fileURLToPath(
         new URL('./test/unit/fixtures/npl-manifest.stub.ts', import.meta.url),
       ),
+      'virtual:semext-manifest': fileURLToPath(
+        new URL('./test/unit/fixtures/semext-manifest.stub.ts', import.meta.url),
+      ),
+      'virtual:agent-kit-manifest': fileURLToPath(
+        new URL('./test/unit/fixtures/agent-kit-manifest.stub.ts', import.meta.url),
+      ),
     },
     coverage: {
       provider: 'v8',

@@ -40,7 +40,7 @@ semtext/
 │   │   ├── sem-references.ts
 │   │   ├── sem-source.ts              # rendered/source wrapper (W2.1)
 │   │   └── sem-table.ts
-│   ├── fallback/                    # Vanilla core handlers — NO Lit dependency → bundled into dist/semtext.js
+│   ├── vanilla/                     # Vanilla core handlers — NO Lit dependency → bundled into dist/semtext.js (renamed from fallback/ 0.9.0)
 │   │   ├── index.ts                   # handler registry + enhance() (core runs FIRST in the bundle)
 │   │   ├── audience.ts                # profile-gated visibility (native `hidden`)
 │   │   ├── details.ts
@@ -83,8 +83,8 @@ semtext/
 │   └── minimal-tech-light.css
 ├── web/
 │   ├── demo/                        # Showcase + reference documents (marker sources)
-│   │   ├── index.html                 # v0.4 class-based baseline, fallback tier
-│   │   ├── reading.html               # R/W1+W2(+W2.2 sem-md) reading elements, class form (fallback + reading + md)
+│   │   ├── index.html                 # v0.4 class-based baseline
+│   │   ├── reading.html               # R/W1+W2(+W2.2 sem-md) reading elements, class form
 │   │   ├── reading-lit.html           # same document, element form (+ Lit bundle)
 │   │   ├── md-only.html               # sem-md with ONLY the Markdown bundle (no core, no reading) — root stays unmarked
 │   │   └── standalone-lit.html        # Lit-tier upgrade page
@@ -126,7 +126,7 @@ semtext/
 ├── cypress.config.js                # Spec pattern test/e2e/, support test/support/
 ├── vite.config.ts                   # Dev/preview only — the build lives in scripts/
 ├── tsconfig.json
-├── package.json                     # Subpath exports: ./lit ./fallback ./reading ./extract ./md ./themes/*
+├── package.json                     # Subpath exports: ./lit ./lazy ./npl ./npl-lazy ./agent ./themes/*
 ├── PRD.md
 ├── ROADMAP.md
 ├── CLAUDE.md · AGENTS.md · AGENT.md
@@ -139,11 +139,11 @@ semtext/
 |-----------|---------|
 | `spec/` | Tier-0 normative documents. This repo is spec-first: schema change precedes conventions change precedes code precedes e2e. |
 | `src/lit/` | Lit 3 elements, light DOM so content stays searchable and extractable. Bundled with Lit into `dist/semtext.js`. |
-| `src/fallback/` | The vanilla tier. It must run in a document that never loads Lit, so it may not import from `src/lit/` — the separation is load-bearing, not stylistic. |
-| `src/reading/` | Second vanilla tier (R/W1+W2): prose-reading behaviours and reading chrome (reader, table) that would not fit the fallback core's 12 KB budget. Same rules as `fallback/`; the Lit wrappers in `src/lit/` import its per-element enhance functions so there is one behaviour implementation. |
-| `src/md/` | Third vanilla tier (R/W2.2): the `sem-md` Markdown renderer, its own bundle so a document with no Markdown never loads the parser. Same rules as `fallback/`; the Lit wrapper imports its enhance function; the raw fence's copy / wrap chrome is `sem-code`'s, borrowed from the reading bundle's global at runtime rather than bundled a second time. |
+| `src/vanilla/` | The vanilla core handlers (renamed from `src/fallback/` in 0.9.0 — the standalone fallback tier is retired, the handlers are core). It must run in a document that never loads Lit, so it may not import from `src/lit/` — the separation is load-bearing, not stylistic. |
+| `src/reading/` | Second vanilla tier (R/W1+W2): prose-reading behaviours and reading chrome (reader, table). Same Lit-free rules as `vanilla/`; the Lit wrappers in `src/lit/` import its per-element enhance functions so there is one behaviour implementation. |
+| `src/md/` | Third vanilla tier (R/W2.2): the `sem-md` Markdown renderer. Same rules as `vanilla/`; the Lit wrapper imports its enhance function; the raw fence's copy / wrap chrome is `sem-code`'s, borrowed from the reading bundle's global at runtime rather than bundled a second time. |
 | `src/extract/` | DOM → records → annotated text, per `spec/extraction.md`. |
-| `src/shared/` | Helpers imported by both tiers; must stay Lit-free for the same reason as `fallback/`. |
+| `src/shared/` | Helpers imported by both tiers; must stay Lit-free for the same reason as `vanilla/`. |
 | `themes/` | Deliberately top-level rather than under `web/`: theme CSS is a package subpath export (`semtext/themes/*`) and a CDN asset on cdn.semtext.dev, consumed independently of the marketing site. |
 | `web/demo/` | Double duty by design — showcase pages *and* the cypress fixture source. The suite runs against the BUILT copies in `dist/demo/`, which is the only arrangement where a green suite proves the shipped file works. |
 | `web/site/` | Marketing page for semtext.dev. Currently a placeholder; the design pass is a separate task. |

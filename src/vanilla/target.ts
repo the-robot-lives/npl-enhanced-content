@@ -1,5 +1,5 @@
 /**
- * fallback/target — deep links that reach through disclosure state.
+ * vanilla/target — deep links that reach through disclosure state.
  *
  * A plain `#id` scrolls to an element only if it is rendered. In a SemText
  * document the target may sit inside a closed reveal, a collapsed note, an
@@ -16,7 +16,7 @@
  * here: `sem-activate` activates without recording, so the descendant's
  * anchor stays in the address bar.
  *
- * Registered LAST in fallback/index: every handler it drives must have
+ * Registered LAST in vanilla/index: every handler it drives must have
  * wired its listeners first. It also defers one macrotask so a Lit element
  * that upgraded in the same document has flushed its first update.
  *

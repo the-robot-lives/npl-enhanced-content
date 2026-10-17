@@ -67,6 +67,10 @@ function normalizeAttr(raw: RawAttr, isGlobal: boolean): SchemaAttrSpec {
   };
 }
 
+/** Vocabulary families elements.json carries (sem is the default bucket —
+ *  anything unlisted normalizes to it). */
+const FAMILIES: readonly SchemaTagSpec['family'][] = ['sem', 'npl', 'semext', 'agent-kit'];
+
 function normalizeTag(raw: RawTag): SchemaTagSpec {
   const declared = (raw.attributes ?? []).map((a) => normalizeAttr(a, false));
   const missingGlobals = GLOBAL_ATTR_NAMES.filter(
@@ -77,9 +81,10 @@ function normalizeTag(raw: RawTag): SchemaTagSpec {
       true,
     ),
   );
+  const family = (FAMILIES as readonly string[]).includes(raw.family ?? '') ? raw.family : 'sem';
   return {
     name: raw.name,
-    family: raw.family === 'npl' ? 'npl' : 'sem',
+    family: family as SchemaTagSpec['family'],
     summary: raw.summary ?? '',
     description: raw.description ?? raw.summary ?? '',
     attributes: [...declared, ...missingGlobals],
@@ -153,8 +158,8 @@ export function loadSchema(): ElementSchema {
 
 /** Canonical authoring spelling of a tag reference. Accepts the element
  *  form (`sem-note`), its class alias (`.sem-note` — and `.note`, both
- *  case-insensitive), and the bare sel() name (`note`) tried as sem-note
- *  then npl-note. */
+ *  case-insensitive), and the bare sel() name (`note`) tried with every
+ *  family prefix (sem-note, npl-note, semext-note, agent-kit-note). */
 export function canonicalTagName(raw: string): string | null {
   const schema = loadSchema();
   const name = raw.trim().toLowerCase();
@@ -164,7 +169,7 @@ export function canonicalTagName(raw: string): string | null {
   const stripped = name.startsWith('.') ? name.slice(1) : name;
   if (stripped === '') return null;
   if (schema.byName.has(stripped)) return stripped;
-  for (const family of ['sem-', 'npl-']) {
+  for (const family of ['sem-', 'npl-', 'semext-', 'agent-kit-']) {
     const candidate = family + stripped;
     if (schema.byName.has(candidate)) return candidate;
   }

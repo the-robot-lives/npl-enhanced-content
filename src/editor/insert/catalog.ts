@@ -24,8 +24,12 @@ export const BUCKET_ORDER: readonly EditBucket[] = [
   'definitions',
   'recall',
   'code',
+  'containers',
+  'ops',
   'npl-a',
   'npl-b',
+  'semext',
+  'agent-kit',
 ];
 
 export const BUCKET_LABELS: Record<EditBucket, string> = {
@@ -38,8 +42,12 @@ export const BUCKET_LABELS: Record<EditBucket, string> = {
   definitions: 'Properties & references',
   recall: 'Facts & quizzes',
   code: 'Code & machines',
+  containers: 'Containers & groups',
+  ops: 'Ops & actions',
   'npl-a': 'NPL reasoning (a–m)',
   'npl-b': 'NPL reasoning (n–z)',
+  semext: 'SemText extensions',
+  'agent-kit': 'Agent kit',
 };
 
 /** sem-chat rides the data bucket until the data lane registers its real

@@ -43,7 +43,7 @@ export interface SchemaChildSpec {
  *  container/standalone tags. */
 export interface SchemaTagSpec {
   name: string;
-  family: 'sem' | 'npl';
+  family: 'sem' | 'npl' | 'semext' | 'agent-kit';
   summary: string;
   description: string;
   attributes: readonly SchemaAttrSpec[];
@@ -73,8 +73,12 @@ export type EditBucket =
   | 'definitions'
   | 'recall'
   | 'code'
+  | 'containers'
+  | 'ops'
   | 'npl-a'
-  | 'npl-b';
+  | 'npl-b'
+  | 'semext'
+  | 'agent-kit';
 
 /** A slot whose text the user edits inline (contenteditable, plaintext).
  *  `selector` matches AUTHORED child parts and MUST start with `:scope >`;

@@ -24,6 +24,7 @@ import { scanStops, stripStops } from '../../src/editor/templates/stops.js';
 import { documentMovedSince, insertEntryAt } from '../../src/editor/insert/apply.js';
 import type { InsertEntry, InsertTarget } from '../../src/editor/insert/types.js';
 import type { WizardField } from '../../src/editor/schema/types.js';
+import { loadSchema } from '../../src/editor/schema/index.js';
 
 /** Wizard field fixture: name carries the value key; type drives validation. */
 const f = (name: string, type: WizardField['type'] = 'text', options?: string[]): WizardField => ({
@@ -177,7 +178,10 @@ describe('resolveInsertTarget (request normalization)', () => {
 describe('insertCatalog', () => {
   it('has one entry per schema tag plus sem-chat plus the hand-only descriptors', () => {
     const catalog = insertCatalog();
-    expect(catalog.length).toBe(57); // 54 schema + sem-chat + sem-question + sem-option
+    // Derived, not pinned: every schema tag in elements.json + sem-chat +
+    // the hand-only descriptors (sem-question, sem-option). Upstream tag
+    // additions change both sides together, so this never re-pins.
+    expect(catalog.length).toBe(loadSchema().tags.length + 3);
     for (const e of catalog) {
       expect(e.template.xml.length).toBeGreaterThan(0);
       expect(BUCKET_ORDER).toContain(e.bucket);
