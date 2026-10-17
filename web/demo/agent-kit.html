@@ -170,6 +170,26 @@ call_sign: loom</agent-kit-persona-metadata>
     <agent-kit-assert-expect>collapses authored whitespace only</agent-kit-assert-expect>
   </agent-kit-custom-assert>
 
+  <h2>Board</h2>
+  <p>Authored columns of ticket refs — the refs are the same batch-1
+  component and scroll their cards into view; the board adds only the
+  column layout and a count chip.</p>
+
+  <agent-kit-board kind="board" tags="authoring" org="acme" project="semtext" key="board-authoring">
+    <agent-kit-column heading="In progress">
+      <agent-kit-ticket-ref key="AKIT-001">the extractor issue</agent-kit-ticket-ref>
+    </agent-kit-column>
+    <agent-kit-column heading="Review">
+      <agent-kit-ticket-ref key="AKIT-003">the vocabulary collision</agent-kit-ticket-ref>
+    </agent-kit-column>
+    <agent-kit-column heading="Done">
+      <agent-kit-ticket-ref key="AKIT-005">the lazy manifest</agent-kit-ticket-ref>
+    </agent-kit-column>
+    <script type="application/json">
+      { "updated_at": "2026-10-17T12:00:00Z" }
+    </script>
+  </agent-kit-board>
+
 </div>
 </body>
 </html>

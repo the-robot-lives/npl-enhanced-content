@@ -1529,6 +1529,7 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
    ============================================================ */
 agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria { display: block; }
 agent-kit-agent-persona, .agent-kit-agent-persona { display: block; }
+agent-kit-board, .agent-kit-board { display: block; }
 agent-kit-bug, .agent-kit-bug { display: block; }
 agent-kit-custom-assert, .agent-kit-custom-assert { display: block; }
 agent-kit-epic, .agent-kit-epic { display: block; }
@@ -2512,3 +2513,78 @@ agent-kit-ticket-ref[data-sem-upgraded], .agent-kit-ticket-ref[data-sem-upgraded
   letter-spacing: 0.02em;
 }
 /* ── end agent-kit structured lists ── */
+
+/* ── agent-kit board ──────────────────────────────────────────────
+   agent-kit-board: authored <agent-kit-column heading> parts holding
+   ticket refs (spec/schema/agent-kit/board.md). Display stub — layout
+   only; the only chrome is the header chip + optional snapshot stamp.
+   Tokens only; dual spellings throughout.
+   ============================================================ */
+
+:is(agent-kit-board, .agent-kit-board) {
+  box-sizing: border-box;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--sem-surface, #ffffff);
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 8px;
+  color: var(--sem-fg, #1e293b);
+}
+
+:is(agent-kit-board, .agent-kit-board) > :is(agent-kit-column, .agent-kit-column) {
+  display: block;
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--sem-bg, #fafafa);
+}
+/* the column label rides the heading attribute — visible with styles
+   on or off, never part of any extracted record */
+:is(agent-kit-board, .agent-kit-board) > :is(agent-kit-column, .agent-kit-column)::before {
+  content: attr(heading);
+  display: block;
+  margin: 0 0 0.35rem;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+/* kanban-ish row when the viewport allows it; the chrome header takes
+   the full first row so the chip never becomes a "column" */
+.agent-kit-board-chrome {
+  flex-basis: 100%;
+}
+@media (min-width: 40rem) {
+  :is(agent-kit-board, .agent-kit-board) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  :is(agent-kit-board, .agent-kit-board) > :is(agent-kit-column, .agent-kit-column) {
+    flex: 1 1 12rem;
+    margin: 0;
+  }
+}
+
+/* chrome header chip + optional snapshot stamp */
+.agent-kit-board-chrome .agent-kit-board-chip {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+}
+.agent-kit-board-chrome .agent-kit-board-snapshot {
+  display: inline-block;
+  margin: 0.5rem 0 0;
+  color: var(--sem-muted, #64748b);
+  font-size: 0.85em;
+}
+/* ── end agent-kit board ── */

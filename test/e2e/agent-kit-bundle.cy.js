@@ -34,7 +34,10 @@ const PERSONA_TYPES = [
 // Document order of the structured-lists section (below the personas).
 const LIST_TYPES = ['agent-kit-acceptance-criteria', 'agent-kit-custom-assert'];
 
-const ALL_TYPES = [...TICKET_TYPES, ...PERSONA_TYPES, ...LIST_TYPES];
+// The board section (last) — one record; its columns/refs never mint.
+const BOARD_TYPES = ['agent-kit-board'];
+
+const ALL_TYPES = [...TICKET_TYPES, ...PERSONA_TYPES, ...LIST_TYPES, ...BOARD_TYPES];
 
 describe('agent-kit bundle — tickets (sub-batch 1)', () => {
   it('INVARIANT: JS-off extraction deep-equals JS-on extraction', () => {
@@ -216,5 +219,41 @@ describe('agent-kit bundle — structured lists (sub-batch 3)', () => {
     cy.get('.agent-kit-acceptance-chip').should('not.exist');
     cy.get('.agent-kit-assert-chip').should('not.exist');
     cy.get('agent-kit-acceptance-criteria agent-kit-then').should('have.length', 2);
+  });
+});
+
+describe('agent-kit bundle — board (sub-batch 4)', () => {
+  it('the board mints one record; refs and columns stay extraction-invisible', () => {
+    cy.visit('/demo/agent-kit.html');
+    extract().then((records) => {
+      expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
+      const board = records[TICKET_TYPES.length + PERSONA_TYPES.length + LIST_TYPES.length];
+      expect(board.kind).to.equal('board');
+      expect(board.text).to.contain('the extractor issue');
+      expect(board.text).to.contain('the lazy manifest');
+      // heading attrs ride CSS ::before, never the record
+      expect(board.text).not.to.contain('In progress');
+      expect(board.text).not.to.contain('Board ·');
+    });
+  });
+
+  it('count chip + snapshot stamp render JS-on; columns and labels stand alone JS-off', () => {
+    cy.visit('/demo/agent-kit.html');
+    cy.get('agent-kit-board .agent-kit-board-chip')
+      .should('have.attr', 'data-column-count', '3')
+      .and('contain', 'Board · 3 columns · 3 refs');
+    cy.get('agent-kit-board .agent-kit-board-snapshot time')
+      .should('have.attr', 'datetime', '2026-10-17T12:00:00Z');
+    cy.get('agent-kit-board agent-kit-column').should('have.length', 3);
+    cy.get('agent-kit-board agent-kit-ticket-ref[key="AKIT-001"]').should('have.attr', 'role', 'link');
+    cy.visit('/demo/agent-kit.nojs.html');
+    cy.get('.agent-kit-board-chip').should('not.exist');
+    cy.get('.agent-kit-board-snapshot').should('not.exist');
+    cy.get('agent-kit-board agent-kit-column').should('have.length', 3);
+    cy.get('agent-kit-board agent-kit-column').first().then(($c) => {
+      // the heading label renders through CSS ::before even JS-off
+      const before = window.getComputedStyle($c[0], '::before').content;
+      expect(before).to.equal('"In progress"');
+    });
   });
 });

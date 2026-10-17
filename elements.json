@@ -47,12 +47,13 @@
     "spec/schema/npl/npl-thought.md",
     "spec/schema/npl/npl-vos.md",
     "spec/schema/agent-kit/acceptance-criteria.md",
+    "spec/schema/agent-kit/board.md",
     "spec/schema/agent-kit/custom-assert.md",
     "spec/schema/agent-kit/personas.md",
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 66,
+  "tagCount": 67,
   "tags": [
     {
       "name": "agent-kit-acceptance-criteria",
@@ -177,6 +178,94 @@
       ],
       "example": "<agent-kit-user-persona org=\"acme\" project=\"semtext\" key=\"persona-ada\"\n                        avatar=\"/fixtures/agent-kit/avatars/ada.png\">\n  <agent-kit-persona-name>Ada Lovelace</agent-kit-persona-name>\n  <agent-kit-persona-role>Product manager</agent-kit-persona-role>\n  <agent-kit-persona-bio>\n    Owns the SemText roadmap; reviews authoring ergonomics.\n  </agent-kit-persona-bio>\n  <agent-kit-persona-metadata>team: authoring\ntimezone: UTC+0</agent-kit-persona-metadata>\n</agent-kit-user-persona>",
       "optionsIn": "agent-kit-user-persona"
+    },
+    {
+      "name": "agent-kit-board",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/board.md",
+      "summary": "The kanban-ish column layout over ticket refs; the authored board is the record.",
+      "description": "The kanban-ish column layout over ticket refs; the authored board is the record. One contract for the board renderer: a display stub over the cached-embed base (`src/lit/agent-kit/agent-kit-board.ts`, `AkitBoard`). Authored `<agent-kit-column heading=\"...\">` parts hold `<agent-kit-ticket-ref>` children — the refs are the batch-1 component and wire themselves to `#akit-ticket-<KEY>` anchors; the board adds only the column layout (CSS) and a chrome header chip that counts columns and refs. Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-board.test.ts`.",
+      "attributes": [
+        {
+          "name": "fixtures",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin JSON path naming a cached snapshot for enrichment (cached-embed preset; a fixture source vetoes any `endpoint`). The reference dataset is `src/lit/fixtures/agent-kit/board.json`."
+        },
+        {
+          "name": "endpoint",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin API path; NEVER fetched by this element (Live-fetch policy below) — declared for the authoring pipeline only."
+        },
+        {
+          "name": "last-refreshed",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "authored ISO-8601 stamp of the most recent sync (cached-embed preset)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "fresh",
+            "stale",
+            "error"
+          ],
+          "default": null,
+          "description": "one of `fresh`, `stale`, `error` (cached-embed preset)."
+        },
+        {
+          "name": "org",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "`project`, `key`: `string` — the reference quartet (schema `reference` preset) — see Reference attributes below."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "agent-kit-column",
+          "note": "`<agent-kit-column>` — one board column; author at least one (the count is displayed by the chrome chip, never enforced by a childRule). - `heading` attribute — the column's label, rendered through the column's CSS `::before` (so it shows with styles off or on, and never enters any extracted record). - `<agent-kit-ticket-ref key=\"...\">` — the batch-1 reference component; each ref scrolls its `#akit-ticket-<KEY>` anchor card into view. Any other inline content (prose, links) is allowed."
+        },
+        {
+          "name": "agent-kit-ticket-ref",
+          "note": "`<agent-kit-column>` — one board column; author at least one (the count is displayed by the chrome chip, never enforced by a childRule). - `heading` attribute — the column's label, rendered through the column's CSS `::before` (so it shows with styles off or on, and never enters any extracted record). - `<agent-kit-ticket-ref key=\"...\">` — the batch-1 reference component; each ref scrolls its `#akit-ticket-<KEY>` anchor card into view. Any other inline content (prose, links) is allowed."
+        }
+      ],
+      "example": "<agent-kit-board org=\"acme\" project=\"semtext\" key=\"board-authoring\">\n  <agent-kit-column heading=\"In progress\">\n    <agent-kit-ticket-ref key=\"AKIT-001\">the extractor issue</agent-kit-ticket-ref>\n  </agent-kit-column>\n  <agent-kit-column heading=\"Review\">\n    <agent-kit-ticket-ref key=\"AKIT-003\">the vocabulary collision</agent-kit-ticket-ref>\n  </agent-kit-column>\n  <agent-kit-column heading=\"Done\">\n    <p>Nothing landed yet this sprint.</p>\n  </agent-kit-column>\n</agent-kit-board>"
     },
     {
       "name": "agent-kit-bug",

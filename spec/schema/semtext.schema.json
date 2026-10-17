@@ -1564,6 +1564,33 @@
         "div.agent-kit-assert-expect",
         "span.agent-kit-assert-expect"
       ]
+    },
+    "agent-kit-board": {
+      "source": "spec/schema/agent-kit/board.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-column"
+      ]
+    },
+    "agent-kit-column": {
+      "source": "spec/schema/agent-kit/board.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-board"
+      ],
+      "attributes": {
+        "heading": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-ticket-ref"
+      ],
+      "classAliases": [
+        "div.agent-kit-column",
+        "span.agent-kit-column"
+      ]
     }
   }
 }

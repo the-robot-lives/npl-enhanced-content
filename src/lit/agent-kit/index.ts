@@ -60,6 +60,8 @@ export { AkitAcceptanceCriteria } from './agent-kit-acceptance-criteria.js';
 import './agent-kit-acceptance-criteria.js';
 export { AkitAgentPersona } from './agent-kit-agent-persona.js';
 import './agent-kit-agent-persona.js';
+export { AkitBoard } from './agent-kit-board.js';
+import './agent-kit-board.js';
 export { AkitBug } from './agent-kit-bug.js';
 import './agent-kit-bug.js';
 export { AkitCustomAssert } from './agent-kit-custom-assert.js';
