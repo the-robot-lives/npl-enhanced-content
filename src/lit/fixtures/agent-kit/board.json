@@ -1,0 +1,22 @@
+[
+  {
+    "org": "acme",
+    "project": "semtext",
+    "key": "board-authoring",
+    "columns": [
+      {
+        "heading": "In progress",
+        "refs": ["AKIT-001", "AKIT-005"]
+      },
+      {
+        "heading": "Review",
+        "refs": ["AKIT-003"]
+      },
+      {
+        "heading": "Done",
+        "refs": []
+      }
+    ],
+    "updated_at": "2026-10-17T12:00:00Z"
+  }
+]

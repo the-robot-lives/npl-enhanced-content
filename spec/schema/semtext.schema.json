@@ -243,7 +243,9 @@
       "source": "spec/conventions.md#1",
       "record": false,
       "partOf": [
-        "agent"
+        "agent",
+        "sem-howto",
+        "sem-tsg"
       ],
       "classAliases": [
         "div.sem-agent-name",
@@ -896,6 +898,1441 @@
         },
         "id": {}
       }
+    },
+    "sem-kb": {
+      "source": "spec/schema/sem-kb.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-references",
+        "sem-code"
+      ]
+    },
+    "sem-runbook": {
+      "source": "spec/schema/sem-runbook.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-procedure",
+        "sem-references"
+      ]
+    },
+    "sem-howto": {
+      "source": "spec/schema/sem-howto.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "name",
+        "tags"
+      ]
+    },
+    "sem-requirement": {
+      "source": "spec/schema/sem-requirement.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "kind": {
+          "type": "token",
+          "values": [
+            "functional",
+            "non-functional",
+            "constraint"
+          ]
+        },
+        "status": {
+          "type": "token",
+          "values": [
+            "draft",
+            "approved",
+            "implemented"
+          ]
+        },
+        "priority": {
+          "type": "token"
+        }
+      }
+    },
+    "sem-threat-model": {
+      "source": "spec/schema/sem-threat-model.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "scope": {
+          "type": "token"
+        }
+      },
+      "children": []
+    },
+    "sem-guard-rails": {
+      "source": "spec/schema/sem-guard-rails.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-guard-rail"
+      ]
+    },
+    "sem-guard-rail": {
+      "source": "spec/schema/sem-guard-rails.md",
+      "record": true,
+      "extends": "container",
+      "partOf": [
+        "sem-guard-rails"
+      ],
+      "attributes": {
+        "severity": {
+          "type": "token",
+          "values": [
+            "info",
+            "warn",
+            "block"
+          ]
+        },
+        "scope": {
+          "type": "token"
+        }
+      }
+    },
+    "sem-mockup": {
+      "source": "spec/schema/sem-mockup.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "mode": {
+          "type": "token",
+          "values": [
+            "text",
+            "html"
+          ],
+          "default": "text"
+        }
+      }
+    },
+    "sem-rubric": {
+      "source": "spec/schema/sem-rubric.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "max-score": {
+          "type": "number",
+          "min": 0
+        }
+      },
+      "children": []
+    },
+    "sem-eval": {
+      "source": "spec/schema/sem-eval.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "status": {
+          "type": "token",
+          "values": [
+            "draft",
+            "approved",
+            "implemented"
+          ]
+        }
+      },
+      "children": []
+    },
+    "sem-philosophy": {
+      "source": "spec/schema/sem-philosophy.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {}
+    },
+    "sem-summary": {
+      "source": "spec/schema/sem-summary.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {}
+    },
+    "sem-plan": {
+      "source": "spec/schema/sem-plan.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {}
+    },
+    "sem-tsgs": {
+      "source": "spec/schema/sem-tsgs.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-tsg"
+      ]
+    },
+    "sem-tsg": {
+      "source": "spec/schema/sem-tsgs.md",
+      "record": true,
+      "extends": "container",
+      "partOf": [
+        "sem-tsgs"
+      ],
+      "attributes": {},
+      "children": [
+        "name",
+        "title",
+        "description",
+        "tags",
+        "when"
+      ]
+    },
+    "sem-faqs": {
+      "source": "spec/schema/sem-faqs.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-faq"
+      ]
+    },
+    "sem-faq": {
+      "source": "spec/schema/sem-faqs.md",
+      "record": true,
+      "extends": "container",
+      "partOf": [
+        "sem-faqs"
+      ],
+      "attributes": {},
+      "children": [
+        "question",
+        "answer"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "question",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "answer",
+          "severity": "error"
+        }
+      ]
+    },
+    "sem-changelogs": {
+      "source": "spec/schema/sem-changelogs.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {},
+      "children": [
+        "sem-changelog"
+      ]
+    },
+    "sem-changelog": {
+      "source": "spec/schema/sem-changelogs.md",
+      "record": true,
+      "extends": "container",
+      "partOf": [
+        "sem-changelogs"
+      ],
+      "attributes": {
+        "date": {
+          "type": "token"
+        },
+        "impacted": {
+          "type": "flaglist"
+        }
+      },
+      "children": [
+        "tags"
+      ]
+    },
+
+    "sem-workflow": {
+      "source": "spec/schema/sem-workflow.md",
+      "record": true,
+      "attributes": {
+        "duration": { "type": "token" },
+        "label": { "type": "token" }
+      },
+      "children": [
+        "sem-step"
+      ],
+      "childForms": {
+        "sem-step": {
+          "description": "The sem-step contract, as authored inside a workflow: the workflow-context parameters (action/description/gate/check/if-no/output) are per-parent, so sem-procedure steps are untouched. The shared status catalog still applies.",
+          "attributes": {
+            "action": { "type": "token", "required": true },
+            "description": { "type": "token" },
+            "gate": { "type": "token" },
+            "check": { "type": "token" },
+            "if-no": { "type": "token" },
+            "if_no": { "type": "token" },
+            "output": { "type": "token" }
+          }
+        }
+      }
+    },
+    "sem-site-tree": {
+      "source": "spec/schema/sem-site-tree.md",
+      "extends": "container",
+      "record": true,
+      "attributes": {
+        "mode": {
+          "type": "token",
+          "values": ["structured", "text"],
+          "default": "structured"
+        }
+      },
+      "children": [
+        "node"
+      ],
+      "childForms": {
+        "node": {
+          "description": "A tree entry as authored inside a site tree: path is required in tree context (a bare node elsewhere is an unknown-attribute warning).",
+          "attributes": {
+            "path": { "type": "token", "required": true }
+          }
+        }
+      }
+    },
+    "sem-file-tree": {
+      "source": "spec/schema/sem-file-tree.md",
+      "extends": "container",
+      "record": true,
+      "attributes": {
+        "mode": {
+          "type": "token",
+          "values": ["structured", "text"],
+          "default": "structured"
+        }
+      },
+      "children": [
+        "node"
+      ],
+      "childForms": {
+        "node": {
+          "description": "A tree entry as authored inside a file tree: path is required in tree context; mode=text carries no node children at all (the authored pre is the record).",
+          "attributes": {
+            "path": { "type": "token", "required": true }
+          }
+        }
+      }
+    },
+    "node": {
+      "source": "spec/schema/sem-site-tree.md",
+      "record": false,
+      "partOf": ["sem-site-tree", "sem-file-tree", "node"],
+      "classAliases": ["div.sem-node"],
+      "attributes": {
+        "kind": {
+          "type": "token",
+          "values": [
+            "dir",
+            "file",
+            "symlink"
+          ]
+        }
+      },
+      "childForms": {
+        "node": {
+          "description": "A node nested inside another node — the same tree-node form, one level deeper.",
+          "attributes": {
+            "path": { "type": "token", "required": true },
+            "label": { "type": "token" },
+            "kind": {
+              "type": "token",
+              "values": [
+                "dir",
+                "file",
+                "symlink"
+              ]
+            }
+          }
+        }
+      }
+    },
+
+    "semext-annotate": {
+      "description": "Visitor comment threads, service-backed: the ONE semext element with a client live read (anonymous-read, text-only rendering of untrusted comment bodies). Snapshot mode renders the authored thread record; live mode fetches <endpoint>/threads?site&page once, no credentials, and falls back to the authored view on failure.",
+      "source": "spec/schema/semext/annotate.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "site": { "type": "token" },
+        "page": { "type": "token" }
+      }
+    },
+    "semext-docptr": {
+      "description": "A doc-pointer card from a cached snapshot (static; refresh is the CLI lane). The snapshot mirrors .meta/pointers.yaml entries; marker/uuid/token select the entry, file narrows by path.",
+      "source": "spec/schema/semext/docptr.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "marker": { "type": "token" },
+        "uuid": { "type": "token" },
+        "token": { "type": "token" },
+        "file": { "type": "token" }
+      }
+    },
+    "semext-media-prompt": {
+      "description": "An authored .media.prompt YAML record with an output cache region the refresh CLI fills; the component never fetches or generates — it reports the region state (filled asset list or not-generated placeholder chrome).",
+      "source": "spec/schema/semext/media-prompt.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "model": { "type": "token" },
+        "aspect": { "type": "token" },
+        "assets-dir": { "type": "token" }
+      }
+    },
+    "semext-sig-logs": {
+      "description": "A SigNoz log-line snapshot + deep-link chrome (cached + link; livePolicy never, no client credentials). Link built from query/range/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-logs.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "query": { "type": "token" },
+        "range": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-sig-metrics": {
+      "description": "A SigNoz metrics-table snapshot + deep-link chrome (cached + link; livePolicy never, no client credentials). Link built from query/range/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-metrics.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "query": { "type": "token" },
+        "range": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-sig-synthetic-monitor": {
+      "description": "A SigNoz synthetic-monitor DEFINITION card + link chrome (definition + link; live execution is an EE service surface, deliberately deferred). Link built from monitor/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-synthetic-monitor.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "monitor": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-sig-traces": {
+      "description": "A SigNoz trace-list snapshot + deep-link chrome (cached + link; livePolicy never, no client credentials). Link built from query/range/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-traces.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "query": { "type": "token" },
+        "range": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-styleguide-theme": {
+      "description": "A theme token card from a cached snapshot (static): name, key color swatches, typography sample, and a \"Preview theme CSS\" link whose href is the authored src.",
+      "source": "spec/schema/semext/styleguide-theme.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "theme": { "type": "token" },
+        "src": { "type": "token" }
+      }
+    },
+    "semext-styleguide-themes": {
+      "description": "Collection wrapper of the styleguide-theme pair: authored semext-styleguide-theme entries; the wrapper renders only a summary line from its snapshot (theme slugs) or its authored children.",
+      "source": "spec/schema/semext/styleguide-theme.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {}
+    },
+    "agent-kit-issue": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-epic": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-bug": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-user-story": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-task": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-sub-task": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-ticket-ref": {
+      "source": "spec/schema/agent-kit/ticket-ref.md",
+      "record": true,
+      "extends": "reference",
+      "attributes": {
+        "key": {
+          "type": "token",
+          "required": true
+        }
+      }
+    },
+    "agent-kit-last-updated": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-last-updated",
+        "span.agent-kit-last-updated"
+      ]
+    },
+    "agent-kit-title": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-title",
+        "span.agent-kit-title"
+      ]
+    },
+    "agent-kit-description": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task",
+      "agent-kit-organization",
+      "agent-kit-project"
+      ],
+      "classAliases": [
+        "div.agent-kit-description",
+        "span.agent-kit-description"
+      ]
+    },
+    "agent-kit-state": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-state",
+        "span.agent-kit-state"
+      ]
+    },
+    "agent-kit-labels": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-labels",
+        "span.agent-kit-labels"
+      ]
+    },
+    "agent-kit-user-persona": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "avatar": {
+          "type": "token"
+        },
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-persona-name",
+        "agent-kit-persona-role",
+        "agent-kit-persona-bio",
+        "agent-kit-persona-metadata"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-persona-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-role",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-bio",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-metadata",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-agent-persona": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "avatar": {
+          "type": "token"
+        },
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-persona-name",
+        "agent-kit-persona-role",
+        "agent-kit-persona-bio",
+        "agent-kit-persona-metadata"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-persona-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-role",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-bio",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-metadata",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-persona-name": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-name",
+        "span.agent-kit-persona-name"
+      ]
+    },
+    "agent-kit-persona-role": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-role",
+        "span.agent-kit-persona-role"
+      ]
+    },
+    "agent-kit-persona-bio": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-bio",
+        "span.agent-kit-persona-bio"
+      ]
+    },
+    "agent-kit-persona-metadata": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-metadata",
+        "span.agent-kit-persona-metadata"
+      ]
+    },
+    "agent-kit-acceptance-criteria": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-criterion"
+      ]
+    },
+    "agent-kit-custom-assert": {
+      "source": "spec/schema/agent-kit/custom-assert.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-assert-expr",
+        "agent-kit-assert-expect"
+      ]
+    },
+    "agent-kit-criterion": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+        "agent-kit-acceptance-criteria"
+      ],
+      "children": [
+        "agent-kit-given",
+        "agent-kit-when",
+        "agent-kit-then"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-given",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-when",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-then",
+          "severity": "error"
+        }
+      ],
+      "classAliases": [
+        "div.agent-kit-criterion",
+        "span.agent-kit-criterion"
+      ]
+    },
+    "agent-kit-given": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-criterion"
+      ],
+      "classAliases": [
+        "div.agent-kit-given",
+        "span.agent-kit-given"
+      ]
+    },
+    "agent-kit-when": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-criterion"
+      ],
+      "classAliases": [
+        "div.agent-kit-when",
+        "span.agent-kit-when"
+      ]
+    },
+    "agent-kit-then": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-criterion"
+      ],
+      "classAliases": [
+        "div.agent-kit-then",
+        "span.agent-kit-then"
+      ]
+    },
+    "agent-kit-assert-expr": {
+      "source": "spec/schema/agent-kit/custom-assert.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-custom-assert"
+      ],
+      "classAliases": [
+        "div.agent-kit-assert-expr",
+        "span.agent-kit-assert-expr"
+      ]
+    },
+    "agent-kit-assert-expect": {
+      "source": "spec/schema/agent-kit/custom-assert.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-custom-assert"
+      ],
+      "classAliases": [
+        "div.agent-kit-assert-expect",
+        "span.agent-kit-assert-expect"
+      ]
+    },
+    "agent-kit-board": {
+      "source": "spec/schema/agent-kit/board.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-column"
+      ]
+    },
+    "agent-kit-column": {
+      "source": "spec/schema/agent-kit/board.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-board"
+      ],
+      "attributes": {
+        "heading": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-ticket-ref"
+      ],
+      "classAliases": [
+        "div.agent-kit-column",
+        "span.agent-kit-column"
+      ]
+    },
+    "agent-kit-organization": {
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-name",
+        "agent-kit-description"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-description",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-project": {
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-name",
+        "agent-kit-description"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-description",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-name": {
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-organization",
+      "agent-kit-project"
+      ],
+      "classAliases": [
+        "div.agent-kit-name",
+        "span.agent-kit-name"
+      ]
+    },
+    "agent-kit-chatroom": {
+      "source": "spec/schema/agent-kit/chatroom.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-chatroom-name",
+        "agent-kit-chat-msg"
+      ]
+    },
+    "agent-kit-chatroom-name": {
+      "source": "spec/schema/agent-kit/chatroom.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-chatroom"
+      ],
+      "classAliases": [
+        "div.agent-kit-chatroom-name",
+        "span.agent-kit-chatroom-name"
+      ]
+    },
+    "agent-kit-chat-msg": {
+      "source": "spec/schema/agent-kit/chatroom.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-chatroom"
+      ],
+      "attributes": {
+        "author": {
+          "type": "token"
+        },
+        "role": {
+          "type": "token",
+          "values": ["user", "assistant"]
+        },
+        "at": {
+          "type": "token"
+        }
+      },
+      "classAliases": [
+        "div.agent-kit-chat-msg",
+        "span.agent-kit-chat-msg"
+      ]
+    },
+    "agent-kit-asset": {
+      "source": "spec/schema/agent-kit/asset.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "src": {
+          "type": "token"
+        },
+        "mime": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-caption"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-caption",
+          "severity": "error"
+        }
+      ]
+    },
+    "agent-kit-artifact": {
+      "source": "spec/schema/agent-kit/artifact.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "type": {
+          "type": "token",
+          "values": ["markdown", "json", "diff", "code"]
+        },
+        "language": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-artifact-content"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-artifact-content",
+          "severity": "error"
+        }
+      ]
+    },
+    "agent-kit-review": {
+      "source": "spec/schema/agent-kit/review.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "verdict": {
+          "type": "token",
+          "values": ["approve", "request-changes", "comment", "pending"]
+        }
+      },
+      "children": [
+        "agent-kit-comment"
+      ]
+    },
+    "agent-kit-caption": {
+      "source": "spec/schema/agent-kit/asset.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-asset"
+      ],
+      "classAliases": [
+        "div.agent-kit-caption",
+        "span.agent-kit-caption"
+      ]
+    },
+    "agent-kit-artifact-content": {
+      "source": "spec/schema/agent-kit/artifact.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-artifact"
+      ],
+      "classAliases": [
+        "div.agent-kit-artifact-content",
+        "span.agent-kit-artifact-content"
+      ]
+    },
+    "agent-kit-comment": {
+      "source": "spec/schema/agent-kit/review.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-review"
+      ],
+      "attributes": {
+        "author": {
+          "type": "token"
+        },
+        "at": {
+          "type": "token"
+        }
+      },
+      "classAliases": [
+        "div.agent-kit-comment",
+        "span.agent-kit-comment"
+      ]
+    },
+    "agent-kit-test-suite": {
+      "source": "spec/schema/agent-kit/test-suite.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-branch"
+      ]
+    },
+    "agent-kit-test-case": {
+      "source": "spec/schema/agent-kit/test-case.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-step",
+        "agent-kit-expected"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-expected",
+          "severity": "error"
+        }
+      ]
+    },
+    "agent-kit-cypress": {
+      "source": "spec/schema/agent-kit/script-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "file": {
+          "type": "token"
+        }
+      }
+    },
+    "agent-kit-cucumber": {
+      "source": "spec/schema/agent-kit/script-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "file": {
+          "type": "token"
+        }
+      }
+    },
+    "agent-kit-branch": {
+      "source": "spec/schema/agent-kit/test-suite.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-test-suite"
+      ],
+      "attributes": {
+        "passed": {
+          "type": "token"
+        },
+        "failed": {
+          "type": "token"
+        }
+      },
+      "classAliases": [
+        "div.agent-kit-branch",
+        "span.agent-kit-branch"
+      ]
+    },
+    "agent-kit-step": {
+      "source": "spec/schema/agent-kit/test-case.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-test-case"
+      ],
+      "classAliases": [
+        "div.agent-kit-step",
+        "span.agent-kit-step"
+      ]
+    },
+    "agent-kit-expected": {
+      "source": "spec/schema/agent-kit/test-case.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-test-case"
+      ],
+      "classAliases": [
+        "div.agent-kit-expected",
+        "span.agent-kit-expected"
+      ]
     }
   }
 }

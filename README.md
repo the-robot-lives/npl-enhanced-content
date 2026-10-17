@@ -152,6 +152,48 @@ terminal (alternate screen, no dependencies beyond Node's stdlib) and
 restores the terminal on quit or error. Without a TTY it refuses to start
 with a stderr note and exit code 1.
 
+## Authoring refresh (`semtext-refresh`)
+
+`npm run refresh -- <subcommand> [options] <file-or-glob>...` keeps
+service-backed snapshots inside a document up to date. Work happens only
+inside **cache regions** — pairs of HTML comments:
+
+```html
+<!-- semtext:cache:start agent-kit-issue AKIT-001 -->
+<agent-kit-issue ... last-refreshed="2026-10-18T00:00:00Z"> ... </agent-kit-issue>
+<!-- semtext:cache:end -->
+```
+
+The splicer is pure and offset-based: bytes outside the markers (authored
+prose, everything else) are preserved bit-identically, `--check` compares
+timestamp-normalized bodies (a `last-refreshed`-only change is not drift),
+and malformed markers — start without end, orphan end, nested start,
+unknown vocabulary tag, duplicate key — exit 1 without writing. Seed a
+hand-authored document with `--seed`: it wraps authored snapshot-root
+elements (the cachedEmbed-backed vocabulary — child parts like titles are
+not region candidates) of the subcommand's family in fresh markers (end
+marker right after the element's authored snapshot content) and never
+talks to the network.
+
+Subcommands (adapters are lazy and fail-soft — a region without
+credentials or with an unreachable service SKIPs, it never aborts the
+file):
+
+| Subcommand | Regions it owns | Behavior |
+|---|---|---|
+| `agentkit` | `agent-kit-*` | `AGENTONI_MCP_API_KEY` set → key-for-token exchange (in memory) + snapshot fetch; unset ⇒ `skipped(no-credentials)` |
+| `docptr` | `semext-docptr` | shells to a local `doc-pointer` CLI when on PATH, else `skipped(docptr-cli-not-found)` |
+| `styleguide` | `semext-styleguide-themes` | reads `@noizu/styleguide` tokens when the package is resolvable, else `skipped(styleguide-unavailable)` |
+| `annotate` | `semext-annotate` | GETs the public threads endpoint for the region's `site`/`page` (`SEMTEXT_ANNOTATE_ENDPOINT` overrides the base); non-2xx ⇒ `skipped(annotate-<code>)` |
+| `media` | `*.media.prompt` keys | validates + canonicalizes the prompt YAML in place — no network |
+| `all` | each of the above | routes every region to its adapter |
+
+Flags: `--check` (drift detection: exit 1 + one line, never writes) ·
+`--seed` (author initial regions; no adapter traffic) · `--json` (machine
+output with per-region status). Every region reports
+`region <file>:<tag>:<key> → refreshed|unchanged|drift|skipped(<reason>)`.
+Exit codes: 0 clean / no drift · 1 drift or errors · 2 usage error.
+
 ## Docs
 
 `docs/PROJ-ARCH.md`, `docs/PROJ-LAYOUT.md`, `docs/PROJ-SCHEMA.md` (digests alongside); normative specs in `spec/`.

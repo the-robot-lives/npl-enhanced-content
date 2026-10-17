@@ -52,9 +52,54 @@
  */
 
 /* Components — alphabetical; one two-line pair each, nothing shared.
- * The namespace is intentionally empty at introduction: the walking
- * skeleton ships the bundle/loader/manifest/contract machinery only.
- * Drop the first component's two-line pair right below this comment. */
+ * The generic ticket renderer (ticket-shared.ts) and the chrome helpers
+ * (chrome.ts) carry no registrations of their own — only the per-tag
+ * files below do. */
+
+export { AkitAcceptanceCriteria } from './agent-kit-acceptance-criteria.js';
+import './agent-kit-acceptance-criteria.js';
+export { AkitAgentPersona } from './agent-kit-agent-persona.js';
+import './agent-kit-agent-persona.js';
+export { AkitArtifact } from './agent-kit-artifact.js';
+import './agent-kit-artifact.js';
+export { AkitAsset } from './agent-kit-asset.js';
+import './agent-kit-asset.js';
+export { AkitBoard } from './agent-kit-board.js';
+import './agent-kit-board.js';
+export { AkitBug } from './agent-kit-bug.js';
+import './agent-kit-bug.js';
+export { AkitChatroom } from './agent-kit-chatroom.js';
+import './agent-kit-chatroom.js';
+export { AkitCustomAssert } from './agent-kit-custom-assert.js';
+import './agent-kit-custom-assert.js';
+export { AkitEpic } from './agent-kit-epic.js';
+import './agent-kit-epic.js';
+export { AkitIssue } from './agent-kit-issue.js';
+import './agent-kit-issue.js';
+export { AkitOrganization } from './agent-kit-organization.js';
+import './agent-kit-organization.js';
+export { AkitProject } from './agent-kit-project.js';
+import './agent-kit-project.js';
+export { AkitReview } from './agent-kit-review.js';
+import './agent-kit-review.js';
+export { AkitCucumber } from './agent-kit-cucumber.js';
+import './agent-kit-cucumber.js';
+export { AkitCypress } from './agent-kit-cypress.js';
+import './agent-kit-cypress.js';
+export { AkitSubTask } from './agent-kit-sub-task.js';
+import './agent-kit-sub-task.js';
+export { AkitTask } from './agent-kit-task.js';
+import './agent-kit-task.js';
+export { AkitTestCase } from './agent-kit-test-case.js';
+import './agent-kit-test-case.js';
+export { AkitTestSuite } from './agent-kit-test-suite.js';
+import './agent-kit-test-suite.js';
+export { AkitTicketRef } from './agent-kit-ticket-ref.js';
+import './agent-kit-ticket-ref.js';
+export { AkitUserPersona } from './agent-kit-user-persona.js';
+import './agent-kit-user-persona.js';
+export { AkitUserStory } from './agent-kit-user-story.js';
+import './agent-kit-user-story.js';
 
 /* Namespace helpers (src/lit/agent-kit/shared.ts). */
 

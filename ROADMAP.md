@@ -74,13 +74,16 @@ guardrail discipline they document.
 
 | Artifact | Budget | Measured (2026-10-13) |
 |---|---|---|
-| `semtext.js` (one bundle) | **144 KB** (raised from 126 — user decision 2026-10-14) | 132.3 raw / 41.9 gzipped — in budget |
+| `semtext.js` (one bundle) | **152 KB** (raised from 126 — user decision 2026-10-14; 144 → 145 after family A containers, 2026-10-18; 145 → 152 after the interactive containers joined the single bundle the same day) | 151.5 raw / 47.1 gzipped with both lanes merged — in budget |
 | `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
 | `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
 | `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
 | `semtext-editor.js` (editor, §9) | **256 KB** (raised from the §9.1 estimate of 128 — integrate 2026-10-14; the estimate predated the integrated build, see the budget comment in `scripts/build.mjs`) | 245.1 raw / 69.8 gzipped — in budget |
 | `semtext-lazy.js` (loader) | **8 KB** | 3.3 raw / 1.6 gzipped (2026-10-14) |
 | `npl-lazy.js` (loader) | **8 KB** | 4.0 raw / 1.8 gzipped (2026-10-14) |
+| `semext.js` (semext-* embeds, feat/semext-embeds) | **48 KB** | 36.3 raw / 12.1 gzipped (2026-10-18) — in budget; the report-only placeholder budget from the empty-barrel lane is now enforced for real (family B's nine service-backed embeds) |
+| `agent-kit.js` (agent-kit-* embeds, feat/agent-kit-bundle) | **48 KB** (set 2026-10-18, PR #63 — matches the semext embed-lane budget) | 39.9 raw / 12.5 gzipped — in budget (22 tags, family C) |
+| `agent-kit-lazy.js` (loader) | **6 KB** (set 2026-10-18, PR #63) | 4.6 raw / 1.9 gzipped — in budget |
 
 Retired artifacts (spec v0.5, tag-form canonical, PR #30) — their handlers now
 share the single bundle budget:
@@ -132,8 +135,20 @@ IIFE. Measured today: 74.8 raw / 26.2 gzipped.
 Core bundle budget (2026-10-14) raised `semtext.js` 126 → 144 KB raw (user
 decision): the docs-overhaul content (spec v0.7 reference/tag review, sem-shell,
 sem-browser, npl class form) measured 132.3 raw / 41.9 gzipped — inside the
-new line. Any future bump still goes through this section and
+new line. 2026-10-18: the family A containers (19 tags, +1.2 KB on a base
+grown to 143.1 by parallel lanes) measured 144.3 raw; the coordinator raised
+the line to 145 KB post-measure (semext/agent-kit remain separate bundles).
+Any future bump still goes through this section and
 `scripts/build.mjs` together.
+
+Core bundle budget (2026-10-18) raised `semtext.js` 145 → 152 KB raw: the
+interactive containers (sem-workflow / sem-site-tree / sem-file-tree and the
+shared tree engine they lazy-ship) joined the single bundle per the
+no-CSS-only-tags registration contract (`lit-all-tags-registered.test.ts` —
+every schema tag answers `customElements.get()` once the core loads), the same
+sem-browser wiring, measured on the family A base. Measured 150.1 raw / 46.6
+gzipped on that base; 151.5 raw / 47.1 gzipped once both lanes merged — inside
+the new line.
 
 
 ## History (recorded decisions — preserved)
@@ -237,6 +252,11 @@ Recorded wave decisions (abridged, kept for precedent):
 - **Distribution:** apply + seed `cdn.derobot.is` (infra committed on monorepo develop
   e8e2d35b, not yet applied — see monorepo runbook). Assets get `Cache-Control=immutable`
   for hashed names. Portfolio docs reference the CDN instead of vendoring bundles.
+- **Refresh tooling:** `bin/semtext-refresh.mjs` (`npm run refresh`) — the authoring-plan
+  Phase 7 cache-region splicer: pure offset-based splices inside
+  `<!-- semtext:cache:start <tag> <key> -->` markers only, `--check` drift detection with
+  timestamp-normalized compare, `--seed` region authoring, and lazy fail-soft adapters
+  (agentkit / docptr / styleguide / annotate / media).
 - **npm publish prep:** package metadata, versioning policy (additive-safe / reductive-
   breaking), deprecation story published with v0.1.
 - **Exit:** zero React, MHTML round-trip verified, CDN serving `semtext.js`, npm pack clean.
