@@ -74,7 +74,15 @@ const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 40));
 function example(tag: string): string {
   const spec = loadSchema().byName.get(tag);
   if (spec === undefined) throw new Error(`no schema example for ${tag}`);
-  return spec.example;
+  // The v0.7 schema examples demonstrate the data family nested inside a
+  // sem-data-visualizer; these specs exercise each element STANDALONE, so
+  // lift the named element out of its demonstrative container. (The
+  // byte-exact assertions all derive from the same string, so the lift
+  // stays internally consistent.)
+  const host = document.createElement('div');
+  host.innerHTML = spec.example;
+  const el = host.querySelector(tag);
+  return el !== null ? el.outerHTML : spec.example;
 }
 
 const VIS_EXAMPLE = example('sem-data-visualizer');

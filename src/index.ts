@@ -60,6 +60,16 @@ export { SemFacts } from './lit/sem-facts.js';
 import './lit/sem-facts.js';
 export { SemDetails } from './lit/sem-details.js';
 import './lit/sem-details.js';
+export { SemReveal } from './lit/sem-reveal.js';
+import './lit/sem-reveal.js';
+/* reference-definition cards (spec/schema/sem-tag-def.md, sem-api-call.md) */
+export { SemTagDef } from './lit/sem-tag-def.js';
+import './lit/sem-tag-def.js';
+export { SemApiCall } from './lit/sem-api-call.js';
+import './lit/sem-api-call.js';
+/* claim stubs — the CSS-first vocabulary tags (see src/lit/sem-stubs.ts);
+ * registering them makes every sem tag answer customElements.get(). */
+import './lit/sem-stubs.js';
 /* R/W1 prose elements — thin wrappers over src/reading/* */
 export { SemCode } from './lit/sem-code.js';
 import './lit/sem-code.js';

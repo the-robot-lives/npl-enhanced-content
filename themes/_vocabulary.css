@@ -467,6 +467,35 @@ mark.sem-code-line { display: inline-block; width: 100%; color: inherit;
    is instant (native <details>), so reduced motion needs no extra rule. */
 :is(sem-reveal, .sem-reveal) summary:hover { background: color-mix(in srgb, var(--sem-accent) 8%, transparent); }
 :is(sem-reveal, .sem-reveal) summary:focus-visible { outline: 2px solid var(--sem-accent); outline-offset: 2px; border-radius: 6px; }
+/* The Lit component (tag form) — the control row and the blur affordance.
+   The hidden state must read as an affordance, not as broken rendering:
+   the body is blurred and clipped behind the control until the reader
+   acts. The blur gates on the upgrade marker (D12) so a JS-off page
+   never blurs content nothing on the page can reveal. */
+:is(sem-reveal, .sem-reveal)[data-sem-upgraded] .sem-reveal-control {
+  display: flex; gap: .5rem; align-items: baseline; width: 100%;
+  padding: .6rem .9rem; border: 0; background: none; cursor: pointer;
+  font: inherit; color: inherit; text-align: left; }
+:is(sem-reveal, .sem-reveal)[data-sem-upgraded] .sem-reveal-label { font-weight: 600; }
+:is(sem-reveal, .sem-reveal)[data-sem-upgraded] .sem-reveal-hint {
+  margin-left: auto; flex: none; font-variant-caps: all-small-caps;
+  color: var(--sem-accent); border: 1px solid color-mix(in srgb, var(--sem-accent) 45%, transparent);
+  border-radius: 999px; padding: .05rem .55rem; }
+:is(sem-reveal, .sem-reveal)[data-sem-upgraded] .sem-reveal-control:hover .sem-reveal-hint {
+  background: color-mix(in srgb, var(--sem-accent) 12%, transparent); }
+:is(sem-reveal, .sem-reveal)[data-sem-upgraded] .sem-reveal-control:focus-visible {
+  outline: 2px solid var(--sem-accent); outline-offset: 2px; border-radius: 6px; }
+:is(sem-reveal, .sem-reveal)[data-sem-upgraded] .sem-reveal-head {
+  padding: .6rem .9rem; font-weight: 600; font-variant-caps: all-small-caps; color: var(--sem-muted); }
+:is(sem-reveal, .sem-reveal)[data-sem-upgraded]:not([data-revealed]) .sem-reveal-body {
+  filter: blur(6px); max-height: 8rem; overflow: hidden;
+  pointer-events: none; user-select: none; }
+:is(sem-reveal, .sem-reveal)[data-sem-upgraded][data-revealed] .sem-reveal-body {
+  filter: none; max-height: none; overflow: visible;
+  transition: filter .24s ease; }
+@media (prefers-reduced-motion: reduce) {
+  :is(sem-reveal, .sem-reveal)[data-sem-upgraded][data-revealed] .sem-reveal-body { transition: none; }
+}
 /* ── end sem-reveal ── */
 
 /* progress */
@@ -1912,3 +1941,111 @@ sem-shell[data-paint="canvas"] .sem-term-surface {
   flex: 1 1 auto;
   min-height: 0;
 }
+
+/* ── sem-tag-def / sem-tag-attr — markup-tag definition cards
+   (spec/schema/sem-tag-def.md). The Lit component renders the card
+   (header row, description, native table, children chips); class-form
+   documents and JS-off pages keep the authored definition look. ── */
+:is(sem-tag-def, .sem-tag-def) { display: block; margin: 1rem 0; }
+:is(sem-tag-def, .sem-tag-def):not([data-sem-upgraded]) {
+  padding-left: .9rem; border-left: 3px solid
+  color-mix(in srgb, var(--sem-accent) 35%, transparent); }
+:is(sem-tag-def, .sem-tag-def):not([data-sem-upgraded])::before {
+  content: attr(data-tag); display: block; font-weight: 600;
+  font-family: var(--sem-mono, ui-monospace, monospace); }
+:is(sem-tag-def, .sem-tag-def):not([data-sem-upgraded])[tag]:not([data-tag])::before {
+  content: attr(tag); }
+:is(sem-tag-def, .sem-tag-def):not([data-sem-upgraded])[data-name]::after {
+  content: " — " attr(data-name); font-variant-caps: all-small-caps; color: var(--sem-muted); }
+:is(sem-tag-def, .sem-tag-def):not([data-sem-upgraded])[name]:not([data-name])::after {
+  content: " — " attr(name); font-variant-caps: all-small-caps; color: var(--sem-muted); }
+/* JS-off rows: `name :: description` with type + requiredness from attr() */
+:is(sem-tag-attr, .sem-tag-attr):not([data-sem-upgraded]) { display: block; margin: .35rem 0; }
+:is(sem-tag-attr, .sem-tag-attr):not([data-sem-upgraded])::before {
+  content: attr(data-name) " :: "; font-weight: 600; }
+:is(sem-tag-attr, .sem-tag-attr):not([data-sem-upgraded])[name]:not([data-name])::before {
+  content: attr(name) " :: "; font-weight: 600; }
+:is(sem-tag-attr, .sem-tag-attr):not([data-sem-upgraded])[data-type]::after {
+  content: " (" attr(data-type) ")"; color: var(--sem-muted); }
+:is(sem-tag-attr, .sem-tag-attr):not([data-sem-upgraded])[type]:not([data-type])::after {
+  content: " (" attr(type) ")"; color: var(--sem-muted); }
+:is(sem-tag-attr, .sem-tag-attr):not([data-sem-upgraded])[data-required][data-type]::after {
+  content: " (" attr(data-type) ", required)"; color: var(--sem-muted); }
+:is(sem-tag-attr, .sem-tag-attr):not([data-sem-upgraded])[data-required][type]:not([data-type])::after {
+  content: " (" attr(type) ", required)"; color: var(--sem-muted); }
+:is(sem-tag-attr, .sem-tag-attr):not([data-sem-upgraded])[data-required]:not([data-type]):not([type])::after {
+  content: " (required)"; color: var(--sem-muted); }
+/* component card */
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; margin: 0 0 .35rem; }
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-tag {
+  font-weight: 600; font-family: var(--sem-mono, ui-monospace, monospace); }
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-name { font-weight: 600; }
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-group {
+  font-variant-caps: all-small-caps; color: var(--sem-accent);
+  border: 1px solid color-mix(in srgb, var(--sem-accent) 45%, transparent);
+  border-radius: 999px; padding: .05rem .55rem; }
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-desc { margin: 0 0 .5rem; }
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-table,
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-table {
+  border-collapse: collapse; width: 100%; font-size: .875rem; margin: .5rem 0; }
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-table th,
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-table td,
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-table th,
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-table td {
+  border: 1px solid color-mix(in srgb, var(--sem-border) 70%, transparent);
+  padding: .3rem .55rem; text-align: left; vertical-align: top; }
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-table th,
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-table th {
+  font-variant-caps: all-small-caps; font-weight: 600; color: var(--sem-muted); }
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-cell-required,
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-cell-required {
+  font-variant-caps: all-small-caps; color: var(--sem-muted); }
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-children {
+  display: flex; flex-wrap: wrap; gap: .4rem; align-items: baseline; margin: .35rem 0 0; }
+:is(sem-tag-def, .sem-tag-def)[data-sem-upgraded] .sem-tagdef-child {
+  border: 1px solid color-mix(in srgb, var(--sem-border) 80%, transparent);
+  border-radius: 999px; padding: .05rem .5rem; font-size: .8125rem; }
+/* ── end sem-tag-def ── */
+
+/* ── sem-api-call / sem-api-param — API-call definition cards
+   (spec/schema/sem-api-call.md). Same card pattern as sem-tag-def with
+   `METHOD endpoint` header chips and per-`in` group tables. ── */
+:is(sem-api-call, .sem-api-call) { display: block; margin: 1rem 0; }
+:is(sem-api-call, .sem-api-call):not([data-sem-upgraded]) {
+  padding-left: .9rem; border-left: 3px solid
+  color-mix(in srgb, var(--sem-accent) 35%, transparent); }
+:is(sem-api-call, .sem-api-call):not([data-sem-upgraded])::before {
+  content: attr(data-method) " " attr(data-endpoint); display: block; font-weight: 600;
+  font-family: var(--sem-mono, ui-monospace, monospace); }
+:is(sem-api-call, .sem-api-call):not([data-sem-upgraded])[method]:not([data-method])::before {
+  content: attr(method) " " attr(endpoint); }
+/* JS-off rows: `name :: description` with the `in` group from attr();
+   type/requiredness stay table-tier (the component's full render). */
+:is(sem-api-param, .sem-api-param):not([data-sem-upgraded]) { display: block; margin: .35rem 0; }
+:is(sem-api-param, .sem-api-param):not([data-sem-upgraded])::before {
+  content: attr(data-name) " :: "; font-weight: 600; }
+:is(sem-api-param, .sem-api-param):not([data-sem-upgraded])[name]:not([data-name])::before {
+  content: attr(name) " :: "; font-weight: 600; }
+:is(sem-api-param, .sem-api-param):not([data-sem-upgraded])[data-in]::after {
+  content: " [" attr(data-in) "]"; color: var(--sem-muted); }
+:is(sem-api-param, .sem-api-param):not([data-sem-upgraded])[in]:not([data-in])::after {
+  content: " [" attr(in) "]"; color: var(--sem-muted); }
+/* component card */
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; margin: 0 0 .35rem; }
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-method {
+  font-variant-caps: all-small-caps; font-weight: 700; color: var(--sem-accent);
+  border: 1px solid color-mix(in srgb, var(--sem-accent) 45%, transparent);
+  border-radius: 999px; padding: .05rem .55rem; }
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-endpoint {
+  font-family: var(--sem-mono, ui-monospace, monospace); font-weight: 600; }
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-status {
+  font-variant-caps: all-small-caps; color: var(--sem-muted);
+  border: 1px solid color-mix(in srgb, var(--sem-border) 80%, transparent);
+  border-radius: 999px; padding: .05rem .55rem; }
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-desc { margin: 0 0 .5rem; }
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-group { margin: .35rem 0 0; }
+:is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-group-label {
+  font-variant-caps: all-small-caps; font-weight: 600; color: var(--sem-muted); }
+/* ── end sem-api-call ── */

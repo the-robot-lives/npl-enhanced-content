@@ -47,7 +47,7 @@ listed with its full entry in [SS5](#5-element-entries).
 | **Facts & recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `incorrect-statement`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
 | **Data & tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
 | **Sequences & progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
-| **Definitions & citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference` | Closed key/value assertions and the numbered works the prose cites |
+| **Definitions & citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference`, `sem-tag-def` / `sem-tag-attr`, `sem-api-call` / `sem-api-param` | Closed key/value assertions, the numbered works the prose cites, and the reference-definition cards that document a vocabulary's tags and an API's endpoints |
 | **NPL** | `npl-agent`, `npl-directive`, `npl-section`, `npl-rubric`, `npl-critique`, `npl-declaration`, `npl-example`, `npl-flag` / `npl-flags`, `npl-hormones`, `npl-mindread`, `npl-mode`, `npl-mood`, `npl-poa`, `npl-ref`, `npl-thought`, `npl-vos`, `npl-artifact`, `npl-cot`, `npl-intent` | NPL prompt-engineering elements; loaded by `npl.js` / `npl-lazy.js` on top of the SemText core |
 
 Every element's normative schema lives under `spec/schema/<element>.md`
@@ -289,9 +289,8 @@ both present; authors pick one per fact.
    `data-sem-upgraded` once it has run, for hide rules whose host element
    is deliberately unmarked (a list-view deck's distractors). The zero-JS
    elements (`sem-procedure`, `sem-chronology`, `sem-audiences`) and the
-   handler-only ones (`sem-views`, `sem-reveal`, `sem-progress`) define
-   no custom element: they are `:not(:defined)` in every document, by
-   design. The former two-script handoff (`data-sem-fallback`, cleared on
+   handler-only ones (`sem-views`, `sem-progress`) define no custom
+   element: they are `:not(:defined)` in every document, by design. The former two-script handoff (`data-sem-fallback`, cleared on
    upgrade) is gone with the merged bundle -- one runtime, one marker.
 3. Theme CSS styles **both authoring forms from one rule** --
    `:is(sem-x, .sem-x)` throughout the vocabulary base (D10). Rules
@@ -452,18 +451,27 @@ bundle after promotion. JS-off: the authored children are the document.
 Plain view: `<highlight>` renders `<em>`. Quiz view: occluded (`???`), reveal
 per item, self-check or auto-check.
 
-**sem-reveal** -- Q-A disclosure, `<details>`-backed.
+**sem-tag-def / sem-api-call** -- reference-definition cards: a
+vocabulary tag's or an API endpoint's contract, authored once, rendered
+as a card (native table) for readers and extracted as one structured
+record for machines.
+**Normative: `spec/schema/sem-tag-def.md`, `spec/schema/sem-api-call.md`.**
+
+**sem-reveal** -- Q-A disclosure, hidden until the reader acts.
 **Normative: `spec/schema/sem-reveal.md`.**
 ```html
-<sem-reveal summary="Why not localStorage?" collapsed>
+<sem-reveal summary="Why not localStorage?">
   Tokens in localStorage are readable by any script on the page...
 </sem-reveal>
 ```
 `summary` optional -- first body line (<=60 chars) derives it, by the
 one rule in `src/shared/summary.ts` that render and extraction share;
-`collapsed` starts hidden, otherwise open. The bundle wraps in native
-`<details>/<summary>`; JS-off: fully visible (summary as small-caps
-heading). Non-assertive counterpart to `sem-fact` Q/A shape.
+hidden by default, `open` starts revealed (`collapsed` accepted, no-op).
+Tag form: Lit component (labelled control, `aria-expanded`, blurred
+body until revealed, one-way). Class form wraps in native
+`<details>/<summary>`, closed by default; JS-off: fully visible
+(summary as small-caps heading). Non-assertive counterpart to
+`sem-fact` Q/A shape.
 
 **sem-source** -- a section that flips between rendered and authored markup.
 **Normative: `spec/schema/sem-source.md`.**
@@ -809,7 +817,9 @@ exception: `<incorrect-statement>`'s class form is the unprefixed
 | `<sem-properties>` / `<sem-property key>` | `div.sem-properties` > `div.sem-property[data-key]` |
 | `<sem-properties view-as="glossary">` | `div.sem-properties[data-view-as="glossary"]` > `div.sem-property[id][data-key]`; term anchors `<a href="#id">`, `<dfn>` optional |
 | `<sem-views>` / `<sem-view name active>` | `div.sem-views[id]` > `div.sem-view[data-name]`, `data-active` marker |
-| `<sem-reveal summary>` | `div.sem-reveal[data-summary]`, `collapsed` attr |
+| `<sem-reveal summary>` | `div.sem-reveal[data-summary]`, `open` attr (starts revealed; `collapsed` accepted, no-op) |
+| `<sem-tag-def tag name group children>` / `<sem-tag-attr name type required default allowed>` | `div.sem-tag-def[data-tag][data-name][data-group][data-children]` > `div.sem-tag-attr[data-name][data-type][data-required][data-default][data-allowed]` |
+| `<sem-api-call name method endpoint status>` / `<sem-api-param name in type required default allowed>` | `div.sem-api-call[data-name][data-method][data-endpoint][data-status]` > `div.sem-api-param[data-name][data-in][data-type][data-required][data-default][data-allowed]` |
 | `<sem-progress value label>` | `div.sem-progress[data-value][data-label]` |
 | `<sem-chronology view-as>` / `<sem-event when until status>` | `div.sem-chronology[data-view-as]` > `div.sem-event[data-when][data-until][data-status]` (+ `<time datetime>`) |
 | `<sem-code lang filename mark wrap controls>` > `<pre><code>` | `div.sem-code[data-lang][data-filename][data-mark][data-controls]` > `<pre><code>` |

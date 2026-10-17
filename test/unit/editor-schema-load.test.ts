@@ -31,12 +31,15 @@ describe('editor schema loader', () => {
     expect(loadSchema().specVersion.length).toBeGreaterThan(0);
   });
 
-  it('carries the 49 normative tags; the advisory count agrees', () => {
+  it('carries the 54 normative tags; the advisory count agrees', () => {
     const schema = loadSchema();
-    expect(schema.tags.length).toBe(49);
+    // 54 = the v0.7.2 index (49 + sem-browser) + the round-2 reference
+    // definitions (sem-tag-def / sem-tag-attr / sem-api-call / sem-api-param).
+    expect(schema.tags.length).toBe(54);
     // tagCount is advisory (EDITOR.md §3.1) — assert agreement, never rely on it
-    // Lookup-only seeds: sem-chat + sem-enhanced-document + agent + sem-browser
-    expect(schema.byName.size).toBe(schema.tags.length + 4);
+    // Lookup-only seeds: sem-chat + sem-enhanced-document + agent. (sem-browser
+    // was a seed until the v0.7.2 artifact regen promoted it to a tag.)
+    expect(schema.byName.size).toBe(schema.tags.length + 3);
   });
 
   it('normalizes every attribute: boolean required, array allowedValues', () => {

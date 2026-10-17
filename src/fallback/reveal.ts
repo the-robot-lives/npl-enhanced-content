@@ -3,8 +3,13 @@
  *
  * Native disclosure rather than a hand-rolled toggle: it is keyboard- and
  * screen-reader-correct for free, and find-in-page still reaches closed
- * content in browsers that support it. `collapsed` on the source element
- * means "start closed"; its absence means `open`.
+ * content in browsers that support it. Round-2 contract: the reveal is
+ * HIDDEN until the reader acts — the default is closed; `open` on the
+ * source element opts into starting revealed; `collapsed` is accepted
+ * for back-compat and is a no-op (closed is the default either way).
+ *
+ * Skips anything the Lit component already claimed (`data-sem-upgraded`
+ * — the base class sets it at connect, before this scan runs).
  *
  * The derived `<summary>` (no `data-summary`) is `shared/summary`'s rule —
  * the same function extraction uses — so the label a reader sees is the
@@ -15,9 +20,9 @@ import { deriveSummary, normalize } from '../shared/summary.js';
 import { sel } from '../shared/sel.js';
 
 export function enhanceReveal(scope: ParentNode): void {
-  scope.querySelectorAll(sel('reveal')).forEach((r) => {
+  scope.querySelectorAll(sel('reveal') + ':not([data-sem-upgraded])').forEach((r) => {
     const d = document.createElement('details');
-    if (!r.hasAttribute('collapsed')) d.setAttribute('open', '');
+    if (r.hasAttribute('open')) d.setAttribute('open', '');
     const s = document.createElement('summary');
     s.textContent = r.getAttribute('data-summary') || deriveSummary(normalize(r.textContent));
     d.appendChild(s);
