@@ -45,7 +45,7 @@ sem-enhanced-document, sem-agent, sem-audiences, sem-note, sem-facts, sem-fact,
 sem-details, sem-detail, sem-procedure, sem-step, sem-properties, sem-property,
 sem-views, sem-view, sem-reveal, sem-progress, sem-quota-meter,
 sem-chronology, sem-event, sem-code, sem-references, sem-reference, sem-reader, sem-table, sem-source, sem-md,
-sem-data-visualizer, sem-data-source,
+sem-data-visualizer, sem-data-source, sem-tldr,
 sem-agent > :is(name, bio, instructions), sem-fact > :is(statement, conclusion, incorrect-statement) { display: block; }
 /* The audience fallback hides with the native attribute; keep it winning
    over the block rule above for element forms — and in every scope: doc
@@ -1489,6 +1489,47 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
   overflow-x: auto; max-width: 100%; }
 /* ── end npl-section ── */
 
+/* ============================================================
+   semext-* — SemText extension components (src/lit/semext/;
+   recipe: that barrel's header). Introduced EMPTY by the
+   epic.semext-components walking skeleton: the namespace machinery
+   (bundle, lazy loader, manifest, contract scaffolding) ships before
+   the first component.
+
+   The same box contract the sem-* enumeration above gives every sem-*
+   tag: custom elements are inline by default, the vocabulary is
+   block-level, so each tag gets its box before any definition —
+   `:not(:defined)` pre-upgrade, and for any element that never defines
+   one, alike. The class-namespace alias follows conventions Appendix A
+   (`:is(semext-x, .semext-x)`, one rule per authoring form).
+
+   ONE LINE PER TAG, ALPHABETICAL. A new component inserts its own line
+   here — nothing shared is ever edited, so parallel component branches
+   merge clean. Do NOT convert this into one comma list.
+   ============================================================ */
+/* first component inserts its display line here, e.g.
+   semext-canvas, .semext-canvas { display: block; } */
+
+/* ============================================================
+   agent-kit-* — agent-kit components (src/lit/agent-kit/; recipe: that
+   barrel's header). Introduced EMPTY by the epic.semext-components
+   walking skeleton: the namespace machinery (bundle, lazy loader,
+   manifest, contract scaffolding) ships before the first component.
+
+   The same box contract the sem-* enumeration above gives every sem-*
+   tag: custom elements are inline by default, the vocabulary is
+   block-level, so each tag gets its box before any definition —
+   `:not(:defined)` pre-upgrade, and for any element that never defines
+   one, alike. The class-namespace alias follows conventions Appendix A
+   (`:is(agent-kit-x, .agent-kit-x)`, one rule per authoring form).
+
+   ONE LINE PER TAG, ALPHABETICAL. A new component inserts its own line
+   here — nothing shared is ever edited, so parallel component branches
+   merge clean. Do NOT convert this into one comma list.
+   ============================================================ */
+/* first component inserts its display line here, e.g.
+   agent-kit-transcript, .agent-kit-transcript { display: block; } */
+
 /* ── sem-code ── */
 /* JS-off the language badge is a caption too (schema/sem-code.md: "the
    filename renders as a caption through ::before …; the language badge
@@ -1638,6 +1679,31 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
 /* the expanded body keeps its focus ring: programmatic focus after the
    teaser click is the keyboard user's position marker — do not suppress */
 /* ── end sem-note ── */
+
+/* ── sem-tldr ──
+   Walking-skeleton element (spec/schema/sem-tldr.md): the component is a
+   no-logic display stub — authored children render as-is — and the
+   "TL;DR" label is pure CSS chrome. ::before content sits outside
+   textContent, so extraction (conventions §8 invariant) is byte-identical
+   with the script on or off, and the same label draws in the .nojs
+   artifact. Box comes from the block-level enumeration above. */
+:is(sem-tldr, .sem-tldr) {
+  border-left: 3px solid var(--sem-accent);
+  background: color-mix(in srgb, var(--sem-accent) 8%, transparent);
+  border-radius: 0 8px 8px 0;
+  padding: 0.5rem 0.9rem 0.6rem;
+  margin: 0.6rem 0;
+}
+:is(sem-tldr, .sem-tldr)::before {
+  content: "TL;DR";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--sem-accent);
+  margin-bottom: 0.15rem;
+}
+/* ── end sem-tldr ── */
 
 /* ── sem-reader ── */
 /* Keyboard focus (house standard). The chrome buttons/selects and the

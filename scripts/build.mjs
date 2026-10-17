@@ -132,6 +132,41 @@ const targets = [
     required: true,
   },
   {
+    // The semext-* namespace, whole, for semext documents that skip chunk
+    // loading. Same relationship to core as npl.js: src/index.ts imports
+    // nothing from src/lit/semext/, and the semext barrel is src/semext.ts's
+    // only input. Introduced empty (2026-10-18, epic.semext-components
+    // walking skeleton): the namespace carries machinery, no components
+    // yet, so the budget is REPORT-ONLY until a real component lands and
+    // the number means something — then record it in ROADMAP "Size
+    // budgets" and drop the report-only flag.
+    name: 'semext.js',
+    entry: 'src/semext.ts',
+    global: 'SemTextExt',
+    budgetKb: 48,
+    // Report-only until measured against a real component set.
+    budgetReportOnly: true,
+    required: true,
+  },
+  {
+    // The agent-kit-* namespace, whole, for agent-kit documents that skip
+    // chunk loading. Same relationship to core as npl.js: src/index.ts
+    // imports nothing from src/lit/agent-kit/, and the agent-kit barrel is
+    // src/agent-kit.ts's only input. Introduced empty (2026-10-18,
+    // epic.semext-components walking skeleton): report-only until a real
+    // component lands — then record it in ROADMAP "Size budgets" and drop
+    // the report-only flag. Budgeted above semext on the expectation that
+    // agent-kit components (transcripts, tool panels) out-mass extension
+    // chrome.
+    name: 'agent-kit.js',
+    entry: 'src/agent-kit.ts',
+    global: 'AgentKit',
+    budgetKb: 64,
+    // Report-only until measured against a real component set.
+    budgetReportOnly: true,
+    required: true,
+  },
+  {
     // Agent toolkit (filter/search/outline/expand/write/edit). Consumed by
     // bin/semtext-agent.mjs and `semtext/agent`; required: false so the
     // CLI-only dependency never blocks the browser artifacts' budget.
@@ -406,6 +441,39 @@ const LAZY_TARGETS = [
     fullBundle: 'npl.js',
     tags: 'npl-*',
   },
+  {
+    id: 'semext-lazy',
+    entry: 'src/lazy/semext.ts',
+    litDir: resolve(root, 'src/lit/semext'),
+    fileFilter: (f) => f.startsWith('semext-') && f.endsWith('.ts'),
+    // anchored: doc-comment bullets also spell `defineSemext('semext-x', ...)` — only real top-level calls register
+    registerRe: /^\s*defineSemext\(\s*'([a-z][a-z0-9-]*)'/gm,
+    virtualId: 'virtual:semext-manifest',
+    chunkDir: 'semext-chunks',
+    budgetKb: 8,
+    fullBundle: 'semext.js',
+    tags: 'semext-*',
+    // Introduced empty (walking skeleton): the namespace ships no
+    // components yet, so the manifest scan legitimately finds zero
+    // register calls. allowEmpty skips the hard fail until the first
+    // component lands; drop the flag then.
+    allowEmpty: true,
+  },
+  {
+    id: 'agent-kit-lazy',
+    entry: 'src/lazy/agent-kit.ts',
+    litDir: resolve(root, 'src/lit/agent-kit'),
+    fileFilter: (f) => f.startsWith('agent-kit-') && f.endsWith('.ts'),
+    // anchored: doc-comment bullets also spell `defineAkit('agent-kit-x', ...)` — only real top-level calls register
+    registerRe: /^\s*defineAkit\(\s*'([a-z][a-z0-9-]*)'/gm,
+    virtualId: 'virtual:agent-kit-manifest',
+    chunkDir: 'agent-kit-chunks',
+    budgetKb: 8,
+    fullBundle: 'agent-kit.js',
+    tags: 'agent-kit-*',
+    // Introduced empty (walking skeleton) — see the semext-lazy note.
+    allowEmpty: true,
+  },
 ];
 
 for (const lazy of LAZY_TARGETS) {
@@ -433,7 +501,7 @@ for (const lazy of LAZY_TARGETS) {
     }
   }
 
-  if (Object.keys(lazyManifest).length === 0) {
+  if (Object.keys(lazyManifest).length === 0 && !lazy.allowEmpty) {
     console.error(`✗ ${lazy.id} build: no register calls found in ${lazy.litDir}`);
     process.exit(1);
   }
@@ -505,9 +573,10 @@ for (const lazy of LAZY_TARGETS) {
   const budget = lazy.budgetKb * 1024;
   if (bytes > budget) overBudget = true;
   results.push({ name: `${lazy.id}.js`, bytes, gzip, budget, over: bytes > budget, ok: bytes <= budget, reportOnly: false });
-  const shared = readdirSync(resolve(distDir, lazy.chunkDir)).filter(
-    (f) => !Object.values(lazyManifest).includes(`${lazy.chunkDir}/${f}`),
-  );
+  const chunkDirPath = resolve(distDir, lazy.chunkDir);
+  const shared = existsSync(chunkDirPath)
+    ? readdirSync(chunkDirPath).filter((f) => !Object.values(lazyManifest).includes(`${lazy.chunkDir}/${f}`))
+    : [];
   console.log(
     `  ${lazy.id}: ${Object.keys(lazyManifest).length} component chunks ` +
       `+ ${shared.length} shared chunk(s), manifest inlined`,

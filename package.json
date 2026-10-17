@@ -9,8 +9,12 @@
   "exports": {
     "./lit": "./dist/semtext.js",
     "./npl": "./dist/npl.js",
+    "./semext": "./dist/semext.js",
+    "./agent-kit": "./dist/agent-kit.js",
     "./lazy": "./dist/semtext-lazy.js",
     "./npl-lazy": "./dist/npl-lazy.js",
+    "./semext-lazy": "./dist/semext-lazy.js",
+    "./agent-kit-lazy": "./dist/agent-kit-lazy.js",
     "./themes/*": "./themes/*",
     "./agent": "./dist/semtext-agent.js"
   },

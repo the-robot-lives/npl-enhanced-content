@@ -184,7 +184,39 @@
       "dualSpellingSeverity": "error"
     },
     "unknownAttributeSeverity": "warning",
-    "unknownElementSeverity": "error"
+    "unknownElementSeverity": "error",
+    "defPresets": {
+      "description": "Reusable $def fragments. A $def's `extends` (one preset name or an array) merges the preset UNDER the def's own keys — local attributes win, children/childRules concatenate preset-first — so a contract's $def stays a few lines. Consumers: src/validate/validate.js loadSchema (resolution happens there; this block is documentation + the source of truth for the preset shapes).",
+      "container": {
+        "description": "A block container that groups authored children: `label` names the group (rendered as generated chrome), `open` keeps a collapsible container expanded. Children are element-specific — declare them locally.",
+        "attributes": {
+          "label": { "type": "token" },
+          "open": { "type": "flag" }
+        }
+      },
+      "reference": {
+        "description": "A pointer to an upstream record: the org/project/key/id quartet identifies it; nothing is fetched — the element renders whatever its contract says the pointer means.",
+        "attributes": {
+          "org": { "type": "token" },
+          "project": { "type": "token" },
+          "key": { "type": "token" },
+          "id": { "type": "token" }
+        }
+      },
+      "cachedEmbed": {
+        "description": "A cached embed of upstream content: the authored inner content IS the record (extraction reads it, never the network). `endpoint` names the refresh source, `fixtures` (optional) marks a fixture-backed dev source, `last-refreshed` stamps the last sync, `status` is the authored freshness token consumers may rely on with JS off (conventions §4: no script reads status — its consumers are no-script CSS rules).",
+        "attributes": {
+          "org": { "type": "token" },
+          "project": { "type": "token" },
+          "key": { "type": "token" },
+          "id": { "type": "token" },
+          "endpoint": { "type": "token" },
+          "fixtures": { "type": "token" },
+          "last-refreshed": { "type": "token" },
+          "status": { "type": "token", "values": ["fresh", "stale", "error"] }
+        }
+      }
+    }
   },
   "$defs": {
     "document": {
@@ -286,6 +318,11 @@
           ]
         }
       }
+    },
+    "sem-tldr": {
+      "source": "spec/schema/sem-tldr.md",
+      "record": true,
+      "attributes": {}
     },
     "sem-facts": {
       "source": "spec/schema/sem-facts.md",

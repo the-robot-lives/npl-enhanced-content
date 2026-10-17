@@ -1,0 +1,61 @@
+/**
+ * Agent-kit components — the `agent-kit-*` namespace barrel
+ * (src/lit/agent-kit/).
+ *
+ * ADDING A COMPONENT — the whole recipe, designed so parallel authors
+ * never edit the same line:
+ *
+ *   1. `agent-kit-<name>.ts` (this directory): `export class Akit<Name>
+ *      extends SemElement` — light DOM via the base (no shadow root, no
+ *      `static styles`), parameters as `static properties` mirrored to
+ *      `data-*` in `updated()` through afterParse — ending in
+ *      `defineAkit('agent-kit-<name>', Akit<Name>);`
+ *   2. Below, in alphabetical order, the two-line pair (export keeps the
+ *      name on the AgentKit global; the import keeps the side effect
+ *      under tree-shaking) — your lines, nothing shared:
+ *          export { Akit<Name> } from './agent-kit-<name>.js';
+ *          import './agent-kit-<name>.js';
+ *   3. themes/_vocabulary.css — in the marked agent-kit section, add ONE
+ *      line
+ *          agent-kit-<name>, .agent-kit-<name> { display: block; }
+ *      alphabetically among the per-tag lines (insert, never rewrite).
+ *   4. spec/schema/agent-kit/<name>.md — copy TEMPLATE.md; one file per
+ *      component, never edit a shared schema file.
+ *   5. test/unit/agent-kit-<name>.test.ts — same harness as
+ *      test/unit/npl-foundation.test.ts (happy-dom pragma).
+ *
+ * src/agent-kit.ts imports this barrel ONCE (`export * from
+ * './lit/agent-kit/index.js'`); no component ever touches it.
+ *
+ * SCHEMA ENTRY FORMAT (spec/schema/agent-kit/TEMPLATE.md, mirroring the
+ * sem-* prose contracts in spec/schema/*.md — prose is normative: changes
+ * there precede spec changes precede code):
+ *
+ *   # Schema — `agent-kit-<name>`      H1, the tag
+ *   ## Authoring form                  HTML snippet + attribute catalog:
+ *                                      one `-` bullet per parameter —
+ *                                      `<name>`: `<type>` — `<default>`;
+ *                                      `id`, `kind`, `tags` ride the global
+ *                                      catalog and need no bullet
+ *   ## Reference attributes            the org/project/key/id quartet when
+ *                                      the element references an upstream
+ *                                      record (see TEMPLATE.md)
+ *   ## Cached content                  authored inner content IS the record;
+ *                                      refresh markers per TEMPLATE.md
+ *   ## Rendered form                   enhanced vs JS-off (JS-off is always:
+ *                                      block box from the vocabulary
+ *                                      agent-kit section, nothing hidden
+ *                                      or generated)
+ *   ## Events                          optional — delete if none; one bullet
+ *                                      per `agent-kit:<event>` with its
+ *                                      `detail`
+ */
+
+/* Components — alphabetical; one two-line pair each, nothing shared.
+ * The namespace is intentionally empty at introduction: the walking
+ * skeleton ships the bundle/loader/manifest/contract machinery only.
+ * Drop the first component's two-line pair right below this comment. */
+
+/* Namespace helpers (src/lit/agent-kit/shared.ts). */
+
+export { defineAkit, akitParam, akitEmit } from './shared.js';

@@ -88,6 +88,10 @@ import './lit/sem-source.js';
 /* R/W2.2 Markdown block — thin wrapper over src/md/* */
 export { SemMd } from './lit/sem-md.js';
 import './lit/sem-md.js';
+/* sem-tldr — the namespace walking skeleton (spec/schema/sem-tldr.md):
+ * a no-logic display stub in its own module; ships in the core bundle. */
+export { SemTldr } from './lit/sem-tldr.js';
+import './lit/sem-tldr.js';
 /* sem-browser — chrome-like document window (lazy-first: the same
  * element ships as chunks/sem-browser.js for semtext-lazy.js pages;
  * src/lit/sem-browser.ts is the registration the lazy scanner keys on). */
