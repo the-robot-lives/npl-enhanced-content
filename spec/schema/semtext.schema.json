@@ -1459,6 +1459,111 @@
         "div.agent-kit-persona-metadata",
         "span.agent-kit-persona-metadata"
       ]
+    },
+    "agent-kit-acceptance-criteria": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-criterion"
+      ]
+    },
+    "agent-kit-custom-assert": {
+      "source": "spec/schema/agent-kit/custom-assert.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-assert-expr",
+        "agent-kit-assert-expect"
+      ]
+    },
+    "agent-kit-criterion": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+        "agent-kit-acceptance-criteria"
+      ],
+      "children": [
+        "agent-kit-given",
+        "agent-kit-when",
+        "agent-kit-then"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-given",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-when",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-then",
+          "severity": "error"
+        }
+      ],
+      "classAliases": [
+        "div.agent-kit-criterion",
+        "span.agent-kit-criterion"
+      ]
+    },
+    "agent-kit-given": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-criterion"
+      ],
+      "classAliases": [
+        "div.agent-kit-given",
+        "span.agent-kit-given"
+      ]
+    },
+    "agent-kit-when": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-criterion"
+      ],
+      "classAliases": [
+        "div.agent-kit-when",
+        "span.agent-kit-when"
+      ]
+    },
+    "agent-kit-then": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-criterion"
+      ],
+      "classAliases": [
+        "div.agent-kit-then",
+        "span.agent-kit-then"
+      ]
+    },
+    "agent-kit-assert-expr": {
+      "source": "spec/schema/agent-kit/custom-assert.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-custom-assert"
+      ],
+      "classAliases": [
+        "div.agent-kit-assert-expr",
+        "span.agent-kit-assert-expr"
+      ]
+    },
+    "agent-kit-assert-expect": {
+      "source": "spec/schema/agent-kit/custom-assert.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-custom-assert"
+      ],
+      "classAliases": [
+        "div.agent-kit-assert-expect",
+        "span.agent-kit-assert-expect"
+      ]
     }
   }
 }

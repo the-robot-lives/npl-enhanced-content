@@ -1527,8 +1527,10 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
    here — nothing shared is ever edited, so parallel component branches
    merge clean. Do NOT convert this into one comma list.
    ============================================================ */
+agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria { display: block; }
 agent-kit-agent-persona, .agent-kit-agent-persona { display: block; }
 agent-kit-bug, .agent-kit-bug { display: block; }
+agent-kit-custom-assert, .agent-kit-custom-assert { display: block; }
 agent-kit-epic, .agent-kit-epic { display: block; }
 agent-kit-issue, .agent-kit-issue { display: block; }
 agent-kit-sub-task, .agent-kit-sub-task { display: block; }
@@ -2423,3 +2425,90 @@ agent-kit-ticket-ref[data-sem-upgraded], .agent-kit-ticket-ref[data-sem-upgraded
   font-weight: 600;
 }
 /* ── end agent-kit personas ── */
+
+/* ── agent-kit structured lists (acceptance criteria, custom asserts) ─
+   agent-kit-acceptance-criteria: authored <agent-kit-criterion> parts,
+   each a given/when/then triple. agent-kit-custom-assert: authored
+   expr/expect pairs. Display-only renderers (spec/schema/agent-kit/
+   acceptance-criteria.md, custom-assert.md); the only chrome is the
+   header chip. Tokens only; dual spellings throughout.
+   ============================================================ */
+
+:is(agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria),
+:is(agent-kit-custom-assert, .agent-kit-custom-assert) {
+  box-sizing: border-box;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--sem-surface, #ffffff);
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 8px;
+  color: var(--sem-fg, #1e293b);
+}
+
+/* criteria: each criterion reads as a labelled g/w/t row */
+:is(agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria) > :is(agent-kit-criterion, .agent-kit-criterion) {
+  display: block;
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--sem-bg, #fafafa);
+}
+:is(agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria) :is(agent-kit-given, .agent-kit-given),
+:is(agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria) :is(agent-kit-when, .agent-kit-when),
+:is(agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria) :is(agent-kit-then, .agent-kit-then) {
+  display: block;
+  margin: 0.15rem 0;
+}
+:is(agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria) :is(agent-kit-given, .agent-kit-given)::before {
+  content: 'Given ';
+  color: var(--sem-muted, #64748b);
+  font-weight: 600;
+}
+:is(agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria) :is(agent-kit-when, .agent-kit-when)::before {
+  content: 'When ';
+  color: var(--sem-muted, #64748b);
+  font-weight: 600;
+}
+:is(agent-kit-acceptance-criteria, .agent-kit-acceptance-criteria) :is(agent-kit-then, .agent-kit-then)::before {
+  content: 'Then ';
+  color: var(--sem-muted, #64748b);
+  font-weight: 600;
+}
+
+/* asserts: expr rows carry the expression; expect rows the expectation */
+:is(agent-kit-custom-assert, .agent-kit-custom-assert) > :is(agent-kit-assert-expr, .agent-kit-assert-expr) {
+  display: block;
+  margin: 0.5rem 0 0.1rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  background: var(--sem-bg, #fafafa);
+  border: 1px solid var(--sem-border, #e2e8f0);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+:is(agent-kit-custom-assert, .agent-kit-custom-assert) > :is(agent-kit-assert-expect, .agent-kit-assert-expect) {
+  display: block;
+  margin: 0 0 0.4rem 0.9rem;
+  color: var(--sem-muted, #64748b);
+}
+:is(agent-kit-custom-assert, .agent-kit-custom-assert) > :is(agent-kit-assert-expect, .agent-kit-assert-expect)::before {
+  content: '→ expect: ';
+  color: var(--sem-accent, #2563eb);
+  font-weight: 600;
+}
+
+/* chrome header chips (count labels) */
+.agent-kit-acceptance-chrome .agent-kit-acceptance-chip,
+.agent-kit-assert-chrome .agent-kit-assert-chip {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-muted, #64748b);
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+}
+/* ── end agent-kit structured lists ── */

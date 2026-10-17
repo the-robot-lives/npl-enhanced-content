@@ -31,7 +31,10 @@ const PERSONA_TYPES = [
   'agent-kit-agent-persona',
 ];
 
-const ALL_TYPES = [...TICKET_TYPES, ...PERSONA_TYPES];
+// Document order of the structured-lists section (below the personas).
+const LIST_TYPES = ['agent-kit-acceptance-criteria', 'agent-kit-custom-assert'];
+
+const ALL_TYPES = [...TICKET_TYPES, ...PERSONA_TYPES, ...LIST_TYPES];
 
 describe('agent-kit bundle — tickets (sub-batch 1)', () => {
   it('INVARIANT: JS-off extraction deep-equals JS-on extraction', () => {
@@ -175,5 +178,43 @@ describe('agent-kit bundle — personas (sub-batch 2)', () => {
       cy.get('.agent-kit-persona-meta').should('not.exist');
       cy.get('agent-kit-user-persona agent-kit-persona-name').should('have.text', 'Ada Lovelace');
     });
+  });
+});
+
+describe('agent-kit bundle — structured lists (sub-batch 3)', () => {
+  it('criteria and asserts mint plain records after the personas', () => {
+    cy.visit('/demo/agent-kit.html');
+    extract().then((records) => {
+      expect(records.map((r) => r.type)).to.deep.equal(ALL_TYPES);
+      const criteria = records[TICKET_TYPES.length + PERSONA_TYPES.length];
+      expect(criteria.kind).to.equal('criteria');
+      // the Given/When/Then labels are CSS ::before content — presentational,
+      // never part of the extracted record
+      expect(criteria.text).to.contain('a hand-authored XHTML document');
+      expect(criteria.text).to.contain('the two record sets deep-equal');
+      const asserts = records[TICKET_TYPES.length + PERSONA_TYPES.length + 1];
+      expect(asserts.kind).to.equal('asserts');
+      expect(asserts.text).to.contain('extractRecords(doc)');
+      expect(asserts.text).to.contain('deep-equals the JS-off record set');
+      // chrome text never leaks: the count chips
+      expect(criteria.text).not.to.contain('Acceptance criteria');
+      expect(criteria.text).not.to.contain('· 2');
+      expect(asserts.text).not.to.contain('Custom asserts');
+    });
+  });
+
+  it('count chip renders under the upgrade claim, absent JS-off', () => {
+    cy.visit('/demo/agent-kit.html');
+    cy.get('agent-kit-acceptance-criteria .agent-kit-acceptance-chip')
+      .should('have.attr', 'data-criteria-count', '2')
+      .and('contain', 'Acceptance criteria');
+    cy.get('agent-kit-custom-assert .agent-kit-assert-chip')
+      .should('have.attr', 'data-assert-count', '2')
+      .and('contain', 'Custom asserts');
+    cy.get('agent-kit-acceptance-criteria agent-kit-criterion').should('have.length', 2);
+    cy.visit('/demo/agent-kit.nojs.html');
+    cy.get('.agent-kit-acceptance-chip').should('not.exist');
+    cy.get('.agent-kit-assert-chip').should('not.exist');
+    cy.get('agent-kit-acceptance-criteria agent-kit-then').should('have.length', 2);
   });
 });

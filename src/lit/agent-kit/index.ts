@@ -56,10 +56,14 @@
  * (chrome.ts) carry no registrations of their own — only the per-tag
  * files below do. */
 
+export { AkitAcceptanceCriteria } from './agent-kit-acceptance-criteria.js';
+import './agent-kit-acceptance-criteria.js';
 export { AkitAgentPersona } from './agent-kit-agent-persona.js';
 import './agent-kit-agent-persona.js';
 export { AkitBug } from './agent-kit-bug.js';
 import './agent-kit-bug.js';
+export { AkitCustomAssert } from './agent-kit-custom-assert.js';
+import './agent-kit-custom-assert.js';
 export { AkitEpic } from './agent-kit-epic.js';
 import './agent-kit-epic.js';
 export { AkitIssue } from './agent-kit-issue.js';

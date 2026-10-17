@@ -46,12 +46,110 @@
     "spec/schema/npl/npl-section.md",
     "spec/schema/npl/npl-thought.md",
     "spec/schema/npl/npl-vos.md",
+    "spec/schema/agent-kit/acceptance-criteria.md",
+    "spec/schema/agent-kit/custom-assert.md",
     "spec/schema/agent-kit/personas.md",
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 64,
+  "tagCount": 66,
   "tags": [
+    {
+      "name": "agent-kit-acceptance-criteria",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "summary": "The structured given/when/then list renderer; the authored criteria are the record.",
+      "description": "The structured given/when/then list renderer; the authored criteria are the record. One contract for the acceptance-criteria renderer: a display stub over the cached-embed base (`src/lit/agent-kit/agent-kit-acceptance-criteria.ts`, `AkitAcceptanceCriteria`). The authored `<agent-kit-criterion>` parts — each a given/when/then triple — are the record; the renderer adds only a chrome header chip that counts them. Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-acceptance.test.ts`.",
+      "attributes": [
+        {
+          "name": "fixtures",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin JSON path naming a cached snapshot for enrichment (cached-embed preset; a fixture source vetoes any `endpoint`)."
+        },
+        {
+          "name": "endpoint",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin API path; NEVER fetched by this element (Live-fetch policy below) — declared for the authoring pipeline only."
+        },
+        {
+          "name": "last-refreshed",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "authored ISO-8601 stamp of the most recent sync (cached-embed preset)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "fresh",
+            "stale",
+            "error"
+          ],
+          "default": null,
+          "description": "one of `fresh`, `stale`, `error` (cached-embed preset)."
+        },
+        {
+          "name": "org",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "`project`, `key`: `string` — the reference quartet (schema `reference` preset) — see Reference attributes below."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "agent-kit-criterion",
+          "note": "`<agent-kit-criterion>` — one acceptance criterion; author at least one (the count is displayed by the chrome chip, never enforced by a childRule). - `<agent-kit-given>` — the precondition; exactly one per criterion. - `<agent-kit-when>` — the action; exactly one per criterion. - `<agent-kit-then>` — the observable outcome; exactly one per criterion."
+        },
+        {
+          "name": "agent-kit-given",
+          "note": "`<agent-kit-criterion>` — one acceptance criterion; author at least one (the count is displayed by the chrome chip, never enforced by a childRule). - `<agent-kit-given>` — the precondition; exactly one per criterion. - `<agent-kit-when>` — the action; exactly one per criterion. - `<agent-kit-then>` — the observable outcome; exactly one per criterion."
+        },
+        {
+          "name": "agent-kit-when",
+          "note": "`<agent-kit-criterion>` — one acceptance criterion; author at least one (the count is displayed by the chrome chip, never enforced by a childRule). - `<agent-kit-given>` — the precondition; exactly one per criterion. - `<agent-kit-when>` — the action; exactly one per criterion. - `<agent-kit-then>` — the observable outcome; exactly one per criterion."
+        },
+        {
+          "name": "agent-kit-then",
+          "note": "`<agent-kit-criterion>` — one acceptance criterion; author at least one (the count is displayed by the chrome chip, never enforced by a childRule). - `<agent-kit-given>` — the precondition; exactly one per criterion. - `<agent-kit-when>` — the action; exactly one per criterion. - `<agent-kit-then>` — the observable outcome; exactly one per criterion."
+        }
+      ],
+      "example": "<agent-kit-acceptance-criteria org=\"acme\" project=\"semtext\" key=\"crit-extract\">\n  <agent-kit-criterion>\n    <agent-kit-given>a hand-authored XHTML document</agent-kit-given>\n    <agent-kit-when>the extractor runs with JavaScript on or off</agent-kit-when>\n    <agent-kit-then>the two record sets deep-equal</agent-kit-then>\n  </agent-kit-criterion>\n</agent-kit-acceptance-criteria>"
+    },
     {
       "name": "agent-kit-agent-persona",
       "family": "agent-kit",
@@ -90,6 +188,94 @@
       "children": [],
       "example": "<agent-kit-issue org=\"acme\" project=\"semtext\" key=\"AKIT-001\"\n                 uuid=\"7c1e...\" state=\"open\" labels=\"auth,extract\">\n  <agent-kit-title>Extractor drops class-form parts</agent-kit-title>\n  <agent-kit-description>\n    `extractRecords` misses `.agent-kit-title` aliases when the class\n    appears on a wrapper element.\n  </agent-kit-description>\n  <agent-kit-last-updated>2026-10-17T09:24:00Z</agent-kit-last-updated>\n</agent-kit-issue>",
       "optionsIn": "agent-kit-issue"
+    },
+    {
+      "name": "agent-kit-custom-assert",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/custom-assert.md",
+      "summary": "The structured expr/expect list renderer; the authored asserts are the record.",
+      "description": "The structured expr/expect list renderer; the authored asserts are the record. One contract for the custom-assert renderer: a display stub over the cached-embed base (`src/lit/agent-kit/agent-kit-custom-assert.ts`, `AkitCustomAssert`). The authored `<agent-kit-assert-expr>` / `<agent-kit-assert-expect>` pairs are the record; the renderer adds only a chrome header chip that counts them. Mirrors the sem-* prose contracts in `spec/schema/*.md`: prose is normative — changes here precede spec changes precede code, and the file is the BDD source of truth for `test/unit/agent-kit-acceptance.test.ts`.",
+      "attributes": [
+        {
+          "name": "fixtures",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin JSON path naming a cached snapshot for enrichment (cached-embed preset; a fixture source vetoes any `endpoint`)."
+        },
+        {
+          "name": "endpoint",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional same-origin API path; NEVER fetched by this element (Live-fetch policy below) — declared for the authoring pipeline only."
+        },
+        {
+          "name": "last-refreshed",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "authored ISO-8601 stamp of the most recent sync (cached-embed preset)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "fresh",
+            "stale",
+            "error"
+          ],
+          "default": null,
+          "description": "one of `fresh`, `stale`, `error` (cached-embed preset)."
+        },
+        {
+          "name": "org",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "`project`, `key`: `string` — the reference quartet (schema `reference` preset) — see Reference attributes below."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "agent-kit-assert-expr",
+          "note": "`<agent-kit-assert-expr>` — the expression under test; at least one."
+        },
+        {
+          "name": "agent-kit-assert-expect",
+          "note": "`<agent-kit-assert-expect>` — the expectation for the preceding expression; at least one."
+        }
+      ],
+      "example": "<agent-kit-custom-assert org=\"acme\" project=\"semtext\" key=\"assert-extract\">\n  <agent-kit-assert-expr>extractRecords(doc)</agent-kit-assert-expr>\n  <agent-kit-assert-expect>deep-equals the JS-off set</agent-kit-assert-expect>\n  <agent-kit-assert-expr>norm(text)</agent-kit-assert-expr>\n  <agent-kit-assert-expect>collapses authored whitespace only</agent-kit-assert-expect>\n</agent-kit-custom-assert>"
     },
     {
       "name": "agent-kit-epic",

@@ -146,6 +146,30 @@ call_sign: loom</agent-kit-persona-metadata>
     </agent-kit-persona-bio>
   </agent-kit-agent-persona>
 
+  <h2>Acceptance criteria &amp; custom asserts</h2>
+  <p>Structured list renderers — the authored rows are the record; the
+  only chrome is a count chip.</p>
+
+  <agent-kit-acceptance-criteria kind="criteria" tags="extract" org="acme" project="semtext" key="crit-extract">
+    <agent-kit-criterion>
+      <agent-kit-given>a hand-authored XHTML document</agent-kit-given>
+      <agent-kit-when>the extractor runs with JavaScript on or off</agent-kit-when>
+      <agent-kit-then>the two record sets deep-equal</agent-kit-then>
+    </agent-kit-criterion>
+    <agent-kit-criterion>
+      <agent-kit-given>a card with fabricated chrome</agent-kit-given>
+      <agent-kit-when>extraction collects record text</agent-kit-when>
+      <agent-kit-then>no chrome string appears in the record</agent-kit-then>
+    </agent-kit-criterion>
+  </agent-kit-acceptance-criteria>
+
+  <agent-kit-custom-assert kind="asserts" tags="extract" org="acme" project="semtext" key="assert-extract">
+    <agent-kit-assert-expr>extractRecords(doc)</agent-kit-assert-expr>
+    <agent-kit-assert-expect>deep-equals the JS-off record set</agent-kit-assert-expect>
+    <agent-kit-assert-expr>norm(record.text)</agent-kit-assert-expr>
+    <agent-kit-assert-expect>collapses authored whitespace only</agent-kit-assert-expect>
+  </agent-kit-custom-assert>
+
 </div>
 </body>
 </html>
