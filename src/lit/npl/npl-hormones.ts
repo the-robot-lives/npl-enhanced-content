@@ -111,14 +111,15 @@ export class NplHormones extends SemElement {
     }
     if (this.#wired) return;
     void this.whenChildrenReady(`${HORMONE}, ${ALERT}`).then(() => {
-      this.#read();
+      this.read();
       this.#wired = true;
       this.requestUpdate();
     });
   }
 
   /** Snapshot the authored children into render state (display-only). */
-  #read(): void {
+  /** Editor rerender seam (EDITOR.md §4.4): re-snapshot authored children. */
+  read(): void {
     const triggered = this.querySelector(TRIGGERED)?.textContent?.trim() ?? '';
     const fired = this.#firedMatcher(triggered);
     this.#rows = Array.from(this.querySelectorAll(HORMONE)).map((h) => {
@@ -215,3 +216,8 @@ export class NplHormones extends SemElement {
 }
 
 defineNpl('npl-hormones', NplHormones);
+
+/** Editor seam — see NplHormones.read. */
+export function readHormonesElement(el: Element): void {
+  if (el instanceof NplHormones) el.read();
+}
