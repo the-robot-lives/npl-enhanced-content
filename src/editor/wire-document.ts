@@ -223,17 +223,33 @@ export function wireDocument(editor: SemEditor, ctx: EditorContext): DocumentWir
   detach.push(io.detach);
 
   // ── code view host (if the host page slotted one) ──
-  const codeEl = editor.querySelector('sem-editor-code') as SemEditorCode | null;
-  if (codeEl !== null) {
-    codeEl.host = {
-      tryParse: (source) => tryParse(source),
-      adopt: (next) => {
-        if (next !== editor.doc) editor.openDocument(next);
-      },
-      offsetToPos: (offset) => ctx.doc.offsetToPos(offset),
-      announce: (message) => ctx.announce(message),
-    };
-    codeEl.source = ctx.doc.serialize();
+  // Programmatic mounts may append the lane AFTER connect (Hologram-style
+  // hydration re-renders host containers), so a lane that arrives late is
+  // wired on appearance instead of being missed by this one query. The
+  // next openDocument() re-runs this wiring and rebinds the lane to the
+  // new context, as before.
+  let codeEl: SemEditorCode | null = null;
+  const wireCodeLane = (): SemEditorCode | null => {
+    codeEl = editor.querySelector('sem-editor-code') as SemEditorCode | null;
+    if (codeEl !== null) {
+      codeEl.host = {
+        tryParse: (source) => tryParse(source),
+        adopt: (next) => {
+          if (next !== editor.doc) editor.openDocument(next);
+        },
+        offsetToPos: (offset) => ctx.doc.offsetToPos(offset),
+        announce: (message) => ctx.announce(message),
+      };
+      codeEl.source = ctx.doc.serialize();
+    }
+    return codeEl;
+  };
+  if (wireCodeLane() === null) {
+    const laneObserver = new MutationObserver(() => {
+      if (wireCodeLane() !== null) laneObserver.disconnect();
+    });
+    laneObserver.observe(editor, { childList: true });
+    detach.push(() => laneObserver.disconnect());
   }
 
   // ── controllers for every top-level host (idempotent) ──
