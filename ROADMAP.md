@@ -80,6 +80,7 @@ guardrail discipline they document.
 | `semtext-editor.js` (editor, §9) | **256 KB** (raised from the §9.1 estimate of 128 — integrate 2026-10-14; the estimate predated the integrated build, see the budget comment in `scripts/build.mjs`) | 245.1 raw / 69.8 gzipped — in budget |
 | `semtext-lazy.js` (loader) | **8 KB** | 3.3 raw / 1.6 gzipped (2026-10-14) |
 | `npl-lazy.js` (loader) | **8 KB** | 4.0 raw / 1.8 gzipped (2026-10-14) |
+| `semext.js` (semext-* embeds, feat/semext-embeds) | **48 KB** | 36.3 raw / 12.1 gzipped (2026-10-18) — in budget; the report-only placeholder budget from the empty-barrel lane is now enforced for real (family B's nine service-backed embeds) |
 
 Retired artifacts (spec v0.5, tag-form canonical, PR #30) — their handlers now
 share the single bundle budget:

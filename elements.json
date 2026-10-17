@@ -63,9 +63,17 @@
     "spec/schema/npl/npl-rubric.md",
     "spec/schema/npl/npl-section.md",
     "spec/schema/npl/npl-thought.md",
-    "spec/schema/npl/npl-vos.md"
+    "spec/schema/npl/npl-vos.md",
+    "spec/schema/semext/annotate.md",
+    "spec/schema/semext/docptr.md",
+    "spec/schema/semext/media-prompt.md",
+    "spec/schema/semext/sig-logs.md",
+    "spec/schema/semext/sig-metrics.md",
+    "spec/schema/semext/sig-synthetic-monitor.md",
+    "spec/schema/semext/sig-traces.md",
+    "spec/schema/semext/styleguide-theme.md"
   ],
-  "tagCount": 77,
+  "tagCount": 86,
   "tags": [
     {
       "name": "npl-agent",
@@ -3421,6 +3429,486 @@
         }
       ],
       "example": "<sem-workflow kind=\"release\" duration=\"45m\" label=\"Cut a release\">\n  <sem-step id=\"s1\" action=\"Build images\" description=\"sha-tagged via CI\"\n    gate=\"CI green\" check=\"gh run view\" output=\"dist/*.tar\">push the tag</sem-step>\n  <sem-step id=\"s2\" action=\"Deploy stage\" gate=\"images present\"\n    check=\"gh-wait deploy\" if-no=\"fix CI, then re-run the release workflow\">merge to stage</sem-step>\n</sem-workflow>"
+    },
+    {
+      "name": "semext-annotate",
+      "family": "semext",
+      "source": "spec/schema/semext/annotate.md",
+      "summary": "Visitor comment threads, service-backed.",
+      "description": "Visitor comment threads, service-backed. `semext-annotate` is the ONE element of the `semext-*` embed family with a client live read (`livePolicy: 'anonymous-read'`): every other embed renders authored snapshots only.",
+      "attributes": [
+        {
+          "name": "site",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the annotate site slug; query parameter on the live read; optional for a snapshot-only embed."
+        },
+        {
+          "name": "page",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the page path the threads belong to; query parameter on the live read (the snapshot's `page` field should match); optional for a snapshot-only embed."
+        },
+        {
+          "name": "endpoint",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the annotate API **base** (e.g. `https://annotate-srv.therobotlives.com/api/v1`); the element resolves the threads collection `<endpoint>/threads?site=<site>&page=<page>` — the path + query shape THIS contract defines, the annotate service owns the canonical shape. Optional in snapshot mode."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<semext-annotate\n  id=\"page-comments\"\n  site=\"semtext-demo\"\n  page=\"/demo/semext.html\"\n  org=\"noizu\"\n  project=\"annotate\"\n  key=\"semtext-demo:/demo/semext.html\"\n  endpoint=\"https://annotate-srv.therobotlives.com/api/v1\"\n  last-refreshed=\"2026-10-17T09:14:00Z\"\n  status=\"fresh\"\n>\n  <article class=\"semext-annotate-thread\" data-status=\"open\">\n    <strong>Anchor moved?</strong> — tyna, 2026-10-17\n    <p>tyna — the §3 anchor jumped after the last push.</p>\n  </article>\n  <script type=\"application/json\">\n    { \"site\": \"semtext-demo\", \"page\": \"/demo/semext.html\", \"threads\": [] }\n  </script>\n</semext-annotate>"
+    },
+    {
+      "name": "semext-docptr",
+      "family": "semext",
+      "source": "spec/schema/semext/docptr.md",
+      "summary": "A doc-pointer card from a cached snapshot (static embed; refresh is the CLI lane).",
+      "description": "A doc-pointer card from a cached snapshot (static embed; refresh is the CLI lane). The snapshot mirrors `.meta/pointers.yaml` entries so an authored page can cite a source location durably — the pointer survives line drift until a CLI refresh re-snapshots it.",
+      "attributes": [
+        {
+          "name": "marker",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "full marker string (e.g. `〚🔧:uuid〛`); selects the entry whose marker matches."
+        },
+        {
+          "name": "uuid",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the pointer's full UUID; the strongest selector."
+        },
+        {
+          "name": "token",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the pointer's 4-glyph token; selects by token match against the entry's marker."
+        },
+        {
+          "name": "file",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "narrows selection to entries whose `file_path` equals this path (filter, applied after the identifier selectors)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<semext-docptr\n  id=\"ptr-shared-load\"\n  org=\"noizu\"\n  project=\"npl-enhanced-content\"\n  key=\"npl-enhanced-content:src/data/load.ts#resolveSource\"\n  uuid=\"1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54\"\n  token=\"𓋹𓄿𓇳𓏏\"\n  last-refreshed=\"2026-10-17T09:14:00Z\"\n  status=\"fresh\"\n>\n  <script type=\"application/json\">\n    { \"pointers\": { \"1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54\": {\n        \"uuid\": \"1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54\",\n        \"marker\": \"〚🔧:𓋹𓄿𓇳𓏏〛\",\n        \"file_path\": \"src/data/load.ts\",\n        \"line\": 42,\n        \"kind\": \"function\",\n        \"function_name\": \"resolveSource\",\n        \"description\": \"Resolve an embed source with the shared source policy.\" } } }\n  </script>\n</semext-docptr>"
+    },
+    {
+      "name": "semext-media-prompt",
+      "family": "semext",
+      "source": "spec/schema/semext/media-prompt.md",
+      "summary": "An authored media-generation prompt with an output cache region (authored prompt + output).",
+      "description": "An authored media-generation prompt with an output cache region (authored prompt + output). The RECORD is the authored `.media.prompt` YAML (media-tools v0.4); the OUTPUT is a cache region the future refresh CLI fills — the element itself never fetches and never generates, it only reports the region's state.",
+      "attributes": [
+        {
+          "name": "model",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the generation model slug (rendered in the params line; echoed verbatim)."
+        },
+        {
+          "name": "aspect",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the aspect token (rendered in the params line)."
+        },
+        {
+          "name": "assets-dir",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the directory the refresh CLI writes relative asset paths into (rendered in the params line)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<semext-media-prompt\n  id=\"hero-banner\"\n  model=\"z-image-turbo\"\n  aspect=\"16:9\"\n  assets-dir=\"assets/\"\n  org=\"noizu\"\n  project=\"semtext-site\"\n  key=\"hero-banner-16x9\"\n  status=\"fresh\"\n>\n  <pre><code class=\"language-yaml\">model: z-image-turbo\naspect: 16:9\nprompt: SemText vocabulary diagram, flat vector, indigo accent\nnegative: text artifacts\n</code></pre>\n  <!-- semtext:cache:start semext-media-prompt hero-banner-16x9 -->\n  <!-- semtext:cache:end semext-media-prompt hero-banner-16x9 -->\n  <script type=\"application/json\">\n    { \"model\": \"z-image-turbo\", \"aspect\": \"16:9\", \"output\": { \"generated\": false } }\n  </script>\n</semext-media-prompt>"
+    },
+    {
+      "name": "semext-sig-logs",
+      "family": "semext",
+      "source": "spec/schema/semext/sig-logs.md",
+      "summary": "A SigNoz log-line snapshot + deep-link chrome (cached + link).",
+      "description": "A SigNoz log-line snapshot + deep-link chrome (cached + link). The authored inner content IS the record — the log lines as authored; the JSON snapshot mirrors them for the chrome, and the chrome adds an \"Open in SigNoz\" anchor built from the authored query parameters.",
+      "attributes": [
+        {
+          "name": "query",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the SigNoz query expression (deep-link parameter; echoed verbatim, never parsed)."
+        },
+        {
+          "name": "range",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the time range token (deep-link parameter)."
+        },
+        {
+          "name": "env",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the environment token (deep-link parameter)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<semext-sig-logs\n  id=\"sync-logs\"\n  query=\"service=annotate-srv level>=warn\"\n  range=\"1h\"\n  env=\"prod\"\n  org=\"noizu\"\n  project=\"annotate\"\n  key=\"annotate:sync-logs-1h\"\n  status=\"fresh\"\n  last-refreshed=\"2026-10-17T09:14:00Z\"\n>\n  <script type=\"application/json\">\n    { \"lines\": [ { \"ts\": \"2026-10-17T09:14:02Z\", \"severity\": \"ERROR\",\n        \"body\": \"sync failed: upstream 502\" } ] }\n  </script>\n</semext-sig-logs>"
+    },
+    {
+      "name": "semext-sig-metrics",
+      "family": "semext",
+      "source": "spec/schema/semext/sig-metrics.md",
+      "summary": "A SigNoz metrics snapshot + deep-link chrome (cached + link).",
+      "description": "A SigNoz metrics snapshot + deep-link chrome (cached + link). The authored inner content IS the record — the metrics table as authored; the JSON snapshot mirrors it for the chrome, and the chrome adds an \"Open in SigNoz\" anchor built from the authored query parameters.",
+      "attributes": [
+        {
+          "name": "query",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the SigNoz query expression (deep-link parameter; echoed verbatim, never parsed)."
+        },
+        {
+          "name": "range",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the time range token (deep-link parameter)."
+        },
+        {
+          "name": "env",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the environment token (deep-link parameter)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<semext-sig-metrics\n  id=\"latency-table\"\n  query=\"service=annotate-srv\"\n  range=\"1h\"\n  env=\"prod\"\n  org=\"noizu\"\n  project=\"annotate\"\n  key=\"annotate:latency-1h\"\n  status=\"fresh\"\n  last-refreshed=\"2026-10-17T09:14:00Z\"\n>\n  <script type=\"application/json\">\n    { \"title\": \"p95 latency\", \"columns\": [\"service\", \"p50\", \"p95\"],\n      \"rows\": [[\"annotate-srv\", \"120ms\", \"1.8s\"]] }\n  </script>\n</semext-sig-metrics>"
+    },
+    {
+      "name": "semext-sig-synthetic-monitor",
+      "family": "semext",
+      "source": "spec/schema/semext/sig-synthetic-monitor.md",
+      "summary": "A SigNoz synthetic-monitor DEFINITION card + link chrome (definition + link).",
+      "description": "A SigNoz synthetic-monitor DEFINITION card + link chrome (definition + link). The authored inner content IS the record — the monitor's expected definition as authored; the JSON snapshot mirrors it and the chrome adds the \"Open in SigNoz\" anchor. Synthetic monitor EXECUTION is an enterprise-tier service surface this spec deliberately does not touch: no endpoint discovery, no run trigger, no client credential, and live execution is a DEFERRED LANE.",
+      "attributes": [
+        {
+          "name": "monitor",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the monitor's identity (deep-link parameter; echoed verbatim, never parsed)."
+        },
+        {
+          "name": "env",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the environment token (deep-link parameter)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<semext-sig-synthetic-monitor\n  id=\"threads-probe\"\n  monitor=\"annotate-srv-threads\"\n  env=\"prod\"\n  org=\"noizu\"\n  project=\"annotate\"\n  key=\"annotate:probe-threads\"\n  status=\"fresh\"\n  last-refreshed=\"2026-10-17T09:14:00Z\"\n>\n  <script type=\"application/json\">\n    { \"monitor\": { \"name\": \"annotate-srv threads\",\n        \"interval\": \"5m\",\n        \"assertions\": [ \"GET /api/v1/threads → 200\",\n                        \"latency p95 < 2s\" ] } }\n  </script>\n</semext-sig-synthetic-monitor>"
+    },
+    {
+      "name": "semext-sig-traces",
+      "family": "semext",
+      "source": "spec/schema/semext/sig-traces.md",
+      "summary": "A SigNoz trace-list snapshot + deep-link chrome (cached + link).",
+      "description": "A SigNoz trace-list snapshot + deep-link chrome (cached + link). The authored inner content IS the record — the trace list as authored; the JSON snapshot mirrors it for the chrome, and the chrome adds an \"Open in SigNoz\" anchor built from the authored query parameters.",
+      "attributes": [
+        {
+          "name": "query",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the SigNoz query expression (deep-link parameter; echoed verbatim, never parsed)."
+        },
+        {
+          "name": "range",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the time range token (deep-link parameter)."
+        },
+        {
+          "name": "env",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the environment token (deep-link parameter)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<semext-sig-traces\n  id=\"checkout-traces\"\n  query=\"service=checkout\"\n  range=\"24h\"\n  env=\"prod\"\n  org=\"noizu\"\n  project=\"annotate\"\n  key=\"annotate:traces-24h\"\n  status=\"fresh\"\n  last-refreshed=\"2026-10-17T09:14:00Z\"\n>\n  <script type=\"application/json\">\n    { \"traces\": [ { \"id\": \"a1b2c3\", \"root\": \"POST /checkout\",\n        \"service\": \"checkout\", \"durationMs\": 214, \"spans\": 12,\n        \"error\": false } ] }\n  </script>\n</semext-sig-traces>"
+    },
+    {
+      "name": "semext-styleguide-theme",
+      "family": "semext",
+      "source": "spec/schema/semext/styleguide-theme.md",
+      "summary": "Theme token cards from a cached snapshot (static embeds).",
+      "description": "Theme token cards from a cached snapshot (static embeds). `semext-styleguide-theme` renders one theme's tokens — name, key color swatches, typography sample — plus a \"Preview theme CSS\" link whose target is the authored `src`; `semext-styleguide-themes` is its collection wrapper, rendering only a summary line.",
+      "attributes": [
+        {
+          "name": "theme",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the theme slug this card presents; matches the snapshot's theme slug when one is authored."
+        },
+        {
+          "name": "src",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the theme CSS URL for the preview link; MUST pass the shared source policy (src/data/load.ts: http(s) only, rendered as an href — never fetched by this element). Omitting it omits the link."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<semext-styleguide-themes id=\"theme-gallery\" org=\"noizu\" project=\"npl-enhanced-content\" key=\"themes:index\" status=\"fresh\" last-refreshed=\"2026-10-17T09:14:00Z\">\n  <semext-styleguide-theme theme=\"minimal-tech-light\" src=\"/themes/minimal-tech-light.css\" key=\"themes:minimal-tech-light\">\n    <script type=\"application/json\">\n      { \"theme\": { \"name\": \"Minimal Tech Light\",\n          \"colors\": [ { \"token\": \"--sem-accent\", \"value\": \"#2563eb\",\n                        \"role\": \"accent\" },\n                      { \"token\": \"--sem-surface\", \"value\": \"#f8fafc\",\n                        \"role\": \"surface\" } ],\n          \"typography\": { \"body\": \"Inter, sans-serif\", \"heading\": \"Inter, 600\" },\n          \"sample\": \"The quick brown fox.\" } }\n    </script>\n  </semext-styleguide-theme>\n</semext-styleguide-themes>"
+    },
+    {
+      "name": "semext-styleguide-themes",
+      "family": "semext",
+      "source": "spec/schema/semext/styleguide-theme.md",
+      "summary": "Theme token cards from a cached snapshot (static embeds).",
+      "description": "Theme token cards from a cached snapshot (static embeds). `semext-styleguide-theme` renders one theme's tokens — name, key color swatches, typography sample — plus a \"Preview theme CSS\" link whose target is the authored `src`; `semext-styleguide-themes` is its collection wrapper, rendering only a summary line.",
+      "attributes": [],
+      "children": [
+        {
+          "name": "semext-styleguide-theme",
+          "note": "`<semext-styleguide-theme>` — one or more theme cards; the wrapper is inert without them (summary falls back to counting children)."
+        }
+      ],
+      "example": "<semext-styleguide-themes id=\"theme-gallery\" org=\"noizu\" project=\"npl-enhanced-content\" key=\"themes:index\" status=\"fresh\" last-refreshed=\"2026-10-17T09:14:00Z\">\n  <semext-styleguide-theme theme=\"minimal-tech-light\" src=\"/themes/minimal-tech-light.css\" key=\"themes:minimal-tech-light\">\n    <script type=\"application/json\">\n      { \"theme\": { \"name\": \"Minimal Tech Light\",\n          \"colors\": [ { \"token\": \"--sem-accent\", \"value\": \"#2563eb\",\n                        \"role\": \"accent\" },\n                      { \"token\": \"--sem-surface\", \"value\": \"#f8fafc\",\n                        \"role\": \"surface\" } ],\n          \"typography\": { \"body\": \"Inter, sans-serif\", \"heading\": \"Inter, 600\" },\n          \"sample\": \"The quick brown fox.\" } }\n    </script>\n  </semext-styleguide-theme>\n</semext-styleguide-themes>",
+      "optionsIn": "semext-styleguide-theme"
     }
   ],
   "gaps": []

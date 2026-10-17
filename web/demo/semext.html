@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · semext embeds (family B)</title>
+
+<!-- Core CSS, substituted at build time by scripts/build-standalone.mjs so
+     the emitted dist/demo page opens from file:// with no network. -->
+<!-- sem:inline theme minimal-tech-light -->
+<!-- sem:inline vocabulary -->
+
+<style>
+  sem-enhanced-document { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.01em; margin: 0 0 .5rem; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 2.25rem 0 .5rem; }
+  p  { margin: .6rem 0; }
+</style>
+
+<!-- The core bundle plus the semext namespace (whole, family B). The ext
+     marker inlines dist/semext.js — see build-standalone.mjs. -->
+<!-- sem:inline bundle -->
+<!-- sem:inline ext -->
+</head>
+
+<body>
+<sem-enhanced-document>
+
+  <h1>Service-backed embeds — the semext-* family</h1>
+  <p>Every embed below is SNAPSHOT-BACKED: the authored content inside the element is the record and reads JS-off; the JSON child is the mirror the chrome renders from. The annotate live cases fetch a mocked service (see test/e2e/semext-embeds.cy.js) — this page itself makes no network call for them beyond what the test layer intercepts.</p>
+
+  <h2 id="docptr-h">Doc pointers</h2>
+  <!-- Static snapshot: the record mirrors .meta/pointers.yaml. -->
+  <semext-docptr
+    id="ptr-resolve"
+    uuid="1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54"
+    org="noizu" project="npl-enhanced-content"
+    key="npl-enhanced-content:src/data/load.ts#resolveSource"
+    last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <script type="application/json">
+      { "pointers": { "1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54": {
+          "uuid": "1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54",
+          "marker": "〚🔧:𓋹𓄿𓇳𓏏〛",
+          "file_path": "src/data/load.ts",
+          "line": 42,
+          "kind": "function",
+          "function_name": "resolveSource",
+          "description": "Resolve an embed source with the shared source policy.",
+          "snippet": "export function resolveSource(input: string): SourceRef {" } } }
+    </script>
+  </semext-docptr>
+
+  <h2 id="themes-h">Styleguide themes</h2>
+  <semext-styleguide-themes
+    id="themes-index"
+    org="noizu" project="npl-enhanced-content" key="themes:index"
+    last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <script type="application/json">
+      { "themes": ["minimal-tech-light", "paper-ink", "midnight-console"] }
+    </script>
+    <semext-styleguide-theme
+      id="theme-mtl"
+      theme="minimal-tech-light"
+      src="themes/minimal-tech-light.css"
+      org="noizu" project="npl-enhanced-content" key="themes:minimal-tech-light"
+      last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+      <script type="application/json">
+        { "theme": { "name": "Minimal Tech Light", "slug": "minimal-tech-light",
+            "colors": [ { "token": "--sem-accent", "value": "#2563eb", "role": "accent" },
+                        { "token": "--sem-surface", "value": "#f8fafc", "role": "surface" },
+                        { "token": "--sem-ink", "value": "#0f172a", "role": "text" } ],
+            "typography": { "body": "Inter, system-ui, sans-serif", "heading": "Inter, 600" },
+            "sample": "The quick brown fox jumps over the lazy dog." } }
+      </script>
+    </semext-styleguide-theme>
+    <semext-styleguide-theme
+      id="theme-pi"
+      theme="paper-ink"
+      org="noizu" project="npl-enhanced-content" key="themes:paper-ink"
+      last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+      <script type="application/json">
+        { "theme": { "name": "Paper &amp; Ink", "slug": "paper-ink",
+            "colors": [ { "token": "--sem-accent", "value": "rgb(59, 130, 246)", "role": "accent" },
+                        { "token": "--sem-surface", "value": "#fffdf7", "role": "surface" } ],
+            "typography": { "body": "Georgia, serif" },
+            "sample": "Set in a warm serif on paper white." } }
+      </script>
+    </semext-styleguide-theme>
+  </semext-styleguide-themes>
+
+  <h2 id="annotate-h">Annotate — snapshot + live</h2>
+  <!-- 1. Snapshot-backed: authored thread record + JSON mirror; never fetches. -->
+  <semext-annotate
+    id="comments-snapshot"
+    site="semtext-demo" page="/demo/semext.html"
+    org="noizu" project="annotate" key="semtext-demo:/demo/semext.html"
+    last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <article class="semext-annotate-thread" data-status="open">
+      <strong>Anchor moved after the last push</strong> — tyna, 2026-10-17
+      <p>tyna — the §3 anchor jumped a section after Friday's push.</p>
+      <p>keith — confirmed, re-anchoring in the next docs pass.</p>
+    </article>
+    <script type="application/json">
+      { "site": "semtext-demo", "page": "/demo/semext.html", "threads": [
+        { "id": "t-102", "status": "open",
+          "title": "Anchor moved after the last push",
+          "author": "tyna", "createdAt": "2026-10-17T09:14:00Z",
+          "anchor": { "text": "§3 Cached content" },
+          "comments": [
+            { "id": "c-1", "author": "tyna", "body": "The §3 anchor jumped a section after Friday's push.", "createdAt": "2026-10-17T09:14:00Z" },
+            { "id": "c-2", "author": "keith", "body": "Confirmed — re-anchoring in the next docs pass.", "createdAt": "2026-10-17T10:02:00Z" } ] } ] }
+    </script>
+  </semext-annotate>
+
+  <!-- 2. Live success: the e2e intercepts this URL; the element resolves
+       <endpoint>/threads?site&page once, anonymous, fail-soft. -->
+  <semext-annotate
+    id="comments-live"
+    site="semtext-demo" page="/demo/semext.html"
+    org="noizu" project="annotate" key="semtext-demo:/demo/semext.html"
+    endpoint="https://annotate-srv.therobotlives.com/api/v1"
+    last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <article class="semext-annotate-thread" data-status="open">
+      <strong>Authored record stands even when live succeeds</strong> — tyna, 2026-10-17
+      <p>tyna — the live read renders as chrome only; this record is never mutated.</p>
+    </article>
+    <!-- no JSON child, no fixtures: no fixture source exists, so the base
+         goes straight to the live read (the e2e intercept answers it) -->
+  </semext-annotate>
+
+  <!-- 3. Live failure: the e2e intercepts this URL with a 500 — the authored
+       view keeps standing, status flips to error, nothing throws. -->
+  <semext-annotate
+    id="comments-fallback"
+    site="semtext-demo" page="/demo/semext.html"
+    org="noizu" project="annotate" key="semtext-demo:/demo/semext.html"
+    endpoint="https://annotate-srv.therobotlives.com/api/v2"
+    last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <article class="semext-annotate-thread" data-status="open">
+      <strong>Snapshot fallback</strong> — jez, 2026-10-16
+      <p>jez — when the service is down this authored view is the record.</p>
+    </article>
+    <!-- no JSON child: the v2 intercept 500s, the base fails soft, and this
+         authored view is what readers see (status flips to 'error') -->
+  </semext-annotate>
+
+  <h2 id="sig-h">SigNoz embeds — cached + link</h2>
+  <semext-sig-metrics
+    id="sig-latency"
+    query="service=annotate-srv" range="1h" env="prod"
+    org="noizu" project="annotate" key="annotate:latency-1h"
+    last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <script type="application/json">
+      { "title": "p95 latency by service",
+        "columns": ["service", "p50", "p95", "error rate"],
+        "rows": [ ["annotate-srv", "120ms", "1.8s", "0.2%"],
+                  ["semtext-site", "45ms", "310ms", "0.0%"] ] }
+    </script>
+  </semext-sig-metrics>
+
+  <semext-sig-traces
+    id="sig-traces"
+    query="service=checkout" range="24h" env="prod"
+    org="noizu" project="annotate" key="annotate:traces-24h"
+    last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <script type="application/json">
+      { "traces": [ { "id": "a1b2c3d4", "root": "POST /checkout", "service": "checkout", "durationMs": 214, "spans": 12, "error": false },
+                    { "id": "e5f60718", "root": "GET /api/v1/threads", "service": "annotate-srv", "durationMs": 1840, "spans": 9, "error": true } ] }
+    </script>
+  </semext-sig-traces>
+
+  <semext-sig-logs
+    id="sig-logs"
+    query="service=annotate-srv level&gt;=warn" range="1h" env="prod"
+    org="noizu" project="annotate" key="annotate:sync-logs-1h"
+    last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <script type="application/json">
+      { "lines": [ { "ts": "2026-10-17T09:14:02Z", "severity": "ERROR", "body": "sync failed: upstream 502 (annotate-srv → apm)" },
+                   { "ts": "2026-10-17T09:13:58Z", "severity": "WARN", "body": "retry 2/5 for thread t-102 snapshot" },
+                   { "ts": "2026-10-17T09:13:51Z", "severity": "INFO", "body": "sync tick started, window=1h" } ] }
+    </script>
+  </semext-sig-logs>
+
+  <semext-sig-synthetic-monitor
+    id="sig-probe"
+    monitor="annotate-srv-threads" env="prod"
+    org="noizu" project="annotate" key="annotate:probe-threads"
+    last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <script type="application/json">
+      { "monitor": { "name": "annotate-srv threads probe", "interval": "5m",
+          "assertions": [ "GET /api/v1/threads?site=semtext-demo → 200",
+                          "latency p95 &lt; 2s" ] } }
+    </script>
+  </semext-sig-synthetic-monitor>
+
+  <h2 id="media-h">Media prompt — authored record + output region</h2>
+  <!-- Filled region: the CLI lane has run; the authored list between the
+       fences is the output record. -->
+  <semext-media-prompt
+    id="media-filled"
+    model="z-image-turbo" aspect="16:9" assets-dir="assets/"
+    org="noizu" project="semtext-site" key="hero-banner-16x9"
+    last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <pre><code class="language-yaml">model: z-image-turbo
+aspect: 16:9
+prompt: SemText vocabulary diagram, flat vector, indigo accent
+negative: text artifacts
+</code></pre>
+    <!-- semtext:cache:start semext-media-prompt hero-banner-16x9 -->
+    <ul>
+      <li><a href="assets/hero-banner-16x9-v1.png">assets/hero-banner-16x9-v1.png</a></li>
+      <li><a href="assets/hero-banner-16x9-v1.webp">assets/hero-banner-16x9-v1.webp</a></li>
+    </ul>
+    <!-- semtext:cache:end semext-media-prompt hero-banner-16x9 -->
+    <script type="application/json">
+      { "model": "z-image-turbo", "aspect": "16:9",
+        "output": { "generated": true,
+          "assets": [ { "path": "assets/hero-banner-16x9-v1.png", "kind": "image" },
+                      { "path": "assets/hero-banner-16x9-v1.webp", "kind": "image" } ] } }
+    </script>
+  </semext-media-prompt>
+
+  <!-- Empty region: fences present, nothing between them yet. -->
+  <semext-media-prompt
+    id="media-empty"
+    model="z-image-turbo" aspect="1:1" assets-dir="assets/"
+    org="noizu" project="semtext-site" key="favicon-1x1"
+    status="fresh">
+    <pre><code class="language-yaml">model: z-image-turbo
+aspect: 1:1
+prompt: monogram glyph, single path, high contrast
+</code></pre>
+    <!-- semtext:cache:start semext-media-prompt favicon-1x1 -->
+    <!-- semtext:cache:end semext-media-prompt favicon-1x1 -->
+    <script type="application/json">
+      { "model": "z-image-turbo", "aspect": "1:1", "output": { "generated": false } }
+    </script>
+  </semext-media-prompt>
+
+</sem-enhanced-document>
+</body>
+</html>

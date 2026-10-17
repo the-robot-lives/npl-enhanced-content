@@ -142,16 +142,13 @@ const targets = [
     // loading. Same relationship to core as npl.js: src/index.ts imports
     // nothing from src/lit/semext/, and the semext barrel is src/semext.ts's
     // only input. Introduced empty (2026-10-18, epic.semext-components
-    // walking skeleton): the namespace carries machinery, no components
-    // yet, so the budget is REPORT-ONLY until a real component lands and
-    // the number means something — then record it in ROADMAP "Size
-    // budgets" and drop the report-only flag.
+    // walking skeleton) and measured for real with family B
+    // (feat/semext-embeds): nine service-backed embeds over the
+    // cached-embed base — see ROADMAP "Size budgets".
     name: 'semext.js',
     entry: 'src/semext.ts',
     global: 'SemTextExt',
     budgetKb: 48,
-    // Report-only until measured against a real component set.
-    budgetReportOnly: true,
     required: true,
   },
   {
@@ -459,11 +456,6 @@ const LAZY_TARGETS = [
     budgetKb: 8,
     fullBundle: 'semext.js',
     tags: 'semext-*',
-    // Introduced empty (walking skeleton): the namespace ships no
-    // components yet, so the manifest scan legitimately finds zero
-    // register calls. allowEmpty skips the hard fail until the first
-    // component lands; drop the flag then.
-    allowEmpty: true,
   },
   {
     id: 'agent-kit-lazy',

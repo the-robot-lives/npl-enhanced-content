@@ -1,0 +1,44 @@
+{
+  "site": "semtext-demo",
+  "page": "/demo/semext.html",
+  "threads": [
+    {
+      "id": "t-102",
+      "status": "open",
+      "title": "Anchor moved after the last push",
+      "author": "tyna",
+      "createdAt": "2026-10-17T09:14:00Z",
+      "anchor": { "text": "§3 Cached content" },
+      "comments": [
+        {
+          "id": "c-1",
+          "author": "tyna",
+          "body": "The §3 anchor jumped a section after Friday's push.",
+          "createdAt": "2026-10-17T09:14:00Z"
+        },
+        {
+          "id": "c-2",
+          "author": "keith",
+          "body": "Confirmed — re-anchoring in the next docs pass.",
+          "createdAt": "2026-10-17T10:02:00Z"
+        }
+      ]
+    },
+    {
+      "id": "t-103",
+      "status": "resolved",
+      "title": "Typo in the refresh contract",
+      "author": "jez",
+      "createdAt": "2026-10-16T18:40:00Z",
+      "anchor": { "text": "Refresh contract" },
+      "comments": [
+        {
+          "id": "c-1",
+          "author": "jez",
+          "body": "reads \"re-writte\" instead of \"rewrite\".",
+          "createdAt": "2026-10-16T18:40:00Z"
+        }
+      ]
+    }
+  ]
+}

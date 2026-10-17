@@ -1248,7 +1248,100 @@
           }
         }
       }
-    }
+    },
 
+    "semext-annotate": {
+      "description": "Visitor comment threads, service-backed: the ONE semext element with a client live read (anonymous-read, text-only rendering of untrusted comment bodies). Snapshot mode renders the authored thread record; live mode fetches <endpoint>/threads?site&page once, no credentials, and falls back to the authored view on failure.",
+      "source": "spec/schema/semext/annotate.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "site": { "type": "token" },
+        "page": { "type": "token" }
+      }
+    },
+    "semext-docptr": {
+      "description": "A doc-pointer card from a cached snapshot (static; refresh is the CLI lane). The snapshot mirrors .meta/pointers.yaml entries; marker/uuid/token select the entry, file narrows by path.",
+      "source": "spec/schema/semext/docptr.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "marker": { "type": "token" },
+        "uuid": { "type": "token" },
+        "token": { "type": "token" },
+        "file": { "type": "token" }
+      }
+    },
+    "semext-media-prompt": {
+      "description": "An authored .media.prompt YAML record with an output cache region the refresh CLI fills; the component never fetches or generates — it reports the region state (filled asset list or not-generated placeholder chrome).",
+      "source": "spec/schema/semext/media-prompt.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "model": { "type": "token" },
+        "aspect": { "type": "token" },
+        "assets-dir": { "type": "token" }
+      }
+    },
+    "semext-sig-logs": {
+      "description": "A SigNoz log-line snapshot + deep-link chrome (cached + link; livePolicy never, no client credentials). Link built from query/range/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-logs.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "query": { "type": "token" },
+        "range": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-sig-metrics": {
+      "description": "A SigNoz metrics-table snapshot + deep-link chrome (cached + link; livePolicy never, no client credentials). Link built from query/range/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-metrics.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "query": { "type": "token" },
+        "range": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-sig-synthetic-monitor": {
+      "description": "A SigNoz synthetic-monitor DEFINITION card + link chrome (definition + link; live execution is an EE service surface, deliberately deferred). Link built from monitor/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-synthetic-monitor.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "monitor": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-sig-traces": {
+      "description": "A SigNoz trace-list snapshot + deep-link chrome (cached + link; livePolicy never, no client credentials). Link built from query/range/env via the plain sig-link builder.",
+      "source": "spec/schema/semext/sig-traces.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "query": { "type": "token" },
+        "range": { "type": "token" },
+        "env": { "type": "token" }
+      }
+    },
+    "semext-styleguide-theme": {
+      "description": "A theme token card from a cached snapshot (static): name, key color swatches, typography sample, and a \"Preview theme CSS\" link whose href is the authored src.",
+      "source": "spec/schema/semext/styleguide-theme.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "theme": { "type": "token" },
+        "src": { "type": "token" }
+      }
+    },
+    "semext-styleguide-themes": {
+      "description": "Collection wrapper of the styleguide-theme pair: authored semext-styleguide-theme entries; the wrapper renders only a summary line from its snapshot (theme slugs) or its authored children.",
+      "source": "spec/schema/semext/styleguide-theme.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {}
+    }
   }
 }
