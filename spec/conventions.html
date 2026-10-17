@@ -1,16 +1,21 @@
 <!doctype html>
 <!--
-  spec/conventions.html -- the format spec, written in the format it specifies.
+  spec/conventions.html -- GENERATED from spec/conventions.md by
+  scripts/gen-conventions-html.mjs. Do not hand-edit.
 
-  Normative source: spec/conventions.md. This page carries the same rules,
-  section for section, authored as a SemText document in the canonical
-  tag form: custom elements with bare attributes, no sem-* classes. The
-  attribute catalogs are sem-properties / sem-table, the ordered rules are
-  sem-procedure, the open questions are sem-note, each element entry shows
-  its markup in a sem-code listing and runs a live example inside a
-  sem-source so the reader can flip between what renders and what was
-  written. The class-form alias appears only inside listings, in
-  Appendix A. Where the two files diverge, the .md wins.
+  Edit spec/conventions.md, run `npm run gen:conventions`, and commit both
+  files together; `npm run gen:conventions:check` (CI, unit job) fails when
+  this file is stale relative to the .md.
+
+  The page carries the same rules as the .md, section for section, authored
+  as a SemText document in the canonical tag form: custom elements with
+  bare attributes, no sem-* classes. The attribute catalogs are sem-md
+  blocks and sem-properties, the ordered rules are a sem-procedure, each
+  element entry shows its markup in a sem-code listing, and several run a
+  live example inside a sem-source so the reader can flip between what
+  renders and what was written. The class-form alias appears only inside
+  listings, in Appendix A. Where this page and the .md ever disagree, the
+  .md wins -- fix the generator, not this file.
 
   No inline CSS, no inline JS: the theme and vocabulary stylesheets are
   linked, spec.css carries the document layout, and the one script is
@@ -39,41 +44,44 @@
   <sem-reader id="rd" controls="outline,progress,focus,type,color,print,audience" outline-depth="4"></sem-reader>
 
   <h1>SemText -- Format Spec &amp; Conventions</h1>
-  <p>DRAFT v0.7 -- tag form canonical -- this page is written in the format it specifies. v0.7 renames the fact child <code>&lt;sem-distractor&gt;</code> to <code>&lt;incorrect-statement&gt;</code> (breaking; no backward-compatible alias). Normative source: <a href="#r-conventions-md">spec/conventions.md</a><a href="#r-conventions-md" id="cite-md">[1]</a>; where the two diverge, the Markdown wins.</p>
+  <p><strong>DRAFT v0.7 -- Lit-only surface, tag form canonical.</strong> v0.7 renames the fact child <code>&lt;sem-distractor&gt;</code> to <code>&lt;incorrect-statement&gt;</code> (breaking; no backward-compatible alias). SemText is an XHTML vocabulary of <strong>custom elements</strong>: <code>&lt;sem-enhanced-document&gt;</code>, <code>&lt;sem-note variant=&quot;tip&quot;&gt;</code>, <code>&lt;sem-facts view-as=&quot;quiz&quot;&gt;</code>, <code>&lt;sem-fact&gt;</code> with <code>&lt;statement&gt;</code> and <code>&lt;conclusion&gt;</code>, <code>&lt;sem-step status=&quot;done&quot;&gt;</code>, <code>&lt;sem-property key=&quot;...&quot;&gt;</code>. Element names say what content <em>is</em>; <strong>attributes are attributes</strong> (<code>view-as</code>, <code>status</code>, <code>key</code>, <code>kind</code>, <code>tags</code>, <code>controls</code>), never <code>data-*</code>. That is the form every example in this spec, the schemas, and the reference documents use, and the form every consumer -- theme CSS, the one script (vanilla handlers, reading and Markdown renderers, Lit components), extraction -- accepts as its first-class input.</p>
 
-  <p>SemText is an XHTML vocabulary of <strong>custom elements</strong>: <code>&lt;sem-enhanced-document&gt;</code>, <code>&lt;sem-note variant="tip"&gt;</code>, <code>&lt;sem-facts view-as="quiz"&gt;</code>, <code>&lt;sem-fact&gt;</code> with <code>&lt;statement&gt;</code> and <code>&lt;conclusion&gt;</code>, <code>&lt;sem-step status="done"&gt;</code>, <code>&lt;sem-property key="&hellip;"&gt;</code>. Element names say what content <em>is</em>; <strong>attributes are attributes</strong> (<code>view-as</code>, <code>status</code>, <code>key</code>, <code>kind</code>, <code>tags</code>, <code>controls</code>), never <code>data-*</code>. That is the form every example in this spec, the schemas and the reference documents use, and the form every consumer -- theme CSS, the one script, extraction and the JS-off artifact -- accepts as its first-class input.</p>
-
-  <p>The v0.4 baseline rendered the same vocabulary as <strong>classes on plain elements</strong> with <code>data-*</code> parameters. That spelling is retained as a <strong>compatibility alias</strong>: the mechanical mapping is in <a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a>, the script and the CSS keep accepting it, and a document may mix the two forms. New documents and new tooling write the tag form.</p>
-
+  <p>The v0.4 baseline rendered the same vocabulary as <strong>classes on plain elements</strong> with <code>data-*</code> parameters (<code>&lt;div class=&quot;sem-note&quot; data-variant=&quot;tip&quot;&gt;</code>). That spelling is retained as a <strong>compatibility alias</strong>: the mechanical mapping is in <strong><a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a></strong>, every tier keeps accepting it, and a document may mix the two forms. New documents and new tooling write the tag form.</p>
   <sem-note id="n-dogfood" variant="tip">Every vocabulary element on this page is live and written as a tag. Each entry in <a href="#5-element-entries">&sect;5</a> sits inside a <code>sem-source</code> wrapper: press <em>Source</em> to see the markup exactly as it was written here -- bare attributes, no <code>data-*</code>, no classes.</sem-note>
 
-  <p>CSS and script layering, in both distribution forms (<a href="#7-distribution-forms">&sect;7</a>): (1) the base stylesheet <code>semtext.css</code> (the vocabulary, offline-safe) and the theme file -- <code>--sem-*</code> tokens on <code>[data-sem-theme]</code>; (2) <code>semtext.js</code> -- the one script, a Lit 3 bundle that also carries the vanilla handlers for the elements no component defines, the reading and Markdown renderers, and extraction. The <strong>single-file</strong> form inlines all of it in <code>&lt;head&gt;</code> (the build's <code>sem:inline</code> markers); the <strong>folder</strong> form links the same files by relative path. Neither form carries page-local CSS or JS beyond a small layout layer. A document without the script shows its authored text -- not styled, not interactive (<a href="#4-the-script--degradation-rules">&sect;4</a>). <strong>?</strong> = open questions (<a href="#10-open-questions">&sect;10</a>).</p>
-
+  <p>CSS and script layering, in both distribution forms (<a href="#7-distribution-forms">&sect;7</a>): (1) the base stylesheet <code>semtext.css</code> (the vocabulary, offline-safe) and the theme file -- <code>--sem-*</code> tokens on <code>[data-sem-theme]</code>; (2) <code>semtext.js</code> -- the one script, a Lit 3 bundle that also carries the vanilla handlers for the elements no component defines, the reading and Markdown renderers, and extraction. The <strong>single-file</strong> form inlines all of it in <code>&lt;head&gt;</code> (the build's <code>sem:inline</code> markers); the <strong>folder</strong> form links the same files by relative path. Neither form carries page-local CSS or JS beyond a small layout layer. <code>?</code> = open questions (<a href="#10-open-questions">&sect;10</a>).</p>
   <sem-note id="n-folder-form" variant="info">This page ships the <strong>folder</strong> form: two theme stylesheets, the vocabulary stylesheet, one layout stylesheet and the one bundle linked from <code>&lt;head&gt;</code>, no inline CSS or JS. Its scripts-stripped twin, <code>conventions.nojs.html</code>, is the JS-off proof.</sem-note>
 
-  <!-- ── Element buckets ─────────────────────────────────────────────── -->
   <h2 id="element-buckets">Element buckets</h2>
   <p>The SemText vocabulary groups into seven conceptual buckets; NPL elements are not bucketed and form a single display family of their own. Each element appears in its primary bucket below; every element is also listed with its full entry in <a href="#5-element-entries">&sect;5</a>.</p>
 
   <sem-md id="md-buckets" kind="bucket-overview" label="Element buckets" controls="toggle,copy">
-    | Bucket | Elements | What it covers |
-    | :-- | :-- | :-- |
-    | **Document &amp; structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
-    | **Prose &amp; code** | `sem-md`, `sem-note`, `sem-code`, `sem-browser` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
-    | **Disclosure &amp; views** | `sem-details` / `sem-detail`, `highlight`, `sem-reveal`, `sem-source`, `sem-views` / `sem-view` | The same content under different reading interactions -- occluded detail, Q-A reveal, markup flip, perspective tabs |
-    | **Facts &amp; recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `incorrect-statement`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
-    | **Data &amp; tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
-    | **Sequences &amp; progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
-    | **Definitions &amp; citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference`, `sem-tag-def` / `sem-tag-attr`, `sem-api-call` / `sem-api-param` | Closed key/value assertions, the numbered works the prose cites, and the reference-definition cards that document a vocabulary's tags and an API's endpoints |
-    | **NPL** | `npl-agent`, `npl-directive`, `npl-section`, `npl-rubric`, `npl-critique`, `npl-declaration`, `npl-example`, `npl-flag` / `npl-flags`, `npl-hormones`, `npl-mindread`, `npl-mode`, `npl-mood`, `npl-poa`, `npl-ref`, `npl-thought`, `npl-vos`, `npl-artifact`, `npl-cot`, `npl-intent` | NPL prompt-engineering elements; loaded by `npl.js` / `npl-lazy.js` on top of the SemText core |
+| Bucket | Elements | What it covers |
+| :-- | :-- | :-- |
+| **Document &amp; structure** | `sem-enhanced-document`, `sem-reader`, `sem-audiences` / `sem-profile`, `agent` | The root wrapper, reading chrome, audience declarations and document-level metadata that frame a SemText document |
+| **Prose &amp; code** | `sem-md`, `sem-note`, `sem-code`, `sem-browser` | Content blocks beyond plain HTML -- Markdown bodies, callouts and source listings with provenance |
+| **Disclosure &amp; views** | `sem-details` / `sem-detail`, `highlight`, `sem-reveal`, `sem-source`, `sem-views` / `sem-view` | The same content under different reading interactions -- occluded detail, Q-A reveal, markup flip, perspective tabs |
+| **Facts &amp; recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `incorrect-statement`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
+| **Data &amp; tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
+| **Sequences &amp; progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
+| **Interactive containers** | `sem-workflow` / `sem-step`, `sem-site-tree` / `node`, `sem-file-tree` / `node` | Steps with gate/check/if-no branches, and site/file trees (structured or text-authored) with collapse, filter and find |
+| **Agent-kit records** | `agent-kit-issue` / `-epic` / `-bug` / `-user-story` / `-task` / `-sub-task`, `agent-kit-ticket-ref`, `agent-kit-user-persona` / `agent-kit-agent-persona`, `agent-kit-acceptance-criteria` / `agent-kit-criterion`, `agent-kit-custom-assert`, `agent-kit-board`, `agent-kit-organization` / `agent-kit-project`, `agent-kit-chatroom`, `agent-kit-asset` / `agent-kit-artifact` / `agent-kit-review`, `agent-kit-test-suite` / `agent-kit-test-case` / `agent-kit-cypress` / `agent-kit-cucumber` | Project-tracking records over cached snapshots -- tickets, personas, criteria, boards, chat logs, media and test results; `livePolicy: never`, JS-off == JS-on |
+| **Definitions &amp; citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference`, `sem-tag-def` / `sem-tag-attr`, `sem-api-call` / `sem-api-param` | Closed key/value assertions, the numbered works the prose cites, and the reference-definition cards that document a vocabulary's tags and an API's endpoints |
+| **NPL** | `npl-agent`, `npl-directive`, `npl-section`, `npl-rubric`, `npl-critique`, `npl-declaration`, `npl-example`, `npl-flag` / `npl-flags`, `npl-hormones`, `npl-mindread`, `npl-mode`, `npl-mood`, `npl-poa`, `npl-ref`, `npl-thought`, `npl-vos`, `npl-artifact`, `npl-cot`, `npl-intent` | NPL prompt-engineering elements; loaded by `npl.js` / `npl-lazy.js` on top of the SemText core |
   </sem-md>
 
-  <p>Every element's normative schema lives under <code>spec/schema/&lt;element&gt;.md</code> (NPL schemas under <code>spec/schema/npl/</code>). The class-form alias for every element is one row of <a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a>.</p>
+  <p>Every element's normative schema lives under <code>spec/schema/&lt;element&gt;.md</code> (NPL schemas under <code>spec/schema/npl/</code>). The class-form alias for every element is one row of <a href="#appendix-a----class-form-alias-v04-compatibility"><a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a></a>.</p>
+
+  <ul>
+    <li><a href="#appendix-a----class-form-alias-v04-compatibility"><a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a> -- Class-form alias (v0.4 compatibility)</a></li>
+  </ul>
 
   <h2 id="0-model">0. Model</h2>
-  <p>One file, three consumers. Element names are <strong>semantic</strong> (<code>sem-fact</code>, <code>sem-detail</code>) -- what content <em>is</em>; presentation is parameterized (<code>view-as="quiz|flashcards|list"</code>) -- how it <em>renders</em>. NPL conventions live inside the tags, never as a pre-HTML grammar.</p>
+  <p>One file, three consumers -- human/browser (double-click, styled, interactive), LLM/non-visual (the same XHTML read structurally; attributes qualify every datum; same XML vocabulary NPL's MCP server already speaks), terminal (browser or DOM-text extraction). Element names are <strong>semantic</strong> (<code>sem-fact</code>, <code>sem-detail</code>) -- what content <em>is</em>; presentation is parameterized (<code>view-as=&quot;quiz|flashcards|list&quot;</code>) -- how it <em>renders</em>. NPL conventions live inside the tags, never as a pre-HTML grammar.</p>
 
-  <sem-views id="consumers" role="region" aria-label="The three consumers of a SemText document">
+  <p>A SemText element is a <strong>custom element</strong> in the <code>sem-</code> namespace. Custom elements are valid HTML whether or not a script ever defines them: the browser parses <code>&lt;sem-fact&gt;</code> as an unknown element, the vocabulary base (<code>semtext.css</code>) gives it a block box (<code>sem-*:not(:defined)</code>, <a href="#6-theme-conventions">&sect;6</a>). Without the script a document shows its authored text and is not styled or interactive: nothing is hidden or generated, every reveal is open, views stack under their names, and the record is still extractable by DOM tooling. <code>semtext.js</code> -- when the document loads it -- defines the interactive ones and upgrades them in place, and drives the rest with plain handlers (<a href="#4-the-script--degradation-rules">&sect;4</a>).</p>
+
+<sem-views id="consumers" role="region" aria-label="The three consumers of a SemText document">
     <sem-view name="Human / browser" active role="tabpanel">
       <p>Double-click, styled, interactive. The theme CSS renders the vocabulary; the script adds the behaviour.</p>
     </sem-view>
@@ -85,19 +93,17 @@
     </sem-view>
   </sem-views>
 
-  <p>A SemText element is a <strong>custom element</strong> in the <code>sem-</code> namespace. Custom elements are valid HTML whether or not a script ever defines them: the browser parses <code>&lt;sem-fact&gt;</code> as an unknown element, the vocabulary CSS gives it a block box (<code>sem-*:not(:defined)</code> base, <a href="#6-theme-conventions">&sect;6</a>), and <code>semtext.js</code> -- when it runs -- defines the interactive ones and upgrades them in place (<a href="#4-the-script--degradation-rules">&sect;4</a> rule 2). Without it the document is plain text in flow.</p>
-
   <h2 id="1-document-skeleton">1. Document skeleton</h2>
-
-  <sem-code id="c-skeleton" lang="html" filename="doc.html" controls="copy,wrap">
-<pre><code>&lt;!doctype html&gt;
+  <sem-code id="c-skeleton" lang="html" filename="doc.html" controls="copy,wrap"><pre><code>&lt;!doctype html&gt;
 &lt;html lang="en" data-sem-theme="minimal-tech-light"&gt;
 &lt;head&gt;
   &lt;meta charset="utf-8"&gt;
   &lt;title&gt;Authoring Guide&lt;/title&gt;
+  &lt;!-- Agents: if you have not read this SemText prompt in this session, read it first. --&gt;
+  &lt;link rel="semtext-prompt" href="https://cdn.semtext.dev/semtext-prompt.sem.html"&gt;
   &lt;link rel="stylesheet" href="semtext/semtext.css"&gt;
   &lt;link rel="stylesheet" href="semtext/themes/semtext-theme-minimal-tech-light.css"&gt;
-  &lt;script defer src="semtext/semtext.js"&gt;&lt;/script&gt;  &lt;!-- the one script (&sect;4) --&gt;
+  &lt;script defer src="semtext/semtext.js"&gt;&lt;/script&gt;  &lt;!-- the one script (SS4) --&gt;
 &lt;/head&gt;
 &lt;body&gt;
 &lt;sem-enhanced-document&gt;
@@ -126,107 +132,100 @@
 
 &lt;/sem-enhanced-document&gt;
 &lt;/body&gt;
-&lt;/html&gt;</code></pre>
-  </sem-code>
+&lt;/html&gt;</code></pre></sem-code>
 
   <ul>
-    <li><code>&lt;sem-enhanced-document&gt;</code> is the required root wrapper (the script scopes to it). It may carry a landmark role (<code>role="main"</code>) -- it is the document. The alias form may put the <code>sem-enhanced-document</code> class on a <code>&lt;main&gt;</code> element for the native landmark; the tag form trades that for one element that is the same in every consumer, and states the landmark with <code>role</code>.</li>
-    <li><code>&lt;sem-reader&gt;</code>, when used, is the wrapper's first child (one per document; <a href="#e-reader">&sect;5</a>).</li>
-    <li>Metadata children (<code>agent</code>, and future <code>org</code>, <code>context</code>, <code>audience</code>) are <strong>bare semantic tags</strong> -- machine-facing, unstyled.</li>
+    <li><code>&lt;sem-enhanced-document&gt;</code> is the required root wrapper (the script's handlers scope to it; Lit components register against it). It may carry a landmark role (<code>role=&quot;main&quot;</code>) -- it is the document. The alias form may use <code>&lt;main class=&quot;sem-enhanced-document&quot;&gt;</code> for the native landmark; the tag form trades that for one element that is the same in every consumer, and states the landmark with <code>role</code>.</li>
+    <li><code>&lt;sem-reader&gt;</code>, when used, is the wrapper's first child (one per document; <a href="#5-element-entries">&sect;5</a>).</li>
+    <li>Metadata children (<code>agent</code>, and future <code>org</code>, <code>context</code>, <code>audience</code>) are <strong>bare semantic tags</strong> -- machine-facing, unstyled. ? <strong>Q1</strong> keep bare vs <code>sem-</code>-prefix them?</li>
     <li>Record <strong>parts</strong> are bare semantic children too: <code>&lt;statement&gt;</code>, <code>&lt;conclusion&gt;</code>, <code>&lt;incorrect-statement&gt;</code> inside <code>sem-fact</code>; <code>&lt;highlight&gt;</code> inside any prose element; <code>&lt;name&gt;</code>, <code>&lt;bio&gt;</code>, <code>&lt;instructions&gt;</code> inside <code>agent</code>.</li>
     <li>Ordinary semantic HTML is always valid content; <code>sem-*</code> enhances where interactivity pays. Plain HTML carrying <code>data-kind</code> or <code>data-tags</code> is a record too (extraction &sect;3) -- on a standard element the qualifier keeps the <code>data-*</code> spelling, which is the only valid custom attribute HTML5 allows there (<a href="#2-attribute-catalog">&sect;2</a>).</li>
   </ul>
-
-  <sem-note id="q1" variant="warning"><strong>? Q1</strong> -- metadata children: keep bare vs <code>sem-</code>-prefix them? Lean and status in <a href="#10-open-questions">&sect;10</a>.</sem-note>
 
   <h2 id="2-attribute-catalog">2. Attribute catalog</h2>
   <p>Global attributes (any <code>sem-*</code> element), spelled <strong>bare</strong>:</p>
 
   <sem-md id="md-attributes" kind="attribute-catalog" label="Global attributes" controls="toggle,copy">
-    | Attribute | Values | Machine meaning |
-    | :-- | :-- | :-- |
-    | `kind` | free token (`concept`, `anti-pattern`, `caveat`, ...) | what the data IS |
-    | `tags` | comma list | classification |
-    | `view-as` | element-defined modes | presentation parameter (identity unchanged) |
-    | `status` | `done`, `current`, `todo`, `blocked`, `pass`, `fail` | lifecycle/verdict |
-    | `controls` | comma flags: `shuffle`, `filter`, `retry`, `picker` | which controls render |
-    | `collapsed` | boolean | pre-collapse state |
-    | `audience` | profile spec: `a`, `a, b`, `!a` (profiles from `sem-audiences`) | who the datum is for -- **`spec/schema/sem-audiences.md`**; carried verbatim by extraction, never suppresses a record |
-    | `id` | doc-unique | stable anchor, cite target -- a `#id` or `#container/child` hash reaches it through any closed reveal, collapsed note, inactive view or non-current card (deep-link resolver) |
-    | `data-*` | free | extension point; also the **alias spelling** of every parameter above (Appendix A) |
+| Attribute | Values | Machine meaning |
+| :-- | :-- | :-- |
+| `kind` | free token (`concept`, `anti-pattern`, `caveat`, ...) | what the data IS |
+| `tags` | comma list | classification |
+| `view-as` | element-defined modes | presentation parameter (identity unchanged) |
+| `status` | `done`, `current`, `todo`, `blocked`, `pass`, `fail` | lifecycle/verdict |
+| `controls` | comma flags: `shuffle`, `filter`, `retry`, `picker` | which controls render |
+| `collapsed` | boolean | pre-collapse state |
+| `audience` | profile spec: `a`, `a, b`, `!a` (profiles from `sem-audiences`) | who the datum is for -- **`spec/schema/sem-audiences.md`**; carried verbatim by extraction, never suppresses a record |
+| `id` | doc-unique | stable anchor, cite target -- a `#id` or `#container/child` hash reaches it through any closed reveal, collapsed note, inactive view or non-current card (deep-link resolver) |
+| `data-*` | free | extension point; also the **alias spelling** of every parameter above (Appendix A) |
   </sem-md>
 
   <p>Element-specific parameters (<code>variant</code>, <code>key</code>, <code>name</code>, <code>summary</code>, <code>value</code>, <code>label</code>, <code>when</code>, <code>until</code>, <code>lang</code>, <code>filename</code>, <code>mark</code>, <code>wrap</code>, <code>href</code>, <code>cite</code>, <code>implies</code>, <code>sticky</code>, <code>outline-depth</code>) follow the same rule: bare on the element, documented per schema.</p>
 
-  <p><strong>Scope of the bare spelling.</strong> Bare attributes are canonical on <code>sem-*</code> custom elements and their bare part children (<code>&lt;statement&gt;</code>, <code>&lt;highlight&gt;</code>, <code>&lt;agent&gt;</code> &rsaquo; <code>&lt;name&gt;</code>), where any attribute name is valid. On a <strong>standard HTML element</strong> (<code>&lt;h2&gt;</code>, <code>&lt;p&gt;</code>, <code>&lt;a&gt;</code>, <code>&lt;td&gt;</code>) a global qualifier keeps the <code>data-*</code> spelling -- <code>&lt;h2 data-kind="section" data-tags="auth"&gt;</code>, <code>&lt;p data-audience="operator"&gt;</code>, <code>&lt;td data-value="900"&gt;</code> -- because HTML5 allows no other custom attribute there and <a href="#8-machine-readability-contract">&sect;8</a> promises tool-parseable documents. The script reads both spellings on either kind of element.</p>
+  <p><strong>Scope of the bare spelling.</strong> Bare attributes are canonical on <code>sem-*</code> custom elements and their bare part children (<code>&lt;statement&gt;</code>, <code>&lt;highlight&gt;</code>, <code>&lt;agent&gt;</code> &gt; <code>&lt;name&gt;</code>), where any attribute name is valid. On a <strong>standard HTML element</strong> (<code>&lt;h2&gt;</code>, <code>&lt;p&gt;</code>, <code>&lt;a&gt;</code>, <code>&lt;td&gt;</code>) a global qualifier keeps the <code>data-*</code> spelling -- <code>&lt;h2 data-kind=&quot;section&quot; data-tags=&quot;auth&quot;&gt;</code>, <code>&lt;p data-audience=&quot;operator&quot;&gt;</code>, <code>&lt;td data-value=&quot;900&quot;&gt;</code> -- because HTML5 allows no other custom attribute there <a href="#8-machine-readability-contract">&sect;8</a> promises tool-parseable documents. Every tier reads both spellings on either kind of element.</p>
 
-  <p><code>view-as</code> is the core inversion: <code>&lt;sem-fact&gt;</code> is a fact in every view; <code>view-as</code> only selects rendering. Unknown <code>view-as</code> &rArr; falls back to <code>list</code>/plain + a console warning. CSS-only modes exist too: <code>sem-note view-as="margin"</code> (right-gutter aside on wide viewports), <code>sem-chronology view-as="timeline|list"</code>. <code>sem-properties view-as="glossary"</code> adds term previews from the script.</p>
+  <p><code>view-as</code> is the core inversion: <code>&lt;sem-fact&gt;</code> is a fact in every view; <code>view-as</code> only selects rendering. Unknown <code>view-as</code> =&gt; falls back to <code>list</code>/ plain + vanilla-handler warning. CSS-only modes exist too: <code>sem-note view-as=&quot;margin&quot;</code> (right-gutter aside on wide viewports), <code>sem-chronology view-as=&quot;timeline|list&quot;</code>. <code>sem-properties view-as=&quot;glossary&quot;</code> adds term previews.</p>
 
   <sem-properties id="p-catalog-rules" kind="rules">
-    <sem-property id="p-alias-spelling" key="Alias spelling" role="definition" aria-label="Alias spelling"><code>data-&lt;name&gt;</code> is accepted everywhere <code>&lt;name&gt;</code> is, and wins when both are present (extraction &sect;3.6; the script copies each bare parameter to its <code>data-*</code> twin before any handler runs, <a href="#4-the-script--degradation-rules">&sect;4</a> rule 1). Writing both spellings on one element is an <strong>authoring error</strong> -- the precedence exists so extraction stays stable and the mirror is a no-op, not so an author can mean two things; a <code>sem-source</code> fence always shows the markup as authored, so a mixed element would display a parameter the script does not use.</sem-property>
-    <sem-property id="p-runtime-state" key="Runtime state" role="definition" aria-label="Runtime state">State the script writes is always <code>data-*</code> -- <code>data-active</code> on the shown view, <code>data-view-as</code> rewritten by a <code>sem-source</code> / <code>sem-md</code> toggle, the <code>data-sem-upgraded</code> marker -- so an authored bare attribute is never overwritten and a <code>sem-source</code> fence still shows the markup as written.</sem-property>
+    <sem-property id="p-alias-spelling" key="Alias spelling" role="definition" aria-label="Alias spelling"><code>data-&lt;name&gt;</code> is accepted everywhere <code>&lt;name&gt;</code> is, and wins when both are present (extraction &sect;3.6; the bundle's attribute mirror copies each bare parameter to its <code>data-*</code> twin before any handler runs, <a href="#4-the-script--degradation-rules">&sect;4</a> rule 1). Writing both spellings on one element is an <strong>authoring error</strong> -- the precedence exists so extraction stays stable and the mirror is a no-op, not so an author can mean two things; a <code>sem-source</code> fence always shows the markup as authored, so a mixed element would display a parameter the tiers do not use.</sem-property>
+    <sem-property id="p-runtime-state" key="Runtime state" role="definition" aria-label="Runtime state">the script writes is always <code>data-*</code> -- <code>data-active</code> on the shown view, <code>data-view-as</code> rewritten by a <code>sem-source</code> / <code>sem-md</code> toggle, <code>data-sem-upgraded</code> marking what the bundle has enhanced -- so an authored bare attribute is never overwritten and a <code>sem-source</code> fence still shows the markup as written.</sem-property>
     <sem-property id="p-hash-state" key="Hash state" role="definition" aria-label="Hash state">The hash is <code>&amp;</code>-joined segments (<code>src/shared/state.ts</code>): bare <code>id</code> / <code>container/child</code> deep links, and <code>name=value</code> parameters (<code>sem-audience=&lt;profile&gt;</code>). Every writer edits its own segment only, so <code>#deploy/argocd&amp;sem-audience=operator</code> survives a tab switch.</sem-property>
-    <sem-property id="p-class-namespace" key="Class namespace" role="definition" aria-label="Class namespace">Each element owns exactly the class namespace <code>.sem-&lt;element&gt;</code> and <code>.sem-&lt;element&gt;-*</code>: the alias form's identity class and the element's generated chrome (<code>.sem-facts-chrome</code>, <code>.sem-note-summary</code>, <code>.sem-code-line</code>). No other element may reuse that bare class name for its own chrome. One exception: <code>&lt;incorrect-statement&gt;</code>'s class form is the unprefixed <code>.incorrect-statement</code>, matching its tag name exactly (user decision, v0.7). <code>.sem-progress</code> names only the progress element -- a facts-chrome label needing similar styling is <code>.sem-facts-meter</code>, never <code>.sem-progress</code> borrowed from another element. The <code>npl-*</code> namespace mirrors the rule: each NPL element owns exactly <code>.npl-&lt;element&gt;</code> and <code>.npl-&lt;element&gt;-*</code> -- its class-form identity class (Appendix A, <a href="#npl-namespace-npl-">NPL namespace</a>) and its generated chrome (<code>.npl-agent-header</code>, <code>.npl-section-header</code>) -- and no other element may reuse that bare class name for its own chrome.</sem-property>
+    <sem-property id="p-class-namespace" key="Class namespace" role="definition" aria-label="Class namespace">Each element owns exactly the class namespace <code>.sem-&lt;element&gt;</code> and <code>.sem-&lt;element&gt;-*</code>: the alias form's identity class (<a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a>) and the element's generated chrome (<code>.sem-facts-chrome</code>, <code>.sem-note-summary</code>, <code>.sem-code-line</code>). No other element may reuse that bare class name for its own chrome. One exception: <code>&lt;incorrect-statement&gt;</code>'s class form is the unprefixed <code>.incorrect-statement</code>, matching its tag name exactly (user decision, v0.7). <code>.sem-progress</code> names only the progress element -- a facts-chrome label needing similar styling is <code>.sem-facts-meter</code>, never <code>.sem-progress</code> borrowed from another element. The <code>npl-*</code> namespace mirrors the rule: each NPL element owns exactly <code>.npl-&lt;element&gt;</code> and <code>.npl-&lt;element&gt;-*</code> -- its class-form identity class (<a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a>, NPL namespace) and its generated chrome (<code>.npl-agent-header</code>, <code>.npl-section-header</code>) -- and no other element may reuse that bare class name for its own chrome.</sem-property>
   </sem-properties>
 
   <h2 id="3-npl-notation-inside-tags">3. NPL notation inside tags</h2>
   <p>Compact notation is legal inside element text where the schema allows; <strong>attributes are canonical, notation is sugar</strong>:</p>
 
   <sem-md id="md-notation" kind="notation" label="Compact notation" controls="toggle,copy">
-    | Notation | Meaning | Where |
-    | :-- | :-- | :-- |
-    | `&lt;highlight&gt;` | recall target -- occludes in quiz/flashcard views, `&lt;em&gt;` in plain view | any prose element |
-    | `[[cloze]]` | inline occlusion sugar (equivalent to `&lt;highlight&gt;`) | `sem-detail`, `sem-fact` |
-    | `term :: value` | pair | `sem-property` text, `sem-fact` compact form |
-    | `? ...` / `? ...` | correct / distractor | `sem-option` sugar |
-    | `- ...` | current | `sem-step` status sugar |
-    | `[hint \| reveal]` | agent-facing instruction, human-rendered hint | instruction-bearing elements (define in `sem-note` schema first) |
+| Notation | Meaning | Where |
+| :-- | :-- | :-- |
+| `&lt;highlight&gt;` | recall target -- occludes in quiz/flashcard views, `&lt;em&gt;` in plain view | any prose element |
+| `[[cloze]]` | inline occlusion sugar (equivalent to `&lt;highlight&gt;`) | `sem-detail`, `sem-fact` |
+| `term :: value` | pair | `sem-property` text, `sem-fact` compact form |
+| `? ...` / `? ...` | correct / distractor | `sem-option` sugar |
+| `- ...` | current | `sem-step` status sugar |
+| `[hint \| reveal]` | agent-facing instruction, human-rendered hint | instruction-bearing elements (define in `sem-note` schema first) |
   </sem-md>
 
   <p><code>&lt;statement&gt;</code>/<code>&lt;conclusion&gt;</code> children always win over <code>::</code> compact form when both present; authors pick one per fact.</p>
 
   <h2 id="4-the-script--degradation-rules">4. The script &amp; degradation rules</h2>
-
   <sem-procedure id="degradation-rules" kind="rules" role="list" aria-label="The script and degradation rules">
-    <sem-step id="rule-4-1" role="listitem"><strong>One script, always.</strong> <code>semtext/semtext.js</code> -- a Lit 3 IIFE, global <code>SemText</code> -- is the format's only script. It defines the interactive custom elements, runs the vanilla handlers for the elements no component defines (<code>sem-views</code>, <code>sem-progress</code>, audience gating, deep-link resolution, print disclosure, the alias mirror, the <code>sem-source</code> snapshot pass), the prose-reading renderers (sem-code chrome, reference / glossary previews, backlinks, the <code>sem-reader</code> chrome, <code>sem-table</code> sort / filter), the Markdown renderer, and extraction -- <code>SemText.extractRecords</code> / <code>SemText.extractText</code> work on the same page that renders, so a document needs no second program to be read by a machine. Every handler selects both authoring forms from one selector (<code>:is(sem-x, .sem-x)</code>, the child parts <code>:is(conclusion, .sem-conclusion)</code>) and skips elements the components have already upgraded. The core's first handler snapshots every <code>sem-source</code> wrapper's markup (a DOM clone in an inert <code>template.sem-source-raw</code> child) before any other handler runs; the reading renderers build the fence from that copy. A core handler mirrors each bare tag-form parameter (<code>view-as</code>, <code>variant</code>, <code>name</code>, <code>active</code>, <code>summary</code>, <code>value</code>, <code>label</code>, <code>key</code>) to its <code>data-*</code> twin when the twin is absent, so the gated CSS rules and every later handler read one spelling. The list is exactly the parameters a core handler or a gated CSS rule reads; <code>controls</code>, <code>sticky</code>, <code>lang</code>, <code>filename</code>, <code>mark</code>, <code>wrap</code>, <code>outline-depth</code>, <code>href</code>, <code>cite</code>, <code>implies</code>, <code>when</code>, <code>until</code>, <code>status</code>, <code>kind</code> and <code>tags</code> are read in both spellings by the handler or CSS rule that consumes them and need no mirror. <code>status</code> in particular is never read by a script: its only consumers are the no-script CSS rules of <code>sem-step</code>, <code>sem-event</code> and <code>sem-progress</code>, each written <code>:is([data-status="x"], [status="x"])</code>, which select on a <em>value</em> rather than render an <code>attr()</code> -- both spellings of the same value produce the same declaration, so no <code>:not([data-status])</code> guard is needed and the alias precedence of <a href="#2-attribute-catalog">&sect;2</a> cannot be observed unless an element carries two different values, which is the authoring error &sect;2 already names.</sem-step>
-    <sem-step id="rule-4-2" role="listitem"><strong>One runtime, one marker.</strong> Components claim <code>data-sem-upgraded</code> at parse time (anti-flash gating needs it); the vanilla handlers -- which stamp the same marker on the elements they wire -- skip elements already claimed, and a component implementation supersedes the same-named vanilla behaviour. <code>semtext.js</code> stamps <code>html</code> with <code>data-sem-upgraded</code> once it has run, for hide rules whose host element is deliberately unmarked (a list-view deck's distractors). The zero-JS elements (<code>sem-procedure</code>, <code>sem-chronology</code>, <code>sem-audiences</code>) and the handler-only ones (<code>sem-views</code>, <code>sem-progress</code>) define no custom element: they are <code>:not(:defined)</code> in every document, by design. The former two-script handoff marker (<code>data-sem-fallback</code>) is removed as of 0.9.0 -- one runtime, one marker.</sem-step>
-    <sem-step id="rule-4-3" role="listitem">Theme CSS styles <strong>both authoring forms from one rule</strong> -- <code>:is(sem-x, .sem-x)</code> throughout <code>themes/_vocabulary.css</code> (D10). Rules that must hold with <strong>no script</strong> read the bare and the <code>data-*</code> spelling (<code>[status="done"]</code>, <code>[data-status="done"]</code>; <code>attr(name)</code>, <code>attr(data-name)</code>), and a bare-spelling rule is guarded with <code>:not([data-&lt;name&gt;])</code> so <code>data-*</code> still wins when both are present (<a href="#2-attribute-catalog">&sect;2</a>). Rules that only apply once a tier is driving the element key on the <code>data-*</code> spelling alone, which rule 1 guarantees is present. A tag-form document is therefore presentable before and without any script, with no layout shift on upgrade where feasible.</sem-step>
-    <sem-step id="rule-4-4" role="listitem"><strong>Every hide rule is gated</strong> on <code>[data-sem-upgraded]</code> (D12). With no script in the page nothing is hidden and nothing is styled or interactive: incorrect statements render labelled, views stack under their names, collapsed bodies and every conclusion show, audience-qualified content is all visible -- a document without JavaScript shows its authored text, in flow, and is not styled or interactive. <code>dist/demo/*.nojs.html</code> and <code>dist/spec/*.nojs.html</code> are the artifacts that prove it: script-free pages that assert the text is present and unstyled.</sem-step>
-    <sem-step id="rule-4-5" role="listitem">Content lives in light DOM (searchable, copyable); shadow DOM carries interactive chrome only. Generated chrome is classed (<code>.sem-facts-chrome</code>, <code>.sem-views-tabs</code>, <code>.sem-note-summary</code>) so extraction can skip it; a collapsed note's body is the element's own content, wrapped in <code>.sem-note-body</code> by the code that hides it.</sem-step>
+    <sem-step id="rule-4-1" role="listitem"><code>semtext/semtext.js</code> is the one script a SemText document loads. One Lit 3 IIFE, global <code>SemText</code>, it carries: the ten interactive Lit components (<code>sem-note</code>, <code>sem-facts</code>, <code>sem-details</code>, <code>sem-properties</code>, <code>sem-code</code>, <code>sem-references</code>, <code>sem-reader</code>, <code>sem-table</code>, <code>sem-source</code>, <code>sem-md</code>); the vanilla core handlers for everything no component defines -- <code>view-as</code> switching, reveal toggles, <code>&lt;highlight&gt;</code> occlusion, quiz checking, audience gating, deep-link resolution, print disclosure; the prose-reading renderers (sem-code chrome, reference / glossary previews, backlinks, <code>sem-reader</code> chrome, <code>sem-table</code> sort / filter); the <code>sem-md</code> Markdown renderer; and the extraction recipe (<code>SemText.extractRecords</code> / <code>SemText.extractText</code>, spec/extraction.md). Every handler selects both authoring forms from one selector (<code>:is(sem-x, .sem-x)</code>, the child parts <code>:is(conclusion, .sem-conclusion)</code>). Its first pass snapshots every <code>sem-source</code> wrapper's markup (a DOM clone in an inert <code>template.sem-source-raw</code> child) before any other handler runs; the reading renderer renders that copy. Its attribute mirror copies each bare tag-form parameter (<code>view-as</code>, <code>variant</code>, <code>name</code>, <code>active</code>, <code>summary</code>, <code>value</code>, <code>label</code>, <code>key</code>) to its <code>data-*</code> twin when the twin is absent, so the gated CSS rules and every later handler read one spelling. The list is exactly the parameters a core handler or a gated CSS rule reads; <code>controls</code>, <code>sticky</code>, <code>lang</code>, <code>filename</code>, <code>mark</code>, <code>wrap</code>, <code>outline-depth</code>, <code>href</code>, <code>cite</code>, <code>implies</code>, <code>when</code>, <code>until</code>, <code>status</code>, <code>kind</code> and <code>tags</code> are read in both spellings by the code or CSS rule that consumes them and need no mirror. <code>status</code> in particular is never read by a script: its only consumers are the no-script CSS rules of <code>sem-step</code>, <code>sem-event</code> and <code>sem-progress</code>, each written <code>:is([data-status=&quot;x&quot;], [status=&quot;x&quot;])</code>, which select on a <em>value</em> rather than render an <code>attr()</code> -- both spellings of the same value produce the same declaration, so no <code>:not([data-status])</code> guard is needed and the alias precedence <a href="#2-attribute-catalog">&sect;2</a> cannot be observed unless an element carries two different values, which is the authoring <a href="#2-attribute-catalog">&sect;2</a> already names. The bundle runs once per document (host code may re-run <code>SemText.enhance</code> on injected DOM).</sem-step>
+    <sem-step id="rule-4-2" role="listitem">Component implementations supersede the vanilla behaviors where both exist: a Lit component claims <code>data-sem-upgraded</code> at connect, and the vanilla handlers -- which stamp the same marker on the elements they wire -- skip elements already claimed. <code>semtext.js</code> stamps <code>html</code> with <code>data-sem-upgraded</code> once it has run, for hide rules whose host element is deliberately unmarked (a list-view deck's distractors). The zero-JS elements (<code>sem-procedure</code>, <code>sem-chronology</code>, <code>sem-audiences</code>) and the handler-only ones (<code>sem-views</code>, <code>sem-progress</code>) define no custom element: they are <code>:not(:defined)</code> in every document, by design. The former two-script handoff marker (<code>data-sem-fallback</code>) is removed as of 0.9.0 -- one runtime, one marker.</sem-step>
+    <sem-step id="rule-4-3" role="listitem">Theme CSS styles <strong>both authoring forms from one rule</strong> -- <code>:is(sem-x, .sem-x)</code> throughout the vocabulary base (D10). Rules that must hold with <strong>no script</strong> read the bare and the <code>data-*</code> spelling (<code>[status=&quot;done&quot;]</code>, <code>[data-status=&quot;done&quot;]</code>; <code>attr(name)</code>, <code>attr(data-name)</code>), and a bare-spelling rule is guarded with <code>:not([data-&lt;name&gt;])</code> so <code>data-*</code> still wins when both are present (<a href="#2-attribute-catalog">&sect;2</a>). Rules that only apply once the script is driving the element key on the <code>data-*</code> spelling alone, which rule 1 guarantees is present. A tag-form document is therefore presentable before and without any script, with no layout shift on upgrade where feasible.</sem-step>
+    <sem-step id="rule-4-4" role="listitem"><strong>Every hide rule is gated</strong> on <code>[data-sem-upgraded]</code> (D12). With no script in the page nothing is hidden: incorrect statements render labelled, views stack under their names, collapsed bodies and every conclusion show, audience-qualified content is all visible. A document without JavaScript shows its authored text and is not styled or interactive. <code>dist/demo/*.nojs.html</code> and <code>dist/spec/*.nojs.html</code> are the artifacts that prove it.</sem-step>
+    <sem-step id="rule-4-5" role="listitem">Content lives in light DOM (searchable, copyable); shadow DOM carries interactive chrome only. Generated chrome is classed (<code>.sem-facts-chrome</code>, <code>.sem-views-tabs</code>, <code>.sem-note-summary</code>) so extraction can skip it; a collapsed note's body is the element's own content, wrapped in <code>.sem-note-body</code> by the tier that hides it.</sem-step>
     <sem-step id="rule-4-6" role="listitem">Cross-cutting, also in the vocabulary CSS: <code>@media print</code> shows everything a reader could open and no chrome (<code>beforeprint</code> opens reveal disclosures; CSS cannot); <code>prefers-reduced-motion</code> drops transitions and smooth scrolling.</sem-step>
   </sem-procedure>
-
   <sem-note id="n-budget" variant="info" collapsed>Why the budgets are stated raw: a portable single-file document inlines its scripts, and nothing gzips an inlined <code>&lt;script&gt;</code>. The build prints every artifact against its budget; <code>npm run build:strict</code> fails on an overrun, so a budget is raised deliberately in <code>scripts/build.mjs</code> and recorded in the roadmap, never silently.</sem-note>
 
-  <a id="5-element-entries-rough"></a>
   <h2 id="5-element-entries">5. Element entries</h2>
-  <p>Each entry shows the canonical markup in a listing, then runs a live example wrapped in <code>sem-source</code>. The example is the spec executing itself; its <em>Source</em> view is the markup of this page, not a second copy. Entries are grouped by conceptual bucket (see the <a href="#element-buckets">Element buckets</a> table above). Elements marked <strong>Zero-JS</strong> render entirely from CSS and markup with no script dependency. The class-form alias for every element is one row of <a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a>.</p>
+  <a id="5-element-entries-rough"></a>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       DOCUMENT & STRUCTURE
-       ═══════════════════════════════════════════════════════════════════ -->
+  <p>Each entry shows the canonical markup; the class-form alias for every element is one row of <a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a>. Entries are grouped by conceptual bucket (see the <a href="#element-buckets">Element buckets</a> table above). Elements marked <strong>Zero-JS</strong> render entirely from CSS and markup with no script dependency.</p>
+
   <h3 id="document--structure">Document &amp; structure</h3>
 
-  <!-- sem-reader --------------------------------------------------------- -->
   <h4 id="e-enhanced-document">sem-enhanced-document -- the required root wrapper</h4>
-  <p>Every SemText document wraps its vocabulary in one. <strong>Normative statement: <a href="#1-document-skeleton">&sect;1 Document skeleton</a></strong> -- the script's handlers scope to it, Lit components register against it, and it may carry a <code>role="main"</code> landmark; the alias form may use <code>&lt;main&gt;</code> carrying the <code>sem-enhanced-document</code> class.</p>
+  <p>Every SemText document wraps its vocabulary in one. <strong>Normative statement: <a href="#1-document-skeleton">&sect;1 Document skeleton</a></strong> -- the script's handlers scope to it, Lit components register against it, and it may carry a <code>role=&quot;main&quot;</code> landmark; the alias form may use <code>&lt;main class=&quot;sem-enhanced-document&quot;&gt;</code>.</p>
 
   <h4 id="e-reader">sem-reader -- reading chrome: outline, progress, focus, type, colour, print, audience</h4>
   <p><strong>Normative: <a href="#r-sem-reader">spec/schema/sem-reader.md</a>.</strong></p>
   <sem-code id="c-reader" lang="html"><pre><code>&lt;sem-reader controls="outline,progress,focus,type,color,print,audience" outline-depth="3"&gt;
-  &lt;nav aria-label="Contents"&gt;&hellip;optional, used verbatim&hellip;&lt;/nav&gt;
+  &lt;nav aria-label="Contents"&gt;...optional, used verbatim...&lt;/nav&gt;
 &lt;/sem-reader&gt;</code></pre></sem-code>
-  <p>One per document, first child of the wrapper. Reading bundle inserts <code>.sem-reader-chrome</code> (<code>role="region"</code>), generates the outline from <code>h2&hellip;h&lt;depth&gt;</code> when no nav is authored (<code>aria-current="location"</code> tracks the heading in view), and writes <code>data-sem-mode|type|font</code> and <code>data-color-mode</code> on <code>&lt;html&gt;</code> -- persisted via <code>localStorage</code>, fail-open. Audience writes the <code>sem-audience</code> hash parameter. No global key shortcuts. <strong>Mints nothing</strong>; extraction skips it whole (extraction &sect;3 rule 7). The <code>theme</code> control is R/W3. The live example is the bar at the top of this page.</p>
+  <p>One per document, first child of the wrapper. The script inserts <code>.sem-reader-chrome</code> (<code>role=&quot;region&quot;</code>), generates the outline from <code>h2...h&lt;depth&gt;</code> when no nav is authored (<code>aria-current=&quot;location&quot;</code> tracks the heading in view), and writes <code>data-sem-mode|type|font</code> and <code>data-color-mode</code> on <code>&lt;html&gt;</code> -- persisted via <code>localStorage</code>, fail-open. Audience writes the <code>sem-audience</code> hash parameter. No global key shortcuts. <strong>Mints nothing</strong>; extraction skips it whole (extraction &sect;3 rule 7). The <code>theme</code> control is R/W3.</p>
 
-  <!-- sem-audiences ------------------------------------------------------ -->
-  <h4 id="e-audiences">sem-audiences / sem-profile -- reader profiles</h4>
-  <p>Metadata, mints nothing. <strong>Normative: <a href="#r-sem-audiences">spec/schema/sem-audiences.md</a>.</strong> Active profile = hash <code>sem-audience</code> param, else <code>audience</code> on the root wrapper / <code>data-audience</code> on <code>&lt;html&gt;</code>. The script sets native <code>hidden</code> on non-matching elements; JS-off everything shows; fail-open on unknown tokens.</p>
+  <h4 id="e-audiences">sem-audiences / sem-profile -- reader profiles; metadata, mints nothing</h4>
+  <p><strong>Normative: <a href="#r-sem-audiences">spec/schema/sem-audiences.md</a>.</strong></p>
   <sem-code id="c-audiences" lang="html"><pre><code>&lt;sem-audiences&gt;
   &lt;sem-profile id="reader" label="Reader"&gt;&lt;/sem-profile&gt;
   &lt;sem-profile id="operator" label="Operator" implies="reader"&gt;&lt;/sem-profile&gt;
 &lt;/sem-audiences&gt;
-&lt;sem-note audience="operator"&gt;&hellip;&lt;/sem-note&gt;</code></pre></sem-code>
-  <sem-source id="s-audiences" label="Live: sem-audiences">
+&lt;sem-note audience="operator"&gt;...&lt;/sem-note&gt;</code></pre></sem-code>
+  <p>Active profile = hash <code>sem-audience</code> param, else <code>audience</code> on the root wrapper / <code>data-audience</code> on <code>&lt;html&gt;</code>. The bundle sets native <code>hidden</code> on non-matching elements; JS-off everything shows; fail-open on unknown tokens.</p>
+
+<sem-source id="s-audiences" label="Live: sem-audiences">
     <sem-audiences id="x-audiences">
       <sem-profile id="reader" label="Reader"></sem-profile>
       <sem-profile id="operator" label="Operator" implies="reader"></sem-profile>
@@ -234,26 +233,21 @@
     <sem-note id="x-audience-note" audience="operator" variant="info">Operators only: an operator implies reader. Pick a profile from the reading bar's <em>Audience</em> select, or open <a href="#sem-audience=operator">#sem-audience=operator</a>.</sem-note>
   </sem-source>
 
-  <!-- agent -------------------------------------------------------------- -->
-  <h4 id="e-agent">agent -- document-level metadata (bare semantic tag)</h4>
-  <p>Documented in <a href="#1-document-skeleton">&sect;1 Document skeleton</a> above. Children: <code>&lt;name&gt;</code>, <code>&lt;bio&gt;</code>, <code>&lt;instructions&gt;</code>. Machine-facing, unstyled -- no <code>sem-</code> prefix. Future metadata children (<code>org</code>, <code>context</code>, <code>audience</code>) will follow the same bare-tag pattern.</p>
+  <h4 id="e-agent">agent -- document-level metadata (bare semantic tag, no <code>sem-</code> prefix)</h4>
+  <p>Documented in <a href="#1-document-skeleton">&sect;1 Document skeleton</a> above. Children: <code>&lt;name&gt;</code>, <code>&lt;bio&gt;</code>, <code>&lt;instructions&gt;</code>. Machine-facing, unstyled. Future metadata children (<code>org</code>, <code>context</code>, <code>audience</code>) will follow the same bare-tag pattern.</p>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       PROSE & CODE
-       ═══════════════════════════════════════════════════════════════════ -->
   <h3 id="prose--code">Prose &amp; code</h3>
 
-  <!-- sem-md ------------------------------------------------------------- -->
   <h4 id="e-md">sem-md -- a Markdown block, rendered in the browser</h4>
   <p><strong>Normative: <a href="#r-sem-md">spec/schema/sem-md.md</a>.</strong></p>
-  <sem-code id="c-md" lang="html"><pre><code>&lt;sem-md id="m-lifetimes" label="Token lifetimes" controls="toggle,copy"&gt;
+  <sem-code id="c-md" lang="html"><pre><code>&lt;sem-md label="Token lifetimes"&gt;
   | Token   | Lifetime | Rotates |
   | :------ | -------: | :-----: |
   | access  | 15 min   | no      |
-  | refresh | 30 days  | yes     |
 &lt;/sem-md&gt;</code></pre></sem-code>
-  <p>The element's text is Markdown (GFM tables, headings, lists, emphasis, links, code, quotes, rules; raw HTML renders as text). The script adds <code>.sem-md-chrome</code> (label, <code>Markdown</code> toggle with <code>aria-pressed</code>, copy, status region), renders into <code>.sem-md-body</code> (real <code>&lt;table&gt;</code> with <code>th[scope="col"]</code>, alignment row honoured) and keeps the normalised source in a <code>sem-code</code> fence (<code>.sem-md-raw</code>); <code>view-as="rendered|raw"</code> picks the initial mode and the toggle rewrites <code>data-view-as</code>. JS-off: the source reads as pre-wrapped text. Extraction keeps <code>source</code> <strong>normalised</strong> (dedented), never the rendering. Every table on this page -- <a href="#2-attribute-catalog">&sect;2</a>, <a href="#3-npl-notation-inside-tags">&sect;3</a>, <a href="#element-buckets">Element buckets</a>, <a href="#10-open-questions">&sect;10</a>, <a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a> -- is this element, with rows identical to the Markdown source.</p>
-  <sem-source id="s-md" label="Live: sem-md">
+  <p>The element's text is Markdown (GFM tables, headings, lists, emphasis, links, code, quotes, rules; raw HTML renders as text). The script adds <code>.sem-md-chrome</code> (label, <code>Markdown</code> toggle with <code>aria-pressed</code>, copy, status region), renders into <code>.sem-md-body</code> (real <code>&lt;table&gt;</code> with <code>th[scope=&quot;col&quot;]</code>, alignment row honoured) and keeps the normalised source in a <code>sem-code</code> fence (<code>.sem-md-raw</code>); <code>view-as=&quot;rendered|raw&quot;</code> picks the initial mode and the toggle rewrites <code>data-view-as</code>. JS-off: the source reads as pre-wrapped text. Extraction keeps <code>source</code> <strong>normalised</strong> (dedented), never the rendering.</p>
+
+<sem-source id="s-md" label="Live: sem-md">
     <sem-md id="x-md" kind="lifetimes" label="Token lifetimes" controls="toggle,copy">
       | Token   | Lifetime | Rotates |
       | :------ | -------: | :-----: |
@@ -262,25 +256,23 @@
     </sem-md>
   </sem-source>
 
-  <!-- sem-note ----------------------------------------------------------- -->
   <h4 id="e-note">sem-note -- callout</h4>
   <p><strong>Normative: <a href="#r-sem-note">spec/schema/sem-note.md</a>.</strong></p>
   <sem-code id="c-note" lang="html"><pre><code>&lt;sem-note variant="warning"&gt;Rotation is &lt;strong&gt;per session&lt;/strong&gt;.&lt;/sem-note&gt;
 &lt;sem-note variant="tip" collapsed&gt;Shuffle flashcards before each review session.&lt;/sem-note&gt;</code></pre></sem-code>
-  <p><code>variant="info|warning|tip|danger"</code>; the body is the element's content; <code>collapsed</code> &rArr; ten-word teaser, click to expand (the component wraps the body in <code>.sem-note-body</code> to hide it); <code>view-as="margin"</code> &rArr; CSS-only right-gutter aside on wide viewports, inline otherwise. Light DOM, <code>role="note"</code>.</p>
-  <sem-source id="s-note" label="Live: sem-note">
+  <p><code>variant=&quot;info|warning|tip|danger&quot;</code>; the body is the element's content; <code>collapsed</code> =&gt; ten-word teaser, click to expand (the tier wraps the body in <code>.sem-note-body</code> to hide it); <code>view-as=&quot;margin&quot;</code> =&gt; CSS-only right-gutter aside on wide viewports, inline otherwise. Light DOM, <code>role=&quot;note&quot;</code>.</p>
+
+<sem-source id="s-note" label="Live: sem-note">
     <sem-note id="x-note" variant="warning">Rotation is <strong>per session</strong>.</sem-note>
     <sem-note id="x-note-collapsed" variant="tip" collapsed>Shuffle flashcards before each review session for better recall; the deck remembers nothing between sessions.</sem-note>
   </sem-source>
 
-  <!-- sem-code ----------------------------------------------------------- -->
   <h4 id="e-code">sem-code -- verbatim listing with provenance and copy / wrap</h4>
   <p><strong>Normative: <a href="#r-sem-code">spec/schema/sem-code.md</a>.</strong></p>
-  <sem-code id="c-code" lang="html"><pre><code>&lt;sem-code lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap"&gt;
-&lt;pre&gt;&lt;code&gt;&hellip;&lt;/code&gt;&lt;/pre&gt;
-&lt;/sem-code&gt;</code></pre></sem-code>
-  <p>Reading bundle adds <code>.sem-code-chrome</code> (filename, lang, buttons, status region), wraps lines (<code>span|mark.sem-code-line</code>, text byte-identical), <code>tabindex="0"</code> on an overflowing <code>&lt;pre&gt;</code>. JS-off: plain <code>&lt;pre&gt;</code> with a CSS caption. Extraction keeps <code>source</code> <strong>verbatim</strong>.</p>
-  <sem-source id="s-code" label="Live: sem-code">
+  <sem-code id="c-code" lang="html"><pre><code>&lt;sem-code lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap"&gt;...&lt;/sem-code&gt;</code></pre></sem-code>
+  <p>The listing is authored flat -- the element's own text; the element wraps it in <code>&lt;pre&gt;&lt;code&gt;</code> when it enhances. The explicit <code>&lt;pre&gt;&lt;code&gt;</code> child form is equivalent and still supported. The script adds <code>.sem-code-chrome</code> (filename, lang, buttons, status region), wraps lines (<code>span|mark.sem-code-line</code>, text byte-identical), <code>tabindex=&quot;0&quot;</code> on an overflowing <code>&lt;pre&gt;</code>. JS-off: plain <code>&lt;pre&gt;</code> with a CSS caption. Extraction keeps <code>source</code> <strong>verbatim</strong>.</p>
+
+<sem-source id="s-code" label="Live: sem-code">
     <sem-code id="x-code" lang="ts" filename="src/rotate.ts" mark="2,4-5" controls="copy,wrap">
 <pre><code>export function rotate(pair: Pair): Pair {
   const next = mint();
@@ -290,24 +282,20 @@
     </sem-code>
   </sem-source>
 
-  <!-- sem-browser -------------------------------------------------------- -->
   <h4 id="e-browser">sem-browser -- chrome-like document window</h4>
+  <p>Renders another SemText document live (the window-frame sibling of <code>sem-code</code>).</p>
   <p><strong>Normative: <a href="#r-sem-browser">spec/schema/sem-browser.md</a>.</strong></p>
   <sem-code id="c-browser" lang="html"><pre><code>&lt;sem-browser src="/demo/example-deck.sem.html" label="the deck"&gt;
   &lt;figure class="code-window"&gt;
-    &lt;div aria-hidden="true"&gt;&larr; &rarr; &#10227;&lt;/div&gt;
+    &lt;div aria-hidden="true"&gt;← → ⟳&lt;/div&gt;
     &lt;div&gt;demo/example-deck.sem.html&lt;/div&gt;
     &lt;iframe src="/demo/example-deck.sem.html" title="the deck" loading="lazy"&gt;&lt;/iframe&gt;
   &lt;/figure&gt;
 &lt;/sem-browser&gt;</code></pre></sem-code>
-  <p>With a <code>src</code> the element fetches the document (parsed with <code>DOMParser</code>, <code>&lt;script&gt;</code> and <code>on*</code> stripped before adoption) into a focusable <code>.sem-window-viewport</code> (<code>role="region"</code>); the authored children are the zero-JS fallback and are hidden once wired. An address bar (<code>.sem-browser-address</code>) shows inert nav glyphs and the declared <code>src</code> as text; the tab title resolves <code>label</code> &rarr; the document's <code>&lt;title&gt;</code> &rarr; the <code>src</code> basename. Adopted elements are offered to <code>window.SemTextLazy.hydrate</code>, so a lazy-built host renders the deck live. Failures render one <code>role="alert"</code> line; <code>sem-browser-load</code> / <code>sem-browser-error</code> report the outcome. Ships lazy-first (<code>chunks/sem-browser.js</code>) and rides the full bundle after promotion. JS-off: the authored children are the document. No live example here: the element fetches a second document, which a standalone spec page cannot promise.</p>
+  <p>With a <code>src</code> the element fetches the document (DOMParser-parsed, <code>&lt;script&gt;</code> and <code>on*</code> stripped before adoption) into a focusable <code>.sem-window-viewport</code> (<code>role=&quot;region&quot;</code>); the authored children are the zero-JS fallback and are hidden once wired. An address bar (<code>.sem-browser-address</code>) shows inert nav glyphs and the declared src as text; the tab title resolves <code>label</code> → document <code>&lt;title&gt;</code> → src basename. Adopted elements are offered to <code>window.SemTextLazy.hydrate</code>, so a lazy-built host renders the deck live. Failures render one <code>role=&quot;alert&quot;</code> line; <code>sem-browser-load</code> / <code>sem-browser-error</code> report the outcome. Ships lazy-first (<code>chunks/sem-browser.js</code>) and rides the full bundle after promotion. JS-off: the authored children are the document.</p>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       DISCLOSURE & VIEWS
-       ═══════════════════════════════════════════════════════════════════ -->
   <h3 id="disclosure--views">Disclosure &amp; views</h3>
 
-  <!-- sem-details -------------------------------------------------------- -->
   <h4 id="e-details">sem-detail / sem-details -- prose with occludable content</h4>
   <p><strong>Normative: <a href="#r-sem-details">spec/schema/sem-details.md</a>.</strong></p>
   <sem-code id="c-details" lang="html"><pre><code>&lt;sem-details view-as="quiz"&gt;
@@ -315,81 +303,70 @@
     The OIDC token travels in the &lt;highlight&gt;Authorization&lt;/highlight&gt; header.
   &lt;/sem-detail&gt;
 &lt;/sem-details&gt;</code></pre></sem-code>
-  <p>Plain view: <code>&lt;highlight&gt;</code> renders <code>&lt;em&gt;</code>. Quiz view: occluded (<code>&#x25AE;&#x25AE;&#x25AE;</code>), reveal per item, self-check or auto-check.</p>
-  <sem-source id="s-details" label="Live: sem-details, quiz">
+  <p>Plain view: <code>&lt;highlight&gt;</code> renders <code>&lt;em&gt;</code>. Quiz view: occluded (<code>???</code>), reveal per item, self-check or auto-check.</p>
+
+<sem-source id="s-details" label="Live: sem-details, quiz">
     <sem-details id="x-details" view-as="quiz">
       <sem-detail id="x-d1">The OIDC token travels in the <highlight>Authorization</highlight> header; refresh tokens <highlight>never reach the browser</highlight>.</sem-detail>
     </sem-details>
   </sem-source>
 
-  <!-- sem-tag-def / sem-api-call ---------------------------------------- -->
   <h4 id="e-tag-def">sem-tag-def / sem-api-call -- reference-definition cards</h4>
-  <p><strong>Normative: <a href="#r-sem-tag-def">spec/schema/sem-tag-def.md</a>, <a href="#r-sem-api-call">spec/schema/sem-api-call.md</a>.</strong>
-  A vocabulary tag's or an API endpoint's contract, authored once, rendered
-  as a card (native table) for readers and extracted as one structured
-  record for machines. <code>sem-tag-def</code> takes
-  <code>tag</code>/<code>name</code>/<code>group</code>/<code>children</code> and one <code>sem-tag-attr</code> row per
-  attribute; <code>sem-api-call</code> takes
-  <code>name</code>/<code>method</code>/<code>endpoint</code>/<code>status</code> and one <code>sem-api-param</code> row per
-  parameter (<code>in</code> = query | header | body | response). Class form
-  mirrors on <code>data-*</code> aliases, like every container above.</p>
+  <p>A vocabulary tag's or an API endpoint's contract, authored once, rendered as a card (native table) for readers and extracted as one structured record for machines.</p>
+  <p><strong>Normative: <a href="#r-sem-tag-def">spec/schema/sem-tag-def.md</a>, <a href="#r-sem-api-call">spec/schema/sem-api-call.md</a>.</strong></p>
 
-  <!-- sem-reveal --------------------------------------------------------- -->
-  <h4 id="e-reveal">sem-reveal -- Q&rarr;A disclosure, hidden until the reader acts</h4>
+  <h4 id="e-reveal">sem-reveal -- Q-A disclosure, hidden until the reader acts</h4>
   <p><strong>Normative: <a href="#r-sem-reveal">spec/schema/sem-reveal.md</a>.</strong></p>
   <sem-code id="c-reveal" lang="html"><pre><code>&lt;sem-reveal summary="Why not localStorage?"&gt;
-  Tokens in localStorage are readable by any script on the page&hellip;
+  Tokens in localStorage are readable by any script on the page...
 &lt;/sem-reveal&gt;</code></pre></sem-code>
-  <p><code>summary</code> optional -- first body line (&le;60 chars) derives it, by the one rule in <code>src/shared/summary.ts</code> that render and extraction share; hidden by default, <code>open</code> starts revealed (<code>collapsed</code> accepted, no-op). Tag form: Lit component -- labelled control (<code>aria-expanded</code>) over a blurred body until revealed, one-way. Class form wraps in native <code>&lt;details&gt;/&lt;summary&gt;</code>, closed by default; JS-off: fully visible (summary as small-caps heading). Non-assertive counterpart to <code>sem-fact</code> Q/A shape.</p>
-  <sem-source id="s-reveal" label="Live: sem-reveal">
+  <p><code>summary</code> optional -- first body line (&lt;=60 chars) derives it, by the one rule in <code>src/shared/summary.ts</code> that render and extraction share; hidden by default, <code>open</code> starts revealed (<code>collapsed</code> accepted, no-op). Tag form: Lit component (labelled control, <code>aria-expanded</code>, blurred body until revealed, one-way). Class form wraps in native <code>&lt;details&gt;/&lt;summary&gt;</code>, closed by default; JS-off: fully visible (summary as small-caps heading). Non-assertive counterpart to <code>sem-fact</code> Q/A shape.</p>
+
+<sem-source id="s-reveal" label="Live: sem-reveal">
     <sem-reveal id="x-reveal" summary="Why a separate element from sem-note[collapsed]?">
       A note is an annotation (variant tone); a reveal is exposition (Q&rarr;A). Same mechanism, different semantics -- machines distinguish them.
     </sem-reveal>
   </sem-source>
 
-  <!-- sem-source --------------------------------------------------------- -->
   <h4 id="e-source">sem-source -- a section that flips between rendered and authored markup</h4>
   <p><strong>Normative: <a href="#r-sem-source">spec/schema/sem-source.md</a>.</strong></p>
   <sem-code id="c-source" lang="html"><pre><code>&lt;sem-source label="Facts -- flashcards"&gt;
   &lt;h2&gt;Facts -- flashcards&lt;/h2&gt;
-  &lt;sem-facts view-as="flashcards"&gt;&hellip;&lt;/sem-facts&gt;
+  &lt;sem-facts view-as="flashcards"&gt;...&lt;/sem-facts&gt;
 &lt;/sem-source&gt;</code></pre></sem-code>
-  <p>Chrome <code>Rendered | Source</code> (<code>aria-pressed</code>); <code>view-as="source"</code> starts in source mode, showing the literal markup in a <code>sem-code</code> (copy, wrap) built from the core's pre-enhancement snapshot; the toggle rewrites <code>data-view-as</code>. Transparent to extraction; JS-off: the rendered children, nothing else. Every live example on this page is one; a <code>sem-source</code> never nests inside another, so this entry has no example of its own.</p>
+  <p>Chrome <code>Rendered | Source</code> (<code>aria-pressed</code>); <code>view-as=&quot;source&quot;</code> starts in source mode, showing the literal markup in a <code>sem-code</code> (copy, wrap) built from the core's pre-enhancement snapshot; the toggle rewrites <code>data-view-as</code>. Transparent to extraction; JS-off: the rendered children, nothing else.</p>
 
-  <!-- sem-views ---------------------------------------------------------- -->
   <h4 id="e-views">sem-views / sem-view -- same content, switchable perspectives</h4>
   <p><strong>Normative: <a href="#r-sem-views">spec/schema/sem-views.md</a>.</strong></p>
   <sem-code id="c-views" lang="html"><pre><code>&lt;sem-views id="deploy"&gt;
-  &lt;sem-view name="Helm" active role="tabpanel"&gt;content&hellip;&lt;/sem-view&gt;
-  &lt;sem-view name="ArgoCD" role="tabpanel"&gt;content&hellip;&lt;/sem-view&gt;
+  &lt;sem-view name="Helm" active role="tabpanel"&gt;content...&lt;/sem-view&gt;
+  &lt;sem-view name="ArgoCD" role="tabpanel"&gt;content...&lt;/sem-view&gt;
 &lt;/sem-views&gt;</code></pre></sem-code>
-  <p><code>name</code> unique per container; <code>active</code> marks initial view (first wins if absent; the component keeps the shown view in <code>data-active</code>); it builds the tab bar (<code>.sem-views-tabs</code>, <code>role="tab"</code> buttons), arrow-key roving focus; deep-link <code>#deploy/argocd</code>; fires <code>sem-navigate {id, name, index}</code>. JS-off: all views stacked, <code>name</code>-headed. <strong>Q3 resolved v1: <code>sem-views</code>.</strong></p>
-  <sem-source id="s-views" label="Live: sem-views">
+  <p><code>name</code> unique per container; <code>active</code> marks initial view (first wins if absent; the bundle keeps the shown view in <code>data-active</code>); it builds the tab bar (<code>.sem-views-tabs</code>, <code>role=&quot;tab&quot;</code> buttons), arrow-key roving focus; deep-link <code>#deploy/argocd</code>; fires <code>sem-navigate {id, name, index}</code>. JS-off: all views stacked, <code>name</code>-headed. <strong>Q3 resolved v1: <code>sem-views</code>.</strong></p>
+
+<sem-source id="s-views" label="Live: sem-views">
     <sem-views id="x-deploy">
       <sem-view id="x-helm" name="Helm" active role="tabpanel">Helm renders the chart; the image tag is bumped by CI.</sem-view>
       <sem-view id="x-argocd" name="ArgoCD" role="tabpanel">ArgoCD auto-syncs from the chart repo's <code>main</code>. Deep link: <a href="#x-deploy/argocd">#x-deploy/argocd</a>.</sem-view>
     </sem-views>
   </sem-source>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       FACTS & RECALL
-       ═══════════════════════════════════════════════════════════════════ -->
   <h3 id="facts--recall">Facts &amp; recall</h3>
 
-  <!-- sem-facts ---------------------------------------------------------- -->
   <h4 id="e-facts">sem-facts -- collection; the flagship surface</h4>
   <p><strong>Normative: <a href="#r-sem-facts">spec/schema/sem-facts.md</a>.</strong></p>
   <sem-code id="c-facts" lang="html"><pre><code>&lt;sem-facts view-as="quiz" controls="shuffle,filter"&gt;
-  &lt;sem-fact&gt;&hellip;&lt;/sem-fact&gt;
-  &lt;sem-fact&gt;&hellip;&lt;incorrect-statement&gt;decoy conclusion&lt;/incorrect-statement&gt;&lt;/sem-fact&gt;
+  &lt;sem-fact&gt;...&lt;/sem-fact&gt;
+  &lt;sem-fact&gt;...&lt;incorrect-statement&gt;decoy conclusion&lt;/incorrect-statement&gt;&lt;/sem-fact&gt;
 &lt;/sem-facts&gt;</code></pre></sem-code>
   <ul>
-    <li><code>view-as="list"</code> (default): filter box, tag chips.</li>
-    <li><code>view-as="flashcards"</code>: front = statement (+<code>&lt;highlight&gt;</code> prompt), back = conclusion; flip click/Space; &larr;/&rarr;/swipe; progress <code>3/12</code>; <code>shuffle</code>.</li>
-    <li><code>view-as="quiz"</code>: statement shown; candidates = sibling conclusions, <code>&lt;incorrect-statement&gt;</code> children win when present; accuracy on <code>sem-complete</code>.</li>
+    <li><code>view-as=&quot;list&quot;</code> (default): filter box, tag chips.</li>
+    <li><code>view-as=&quot;flashcards&quot;</code>: front = statement (+<code>&lt;highlight&gt;</code> prompt), back = conclusion; flip click/Space; -/-/swipe; progress <code>3/12</code>; <code>shuffle</code>.</li>
+    <li><code>view-as=&quot;quiz&quot;</code>: statement shown; candidates = sibling conclusions, <code>&lt;incorrect-statement&gt;</code> children win when present; accuracy on <code>sem-complete</code>.</li>
     <li>Events: <code>sem-navigate {index}</code>, <code>sem-flip {face}</code>, <code>sem-complete {correct,total,ms}</code>.</li>
   </ul>
-  <sem-source id="s-facts" label="Live: sem-facts, flashcards">
+
+<sem-source id="s-facts" label="Live: sem-facts, flashcards">
     <sem-facts id="x-facts" view-as="flashcards" kind="spec">
       <sem-fact id="x-f1" kind="rule">
         <statement>Semantic identity, parameterized presentation</statement>
@@ -403,7 +380,6 @@
     </sem-facts>
   </sem-source>
 
-  <!-- sem-fact ----------------------------------------------------------- -->
   <h4 id="e-fact">sem-fact -- the atomic unit; assertable Q/A pair</h4>
   <sem-code id="c-fact" lang="html"><pre><code>&lt;sem-fact id="f-jwt" kind="concept"&gt;
   &lt;statement&gt;JWTs rotate per session&lt;/statement&gt;
@@ -411,31 +387,25 @@
 &lt;/sem-fact&gt;</code></pre></sem-code>
   <p>Compact form: <code>&lt;sem-fact&gt;JWT rotation :: short-lived access&lt;/sem-fact&gt;</code>. Machine view: statement+conclusion = structured assertion.</p>
 
-  <!-- sem-question / sem-option (Tier 1) --------------------------------- -->
   <h4 id="e-question">sem-question / sem-option -- quiz question types (Tier 1 -- flagship buildout)</h4>
-  <sem-code id="c-question" lang="html">
-<pre><code>&lt;sem-question type="mc"&gt;
+  <sem-code id="c-question" lang="html"><pre><code>&lt;sem-question type="mc"&gt;
   &lt;p data-kind="prompt"&gt;Which header carries the OIDC token?&lt;/p&gt;
   &lt;sem-option correct&gt;Authorization&lt;/sem-option&gt;
   &lt;sem-option&gt;Cookie&lt;/sem-option&gt;
-&lt;/sem-question&gt;</code></pre>
-  </sem-code>
-  <p>Types <code>mc|multi|blank|match|order|tf|short</code>; <code>correct</code> attr canonical, <code>&check;</code> sugar; <code>retry</code> control; results block; machine view = assertable Q/A.</p>
+&lt;/sem-question&gt;</code></pre></sem-code>
+  <p>Types <code>mc|multi|blank|match|order|tf|short</code>; <code>correct</code> attr canonical, <code>?</code> sugar; <code>retry</code> control; results block; machine view = assertable Q/A.</p>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       DATA & TABLES
-       ═══════════════════════════════════════════════════════════════════ -->
   <h3 id="data--tables">Data &amp; tables</h3>
 
-  <!-- sem-table ---------------------------------------------------------- -->
   <h4 id="e-table">sem-table -- sortable, filterable authored table</h4>
   <p><strong>Normative: <a href="#r-sem-table">spec/schema/sem-table.md</a>.</strong></p>
   <sem-code id="c-table" lang="html"><pre><code>&lt;sem-table controls="sort,filter" sticky&gt;
-  &lt;table&gt;&lt;caption&gt;&hellip;&lt;/caption&gt;&lt;thead&gt;&lt;tr&gt;&lt;th scope="col"&gt;&hellip;&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+  &lt;table&gt;&lt;caption&gt;...&lt;/caption&gt;&lt;thead&gt;&lt;tr&gt;&lt;th scope="col"&gt;...&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
   &lt;tbody&gt;&lt;tr&gt;&lt;td data-value="900"&gt;15 min&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;
 &lt;/sem-table&gt;</code></pre></sem-code>
-  <p>The <code>&lt;table&gt;</code> is the contract (no JSON payload). The script stamps every body row <code>data-sem-source-index</code> once, wraps headers in <code>button.sem-table-sort</code> (<code>aria-sort</code> cycle), filters with native <code>hidden</code>, announces via <code>.sem-table-status</code>. Extraction returns <code>{caption, columns[], rows[][]}</code> in <strong>authored</strong> order from the stamp -- the recorded &sect;5 exception. <code>sticky</code> header and <code>kind="comparison"</code> first column are CSS in every tier. (<code>td[data-value]</code> is a sort key on a plain HTML cell, not a vocabulary parameter -- it stays <code>data-*</code>.)</p>
-  <sem-source id="s-table" label="Live: sem-table">
+  <p>The <code>&lt;table&gt;</code> is the contract (no JSON payload). The script stamps every body row <code>data-sem-source-index</code> once, wraps headers in <code>button.sem-table-sort</code> (<code>aria-sort</code> cycle), filters with native <code>hidden</code>, announces via <code>.sem-table-status</code>. Extraction returns <code>{caption, columns[], rows[][]}</code> in <strong>authored</strong> order from the stamp -- the recorded &sect;5 exception. <code>sticky</code> header and <code>kind=&quot;comparison&quot;</code> first column are CSS in every tier. (<code>td[data-value]</code> is a sort key on a plain HTML cell, not a vocabulary parameter -- it stays <code>data-*</code>.)</p>
+
+<sem-source id="s-table" label="Live: sem-table">
     <sem-table id="x-table" kind="lifetimes" controls="sort,filter" sticky>
       <table>
         <caption>Token lifetimes</caption>
@@ -449,31 +419,26 @@
     </sem-table>
   </sem-source>
 
-  <!-- sem-data-* (schemas defined, implementation pending) --------------- -->
-  <h4 id="e-data">sem-data-source, sem-data-query, sem-data-join, sem-data-visualizer -- data connectors</h4>
-  <p>Schema files defined: <code>spec/schema/sem-data-source.md</code>, <code>spec/schema/sem-data-query.md</code>, <code>spec/schema/sem-data-join.md</code>, <code>spec/schema/sem-data-visualizer.md</code>. Implementation pending.</p>
+  <h4 id="e-data">sem-data-source, sem-data-query, sem-data-join, sem-data-visualizer -- data connector elements</h4>
+  <p>(schemas defined, implementation pending). Schema files: <code>spec/schema/sem-data-source.md</code>, <code>spec/schema/sem-data-query.md</code>, <code>spec/schema/sem-data-join.md</code>, <code>spec/schema/sem-data-visualizer.md</code>.</p>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       SEQUENCES & PROGRESS
-       ═══════════════════════════════════════════════════════════════════ -->
   <h3 id="sequences--progress">Sequences &amp; progress</h3>
 
-  <!-- sem-chronology ----------------------------------------------------- -->
   <h4 id="e-chronology">sem-chronology / sem-event -- dated, ordered events; CSS-only timeline</h4>
   <p><strong>Normative: <a href="#r-sem-chronology">spec/schema/sem-chronology.md</a>.</strong></p>
   <sem-code id="c-chronology" lang="html"><pre><code>&lt;sem-chronology kind="release-history" role="list"&gt;
   &lt;sem-event role="listitem" when="2026-03-02" status="done"&gt;
     &lt;time datetime="2026-03-02"&gt;2 Mar 2026&lt;/time&gt; v0.1 tagged.&lt;/sem-event&gt;
 &lt;/sem-chronology&gt;</code></pre></sem-code>
-  <p><code>when</code>/<code>until</code> canonical; <code>&lt;time&gt;</code> child is the visible label (else CSS renders <code>when</code>); <code>status</code> optional, same vocabulary as <code>sem-step</code>; <code>view-as="timeline|list"</code>. DOM order = chronological order; ordinals positional. <strong>Zero-JS element.</strong></p>
-  <sem-source id="s-chronology" label="Live: sem-chronology">
+  <p><code>when</code>/<code>until</code> canonical; <code>&lt;time&gt;</code> child is the visible label (else CSS renders <code>when</code>); <code>status</code> optional, same vocabulary as <code>sem-step</code>; <code>view-as=&quot;timeline|list&quot;</code>. DOM order = chronological order; ordinals positional. <strong>Zero-JS element.</strong></p>
+
+<sem-source id="s-chronology" label="Live: sem-chronology">
     <sem-chronology id="x-chronology" kind="release-history" view-as="timeline" role="list">
       <sem-event id="x-e1" role="listitem" when="2026-03-02" status="done"><time datetime="2026-03-02">2 Mar 2026</time> v0.1 tagged -- Lit bundle ships.</sem-event>
       <sem-event id="x-e2" role="listitem" when="2026-09" status="current"><time datetime="2026-09">Sep 2026</time> Reading-experience waves land one PR at a time; the tag form becomes canonical.</sem-event>
     </sem-chronology>
   </sem-source>
 
-  <!-- sem-procedure ------------------------------------------------------ -->
   <h4 id="e-procedure">sem-procedure / sem-step -- ordered, status-annotated procedure</h4>
   <p><strong>Normative: <a href="#r-sem-procedure">spec/schema/sem-procedure.md</a>.</strong></p>
   <sem-code id="c-procedure" lang="html"><pre><code>&lt;sem-procedure kind="runbook" role="list"&gt;
@@ -482,8 +447,9 @@
   &lt;sem-step role="listitem"&gt;run migrations&lt;/sem-step&gt;
   &lt;sem-step role="listitem" status="blocked"&gt;cut release&lt;/sem-step&gt;
 &lt;/sem-procedure&gt;</code></pre></sem-code>
-  <p><code>status</code>: <code>done|current|todo</code> (default) <code>|blocked</code>; DOM order = execution order (ordinals positional, CSS counters); status sugar (<code>&check;/&rarr;/&cross;</code>) is display-only -- <code>status</code> canonical. <strong>Zero-JS element.</strong></p>
-  <sem-source id="s-procedure" label="Live: sem-procedure">
+  <p><code>status</code>: <code>done|current|todo</code> (default) <code>|blocked</code>; DOM order = execution order (ordinals positional, CSS counters); status sugar (<code>?/-/?</code>) is display-only -- <code>status</code> canonical. <strong>Zero-JS element.</strong></p>
+
+<sem-source id="s-procedure" label="Live: sem-procedure">
     <sem-procedure id="x-procedure" kind="runbook" role="list">
       <sem-step role="listitem" status="done">provision Infisical path</sem-step>
       <sem-step role="listitem" status="current">port-forward MinIO</sem-step>
@@ -492,51 +458,138 @@
     </sem-procedure>
   </sem-source>
 
-  <!-- sem-progress ------------------------------------------------------- -->
   <h4 id="e-progress">sem-progress -- completion meter</h4>
   <p><strong>Normative: <a href="#r-sem-progress">spec/schema/sem-progress.md</a>.</strong></p>
   <sem-code id="c-progress" lang="html"><pre><code>&lt;sem-progress value="0.62" label="coverage"
      role="meter" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0.62"&gt;&lt;/sem-progress&gt;</code></pre></sem-code>
-  <p><code>value</code> canonical 0..1 (render clamps, attr untouched); <code>label</code> default <code>progress</code>; the component renders track + fill + <code>label :: N%</code>; JS-off: text-only via CSS <code>attr()</code> -- no fake bar; the caption is gated on the <code>data-sem-upgraded</code> marker, so it never duplicates the text-only form. <code>status="done"</code> &hArr; 1 by convention.</p>
-  <sem-source id="s-progress" label="Live: sem-progress">
+  <p><code>value</code> canonical 0..1 (render clamps, attr untouched); the script renders track + fill + <code>label :: N%</code>; JS-off: text-only via CSS <code>attr()</code> -- no fake bar; the caption is gated on the <code>data-sem-upgraded</code> marker on the element, so it never duplicates the script-free text. <code>status=&quot;done&quot;</code> ? 1 by convention.</p>
+
+<sem-source id="s-progress" label="Live: sem-progress">
     <sem-progress id="x-progress" value="0.7" label="Tier-0 spec coverage" role="meter" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0.7"></sem-progress>
   </sem-source>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       DEFINITIONS & CITATIONS
-       ═══════════════════════════════════════════════════════════════════ -->
+  <h3 id="interactive-containers">Interactive containers</h3>
+
+  <h4 id="e-workflow">sem-workflow / sem-step -- ordered steps carrying operational metadata</h4>
+  <p><code>action</code> (required in workflow context), <code>description</code>, <code>gate</code>, <code>check</code>, <code>if-no</code> (underscore <code>if_no</code> accepted by the component), <code>output</code>; the shared <code>status</code> catalog applies.</p>
+  <p><strong>Normative: <a href="#r-sem-workflow">spec/schema/sem-workflow.md</a>.</strong></p>
+  <sem-code id="c-workflow" lang="html"><pre><code>&lt;sem-workflow kind="release" duration="45m"&gt;
+  &lt;sem-step action="Build images" gate="CI green" check="gh run view"
+    if-no="fix CI, then re-run" output="dist/*.tar"&gt;push the tag&lt;/sem-step&gt;
+&lt;/sem-workflow&gt;</code></pre></sem-code>
+  <p>JS-off: CSS-ordered list; ordinals are workflow-scoped counters; gate (<code>⛨</code>) and check (<code>▸</code>) badges are <code>::before</code>/<code>::after</code> <code>attr()</code> chrome. JS-on: an <code>if-no</code> step grows a collapsible branch (button with <code>aria-expanded</code>/<code>aria-controls</code>), gated on the container's <code>data-sem-upgraded</code> marker. The workflow step parameters are a per-parent schema childForm: a sem-procedure step keeps its plain status-only contract, and <code>action</code> outside a workflow is an unknown-attribute warning.</p>
+
+<sem-source id="s-workflow" label="Live: sem-workflow">
+    <sem-workflow id="x-workflow" kind="release" duration="45m" role="list">
+      <sem-step id="x-wf-1" role="listitem" action="Build images" gate="CI green" check="gh run view" if-no="fix CI, then re-run" status="done">push the tag</sem-step>
+      <sem-step id="x-wf-2" role="listitem" action="Deploy stage" if-no="stop and page the release captain">merge to stage</sem-step>
+    </sem-workflow>
+  </sem-source>
+
+  <h4 id="e-site-tree">sem-site-tree / node -- a tree authored as nested bare <code>&lt;node path label kind collapsed&gt;</code> children</h4>
+  <p>(class form <code>div.sem-node</code>).</p>
+  <p><strong>Normative: <a href="#r-sem-site-tree">spec/schema/sem-site-tree.md</a>.</strong></p>
+  <sem-code id="c-site-tree" lang="html"><pre><code>&lt;sem-site-tree label="Monorepo layout"&gt;
+  &lt;node path="src" label="Source" kind="dir"&gt;
+    &lt;node path="src/lit" kind="dir"&gt;&lt;node path="src/lit/app.ts"&gt;&lt;/node&gt;&lt;/node&gt;
+  &lt;/node&gt;
+&lt;/sem-site-tree&gt;</code></pre></sem-code>
+  <p>JS-off: a static nested list purely via CSS (guides, counters, <code>attr()</code> labels). JS-on: one shared engine (per-node collapse with <code>aria-expanded</code>, filter box that keeps ancestor chains, find with <code>data-match</code> marks and an Enter-cycled current match), all gated on the <code>data-sem-upgraded</code> marker. <code>path</code> is required in tree context (schema childForm); a stray <code>node</code> is an orphan-part warning.</p>
+
+<sem-source id="s-site-tree" label="Live: sem-site-tree">
+    <sem-site-tree id="x-site-tree" label="Spec layout" role="tree">
+      <node path="spec" label="Specs" kind="dir" role="treeitem">
+        <node path="spec/schema" kind="dir" role="group">
+          <node path="spec/schema/sem-workflow.md" kind="file" role="treeitem"></node>
+          <node path="spec/schema/sem-site-tree.md" kind="file" role="treeitem"></node>
+        </node>
+      </node>
+    </sem-site-tree>
+  </sem-source>
+
+  <h4 id="e-file-tree">sem-file-tree -- the same tree model authored as text</h4>
+  <p>An indented (box-drawing or whitespace) tree inside a <code>&lt;pre&gt;</code>, wrapped by <code>&lt;sem-file-tree mode=&quot;text&quot;&gt;</code>.</p>
+  <p><strong>Normative: <a href="#r-sem-file-tree">spec/schema/sem-file-tree.md</a>.</strong></p>
+  <sem-code id="c-file-tree" lang="html"><pre><code>&lt;sem-file-tree mode="text"&gt;&lt;pre&gt;
+assets/
+├── icons/
+│   └── logo.svg
+&lt;/pre&gt;&lt;/sem-file-tree&gt;</code></pre></sem-code>
+  <p>The pre <strong>is</strong> the record: JS-off it renders verbatim, nothing fabricated; JS-on the shared engine parses the indentation (4-column box segments, or the smallest whitespace indent unit; trailing <code>/</code> marks a directory) and renders generated view rows with the same collapse/filter/find chrome. A structured <code>&lt;node&gt;</code> form is also accepted (dispatched on content).</p>
+
+<sem-source id="s-file-tree" label="Live: sem-file-tree">
+    <sem-file-tree id="x-file-tree" mode="text" label="Themes" role="tree"><pre>
+themes/
+&#x251c;&#x2500;&#x2500; _vocabulary.css
+&#x2514;&#x2500;&#x2500; _print.css
+</pre></sem-file-tree>
+  </sem-source>
+
+  <h3 id="agent-kit-records">Agent-kit records</h3>
+  <p>The <code>agent-kit-*</code> family is the project-tracking embed lane: 22 records over the cached-embed base (<code>CachedEmbedElement</code>), every one <code>livePolicy: never</code> -- the authored <code>script[type=&quot;application/json&quot;]</code> snapshot <strong>is</strong> the record, no client credentials, no network. Each record element renders an authored chrome inside <code>.agent-kit-chrome</code> (JS-on only, gated on <code>data-sem-upgraded</code>); with JavaScript off the authored blocks and attribute-borne CSS labels (<code>::before</code>/<code>::after</code> <code>attr()</code>, counters) are the whole show, so extraction deep-equals across tiers.</p>
+
+  <h4 id="e-agent-kit-issue">Tickets -- <code>agent-kit-issue</code> / <code>-epic</code> / <code>-bug</code> / <code>-user-story</code> / <code>-task</code> / <code>-sub-task</code> share one part set</h4>
+  <p><code>agent-kit-title</code> / <code>-description</code> (exactlyOne each), <code>-state</code>, <code>-labels</code>, <code>-last-updated</code> (atMostOne).</p>
+  <p><strong>Normative: <a href="#r-agent-kit-tickets">spec/schema/agent-kit/tickets.md</a>.</strong></p>
+  <sem-code id="c-agent-kit-issue" lang="html"><pre><code>&lt;agent-kit-issue uuid="AK-142" state="in-progress"&gt;
+  &lt;script type="application/json"&gt;{ "updated_at": "2026-10-18" }&lt;/script&gt;
+  &lt;agent-kit-title&gt;Bundle merge drift&lt;/agent-kit-title&gt;
+  &lt;agent-kit-description&gt;Epic catch-up re-spliced the schema seam.&lt;/agent-kit-description&gt;
+&lt;/agent-kit-issue&gt;</code></pre></sem-code>
+  <p>Class form: <code>div.agent-kit-issue</code> &gt; <code>.agent-kit-title</code>, <code>.agent-kit-description</code>, ... <strong>Normative: <code>spec/schema/agent-kit/ticket-ref.md</code>.</strong></p>
+
+<sem-source id="s-agent-kit-issue" label="Live: agent-kit-issue">
+    <agent-kit-issue id="x-agent-kit-issue" uuid="AK-142" state="in-progress">
+      <agent-kit-title>Bundle merge drift</agent-kit-title>
+      <agent-kit-description>Epic catch-up re-spliced the schema seam.</agent-kit-description>
+    </agent-kit-issue>
+  </sem-source>
+
+  <h4 id="e-agent-kit-personas">Personas / criteria / board / chatroom -- <code>agent-kit-user-persona</code> / <code>-agent-persona</code></h4>
+  <p>(name required; role/bio/metadata optional), <code>agent-kit-acceptance-criteria</code> &gt; <code>agent-kit-criterion</code> &gt; given/when/then (exactlyOne each), <code>agent-kit-custom-assert</code> &gt; <code>-assert-expr</code> + <code>-assert-expect</code>, <code>agent-kit-board</code> &gt; <code>-column[heading]</code> &gt; <code>agent-kit-ticket-ref[key]</code>, <code>agent-kit-organization</code> / <code>-project</code> (name + description), <code>agent-kit-chatroom</code> &gt; <code>-chatroom-name</code> + <code>-chat-msg[author role at]</code>.</p>
+  <p><strong>Normative: <a href="#r-agent-kit-personas">spec/schema/agent-kit/personas.md</a>, <a href="#r-agent-kit-acceptance-criteria">spec/schema/agent-kit/acceptance-criteria.md</a>, <a href="#r-agent-kit-custom-assert">spec/schema/agent-kit/custom-assert.md</a>, <a href="#r-agent-kit-board">spec/schema/agent-kit/board.md</a>, <a href="#r-agent-kit-reference-cards">spec/schema/agent-kit/reference-cards.md</a>, <a href="#r-agent-kit-chatroom">spec/schema/agent-kit/chatroom.md</a>.</strong></p>
+
+  <h4 id="e-agent-kit-media">Media -- <code>agent-kit-asset[src mime]</code></h4>
+  <p>(lazy <code>&lt;img&gt;</code> + mime chip + <code>-caption</code>), <code>agent-kit-artifact[type language]</code> (<code>-artifact-content</code> in a mono block, inert <code>-version</code> chips + snapshot stamp), <code>agent-kit-review[verdict]</code> (verdict-colored chip, <code>-comment[author at]</code> rows with an <code>attr(author)</code> prefix).</p>
+  <p><strong>Normative: <a href="#r-agent-kit-asset">spec/schema/agent-kit/asset.md</a>, <a href="#r-agent-kit-artifact">spec/schema/agent-kit/artifact.md</a>, <a href="#r-agent-kit-review">spec/schema/agent-kit/review.md</a>.</strong></p>
+
+  <h4 id="e-agent-kit-testing">Testing -- <code>agent-kit-test-suite</code> &gt; <code>-branch[passed failed]</code> rows</h4>
+  <p>(summed in the totals chip), <code>agent-kit-test-case</code> &gt; <code>-step</code> + exactlyOne <code>-expected</code>, and the script cards <code>agent-kit-cypress</code> / <code>agent-kit-cucumber[file]</code>.</p>
+  <p><strong>Normative: <a href="#r-agent-kit-suite">spec/schema/agent-kit/test-suite.md</a>, <a href="#r-agent-kit-test-case">spec/schema/agent-kit/test-case.md</a>, <a href="#r-agent-kit-script-cards">spec/schema/agent-kit/script-cards.md</a>.</strong></p>
+  <p>Inline script sources are authored as <code>script[type=&quot;text/plain&quot;][data-agent-kit-script]</code>; the vocabulary CSS promotes them to <code>display: block</code> pre-wrap so real JS-off browsing keeps the authored source visible. The <code>.nojs</code> <strong>build artifact</strong> strips every <code>&lt;script&gt;</code> (hard extraction invariant), so the promoted panel is absent only there.</p>
+
   <h3 id="definitions--citations">Definitions &amp; citations</h3>
 
-  <!-- sem-properties ----------------------------------------------------- -->
   <h4 id="e-properties">sem-properties / sem-property -- definition/properties block</h4>
   <p><strong>Normative: <a href="#r-sem-properties">spec/schema/sem-properties.md</a>.</strong></p>
   <sem-code id="c-properties" lang="html"><pre><code>&lt;sem-properties kind="config"&gt;
   &lt;sem-property key="token ttl" role="definition" aria-label="token ttl"&gt;15m&lt;/sem-property&gt;
 &lt;/sem-properties&gt;</code></pre></sem-code>
-  <p><code>key</code> = the term, property text = the value. Zero-JS: key column renders via CSS <code>attr(key)</code>; AT gets the pair via <code>role="definition"</code> + <code>aria-label</code> = key. Compact <code>term :: value</code> sugar (<a href="#3-npl-notation-inside-tags">&sect;3</a>) is display-only -- <code>key</code> canonical. Renders <code>&lt;dl&gt;</code>-equivalent grid; <strong>Q2 resolved v1: pure definition list, no copy/search chrome.</strong></p>
-  <sem-source id="s-properties" label="Live: sem-properties">
+  <p><code>key</code> = the term, property text = the value. Zero-JS: key column renders via CSS <code>attr(key)</code>; AT gets the pair via <code>role=&quot;definition&quot;</code> + <code>aria-label</code> = key. Compact <code>term :: value</code> sugar (<a href="#3-npl-notation-inside-tags">&sect;3</a>) is display-only -- <code>key</code> canonical. Renders <code>&lt;dl&gt;</code>-equivalent grid; <strong>Q2 resolved v1: pure definition list, no copy/search chrome.</strong></p>
+
+<sem-source id="s-properties" label="Live: sem-properties">
     <sem-properties id="x-properties" kind="config">
       <sem-property id="x-p-ttl" key="token ttl" role="definition" aria-label="token ttl">15m</sem-property>
       <sem-property id="x-p-store" key="storage" role="definition" aria-label="storage">httpOnly cookie</sem-property>
     </sem-properties>
   </sem-source>
 
-  <!-- sem-references ----------------------------------------------------- -->
   <h4 id="e-references">sem-references / sem-reference -- numbered citable entries</h4>
   <p><strong>Normative: <a href="#r-sem-references">spec/schema/sem-references.md</a>.</strong></p>
-  <sem-code id="c-references" lang="html"><pre><code>&lt;p&gt;&hellip;per use&lt;a href="#r-rfc"&gt;[1]&lt;/a&gt;.&lt;/p&gt;
+  <sem-code id="c-references" lang="html"><pre><code>&lt;p&gt;...per use&lt;a href="#r-rfc"&gt;[1]&lt;/a&gt;.&lt;/p&gt;
 &lt;sem-references kind="bibliography" role="list"&gt;
-  &lt;sem-reference id="r-rfc" role="listitem" href="https://&hellip;" cite="RFC 6749"&gt;&hellip;&lt;/sem-reference&gt;
+  &lt;sem-reference id="r-rfc" role="listitem" href="https://..." cite="RFC 6749"&gt;...&lt;/sem-reference&gt;
 &lt;/sem-references&gt;</code></pre></sem-code>
-  <p>CSS-counter numbering in every tier; the script adds hover / focus previews on citing anchors (<code>.sem-references-ref</code>, popover <code>role="tooltip"</code>, <code>Esc</code> closes), backlinks (<code>aria-label="Back to citation N"</code>) and an external link. Citations mint nothing; print shows <code>(href)</code> inside the block only. The live example is this page's own reference list in <a href="#references">References</a>.</p>
+  <p>CSS-counter numbering in every document, scripted or not; the script adds hover / focus previews on citing anchors (<code>.sem-references-ref</code>, popover <code>role=&quot;tooltip&quot;</code>, <code>Esc</code> closes), backlinks (<code>aria-label=&quot;Back to citation N&quot;</code>) and an external link. Citations mint nothing; print shows <code>(href)</code> inside the block only.</p>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       NPL
-       ═══════════════════════════════════════════════════════════════════ -->
   <h3 id="npl">NPL</h3>
-  <p>NPL elements are loaded by <code>npl.js</code> / <code>npl-lazy.js</code> on top of the SemText core. Each has a normative schema under <code>spec/schema/npl/</code>. The core bundle (<code>semtext.js</code>, <code>semtext-lazy.js</code>) carries no NPL code. Each element also carries the class-form alias of <a href="#npl-namespace-npl-">Appendix A's NPL namespace</a> (<code>.npl-&lt;element&gt;</code> identity class, <code>data-&lt;parameter&gt;</code> parameters, <code>.npl-&lt;part&gt;</code> part aliases).</p>
+  <p>NPL elements are loaded by <code>npl.js</code> / <code>npl-lazy.js</code> on top of the SemText core. Each has a normative schema under <code>spec/schema/npl/</code>. The core bundle (<code>semtext.js</code>, <code>semtext-lazy.js</code>) carries no NPL code. Each element also carries the class-form alias of <a href="#appendix-a----class-form-alias-v04-compatibility">Appendix A</a>'s NPL namespace (<code>.npl-&lt;element&gt;</code> identity class, <code>data-&lt;parameter&gt;</code> parameters, <code>.npl-&lt;part&gt;</code> part aliases).</p>
 
-  <sem-properties id="p-npl-elements" kind="npl-catalog">
+  <p>Key NPL elements: <code>npl-agent</code> (agent definition), <code>npl-directive</code> (instruction), <code>npl-section</code> (section marker), <code>npl-rubric</code> (scoring guide), <code>npl-critique</code> (evaluation), <code>npl-declaration</code> (statement of intent), <code>npl-example</code> (worked example), <code>npl-flag</code> / <code>npl-flags</code> (warning/note flags), <code>npl-mindread</code> (intent/subtext analysis), <code>npl-thought</code> (reasoning trace), <code>npl-poa</code> (plan of action), <code>npl-ref</code> (post-hoc reflection), <code>npl-vos</code> (voice/style), <code>npl-artifact</code> (output artifact), <code>npl-mode</code> (operating mode), <code>npl-mood</code> (tone), <code>npl-hormones</code> (drive settings), <code>npl-cot</code> (chain of thought), <code>npl-intent</code> (intent declaration).</p>
+
+  <p>Each entry that carries a live example wraps it in <code>sem-source</code>: press <em>Source</em> to see the markup of this page exactly as written. The example is the spec executing itself.</p>
+
+<sem-properties id="p-npl-elements" kind="npl-catalog">
     <sem-property id="p-npl-agent" key="npl-agent" role="definition" aria-label="npl-agent">Agent definition: name, bio, instructions, model settings.</sem-property>
     <sem-property id="p-npl-directive" key="npl-directive" role="definition" aria-label="npl-directive">An instruction the agent must follow.</sem-property>
     <sem-property id="p-npl-section" key="npl-section" role="definition" aria-label="npl-section">Section marker for prompt structure.</sem-property>
@@ -558,10 +611,7 @@
     <sem-property id="p-npl-intent" key="npl-intent" role="definition" aria-label="npl-intent">Intent declaration for a section or response.</sem-property>
   </sem-properties>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       TIER STATUS (kept as a compact summary)
-       ═══════════════════════════════════════════════════════════════════ -->
-  <h3 id="tier-status">Tier status -- what shipped when</h3>
+<h3 id="tier-status">Tier status -- what shipped when</h3>
   <sem-procedure id="tier-2-status" kind="roadmap" role="list" aria-label="Tier 2 items and their status">
     <sem-step role="listitem" status="done"><code>sem-chronology</code> / <code>sem-event when</code> -- shipped (R/W1, Tier 0).</sem-step>
     <sem-step role="listitem" status="done"><code>sem-table</code> -- shipped (R/W2, Tier 0); <code>sem-query</code> deferred.</sem-step>
@@ -571,40 +621,43 @@
 
   <h2 id="6-theme-conventions">6. Theme conventions</h2>
   <ul>
-    <li><code>data-sem-theme="&lt;slug&gt;"</code> on <code>&lt;html&gt;</code>; one theme per doc; themes compiled from TRP-format YAML &rarr; <code>semtext/themes/semtext-theme-&lt;slug&gt;.css</code>; <code>--sem-*</code> tokens; the vocabulary base gives every <code>sem-*</code> element its box before any definition (<code>sem-*:not(:defined)</code> and the never-defined zero-JS elements alike -- custom elements are inline by default, the vocabulary is block-level).</li>
+    <li><code>data-sem-theme=&quot;&lt;slug&gt;&quot;</code> on <code>&lt;html&gt;</code>; one theme per doc; themes compiled from TRP-format YAML - <code>semtext/themes/semtext-theme-&lt;slug&gt;.css</code>; <code>--sem-*</code> tokens; the vocabulary base (<code>semtext.css</code>) gives every <code>sem-*</code> element its box before any definition (<code>sem-*:not(:defined)</code> and the never-defined zero-JS elements alike -- custom elements are inline by default, the vocabulary is block-level).</li>
     <li>Shadow components read tokens via fallback indirection -- zero-JS theme flips.</li>
     <li>Ship 4 TRP ports: <code>minimal-tech-light</code> (default), <code>nocturne-console</code>, <code>organic-warm</code>, <code>editorial-settings</code>; auto light/dark via <code>prefers-color-scheme</code>, <code>data-color-mode</code> forces.</li>
   </ul>
 
   <h2 id="7-distribution-forms">7. Distribution forms</h2>
   <sem-properties id="p-distribution" kind="distribution-forms">
-    <sem-property id="p-folder" key="1. Folder" role="definition" aria-label="Folder"><code>doc.html</code> + relative <code>semtext/</code> (IIFE <code>semtext.js</code> + <code>themes/</code>).</sem-property>
-    <sem-property id="p-single-file" key="2. Single-file" role="definition" aria-label="Single-file">script + CSS + data all inlined; one file shares anywhere.</sem-property>
+    <sem-property id="p-folder" key="1. Folder" role="definition" aria-label="Folder"><code>doc.html</code> + relative <code>semtext/</code> (<code>semtext.js</code> + <code>semtext.css</code> + <code>themes/</code>).</sem-property>
+    <sem-property id="p-single-file" key="2. Single-file" role="definition" aria-label="Single-file">the bundle + CSS + data all inlined; one file shares anywhere.</sem-property>
     <sem-property id="p-mhtml" key="3. MHTML" role="definition" aria-label="MHTML">multi-page bundle.</sem-property>
-    <sem-property id="p-hosted-lazy" key="5. Hosted lazy" role="definition" aria-label="Hosted lazy">served pages only -- <code>semtext-lazy.js</code> + <code>chunks/</code> over HTTP(S), and for NPL documents <code>npl-lazy.js</code> + <code>npl-chunks/</code> the same way (<code>npl.js</code>, the optional full NPL bundle, loads on top of <code>semtext.js</code> instead when no chunk loading is wanted). Each loader imports only the component chunks its document's <code>sem-*</code> / <code>npl-*</code> tags need; core (<code>semtext.js</code>, <code>semtext-lazy.js</code>) carries no npl code. Not portable: dynamic import needs a server, so the page cannot be saved to disk and reopened from <code>file://</code>.</sem-property>
+    <sem-property id="p-hosted-lazy" key="5. Hosted lazy" role="definition" aria-label="Hosted lazy">served pages only. A page served over HTTP(S) may load <code>semtext-lazy.js</code> + <code>chunks/</code> instead of the full bundle -- and an NPL document may load <code>npl-lazy.js</code> + <code>npl-chunks/</code> the same way, or <code>npl.js</code>, the optional full NPL bundle, on top of <code>semtext.js</code> when it wants every npl component without chunk loading. Each loader scans the document for its namespace's tags (<code>sem-*</code> / <code>npl-*</code>; a <code>&lt;sem-text&gt;</code> wrapper is welcome, not required) and imports only the component chunks those tags need -- components not on the page never download, and a failed chunk degrades only its own elements to authored prose with a <code>role=&quot;alert&quot;</code> note. Core keeps only the <code>sem-*</code> components: <code>semtext.js</code> and <code>semtext-lazy.js</code> carry no npl code. The hard rules in (4) govern <strong>portable</strong> documents and are unchanged: forms 1-3 still carry no ES-module scripts, and <code>semtext.js</code> remains the only script they carry. The trade is the point: the lazy surface cannot be saved to disk and reopened from <code>file://</code> -- dynamic import needs a server -- so a document that must survive offline carries the full bundle (<a href="#2-attribute-catalog">&sect;2</a>).</sem-property>
   </sem-properties>
-  <sem-note id="n-hard-rules" variant="danger">Hard rules: no ES-module scripts; no runtime fetch in portable docs; <code>semtext.js</code> is linked (or inlined) in full in every portable form regardless of which of (1)-(3) it takes -- there is no smaller script to fall back to. Form (5), hosted lazy, is the served-pages exception: it swaps the full bundle for on-demand chunks and cannot survive offline.</sem-note>
+  <sem-note id="n-hard-rules" variant="danger">Hard rules: no ES-module scripts; no runtime fetch in portable docs; <code>semtext.js</code> is the only script a document carries. A document without it shows authored text only -- not styled, not interactive (<a href="#4-the-script--degradation-rules">&sect;4</a>).</sem-note>
 
   <h2 id="8-machine-readability-contract">8. Machine-readability contract</h2>
   <ul>
     <li>Semantic children (<code>&lt;statement&gt;</code>, <code>&lt;conclusion&gt;</code>, <code>&lt;highlight&gt;</code>) + attrs (<code>kind</code>, <code>status</code>, <code>tags</code>, <code>view-as</code>) qualify every datum.</li>
-    <li>Well-formed, correctly nested HTML -- parseable by XML/HTML tooling; the same vocabulary is the XML variant of NPL (<a href="#9-npl-xml-variant-alignment">&sect;9</a>). Custom elements with bare attributes are what an XML consumer sees: <code>&lt;sem-fact kind="concept"&gt;</code> is one element with one attribute, no class list to tokenise and no <code>data-</code> prefix to strip. The document stays <strong>valid HTML5</strong> as well: bare attributes appear only on custom elements, and a standard element carries its qualifier as <code>data-*</code> (<a href="#2-attribute-catalog">&sect;2</a>).</li>
+    <li>Well-formed, correctly nested HTML -- parseable by XML/HTML tooling; the same vocabulary is the XML variant of NPL (<a href="#9-npl-xml-variant-alignment">&sect;9</a>). Custom elements with bare attributes are what an XML consumer sees: <code>&lt;sem-fact kind=&quot;concept&quot;&gt;</code> is one element with one attribute, no class list to tokenise and no <code>data-</code> prefix to strip. The document stays <strong>valid HTML5</strong> as well: bare attributes appear only on custom elements, and a standard element carries its qualifier as <code>data-*</code> (<a href="#2-attribute-catalog">&sect;2</a>).</li>
     <li>Events + attrs documented per schema = agent integration surface.</li>
-    <li>"Text extraction" reference recipe (DOM &rarr; annotated plain text) ships with the lib for terminal/LLM pipelines<a href="#r-extraction" id="cite-extraction">[2]</a>.</li>
+    <li>&quot;Text extraction&quot; reference recipe (DOM - annotated plain text) ships with the lib for terminal/LLM pipelines.</li>
   </ul>
 
   <h3 id="the-extraction-invariant-normative">The extraction invariant (normative)</h3>
   <p>For any document <code>D</code>, where <code>E</code> is extraction, <code>R(D)</code> is <code>D</code> after <code>semtext.js</code> has run, and <code>I(D)</code> is <code>D</code> after any sequence of user interactions the vocabulary supports (tab switches, card flips, reveals, table sorts and filters, audience profile switches, <code>sem-source</code> / <code>sem-md</code> view toggles, reader chrome changes):</p>
+
   <p><code>E(D) = E(R(D)) = E(I(R(D)))</code></p>
-  <p>Equality is deep equality of the record array, including <code>sourceOrder</code>, and the same guarantee covers every <code>view-as</code> mode. This is the format's central promise: the machine consumer does not get a degraded reading of what the human consumer saw. The full formal statement -- the three refusal rules that make it hold (extraction never looks at generated chrome, runtime state, or presentation attributes: <code>data-view-as</code>, <code>data-active</code>, <code>collapsed</code>) and the one recorded exception (<code>sem-table</code> row reordering, made safe by the <code>data-sem-source-index</code> stamp) -- is normative and lives in <a href="#r-extraction">spec/extraction.md</a> &sect;5; this section does not weaken or restate it.</p>
+
+  <p>Equality is deep equality of the record array, including <code>sourceOrder</code>, and the same guarantee covers every <code>view-as</code> mode. This is the format's central promise: the machine consumer does not get a degraded reading of what the human consumer saw. The full formal statement -- the three refusal rules that make it hold (extraction never looks at generated chrome, runtime state, or presentation attributes: <code>data-view-as</code>, <code>data-active</code>, <code>collapsed</code>) and the one recorded exception (<code>sem-table</code> row reordering, made safe by the <code>data-sem-source-index</code> stamp) -- is normative and lives in <code>spec/extraction.md</code> &amp;sect;5; this section does not weaken or restate it.</p>
 
   <h3 id="what-a-consumer-may-rely-on">What a consumer may rely on</h3>
   <p>Normative, each item enforced by the tests named below:</p>
+
   <ul>
-    <li>The record array: flat, document-ordered, <code>sourceOrder</code> = array index, containment a <code>parent</code> index tree; record shape fixed (<code>type</code>, <code>id</code>, <code>kind</code>, <code>tags</code>, <code>audience</code>, <code>parent</code>, <code>fields</code>, <code>text</code>, <code>sourceOrder</code> -- spec/extraction.md &sect;2).</li>
+    <li>The record array: flat, document-ordered, <code>sourceOrder</code> = array index, containment a <code>parent</code> index tree; record shape fixed (<code>type</code>, <code>id</code>, <code>kind</code>, <code>tags</code>, <code>audience</code>, <code>parent</code>, <code>fields</code>, <code>text</code>, <code>sourceOrder</code> -- <code>spec/extraction.md</code> &amp;sect;2).</li>
     <li><code>audience</code> is carried verbatim on every record and never removes one; filtering by audience is a consumer operation on the extracted array.</li>
     <li>The annotated plain-text tier (<code>extractText</code> / <code>renderRecordsAsText</code>) is a pure function of the records, so it inherits the invariant unchanged.</li>
-    <li>Extraction itself is a total, pure function: no configuration, no I/O, no DOM mutation (spec/extraction.md &sect;9).</li>
+    <li>Extraction itself is a total, pure function: no configuration, no I/O, no DOM mutation (<code>spec/extraction.md</code> &amp;sect;9).</li>
   </ul>
 
   <h3 id="best-effort-only-not-guaranteed">Best-effort only (not guaranteed)</h3>
@@ -613,27 +666,26 @@
     <li>Live presentation state (quiz answers, current sort, reader font/mode, disclosure state): invisible to extraction. If a consumer needs it, the vocabulary must carry it as a durable qualifier instead.</li>
     <li>Element families without a schema entry extract as plain records (<code>fields: {}</code>, prose <code>text</code>); their payloads are best-effort until a schema defines them.</li>
   </ul>
+
   <p>Evidence (each bullet is asserted, not aspirational): <code>test/e2e/extraction.cy.js</code> (invariant core: JS-off = JS-on, every <code>view-as</code>, before/after interaction), <code>test/e2e/extraction-reading.cy.js</code> (reading elements; sort + filter deep-equal baseline), <code>test/e2e/sem-table.cy.js</code> (the recorded reordering exception), <code>test/e2e/sem-audiences.cy.js</code> (invariant across profile switches), <code>test/e2e/spec-pages.cy.js</code> (this document itself: records identical JS-off, JS-on, and after interaction).</p>
 
   <h2 id="9-npl-xml-variant-alignment">9. NPL XML-variant alignment</h2>
-  <p>This vocabulary is the <strong>XML variant of NPL</strong>: NPL yaml already models agents (name/bio/instructions), instructions, and structured prompt sections via the MCP server; this format is its document-shaped rendering target. Alignment tasks (tracked, not blocking M1): map <code>&lt;agent&gt;</code> children to NPL agent schema; map <code>sem-fact</code> to NPL fact/knowledge records; define <code>sem-enhanced-document</code> as a valid MCP <code>NPLLoad</code>/render target.</p>
-  <sem-note id="q4" variant="warning"><strong>? Q4</strong> -- who owns the mapping: this repo exports it, or NPL MCP consumes a schema file we publish?</sem-note>
+  <p>This vocabulary is the <strong>XML variant of NPL</strong>: NPL yaml already models agents (name/bio/instructions), instructions, and structured prompt sections via the MCP server; this format is its document-shaped rendering target. Alignment tasks (tracked, not blocking M1): map <code>&lt;agent&gt;</code> children to NPL agent schema; map <code>sem-fact</code> to NPL fact/knowledge records; define <code>sem-enhanced-document</code> as a valid MCP <code>NPLLoad</code>/render target. ? <strong>Q4</strong> who owns the mapping -- this repo exports it, or NPL MCP consumes a schema file we publish?</p>
 
   <h2 id="10-open-questions">10. Open questions</h2>
   <sem-md id="md-questions" kind="open-questions" label="Open questions and leans" controls="toggle,copy">
-    | # | Question | My lean |
-    | :-- | :-- | :-- |
-    | Q1 | bare `&lt;agent&gt;` metadata children vs `sem-`-prefixed | bare (per your example; matches NPL yaml shape) |
-    | Q2 | `sem-properties` pure `&lt;dl&gt;` v1 | **resolved (this branch)** -- pure `&lt;dl&gt;`, chrome only if a consumer demands it |
-    | Q3 | tabs-family name: `sem-views` vs `sem-perspectives` | **resolved (this branch)** -- `sem-views` |
-    | Q4 | NPL MCP alignment ownership | we publish the schema file; MCP consumes |
-    | Q5 | fallback handler scope: baseline interactivity only vs full quiz logic | **resolved, superseded (2026-10)** -- the vanilla fallback is retired; one Lit bundle carries everything (spec v0.6) |
-    | Q6 | class-form alias lifetime: keep indefinitely, or retire once every reference document is tag-form | keep -- it costs one `:is()` per rule and lets HTML generators that cannot emit custom elements participate |
+| # | Question | My lean |
+| :-- | :-- | :-- |
+| Q1 | bare `&lt;agent&gt;` metadata children vs `sem-`-prefixed | bare (per your example; matches NPL yaml shape) |
+| Q2 | `sem-properties` pure `&lt;dl&gt;` v1 | **resolved (this branch)** -- pure `&lt;dl&gt;`, chrome only if a consumer demands it |
+| Q3 | tabs-family name: `sem-views` vs `sem-perspectives` | **resolved (this branch)** -- `sem-views` |
+| Q4 | NPL MCP alignment ownership | we publish the schema file; MCP consumes |
+| Q5 | fallback handler scope: baseline interactivity only vs full quiz logic | **resolved, superseded (2026-10)** -- the vanilla fallback is retired; one Lit bundle carries everything (spec v0.6) |
+| Q6 | class-form alias lifetime: keep indefinitely, or retire once every reference document is tag-form | keep -- it costs one `:is()` per rule and lets HTML generators that cannot emit custom elements participate |
   </sem-md>
 
   <h2 id="appendix-a----class-form-alias-v04-compatibility">Appendix A -- Class-form alias (v0.4 compatibility)</h2>
-  <p>The v0.4 baseline spelled the vocabulary as <strong>classes on plain elements</strong> with <code>data-*</code> parameters. The script and the CSS still accept that spelling and a document may mix forms; it is an alias, not a second vocabulary. The mapping is mechanical: identity = a <code>sem-&lt;element&gt;</code> class on a <code>div</code> (or <code>span</code> for inline parts), every bare parameter = <code>data-&lt;parameter&gt;</code>, every bare child part = a <code>div</code>/<code>span</code> classed <code>.sem-&lt;part&gt;</code>. One exception: <code>&lt;incorrect-statement&gt;</code>'s class form is the unprefixed <code>.incorrect-statement</code>, matching its tag name exactly (user decision, v0.7).</p>
-
+  <p>The v0.4 baseline spelled the vocabulary as <strong>classes on plain elements</strong> with <code>data-*</code> parameters. Every tier still accepts that spelling and a document may mix forms; it is an alias, not a second vocabulary. The mapping is mechanical: identity = <code>class=&quot;sem-&lt;element&gt;&quot;</code> on a <code>div</code> (or <code>span</code> for inline parts), every bare parameter = <code>data-&lt;parameter&gt;</code>, every bare child part = a <code>div</code>/<code>span</code> classed <code>.sem-&lt;part&gt;</code>. One exception: <code>&lt;incorrect-statement&gt;</code>'s class form is the unprefixed <code>.incorrect-statement</code>, matching its tag name exactly (user decision, v0.7).</p>
   <sem-code id="c-alias" lang="html" filename="alias.html" controls="copy,wrap"><pre><code>&lt;!-- canonical --&gt;
 &lt;sem-note variant="warning"&gt;Rotation is &lt;strong&gt;per session&lt;/strong&gt;.&lt;/sem-note&gt;
 
@@ -643,64 +695,67 @@
 &lt;/div&gt;</code></pre></sem-code>
 
   <sem-md id="md-alias" kind="mapping" label="Canonical tag form &rarr; class-form alias" controls="toggle,copy">
-    | Canonical tag form | Class-form alias |
-    | :-- | :-- |
-    | `&lt;sem-enhanced-document&gt;` | `div.sem-enhanced-document` |
-    | `&lt;agent&gt;` + name/bio/instructions | `div.sem-agent` &gt; `.sem-agent-name/-bio/-instructions` |
-    | `&lt;sem-note variant="warning"&gt;` body | `div.sem-note[data-variant="warning"]` &gt; `.sem-note-body`; `collapsed` attr |
-    | `&lt;sem-audiences&gt;` / `&lt;sem-profile id label implies&gt;` | `div.sem-audiences` &gt; `div.sem-profile[id][data-label][data-implies]`; `audience="..."` - `data-audience` |
-    | `&lt;sem-facts view-as="quiz"&gt;` | `div.sem-facts[data-view-as="quiz"]` |
-    | `&lt;sem-fact&gt;` &gt; `&lt;statement&gt;` / `&lt;conclusion&gt;` | `div.sem-fact` &gt; `.sem-statement`, `.sem-conclusion` |
-    | `&lt;incorrect-statement&gt;` | `div.incorrect-statement` |
-    | `&lt;sem-details&gt;` / `&lt;sem-detail&gt;` | `div.sem-details` &gt; `div.sem-detail` |
-    | `&lt;highlight&gt;` | `span.sem-highlight` (occluded form: `.sem-occluded`) |
-    | `&lt;sem-procedure&gt;` / `&lt;sem-step status&gt;` | `div.sem-procedure` &gt; `div.sem-step[data-status]` |
-    | `&lt;sem-properties&gt;` / `&lt;sem-property key&gt;` | `div.sem-properties` &gt; `div.sem-property[data-key]` |
-    | `&lt;sem-properties view-as="glossary"&gt;` | `div.sem-properties[data-view-as="glossary"]` &gt; `div.sem-property[id][data-key]`; term anchors `&lt;a href="#id"&gt;`, `&lt;dfn&gt;` optional |
-    | `&lt;sem-views&gt;` / `&lt;sem-view name active&gt;` | `div.sem-views[id]` &gt; `div.sem-view[data-name]`, `data-active` marker |
-    | `&lt;sem-reveal summary&gt;` | `div.sem-reveal[data-summary]`, `open` attr (starts revealed; `collapsed` accepted, no-op) |
-    | `&lt;sem-tag-def tag name group children&gt;` / `&lt;sem-tag-attr name type required default allowed&gt;` | `div.sem-tag-def[data-tag][data-name][data-group][data-children]` &gt; `div.sem-tag-attr[data-name][data-type][data-required][data-default][data-allowed]` |
-    | `&lt;sem-api-call name method endpoint status&gt;` / `&lt;sem-api-param name in type required default allowed&gt;` | `div.sem-api-call[data-name][data-method][data-endpoint][data-status]` &gt; `div.sem-api-param[data-name][data-in][data-type][data-required][data-default][data-allowed]` |
-    | `&lt;sem-progress value label&gt;` | `div.sem-progress[data-value][data-label]` |
-    | `&lt;sem-chronology view-as&gt;` / `&lt;sem-event when until status&gt;` | `div.sem-chronology[data-view-as]` &gt; `div.sem-event[data-when][data-until][data-status]` (+ `&lt;time datetime&gt;`) |
-    | `&lt;sem-code lang filename mark wrap controls&gt;` &gt; `&lt;pre&gt;&lt;code&gt;` | `div.sem-code[data-lang][data-filename][data-mark][data-controls]` &gt; `&lt;pre&gt;&lt;code&gt;` |
-    | `&lt;sem-references kind&gt;` / `&lt;sem-reference id href cite&gt;` | `div.sem-references[data-kind]` &gt; `div.sem-reference[id][data-href][data-cite]`; citations are plain `&lt;a href="#id"&gt;` |
-    | `&lt;sem-source label view-as="html\|source"&gt;` &gt; any content | `div.sem-source[data-label][data-view-as]` &gt; any content; transparent wrapper, mints nothing |
-    | `&lt;sem-reader controls outline-depth&gt;` &gt; optional `&lt;nav aria-label="Contents"&gt;` | `div.sem-reader[data-controls][data-outline-depth]` &gt; same optional nav; chrome, mints nothing |
-    | `&lt;sem-md label view-as="rendered\|raw" controls&gt;` &gt; Markdown text | `div.sem-md[data-label][data-view-as][data-controls]` &gt; Markdown text |
-    | `&lt;sem-table controls sticky&gt;` &gt; `&lt;table&gt;` | `div.sem-table[data-controls][data-sticky]` &gt; authored `&lt;table&gt;` (`&lt;th scope="col"&gt;`, `td[data-value]` sort keys) |
-    | `&lt;sem-browser src label&gt;` &gt; fallback figure | `div.sem-browser[data-src]` &gt; the fallback children — with no script the div IS the framed document |
+| Canonical tag form | Class-form alias |
+| :-- | :-- |
+| `&lt;sem-enhanced-document&gt;` | `div.sem-enhanced-document` |
+| `&lt;agent&gt;` + name/bio/instructions | `div.sem-agent` &gt; `.sem-agent-name/-bio/-instructions` |
+| `&lt;sem-note variant="warning"&gt;` body | `div.sem-note[data-variant="warning"]` &gt; `.sem-note-body`; `collapsed` attr |
+| `&lt;sem-audiences&gt;` / `&lt;sem-profile id label implies&gt;` | `div.sem-audiences` &gt; `div.sem-profile[id][data-label][data-implies]`; `audience="..."` - `data-audience` |
+| `&lt;sem-facts view-as="quiz"&gt;` | `div.sem-facts[data-view-as="quiz"]` |
+| `&lt;sem-fact&gt;` &gt; `&lt;statement&gt;` / `&lt;conclusion&gt;` | `div.sem-fact` &gt; `.sem-statement`, `.sem-conclusion` |
+| `&lt;incorrect-statement&gt;` | `div.incorrect-statement` |
+| `&lt;sem-details&gt;` / `&lt;sem-detail&gt;` | `div.sem-details` &gt; `div.sem-detail` |
+| `&lt;highlight&gt;` | `span.sem-highlight` (occluded form: `.sem-occluded`) |
+| `&lt;sem-procedure&gt;` / `&lt;sem-step status&gt;` | `div.sem-procedure` &gt; `div.sem-step[data-status]` |
+| `&lt;sem-properties&gt;` / `&lt;sem-property key&gt;` | `div.sem-properties` &gt; `div.sem-property[data-key]` |
+| `&lt;sem-properties view-as="glossary"&gt;` | `div.sem-properties[data-view-as="glossary"]` &gt; `div.sem-property[id][data-key]`; term anchors `&lt;a href="#id"&gt;`, `&lt;dfn&gt;` optional |
+| `&lt;sem-views&gt;` / `&lt;sem-view name active&gt;` | `div.sem-views[id]` &gt; `div.sem-view[data-name]`, `data-active` marker |
+| `&lt;sem-reveal summary&gt;` | `div.sem-reveal[data-summary]`, `open` attr (starts revealed; `collapsed` accepted, no-op) |
+| `&lt;sem-tag-def tag name group children&gt;` / `&lt;sem-tag-attr name type required default allowed&gt;` | `div.sem-tag-def[data-tag][data-name][data-group][data-children]` &gt; `div.sem-tag-attr[data-name][data-type][data-required][data-default][data-allowed]` |
+| `&lt;sem-api-call name method endpoint status&gt;` / `&lt;sem-api-param name in type required default allowed&gt;` | `div.sem-api-call[data-name][data-method][data-endpoint][data-status]` &gt; `div.sem-api-param[data-name][data-in][data-type][data-required][data-default][data-allowed]` |
+| `&lt;sem-progress value label&gt;` | `div.sem-progress[data-value][data-label]` |
+| `&lt;sem-chronology view-as&gt;` / `&lt;sem-event when until status&gt;` | `div.sem-chronology[data-view-as]` &gt; `div.sem-event[data-when][data-until][data-status]` (+ `&lt;time datetime&gt;`) |
+| `&lt;sem-code lang filename mark wrap controls&gt;` &gt; `&lt;pre&gt;&lt;code&gt;` | `div.sem-code[data-lang][data-filename][data-mark][data-controls]` &gt; `&lt;pre&gt;&lt;code&gt;` |
+| `&lt;sem-references kind&gt;` / `&lt;sem-reference id href cite&gt;` | `div.sem-references[data-kind]` &gt; `div.sem-reference[id][data-href][data-cite]`; citations are plain `&lt;a href="#id"&gt;` |
+| `&lt;sem-source label view-as="html\|source"&gt;` &gt; any content | `div.sem-source[data-label][data-view-as]` &gt; any content; transparent wrapper, mints nothing |
+| `&lt;sem-reader controls outline-depth&gt;` &gt; optional `&lt;nav aria-label="Contents"&gt;` | `div.sem-reader[data-controls][data-outline-depth]` &gt; same optional nav; chrome, mints nothing |
+| `&lt;sem-md label view-as="rendered\|raw" controls&gt;` &gt; Markdown text | `div.sem-md[data-label][data-view-as][data-controls]` &gt; Markdown text |
+| `&lt;sem-table controls sticky&gt;` &gt; `&lt;table&gt;` | `div.sem-table[data-controls][data-sticky]` &gt; authored `&lt;table&gt;` (`&lt;th scope="col"&gt;`, `td[data-value]` sort keys) |
+| `&lt;sem-workflow kind duration label&gt;` / `&lt;sem-step action description gate check if-no output status&gt;` | `div.sem-workflow[data-kind][data-duration][data-label]` &gt; `div.sem-step[data-action][data-description][data-gate][data-check][data-if-no][data-output][data-status]` |
+| `&lt;sem-site-tree label mode&gt;` / `&lt;node path label kind collapsed&gt;` | `div.sem-site-tree[data-label][data-mode]` &gt; `div.sem-node[data-path][data-label][data-kind]`, nested |
+| `&lt;sem-file-tree mode label&gt;` | `div.sem-file-tree[data-mode][data-label]`; text form keeps the authored `&lt;pre&gt;`, structured form nests `div.sem-node[data-path]` |
+| agent-kit records, e.g. `&lt;agent-kit-issue uuid state&gt;` &gt; title/description parts | `div.agent-kit-issue[data-uuid][data-state]` &gt; `.agent-kit-title`, `.agent-kit-description`, ... -- the same `div.agent-kit-&lt;record&gt;` &gt; `.agent-kit-&lt;part&gt;` mapping for every ticket, persona, criterion, board, chatroom, media and testing record |
+| `&lt;sem-browser src label&gt;` &gt; fallback figure | `div.sem-browser[data-src]` &gt; the fallback children — with no script the div IS the framed document |
   </sem-md>
 
-  <p>Rules the alias inherits unchanged: a <code>data-*</code> parameter wins over a bare one on the same element (<a href="#2-attribute-catalog">&sect;2</a>); the hide rules, the marker and events are identical (<a href="#4-the-script--degradation-rules">&sect;4</a>); extraction yields the <strong>same records</strong> from either form (<a href="#r-extraction">spec/extraction.md</a>, the cross-form equality test in <code>test/e2e/sem-source.cy.js</code>). Reference class-form documents: <code>web/demo/index.html</code>, <code>web/demo/reading.html</code>.</p>
-
+  <p>Rules the alias inherits unchanged: a <code>data-*</code> parameter wins over a bare one on the same element (<a href="#2-attribute-catalog">&sect;2</a>); the hide rules, tier markers and events are identical (<a href="#4-the-script--degradation-rules">&sect;4</a>); extraction yields the <strong>same records</strong> from either form (<code>spec/extraction.md</code>, the cross-form equality test in <code>test/e2e/sem-source.cy.js</code>). Reference class-form documents: <code>web/demo/index.html</code>, <code>web/demo/reading.html</code>.</p>
 
   <h3 id="npl-namespace-npl-">NPL namespace (npl-*)</h3>
-  <p>The NPL namespace (<code>npl-*</code>, <code>spec/schema/npl/</code>) aliases by the same mechanical mapping: identity = <code>class="npl-&lt;element&gt;"</code> on a <code>div</code> (or <code>span</code> for inline parts), every bare parameter = <code>data-&lt;parameter&gt;</code>, every bare child part = a <code>div</code>/<code>span</code> classed <code>.npl-&lt;part&gt;</code> -- parts may be read either way where a schema documents it (<code>npl-ref</code> sections, <code>npl-critique</code> children). Parameters read in either spelling with <code>data-&lt;name&gt;</code> winning, the same contract as <a href="#2-attribute-catalog">&sect;2</a> (the <code>nplParam</code> reader implements it). One recorded exception: <code>collapsed</code> on <code>npl-cot</code> -- the component mirrors the boolean to <code>data-collapsed</code> for CSS/extraction parity but reads the bare attribute only; its schema is normative for that attribute.</p>
+  <p>The NPL namespace aliases by the same mechanical mapping: identity = <code>class=&quot;npl-&lt;element&gt;&quot;</code> on a <code>div</code> (or <code>span</code> for inline parts), every bare parameter = <code>data-&lt;parameter&gt;</code>, every bare child part = a <code>div</code>/<code>span</code> classed <code>.npl-&lt;part&gt;</code> -- parts may be read either way where a schema documents it (<code>npl-ref</code> sections, <code>npl-critique</code> children). Parameters read in either spelling with <code>data-&lt;name&gt;</code> winning, the same contract as §2 (the <code>nplParam</code> reader implements it). One recorded exception: <code>collapsed</code> on <code>npl-cot</code> -- the component mirrors the boolean to <code>data-collapsed</code> for CSS/extraction parity but reads the bare attribute only; its schema is normative for that attribute.</p>
 
   <sem-md id="md-alias-npl" kind="mapping" label="Canonical tag form &rarr; class-form alias (NPL)" controls="toggle,copy">
-    | Canonical tag form | Class-form alias |
-    | :-- | :-- |
-    | `&lt;npl-agent name&gt;` | `.npl-agent[data-name]` |
-    | `&lt;npl-directive glyph&gt;` | `.npl-directive[data-glyph]` |
-    | `&lt;npl-section type&gt;` | `.npl-section[data-type]` |
-    | `&lt;npl-rubric title&gt;` | `.npl-rubric[data-title]` &gt; `.npl-criterion`, `.npl-overall-score` |
-    | `&lt;npl-critique&gt;` | `.npl-critique` &gt; `.npl-subject`, `.npl-perspective`, `.npl-strengths`, `.npl-weaknesses`, `.npl-verdict` |
-    | `&lt;npl-declaration version&gt;` | `.npl-declaration[data-version]` |
-    | `&lt;npl-example label&gt;` | `.npl-example[data-label]` |
-    | `&lt;npl-flag name&gt;` | `.npl-flag[data-name]` |
-    | `&lt;npl-flags preset&gt;` | `.npl-flags[data-preset]` |
-    | `&lt;npl-mindread confidence&gt;` | `.npl-mindread[data-confidence]` |
-    | `&lt;npl-thought type&gt;` | `.npl-thought[data-type]` |
-    | `&lt;npl-poa direction&gt;` | `.npl-poa[data-direction]` |
-    | `&lt;npl-ref variant&gt;` | `.npl-ref[data-variant]` |
-    | `&lt;npl-vos phase&gt;` | `.npl-vos[data-phase]` |
-    | `&lt;npl-artifact type&gt;` | `.npl-artifact[data-type]` &gt; `.npl-title`, `.npl-content` |
-    | `&lt;npl-mode primary&gt;` | `.npl-mode[data-primary]` |
-    | `&lt;npl-mood mood&gt;` | `.npl-mood[data-mood]` |
-    | `&lt;npl-hormones variant&gt;` | `.npl-hormones[data-variant]` |
-    | `&lt;npl-cot&gt;` | `.npl-cot`; `collapsed` stays bare in both forms (like `sem-note`, `sem-reveal`) |
-    | `&lt;npl-intent&gt;` | `.npl-intent`; parts in both spellings -- `.npl-intent-assumptions` etc. |
+| Canonical tag form | Class-form alias |
+| :-- | :-- |
+| `&lt;npl-agent name&gt;` | `.npl-agent[data-name]` |
+| `&lt;npl-directive glyph&gt;` | `.npl-directive[data-glyph]` |
+| `&lt;npl-section type&gt;` | `.npl-section[data-type]` |
+| `&lt;npl-rubric title&gt;` | `.npl-rubric[data-title]` &gt; `.npl-criterion`, `.npl-overall-score` |
+| `&lt;npl-critique&gt;` | `.npl-critique` &gt; `.npl-subject`, `.npl-perspective`, `.npl-strengths`, `.npl-weaknesses`, `.npl-verdict` |
+| `&lt;npl-declaration version&gt;` | `.npl-declaration[data-version]` |
+| `&lt;npl-example label&gt;` | `.npl-example[data-label]` |
+| `&lt;npl-flag name&gt;` | `.npl-flag[data-name]` |
+| `&lt;npl-flags preset&gt;` | `.npl-flags[data-preset]` |
+| `&lt;npl-mindread confidence&gt;` | `.npl-mindread[data-confidence]` |
+| `&lt;npl-thought type&gt;` | `.npl-thought[data-type]` |
+| `&lt;npl-poa direction&gt;` | `.npl-poa[data-direction]` |
+| `&lt;npl-ref variant&gt;` | `.npl-ref[data-variant]` |
+| `&lt;npl-vos phase&gt;` | `.npl-vos[data-phase]` |
+| `&lt;npl-artifact type&gt;` | `.npl-artifact[data-type]` &gt; `.npl-title`, `.npl-content` |
+| `&lt;npl-mode primary&gt;` | `.npl-mode[data-primary]` |
+| `&lt;npl-mood mood&gt;` | `.npl-mood[data-mood]` |
+| `&lt;npl-hormones variant&gt;` | `.npl-hormones[data-variant]` |
+| `&lt;npl-cot&gt;` | `.npl-cot`; `collapsed` stays bare in both forms (like `sem-note`, `sem-reveal`) |
+| `&lt;npl-intent&gt;` | `.npl-intent`; parts in both spellings -- `.npl-intent-assumptions` etc. |
   </sem-md>
 
   <p>The alias form is the same compatibility contract Q6 keeps for the <code>sem-*</code> tier: supported in both namespaces, tag form canonical. Each element's schema (<code>spec/schema/npl/&lt;element&gt;.md</code>) is normative for its attribute list.</p>
@@ -728,6 +783,22 @@
     <sem-reference id="r-sem-reader" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-reader.md" cite="spec/schema/sem-reader.md">Schema -- sem-reader.</sem-reference>
     <sem-reference id="r-sem-table" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-table.md" cite="spec/schema/sem-table.md">Schema -- sem-table.</sem-reference>
     <sem-reference id="r-sem-progress" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-progress.md" cite="spec/schema/sem-progress.md">Schema -- sem-progress.</sem-reference>
+    <sem-reference id="r-sem-workflow" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-workflow.md" cite="spec/schema/sem-workflow.md">Schema -- sem-workflow / sem-step.</sem-reference>
+    <sem-reference id="r-sem-site-tree" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-site-tree.md" cite="spec/schema/sem-site-tree.md">Schema -- sem-site-tree / node.</sem-reference>
+    <sem-reference id="r-sem-file-tree" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-file-tree.md" cite="spec/schema/sem-file-tree.md">Schema -- sem-file-tree.</sem-reference>
+    <sem-reference id="r-agent-kit-tickets" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/tickets.md" cite="spec/schema/agent-kit/tickets.md">Schema -- agent-kit tickets and parts.</sem-reference>
+    <sem-reference id="r-agent-kit-review" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/review.md" cite="spec/schema/agent-kit/review.md">Schema -- agent-kit media and review records.</sem-reference>
+    <sem-reference id="r-agent-kit-suite" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/test-suite.md" cite="spec/schema/agent-kit/test-suite.md">Schema -- agent-kit testing records.</sem-reference>
+    <sem-reference id="r-agent-kit-personas" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/personas.md" cite="spec/schema/agent-kit/personas.md">Schema -- spec/schema/agent-kit/personas.md.</sem-reference>
+    <sem-reference id="r-agent-kit-acceptance-criteria" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/acceptance-criteria.md" cite="spec/schema/agent-kit/acceptance-criteria.md">Schema -- spec/schema/agent-kit/acceptance-criteria.md.</sem-reference>
+    <sem-reference id="r-agent-kit-custom-assert" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/custom-assert.md" cite="spec/schema/agent-kit/custom-assert.md">Schema -- spec/schema/agent-kit/custom-assert.md.</sem-reference>
+    <sem-reference id="r-agent-kit-board" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/board.md" cite="spec/schema/agent-kit/board.md">Schema -- spec/schema/agent-kit/board.md.</sem-reference>
+    <sem-reference id="r-agent-kit-reference-cards" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/reference-cards.md" cite="spec/schema/agent-kit/reference-cards.md">Schema -- spec/schema/agent-kit/reference-cards.md.</sem-reference>
+    <sem-reference id="r-agent-kit-chatroom" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/chatroom.md" cite="spec/schema/agent-kit/chatroom.md">Schema -- spec/schema/agent-kit/chatroom.md.</sem-reference>
+    <sem-reference id="r-agent-kit-asset" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/asset.md" cite="spec/schema/agent-kit/asset.md">Schema -- spec/schema/agent-kit/asset.md.</sem-reference>
+    <sem-reference id="r-agent-kit-artifact" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/artifact.md" cite="spec/schema/agent-kit/artifact.md">Schema -- spec/schema/agent-kit/artifact.md.</sem-reference>
+    <sem-reference id="r-agent-kit-test-case" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/test-case.md" cite="spec/schema/agent-kit/test-case.md">Schema -- spec/schema/agent-kit/test-case.md.</sem-reference>
+    <sem-reference id="r-agent-kit-script-cards" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/script-cards.md" cite="spec/schema/agent-kit/script-cards.md">Schema -- spec/schema/agent-kit/script-cards.md.</sem-reference>
   </sem-references>
 
 </sem-enhanced-document>

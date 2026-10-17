@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<body>
+<sem-enhanced-document>
+  <h2 id="semext">Semext snapshots</h2>
+  <!-- semtext:cache:start semext-annotate annotate-demo -->
+  <semext-annotate id="annotate-demo" site="noizu" page="/docs/semtext"
+                   last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <script type="application/json">
+      { "threads": [{ "id": "t1", "excerpt": "first comment" }] }
+    </script>
+  </semext-annotate>
+  <!-- semtext:cache:end -->
+  <p>Prose between the annotate and docptr regions.</p>
+  <!-- semtext:cache:start semext-docptr ptr-resolve -->
+  <semext-docptr id="ptr-resolve" uuid="1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54"
+                 org="noizu" project="npl-enhanced-content"
+                 key="npl-enhanced-content:src/data/load.ts#resolveSource"
+                 last-refreshed="2026-10-17T09:14:00Z" status="fresh">
+    <script type="application/json">
+      { "pointers": { "1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54": { "line": 42 } } }
+    </script>
+  </semext-docptr>
+  <!-- semtext:cache:end -->
+  <!-- semtext:cache:start semext-media-prompt hero.media.prompt -->
+prompt: a lighthouse over a calm sea at dusk
+aspect: 16:9
+  <!-- semtext:cache:end -->
+  <p>Trailing authored prose. 🪡</p>
+</sem-enhanced-document>
+</body>
+</html>

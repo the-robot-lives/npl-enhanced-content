@@ -1,0 +1,74 @@
+[
+  {
+    "org": "acme",
+    "project": "semtext",
+    "key": "AKIT-001",
+    "type": "issue",
+    "uuid": "3f1c9a2e-8b74-4f6a-9d21-7ae5c0b4d101",
+    "state": "in-progress",
+    "labels": ["extract", "chrome"],
+    "title": "Extractor drops class-form parts",
+    "description": "extractRecords misses .agent-kit-title aliases when the class appears on a wrapper element.",
+    "updated_at": "2026-10-17T09:24:00Z"
+  },
+  {
+    "org": "acme",
+    "project": "semtext",
+    "key": "AKIT-002",
+    "type": "epic",
+    "uuid": "8d42bb17-2c05-4e93-b7aa-90c1f6e2d202",
+    "state": "open",
+    "labels": ["authoring"],
+    "title": "Authoring v2 — the agent-kit bundle",
+    "description": "Twenty-one registered components across tickets, personas, boards, and test definitions.",
+    "updated_at": "2026-10-16T14:02:00Z"
+  },
+  {
+    "org": "acme",
+    "project": "semtext",
+    "key": "AKIT-003",
+    "type": "bug",
+    "uuid": "b5a90f44-6e1d-4c28-8f37-12d9a3c5e303",
+    "state": "review",
+    "labels": ["css"],
+    "title": "Vocabulary display line collides with semext",
+    "description": "The agent-kit per-tag display lines must not fold into one comma list or parallel branches conflict.",
+    "updated_at": "2026-10-17T11:40:00Z"
+  },
+  {
+    "org": "acme",
+    "project": "semtext",
+    "key": "AKIT-004",
+    "type": "user-story",
+    "uuid": "c71e2d38-9f50-4b16-a8e4-33b7d5f6a404",
+    "state": "open",
+    "labels": ["docs"],
+    "title": "Author writes a ticket without touching JS",
+    "description": "A hand-authored XHTML document renders a readable ticket card with styles off or scripts off.",
+    "updated_at": "2026-10-15T08:15:00Z"
+  },
+  {
+    "org": "acme",
+    "project": "semtext",
+    "key": "AKIT-005",
+    "type": "task",
+    "uuid": "e0937f52-4a8b-4d70-9c26-55c8e1a7b505",
+    "state": "done",
+    "labels": ["build"],
+    "title": "Wire the agent-kit lazy manifest",
+    "description": "The manifest chunk loader registers components on first sight of their tag.",
+    "updated_at": "2026-10-14T17:55:00Z"
+  },
+  {
+    "org": "acme",
+    "project": "semtext",
+    "key": "AKIT-006",
+    "type": "sub-task",
+    "uuid": "f1b48c63-7d92-4e81-b035-66d9f2b8c606",
+    "state": "cancelled",
+    "labels": ["build"],
+    "title": "Ship the board before the tickets",
+    "description": "Superseded — the ticket tags landed first; the board consumes them.",
+    "updated_at": "2026-10-13T10:05:00Z"
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "monitor": {
+    "name": "annotate-srv threads probe",
+    "interval": "5m",
+    "assertions": [
+      "GET /api/v1/threads?site=semtext-demo&page=/demo/semext.html → 200",
+      "latency p95 < 2s",
+      "body is JSON with a threads array"
+    ]
+  }
+}
