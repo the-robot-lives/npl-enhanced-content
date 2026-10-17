@@ -48,6 +48,7 @@ listed with its full entry in [SS5](#5-element-entries).
 | **Data & tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
 | **Sequences & progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
 | **Interactive containers** | `sem-workflow` / `sem-step`, `sem-site-tree` / `node`, `sem-file-tree` / `node` | Steps with gate/check/if-no branches, and site/file trees (structured or text-authored) with collapse, filter and find |
+| **Agent-kit records** | `agent-kit-issue` / `-epic` / `-bug` / `-user-story` / `-task` / `-sub-task`, `agent-kit-ticket-ref`, `agent-kit-user-persona` / `agent-kit-agent-persona`, `agent-kit-acceptance-criteria` / `agent-kit-criterion`, `agent-kit-custom-assert`, `agent-kit-board`, `agent-kit-organization` / `agent-kit-project`, `agent-kit-chatroom`, `agent-kit-asset` / `agent-kit-artifact` / `agent-kit-review`, `agent-kit-test-suite` / `agent-kit-test-case` / `agent-kit-cypress` / `agent-kit-cucumber` | Project-tracking records over cached snapshots -- tickets, personas, criteria, boards, chat logs, media and test results; `livePolicy: never`, JS-off == JS-on |
 | **Definitions & citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference`, `sem-tag-def` / `sem-tag-attr`, `sem-api-call` / `sem-api-param` | Closed key/value assertions, the numbered works the prose cites, and the reference-definition cards that document a vocabulary's tags and an API's endpoints |
 | **NPL** | `npl-agent`, `npl-directive`, `npl-section`, `npl-rubric`, `npl-critique`, `npl-declaration`, `npl-example`, `npl-flag` / `npl-flags`, `npl-hormones`, `npl-mindread`, `npl-mode`, `npl-mood`, `npl-poa`, `npl-ref`, `npl-thought`, `npl-vos`, `npl-artifact`, `npl-cot`, `npl-intent` | NPL prompt-engineering elements; loaded by `npl.js` / `npl-lazy.js` on top of the SemText core |
 
@@ -663,6 +664,64 @@ marks a directory) and renders generated view rows with the same
 collapse/filter/find chrome. A structured `<node>` form is also
 accepted (dispatched on content).
 
+### Agent-kit records
+
+The `agent-kit-*` family is the project-tracking embed lane: 22 records over
+the cached-embed base (`CachedEmbedElement`), every one `livePolicy: never` --
+the authored `script[type="application/json"]` snapshot **is** the record, no
+client credentials, no network. Each record element renders an authored chrome
+inside `.agent-kit-chrome` (JS-on only, gated on `data-sem-upgraded`); with
+JavaScript off the authored blocks and attribute-borne CSS labels
+(`::before`/`::after` `attr()`, counters) are the whole show, so extraction
+deep-equals across tiers.
+
+**Tickets** -- `agent-kit-issue` / `-epic` / `-bug` / `-user-story` /
+`-task` / `-sub-task` share one part set: `agent-kit-title` /
+`-description` (exactlyOne each), `-state`, `-labels`, `-last-updated`
+(atMostOne).
+**Normative: `spec/schema/agent-kit/tickets.md`.**
+```html
+<agent-kit-issue uuid="AK-142" state="in-progress">
+  <script type="application/json">{ "updated_at": "2026-10-18" }</script>
+  <agent-kit-title>Bundle merge drift</agent-kit-title>
+  <agent-kit-description>Epic catch-up re-spliced the schema seam.</agent-kit-description>
+</agent-kit-issue>
+```
+Class form: `div.agent-kit-issue` > `.agent-kit-title`, `.agent-kit-description`, ...
+**Normative: `spec/schema/agent-kit/ticket-ref.md`.**
+
+**Personas / criteria / board / chatroom** -- `agent-kit-user-persona` /
+`-agent-persona` (name required; role/bio/metadata optional),
+`agent-kit-acceptance-criteria` > `agent-kit-criterion` >
+given/when/then (exactlyOne each), `agent-kit-custom-assert` >
+`-assert-expr` + `-assert-expect`, `agent-kit-board` >
+`-column[heading]` > `agent-kit-ticket-ref[key]`,
+`agent-kit-organization` / `-project` (name + description),
+`agent-kit-chatroom` > `-chatroom-name` + `-chat-msg[author role at]`.
+**Normative: `spec/schema/agent-kit/personas.md`, `acceptance-criteria.md`,
+`custom-assert.md`, `board.md`, `reference-cards.md`, `chatroom.md`.**
+
+**Media** -- `agent-kit-asset[src mime]` (lazy `<img>` + mime chip +
+`-caption`), `agent-kit-artifact[type language]` (`-artifact-content` in a
+mono block, inert `-version` chips + snapshot stamp),
+`agent-kit-review[verdict]` (verdict-colored chip, `-comment[author at]`
+rows with an `attr(author)` prefix).
+**Normative: `spec/schema/agent-kit/asset.md`, `artifact.md`, `review.md`.**
+
+**Testing** -- `agent-kit-test-suite` > `-branch[passed failed]` rows
+(summed in the totals chip), `agent-kit-test-case` > `-step` +
+exactlyOne `-expected`, and the script cards `agent-kit-cypress` /
+`agent-kit-cucumber[file]`.
+**Normative: `spec/schema/agent-kit/test-suite.md`, `test-case.md`,
+`script-cards.md`.**
+
+Inline script sources are authored as
+`script[type="text/plain"][data-agent-kit-script]`; the vocabulary CSS
+promotes them to `display: block` pre-wrap so real JS-off browsing keeps
+the authored source visible. The `.nojs` **build artifact** strips every
+`<script>` (hard extraction invariant), so the promoted panel is absent
+only there.
+
 ### Definitions & citations
 
 **sem-properties / sem-property** -- definition/properties block.
@@ -889,6 +948,7 @@ exception: `<incorrect-statement>`'s class form is the unprefixed
 | `<sem-workflow kind duration label>` / `<sem-step action description gate check if-no output status>` | `div.sem-workflow[data-kind][data-duration][data-label]` > `div.sem-step[data-action][data-description][data-gate][data-check][data-if-no][data-output][data-status]` |
 | `<sem-site-tree label mode>` / `<node path label kind collapsed>` | `div.sem-site-tree[data-label][data-mode]` > `div.sem-node[data-path][data-label][data-kind]`, nested |
 | `<sem-file-tree mode label>` | `div.sem-file-tree[data-mode][data-label]`; text form keeps the authored `<pre>`, structured form nests `div.sem-node[data-path]` |
+| agent-kit records, e.g. `<agent-kit-issue uuid state>` > title/description parts | `div.agent-kit-issue[data-uuid][data-state]` > `.agent-kit-title`, `.agent-kit-description`, ... -- the same `div.agent-kit-<record>` > `.agent-kit-<part>` mapping for every ticket, persona, criterion, board, chatroom, media and testing record |
 | `<sem-browser src label>` > fallback figure | `div.sem-browser[data-src]` > the fallback children — with no script the div IS the framed document |
 
 Rules the alias inherits unchanged: a `data-*` parameter wins over a bare

@@ -65,6 +65,7 @@
     | **Data &amp; tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
     | **Sequences &amp; progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
     | **Interactive containers** | `sem-workflow` / `sem-step`, `sem-site-tree` / `node`, `sem-file-tree` / `node` | Steps with gate/check/if-no branches, and site/file trees (structured or text-authored) with collapse, filter and find |
+    | **Agent-kit records** | `agent-kit-issue` / `-epic` / `-bug` / `-user-story` / `-task` / `-sub-task`, `agent-kit-ticket-ref`, `agent-kit-user-persona` / `agent-kit-agent-persona`, `agent-kit-acceptance-criteria` / `agent-kit-criterion`, `agent-kit-custom-assert`, `agent-kit-board`, `agent-kit-organization` / `agent-kit-project`, `agent-kit-chatroom`, `agent-kit-asset` / `agent-kit-artifact` / `agent-kit-review`, `agent-kit-test-suite` / `agent-kit-test-case` / `agent-kit-cypress` / `agent-kit-cucumber` | Project-tracking records over cached snapshots -- tickets, personas, criteria, boards, chat logs, media and test results; `livePolicy: never`, JS-off == JS-on |
     | **Definitions &amp; citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference`, `sem-tag-def` / `sem-tag-attr`, `sem-api-call` / `sem-api-param` | Closed key/value assertions, the numbered works the prose cites, and the reference-definition cards that document a vocabulary's tags and an API's endpoints |
     | **NPL** | `npl-agent`, `npl-directive`, `npl-section`, `npl-rubric`, `npl-critique`, `npl-declaration`, `npl-example`, `npl-flag` / `npl-flags`, `npl-hormones`, `npl-mindread`, `npl-mode`, `npl-mood`, `npl-poa`, `npl-ref`, `npl-thought`, `npl-vos`, `npl-artifact`, `npl-cot`, `npl-intent` | NPL prompt-engineering elements; loaded by `npl.js` / `npl-lazy.js` on top of the SemText core |
   </sem-md>
@@ -563,6 +564,39 @@ themes/
 
 
   <!-- ═══════════════════════════════════════════════════════════════════
+       AGENT-KIT RECORDS
+       ═══════════════════════════════════════════════════════════════════ -->
+  <h3 id="agent-kit-records">Agent-kit records</h3>
+
+  <p>The <code>agent-kit-*</code> family is the project-tracking embed lane: 22 records over the cached-embed base, every one <code>livePolicy: never</code> -- the authored <code>script[type="application/json"]</code> snapshot <strong>is</strong> the record; no client credentials, no network. Chrome renders inside <code>.agent-kit-chrome</code> gated on <code>data-sem-upgraded</code>; with JavaScript off the authored blocks and attribute-borne CSS labels (<code>::before</code>/<code>::after</code> <code>attr()</code>, counters) are the whole show, so extraction deep-equals across tiers.</p>
+
+  <!-- agent-kit-issue ----------------------------------------------------- -->
+  <h4 id="e-agent-kit-issue">agent-kit-issue and the five sibling tickets</h4>
+  <p><strong>Normative: <a href="#r-agent-kit-tickets">spec/schema/agent-kit/tickets.md</a>.</strong></p>
+  <sem-code id="c-agent-kit-issue" lang="html"><pre><code>&lt;agent-kit-issue uuid="AK-142" state="in-progress"&gt;
+  &lt;script type="application/json"&gt;{ "updated_at": "2026-10-18" }&lt;/script&gt;
+  &lt;agent-kit-title&gt;Bundle merge drift&lt;/agent-kit-title&gt;
+  &lt;agent-kit-description&gt;Epic catch-up re-spliced the schema seam.&lt;/agent-kit-description&gt;
+&lt;/agent-kit-issue&gt;</code></pre></sem-code>
+  <p><code>agent-kit-epic</code>, <code>-bug</code>, <code>-user-story</code>, <code>-task</code> and <code>-sub-task</code> share the part set: <code>-title</code>/<code>-description</code> exactlyOne, <code>-state</code>, <code>-labels</code>, <code>-last-updated</code> atMostOne. Class form: <code>div.agent-kit-issue</code> &gt; <code>.agent-kit-title</code>, <code>.agent-kit-description</code>, ....</p>
+  <sem-source id="s-agent-kit-issue" label="Live: agent-kit-issue">
+    <agent-kit-issue id="x-agent-kit-issue" uuid="AK-142" state="in-progress">
+      <agent-kit-title>Bundle merge drift</agent-kit-title>
+      <agent-kit-description>Epic catch-up re-spliced the schema seam.</agent-kit-description>
+    </agent-kit-issue>
+  </sem-source>
+
+  <!-- agent-kit-review ---------------------------------------------------- -->
+  <h4 id="e-agent-kit-review">agent-kit-review -- media and review records</h4>
+  <p><strong>Normative: <a href="#r-agent-kit-review">spec/schema/agent-kit/review.md</a>.</strong></p>
+  <p><code>agent-kit-asset[src mime]</code> renders a lazy <code>&lt;img&gt;</code> plus a mime chip and requires <code>-caption</code>; <code>agent-kit-artifact[type language]</code> holds <code>-artifact-content</code> in a mono block with inert <code>-version</code> chips and a snapshot stamp; <code>agent-kit-review[verdict]</code> shows a verdict-colored chip and <code>-comment[author at]</code> rows prefixed <code>attr(author)</code>.</p>
+
+  <!-- agent-kit-test-suite ------------------------------------------------ -->
+  <h4 id="e-agent-kit-test-suite">agent-kit-test-suite and the testing quartet</h4>
+  <p><strong>Normative: <a href="#r-agent-kit-suite">spec/schema/agent-kit/test-suite.md</a>.</strong></p>
+  <p><code>agent-kit-test-suite</code> sums <code>-branch[passed failed]</code> rows into a totals chip; <code>agent-kit-test-case</code> counts <code>-step</code> children and requires exactlyOne <code>-expected</code>; the script cards <code>agent-kit-cypress</code> / <code>agent-kit-cucumber[file]</code> promote inline <code>script[type="text/plain"][data-agent-kit-script]</code> sources via CSS so real JS-off browsing keeps the authored source (the <code>.nojs</code> build artifact strips every script by invariant, so the promoted panel is absent only there).</p>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
        DEFINITIONS & CITATIONS
        ═══════════════════════════════════════════════════════════════════ -->
   <h3 id="definitions--citations">Definitions &amp; citations</h3>
@@ -733,6 +767,7 @@ themes/
     | `&lt;sem-site-tree label mode&gt;` / `&lt;node path label kind collapsed&gt;` | `div.sem-site-tree[data-label][data-mode]` &gt; `div.sem-node[data-path][data-label][data-kind]`, nested |
     | `&lt;sem-file-tree mode label&gt;` | `div.sem-file-tree[data-mode][data-label]`; text form keeps the authored `&lt;pre&gt;`, structured form nests `div.sem-node[data-path]` |
     | `&lt;sem-browser src label&gt;` &gt; fallback figure | `div.sem-browser[data-src]` &gt; the fallback children — with no script the div IS the framed document |
+    | agent-kit records, e.g. `&lt;agent-kit-issue uuid state&gt;` &gt; title/description parts | `div.agent-kit-issue[data-uuid][data-state]` &gt; `.agent-kit-title`, `.agent-kit-description`, ... -- the same `div.agent-kit-&lt;record&gt;` &gt; `.agent-kit-&lt;part&gt;` mapping for every ticket, persona, criterion, board, chatroom, media and testing record |
   </sem-md>
 
   <p>Rules the alias inherits unchanged: a <code>data-*</code> parameter wins over a bare one on the same element (<a href="#2-attribute-catalog">&sect;2</a>); the hide rules, the marker and events are identical (<a href="#4-the-script--degradation-rules">&sect;4</a>); extraction yields the <strong>same records</strong> from either form (<a href="#r-extraction">spec/extraction.md</a>, the cross-form equality test in <code>test/e2e/sem-source.cy.js</code>). Reference class-form documents: <code>web/demo/index.html</code>, <code>web/demo/reading.html</code>.</p>
@@ -794,6 +829,9 @@ themes/
     <sem-reference id="r-sem-workflow" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-workflow.md" cite="spec/schema/sem-workflow.md">Schema -- sem-workflow / sem-step.</sem-reference>
     <sem-reference id="r-sem-site-tree" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-site-tree.md" cite="spec/schema/sem-site-tree.md">Schema -- sem-site-tree / node.</sem-reference>
     <sem-reference id="r-sem-file-tree" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-file-tree.md" cite="spec/schema/sem-file-tree.md">Schema -- sem-file-tree.</sem-reference>
+    <sem-reference id="r-agent-kit-tickets" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/tickets.md" cite="spec/schema/agent-kit/tickets.md">Schema -- agent-kit tickets and parts.</sem-reference>
+    <sem-reference id="r-agent-kit-review" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/review.md" cite="spec/schema/agent-kit/review.md">Schema -- agent-kit media and review records.</sem-reference>
+    <sem-reference id="r-agent-kit-suite" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/agent-kit/test-suite.md" cite="spec/schema/agent-kit/test-suite.md">Schema -- agent-kit testing records.</sem-reference>
   </sem-references>
 
 </sem-enhanced-document>

@@ -109,6 +109,12 @@ function expand(kind, arg) {
       return `<script>\n${readOrDie(resolve(root, 'dist/semext.js'), 'ext')}\n</script>`;
     case 'shell':
       return `<script>\n${readOrDie(resolve(root, 'dist/semtext-js-shell.js'), 'shell')}\n</script>`;
+    case 'agent-kit':
+      // The agent-kit namespace bundle (dist/agent-kit.js) — one inline
+      // script, same contract as `bundle`; `agent-kit-lazy` is NOT inlined
+      // (the demo authoring pattern registers every tag up front via the
+      // full bundle; the lazy loader serves multi-page sites).
+      return `<script>\n${readOrDie(resolve(root, 'dist/agent-kit.js'), 'agent-kit')}\n</script>`;
     case 'theme': {
       if (!arg) throw new Error('marker "theme" requires a theme name');
       return `<style data-sem-theme-source="${arg}">\n${readOrDie(resolve(root, 'themes', `${arg}.css`), 'theme')}\n</style>`;

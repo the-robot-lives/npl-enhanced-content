@@ -81,6 +81,8 @@ guardrail discipline they document.
 | `semtext-lazy.js` (loader) | **8 KB** | 3.3 raw / 1.6 gzipped (2026-10-14) |
 | `npl-lazy.js` (loader) | **8 KB** | 4.0 raw / 1.8 gzipped (2026-10-14) |
 | `semext.js` (semext-* embeds, feat/semext-embeds) | **48 KB** | 36.3 raw / 12.1 gzipped (2026-10-18) — in budget; the report-only placeholder budget from the empty-barrel lane is now enforced for real (family B's nine service-backed embeds) |
+| `agent-kit.js` (agent-kit-* embeds, feat/agent-kit-bundle) | **48 KB** (set 2026-10-18, PR #63 — matches the semext embed-lane budget) | 39.9 raw / 12.5 gzipped — in budget (22 tags, family C) |
+| `agent-kit-lazy.js` (loader) | **6 KB** (set 2026-10-18, PR #63) | 4.6 raw / 1.9 gzipped — in budget |
 
 Retired artifacts (spec v0.5, tag-form canonical, PR #30) — their handlers now
 share the single bundle budget:

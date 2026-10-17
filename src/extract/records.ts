@@ -152,7 +152,14 @@ const CHROME_CLASSES = [
   'sem-tree-toggle',
   'sem-tree-label',
   'sem-file-tree-view',
-  'sem-tree-view-row'
+  'sem-tree-view-row',
+  // agent-kit-* components: EVERY fabricated node sits inside one
+  // `agent-kit-chrome` container (src/lit/agent-kit/chrome.ts), and the
+  // cached-embed base renders its snapshot enrichment into
+  // `sem-cached-embed-chrome` — both are chrome whole, so JS-off
+  // extraction equals JS-on (the authored inner content is the record)
+  'agent-kit-chrome',
+  'sem-cached-embed-chrome'
 ];
 
 /** Highlight / cloze markers, in every authoring and runtime form. */
@@ -261,6 +268,13 @@ type SkipFn = (el: Element) => boolean;
  * Concatenate the text of `el`, descending through inline markup but
  * skipping any element `skip` rejects. Raw concatenation preserves the
  * authored spacing; `norm` collapses it afterwards.
+ *
+ * Script elements are never prose: a `script[type="application/json"]`
+ * child is a cached-embed's DATA (snapshot for the upgraded element, per
+ * spec/schema/semtext.schema.json `cachedEmbed`), and executable scripts
+ * are behavior — none of it is record text. The scripts-stripped .nojs
+ * artifacts agree by construction, keeping the §8 invariant exact for
+ * documents that embed snapshots.
  */
 function collectText(el: Element, skip: SkipFn): string {
   let out = '';
@@ -271,7 +285,7 @@ function collectText(el: Element, skip: SkipFn): string {
       out += n.nodeValue || '';
     } else if (n.nodeType === 1) {
       const child = n as Element;
-      if (skip(child)) continue;
+      if (skip(child) || child.tagName === 'SCRIPT') continue;
       out += collectText(child, skip);
     }
   }

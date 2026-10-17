@@ -1,0 +1,38 @@
+[
+  {
+    "org": "acme",
+    "project": "semtext",
+    "key": "persona-ada",
+    "kind": "user",
+    "name": "Ada Lovelace",
+    "role": "Product manager",
+    "bio": "Owns the SemText roadmap; reviews authoring ergonomics.",
+    "avatar": "https://picsum.photos/seed/ada-persona/96/96",
+    "metadata": { "team": "authoring", "timezone": "UTC+0" },
+    "updated_at": "2026-10-16T10:12:00Z"
+  },
+  {
+    "org": "acme",
+    "project": "semtext",
+    "key": "persona-loom",
+    "kind": "agent",
+    "name": "Loom",
+    "role": "The weaver",
+    "bio": "Coordinates the agent fleet; every thread runs through the loom.",
+    "avatar": "https://picsum.photos/seed/loom-persona/96/96",
+    "metadata": { "kind": "orchestrator", "call_sign": "loom" },
+    "updated_at": "2026-10-17T08:00:00Z"
+  },
+  {
+    "org": "acme",
+    "project": "semtext",
+    "key": "persona-scribe",
+    "kind": "agent",
+    "name": "Scribe",
+    "role": "Documentation keeper",
+    "bio": "Turns merged threads into contracts and changelogs.",
+    "avatar": "",
+    "metadata": {},
+    "updated_at": "2026-10-15T13:45:00Z"
+  }
+]

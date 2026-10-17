@@ -1342,6 +1342,997 @@
       "record": true,
       "extends": "cachedEmbed",
       "attributes": {}
+    },
+    "agent-kit-issue": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-epic": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-bug": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-user-story": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-task": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-sub-task": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-ticket-ref": {
+      "source": "spec/schema/agent-kit/ticket-ref.md",
+      "record": true,
+      "extends": "reference",
+      "attributes": {
+        "key": {
+          "type": "token",
+          "required": true
+        }
+      }
+    },
+    "agent-kit-last-updated": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-last-updated",
+        "span.agent-kit-last-updated"
+      ]
+    },
+    "agent-kit-title": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-title",
+        "span.agent-kit-title"
+      ]
+    },
+    "agent-kit-description": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task",
+      "agent-kit-organization",
+      "agent-kit-project"
+      ],
+      "classAliases": [
+        "div.agent-kit-description",
+        "span.agent-kit-description"
+      ]
+    },
+    "agent-kit-state": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-state",
+        "span.agent-kit-state"
+      ]
+    },
+    "agent-kit-labels": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-labels",
+        "span.agent-kit-labels"
+      ]
+    },
+    "agent-kit-user-persona": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "avatar": {
+          "type": "token"
+        },
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-persona-name",
+        "agent-kit-persona-role",
+        "agent-kit-persona-bio",
+        "agent-kit-persona-metadata"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-persona-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-role",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-bio",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-metadata",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-agent-persona": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "avatar": {
+          "type": "token"
+        },
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-persona-name",
+        "agent-kit-persona-role",
+        "agent-kit-persona-bio",
+        "agent-kit-persona-metadata"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-persona-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-role",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-bio",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-persona-metadata",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-persona-name": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-name",
+        "span.agent-kit-persona-name"
+      ]
+    },
+    "agent-kit-persona-role": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-role",
+        "span.agent-kit-persona-role"
+      ]
+    },
+    "agent-kit-persona-bio": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-bio",
+        "span.agent-kit-persona-bio"
+      ]
+    },
+    "agent-kit-persona-metadata": {
+      "source": "spec/schema/agent-kit/personas.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-user-persona",
+      "agent-kit-agent-persona"
+      ],
+      "classAliases": [
+        "div.agent-kit-persona-metadata",
+        "span.agent-kit-persona-metadata"
+      ]
+    },
+    "agent-kit-acceptance-criteria": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-criterion"
+      ]
+    },
+    "agent-kit-custom-assert": {
+      "source": "spec/schema/agent-kit/custom-assert.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-assert-expr",
+        "agent-kit-assert-expect"
+      ]
+    },
+    "agent-kit-criterion": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+        "agent-kit-acceptance-criteria"
+      ],
+      "children": [
+        "agent-kit-given",
+        "agent-kit-when",
+        "agent-kit-then"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-given",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-when",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-then",
+          "severity": "error"
+        }
+      ],
+      "classAliases": [
+        "div.agent-kit-criterion",
+        "span.agent-kit-criterion"
+      ]
+    },
+    "agent-kit-given": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-criterion"
+      ],
+      "classAliases": [
+        "div.agent-kit-given",
+        "span.agent-kit-given"
+      ]
+    },
+    "agent-kit-when": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-criterion"
+      ],
+      "classAliases": [
+        "div.agent-kit-when",
+        "span.agent-kit-when"
+      ]
+    },
+    "agent-kit-then": {
+      "source": "spec/schema/agent-kit/acceptance-criteria.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-criterion"
+      ],
+      "classAliases": [
+        "div.agent-kit-then",
+        "span.agent-kit-then"
+      ]
+    },
+    "agent-kit-assert-expr": {
+      "source": "spec/schema/agent-kit/custom-assert.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-custom-assert"
+      ],
+      "classAliases": [
+        "div.agent-kit-assert-expr",
+        "span.agent-kit-assert-expr"
+      ]
+    },
+    "agent-kit-assert-expect": {
+      "source": "spec/schema/agent-kit/custom-assert.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-custom-assert"
+      ],
+      "classAliases": [
+        "div.agent-kit-assert-expect",
+        "span.agent-kit-assert-expect"
+      ]
+    },
+    "agent-kit-board": {
+      "source": "spec/schema/agent-kit/board.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-column"
+      ]
+    },
+    "agent-kit-column": {
+      "source": "spec/schema/agent-kit/board.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-board"
+      ],
+      "attributes": {
+        "heading": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-ticket-ref"
+      ],
+      "classAliases": [
+        "div.agent-kit-column",
+        "span.agent-kit-column"
+      ]
+    },
+    "agent-kit-organization": {
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-name",
+        "agent-kit-description"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-description",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-project": {
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-name",
+        "agent-kit-description"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-name",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-description",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-name": {
+      "source": "spec/schema/agent-kit/reference-cards.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-organization",
+      "agent-kit-project"
+      ],
+      "classAliases": [
+        "div.agent-kit-name",
+        "span.agent-kit-name"
+      ]
+    },
+    "agent-kit-chatroom": {
+      "source": "spec/schema/agent-kit/chatroom.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-chatroom-name",
+        "agent-kit-chat-msg"
+      ]
+    },
+    "agent-kit-chatroom-name": {
+      "source": "spec/schema/agent-kit/chatroom.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-chatroom"
+      ],
+      "classAliases": [
+        "div.agent-kit-chatroom-name",
+        "span.agent-kit-chatroom-name"
+      ]
+    },
+    "agent-kit-chat-msg": {
+      "source": "spec/schema/agent-kit/chatroom.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-chatroom"
+      ],
+      "attributes": {
+        "author": {
+          "type": "token"
+        },
+        "role": {
+          "type": "token",
+          "values": ["user", "assistant"]
+        },
+        "at": {
+          "type": "token"
+        }
+      },
+      "classAliases": [
+        "div.agent-kit-chat-msg",
+        "span.agent-kit-chat-msg"
+      ]
+    },
+    "agent-kit-asset": {
+      "source": "spec/schema/agent-kit/asset.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "src": {
+          "type": "token"
+        },
+        "mime": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-caption"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-caption",
+          "severity": "error"
+        }
+      ]
+    },
+    "agent-kit-artifact": {
+      "source": "spec/schema/agent-kit/artifact.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "type": {
+          "type": "token",
+          "values": ["markdown", "json", "diff", "code"]
+        },
+        "language": {
+          "type": "token"
+        }
+      },
+      "children": [
+        "agent-kit-artifact-content"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-artifact-content",
+          "severity": "error"
+        }
+      ]
+    },
+    "agent-kit-review": {
+      "source": "spec/schema/agent-kit/review.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "verdict": {
+          "type": "token",
+          "values": ["approve", "request-changes", "comment", "pending"]
+        }
+      },
+      "children": [
+        "agent-kit-comment"
+      ]
+    },
+    "agent-kit-caption": {
+      "source": "spec/schema/agent-kit/asset.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-asset"
+      ],
+      "classAliases": [
+        "div.agent-kit-caption",
+        "span.agent-kit-caption"
+      ]
+    },
+    "agent-kit-artifact-content": {
+      "source": "spec/schema/agent-kit/artifact.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-artifact"
+      ],
+      "classAliases": [
+        "div.agent-kit-artifact-content",
+        "span.agent-kit-artifact-content"
+      ]
+    },
+    "agent-kit-comment": {
+      "source": "spec/schema/agent-kit/review.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-review"
+      ],
+      "attributes": {
+        "author": {
+          "type": "token"
+        },
+        "at": {
+          "type": "token"
+        }
+      },
+      "classAliases": [
+        "div.agent-kit-comment",
+        "span.agent-kit-comment"
+      ]
+    },
+    "agent-kit-test-suite": {
+      "source": "spec/schema/agent-kit/test-suite.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-branch"
+      ]
+    },
+    "agent-kit-test-case": {
+      "source": "spec/schema/agent-kit/test-case.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "children": [
+        "agent-kit-step",
+        "agent-kit-expected"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-expected",
+          "severity": "error"
+        }
+      ]
+    },
+    "agent-kit-cypress": {
+      "source": "spec/schema/agent-kit/script-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "file": {
+          "type": "token"
+        }
+      }
+    },
+    "agent-kit-cucumber": {
+      "source": "spec/schema/agent-kit/script-cards.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "file": {
+          "type": "token"
+        }
+      }
+    },
+    "agent-kit-branch": {
+      "source": "spec/schema/agent-kit/test-suite.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-test-suite"
+      ],
+      "attributes": {
+        "passed": {
+          "type": "token"
+        },
+        "failed": {
+          "type": "token"
+        }
+      },
+      "classAliases": [
+        "div.agent-kit-branch",
+        "span.agent-kit-branch"
+      ]
+    },
+    "agent-kit-step": {
+      "source": "spec/schema/agent-kit/test-case.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-test-case"
+      ],
+      "classAliases": [
+        "div.agent-kit-step",
+        "span.agent-kit-step"
+      ]
+    },
+    "agent-kit-expected": {
+      "source": "spec/schema/agent-kit/test-case.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-test-case"
+      ],
+      "classAliases": [
+        "div.agent-kit-expected",
+        "span.agent-kit-expected"
+      ]
     }
   }
 }
