@@ -116,7 +116,13 @@ const targets = [
     // in ROADMAP "Size budgets".
     // 126 → 144 KB (2026-10-14, user decision): docs-overhaul content landed
     // at 132.3 raw. Recorded in ROADMAP "Size budgets".
-    budgetKb: 144,
+    // 144 → 145.0 KB (2026-10-18, family A containers: 19 tags, +1.2 KB,
+    // measured 144.3) then → 152 KB (2026-10-18, interactive containers:
+    // sem-workflow / sem-site-tree / sem-file-tree + the shared tree engine
+    // joined the single bundle per the no-CSS-only-tags registration
+    // contract — 150.1 on that base, 151.5 after the family A merge).
+    // Recorded in ROADMAP "Size budgets".
+    budgetKb: 152,
     required: true,
   },
   {
@@ -136,16 +142,13 @@ const targets = [
     // loading. Same relationship to core as npl.js: src/index.ts imports
     // nothing from src/lit/semext/, and the semext barrel is src/semext.ts's
     // only input. Introduced empty (2026-10-18, epic.semext-components
-    // walking skeleton): the namespace carries machinery, no components
-    // yet, so the budget is REPORT-ONLY until a real component lands and
-    // the number means something — then record it in ROADMAP "Size
-    // budgets" and drop the report-only flag.
+    // walking skeleton) and measured for real with family B
+    // (feat/semext-embeds): nine service-backed embeds over the
+    // cached-embed base — see ROADMAP "Size budgets".
     name: 'semext.js',
     entry: 'src/semext.ts',
     global: 'SemTextExt',
     budgetKb: 48,
-    // Report-only until measured against a real component set.
-    budgetReportOnly: true,
     required: true,
   },
   {
@@ -155,15 +158,16 @@ const targets = [
     // src/agent-kit.ts's only input. Introduced empty (2026-10-18,
     // epic.semext-components walking skeleton): report-only until a real
     // component lands — then record it in ROADMAP "Size budgets" and drop
-    // the report-only flag. Budgeted above semext on the expectation that
-    // agent-kit components (transcripts, tool panels) out-mass extension
-    // chrome.
+    // the report-only flag. (Done 2026-10-18, PR #63: the 22-tag family-C
+    // set landed at 39.9 raw and the budget is enforced; it matched semext's
+    // 48 KB rather than exceeding it.)
     name: 'agent-kit.js',
     entry: 'src/agent-kit.ts',
     global: 'AgentKit',
-    budgetKb: 64,
-    // Report-only until measured against a real component set.
-    budgetReportOnly: true,
+    // 64 (report-only walking-skeleton placeholder) → 48 (2026-10-18,
+    // PR #63): measured 39.9 raw / 12.5 gzipped for the 22-tag family-C
+    // set; matches the semext embed-lane budget. Enforced for real.
+    budgetKb: 48,
     required: true,
   },
   {
@@ -453,11 +457,6 @@ const LAZY_TARGETS = [
     budgetKb: 8,
     fullBundle: 'semext.js',
     tags: 'semext-*',
-    // Introduced empty (walking skeleton): the namespace ships no
-    // components yet, so the manifest scan legitimately finds zero
-    // register calls. allowEmpty skips the hard fail until the first
-    // component lands; drop the flag then.
-    allowEmpty: true,
   },
   {
     id: 'agent-kit-lazy',
@@ -468,11 +467,10 @@ const LAZY_TARGETS = [
     registerRe: /^\s*defineAkit\(\s*'([a-z][a-z0-9-]*)'/gm,
     virtualId: 'virtual:agent-kit-manifest',
     chunkDir: 'agent-kit-chunks',
-    budgetKb: 8,
+    // 8 (placeholder) → 6 (2026-10-18, PR #63): measured 4.6 raw / 1.9 gzipped.
+    budgetKb: 6,
     fullBundle: 'agent-kit.js',
     tags: 'agent-kit-*',
-    // Introduced empty (walking skeleton) — see the semext-lazy note.
-    allowEmpty: true,
   },
 ];
 

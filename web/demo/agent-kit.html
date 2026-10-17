@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · agent-kit bundle showcase</title>
+
+<!-- sem:inline theme minimal-tech-light -->
+<!-- sem:inline vocabulary -->
+
+<style>
+  .sem-enhanced-document { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.01em; margin: 0 0 .5rem; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 2.25rem 0 .5rem; }
+  p  { margin: .6rem 0; }
+</style>
+
+<!-- The agent-kit namespace bundle — every agent-kit-* component on this
+     page registers from this one script (dist/agent-kit.js). -->
+<!-- sem:inline agent-kit -->
+</head>
+
+<body>
+<div class="sem-enhanced-document">
+  <h1>agent-kit bundle — showcase</h1>
+  <p>The <code>agent-kit-*</code> components: cached embeds of upstream
+  work-management records. The authored inner content IS the record —
+  with JavaScript off this page reads exactly the same prose; with it on,
+  each card gains chrome (meta row, share footer) that extraction never
+  sees.</p>
+
+  <h2>Tickets</h2>
+  <p>One generic renderer, six tags. This issue carries the full record:
+  reference quartet, uuid (so the share footer renders), state and labels
+  as attributes.</p>
+
+  <agent-kit-issue id="ticket-akit-001" kind="ticket" tags="extract,chrome" org="acme" project="semtext" key="AKIT-001"
+                   uuid="3f1c9a2e-8b74-4f6a-9d21-7ae5c0b4d101"
+                   state="in-progress" labels="extract,chrome"
+                   last-refreshed="2026-10-17T09:24:00Z">
+    <agent-kit-title>Extractor drops class-form parts</agent-kit-title>
+    <agent-kit-description>
+      <code>extractRecords</code> misses <code>.agent-kit-title</code>
+      aliases when the class appears on a wrapper element. Reproduces on
+      every page that styles parts through the class spelling.
+    </agent-kit-description>
+  </agent-kit-issue>
+
+  <p>The same record as a bug, with state and labels authored as children
+  instead of attributes, and no uuid — the card has no share footer:</p>
+
+  <agent-kit-bug kind="ticket" tags="css" org="acme" project="semtext" key="AKIT-003">
+    <agent-kit-title>Vocabulary display line collides with semext</agent-kit-title>
+    <agent-kit-description>
+      The agent-kit per-tag display lines must never fold into one comma
+      list, or parallel component branches conflict on every merge.
+    </agent-kit-description>
+    <agent-kit-last-updated>2026-10-17T11:40:00Z</agent-kit-last-updated>
+    <agent-kit-state>review</agent-kit-state>
+    <agent-kit-labels>css</agent-kit-labels>
+  </agent-kit-bug>
+
+  <p>A task with a cached snapshot: the inline JSON is the enrichment the
+  authoring pipeline cached — the stamp line renders under the upgrade
+  claim and stays out of every record:</p>
+
+  <agent-kit-task kind="ticket" tags="build" org="acme" project="semtext" key="AKIT-005" status="fresh">
+    <agent-kit-title>Wire the agent-kit lazy manifest</agent-kit-title>
+    <agent-kit-description>
+      The manifest chunk loader registers components on first sight of
+      their tag; this page does not use it (one inline script registers
+      everything), but a multi-page site would.
+    </agent-kit-description>
+    <script type="application/json">
+      { "key": "AKIT-005", "state": "done", "updated_at": "2026-10-14T17:55:00Z" }
+    </script>
+  </agent-kit-task>
+
+  <p>Epic and user story round out the family; the reference below jumps
+  back to the issue at the top of this section:</p>
+
+  <agent-kit-epic kind="ticket" tags="authoring" org="acme" project="semtext" key="AKIT-002" state="open" labels="authoring">
+    <agent-kit-title>Authoring v2 — the agent-kit bundle</agent-kit-title>
+    <agent-kit-description>
+      Twenty-one registered components across tickets, personas, boards,
+      and test definitions, all cached embeds with livePolicy never.
+    </agent-kit-description>
+  </agent-kit-epic>
+
+  <agent-kit-user-story kind="ticket" tags="docs" org="acme" project="semtext" key="AKIT-004" state="open">
+    <agent-kit-title>Author writes a ticket without touching JS</agent-kit-title>
+    <agent-kit-description>
+      A hand-authored XHTML document renders a readable ticket card with
+      styles off or scripts off — the authored body is the record.
+    </agent-kit-description>
+  </agent-kit-user-story>
+
+  <p>Inline references: <agent-kit-ticket-ref key="AKIT-001">the extractor issue</agent-kit-ticket-ref>
+  and <agent-kit-ticket-ref key="AKIT-003">the vocabulary collision</agent-kit-ticket-ref>
+  scroll their cards into view; a malformed key like
+  <agent-kit-ticket-ref key="akit-9">this one</agent-kit-ticket-ref>
+  stays inert prose with a console warning.</p>
+
+  <h2>Personas</h2>
+  <p>One generic renderer, two tags. The avatar attribute is the CACHED
+  URL — the chrome header renders an <code>img</code> from it verbatim,
+  and with JavaScript off there is no image at all.</p>
+
+  <agent-kit-user-persona kind="persona" tags="authoring" org="acme" project="semtext" key="persona-ada"
+                          avatar="https://picsum.photos/seed/ada-persona/96/96">
+    <agent-kit-persona-name>Ada Lovelace</agent-kit-persona-name>
+    <agent-kit-persona-role>Product manager</agent-kit-persona-role>
+    <agent-kit-persona-bio>
+      Owns the SemText roadmap; reviews authoring ergonomics.
+    </agent-kit-persona-bio>
+    <agent-kit-persona-metadata>team: authoring
+timezone: UTC+0</agent-kit-persona-metadata>
+  </agent-kit-user-persona>
+
+  <p>The agent persona carries a cached snapshot: its <code>metadata</code>
+  object renders as chrome chips under the upgrade claim — the authored
+  metadata part below stays the JS-off record.</p>
+
+  <agent-kit-agent-persona kind="persona" tags="orchestration" org="acme" project="semtext" key="persona-loom"
+                           avatar="https://picsum.photos/seed/loom-persona/96/96">
+    <agent-kit-persona-name>Loom</agent-kit-persona-name>
+    <agent-kit-persona-role>The weaver</agent-kit-persona-role>
+    <agent-kit-persona-bio>
+      Coordinates the agent fleet; every thread runs through the loom.
+    </agent-kit-persona-bio>
+    <agent-kit-persona-metadata>kind: orchestrator
+call_sign: loom</agent-kit-persona-metadata>
+    <script type="application/json">
+      { "metadata": { "kind": "orchestrator", "call_sign": "loom" } }
+    </script>
+  </agent-kit-agent-persona>
+
+  <p>A persona with no avatar attribute renders no image — the card is
+  the prose:</p>
+
+  <agent-kit-agent-persona kind="persona" tags="docs" org="acme" project="semtext" key="persona-scribe">
+    <agent-kit-persona-name>Scribe</agent-kit-persona-name>
+    <agent-kit-persona-role>Documentation keeper</agent-kit-persona-role>
+    <agent-kit-persona-bio>
+      Turns merged threads into contracts and changelogs.
+    </agent-kit-persona-bio>
+  </agent-kit-agent-persona>
+
+  <h2>Acceptance criteria &amp; custom asserts</h2>
+  <p>Structured list renderers — the authored rows are the record; the
+  only chrome is a count chip.</p>
+
+  <agent-kit-acceptance-criteria kind="criteria" tags="extract" org="acme" project="semtext" key="crit-extract">
+    <agent-kit-criterion>
+      <agent-kit-given>a hand-authored XHTML document</agent-kit-given>
+      <agent-kit-when>the extractor runs with JavaScript on or off</agent-kit-when>
+      <agent-kit-then>the two record sets deep-equal</agent-kit-then>
+    </agent-kit-criterion>
+    <agent-kit-criterion>
+      <agent-kit-given>a card with fabricated chrome</agent-kit-given>
+      <agent-kit-when>extraction collects record text</agent-kit-when>
+      <agent-kit-then>no chrome string appears in the record</agent-kit-then>
+    </agent-kit-criterion>
+  </agent-kit-acceptance-criteria>
+
+  <agent-kit-custom-assert kind="asserts" tags="extract" org="acme" project="semtext" key="assert-extract">
+    <agent-kit-assert-expr>extractRecords(doc)</agent-kit-assert-expr>
+    <agent-kit-assert-expect>deep-equals the JS-off record set</agent-kit-assert-expect>
+    <agent-kit-assert-expr>norm(record.text)</agent-kit-assert-expr>
+    <agent-kit-assert-expect>collapses authored whitespace only</agent-kit-assert-expect>
+  </agent-kit-custom-assert>
+
+  <h2>Board</h2>
+  <p>Authored columns of ticket refs — the refs are the same batch-1
+  component and scroll their cards into view; the board adds only the
+  column layout and a count chip.</p>
+
+  <agent-kit-board kind="board" tags="authoring" org="acme" project="semtext" key="board-authoring">
+    <agent-kit-column heading="In progress">
+      <agent-kit-ticket-ref key="AKIT-001">the extractor issue</agent-kit-ticket-ref>
+    </agent-kit-column>
+    <agent-kit-column heading="Review">
+      <agent-kit-ticket-ref key="AKIT-003">the vocabulary collision</agent-kit-ticket-ref>
+    </agent-kit-column>
+    <agent-kit-column heading="Done">
+      <agent-kit-ticket-ref key="AKIT-005">the lazy manifest</agent-kit-ticket-ref>
+    </agent-kit-column>
+    <script type="application/json">
+      { "updated_at": "2026-10-17T12:00:00Z" }
+    </script>
+  </agent-kit-board>
+
+  <h2>Reference cards &amp; chatroom</h2>
+  <p>Slug-addressable reference cards — the authored name and
+  description are the record; the footer links derive from the
+  reference quartet. The chatroom is sem-chat's cached twin: authored
+  messages only, no composer, no endpoint.</p>
+
+  <agent-kit-organization kind="reference" tags="acme" org="acme">
+    <agent-kit-name>Acme Corporation</agent-kit-name>
+    <agent-kit-description>
+      The umbrella org for the SemText family workspaces.
+    </agent-kit-description>
+  </agent-kit-organization>
+
+  <agent-kit-project kind="reference" tags="authoring" org="acme" key="semtext">
+    <agent-kit-name>SemText</agent-kit-name>
+    <agent-kit-description>
+      The XHTML-first rich-content spec and component kit.
+    </agent-kit-description>
+  </agent-kit-project>
+
+  <agent-kit-chatroom kind="chatroom" tags="authoring" org="acme" project="semtext" key="room-authoring">
+    <agent-kit-chatroom-name>Authoring stand-up</agent-kit-chatroom-name>
+    <agent-kit-chat-msg author="Ada" role="user" at="2026-10-17T09:00:00Z">
+      Board's wired — three columns land today.
+    </agent-kit-chat-msg>
+    <agent-kit-chat-msg author="Loom" role="assistant" at="2026-10-17T09:01:00Z">
+      Watched. The refs scroll their cards into view.
+    </agent-kit-chat-msg>
+    <agent-kit-chat-msg author="Ada" role="user" at="2026-10-17T09:02:00Z">
+      And the snapshot stamp renders JS-on only — the record never changes.
+    </agent-kit-chat-msg>
+  </agent-kit-chatroom>
+
+  <h2>Media cards</h2>
+  <p>
+    The sem-media-gallery / sem-artifact-card / sem-review-canvas shapes,
+    promoted to cached embeds: authored captions, content and comments are
+    the records; the image, chips and version list are chrome.
+  </p>
+
+  <agent-kit-asset kind="asset" tags="cover" org="acme" project="semtext" key="asset-cover"
+                   mime="image/svg+xml"
+                   src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='120'%3E%3Crect width='320' height='120' fill='%232563eb' rx='8'/%3E%3Ctext x='160' y='66' font-family='monospace' font-size='20' fill='white' text-anchor='middle'%3Ecover.svg%3C/text%3E%3C/svg%3E">
+    <agent-kit-caption>The board cover, shipped with the authoring release.</agent-kit-caption>
+  </agent-kit-asset>
+
+  <agent-kit-artifact kind="artifact" tags="spec" org="acme" project="semtext" key="artifact-spec" type="markdown">
+    <agent-kit-artifact-content># Extraction spec
+
+The record is the authored body — never the network.</agent-kit-artifact-content>
+    <script type="application/json">{
+      "updated_at": "2026-10-17T12:00:00Z",
+      "versions": [
+        { "id": "v1", "label": "v1 — draft", "createdAt": "2026-10-16T09:00:00Z" },
+        { "id": "v2", "label": "v2 — review", "createdAt": "2026-10-17T12:00:00Z" }
+      ]
+    }</script>
+  </agent-kit-artifact>
+
+  <agent-kit-review kind="review" tags="board" org="acme" project="semtext" key="review-board" verdict="approve">
+    <agent-kit-comment author="Ada" at="2026-10-17T10:00:00Z">
+      Columns and refs line up; shipping it.
+    </agent-kit-comment>
+    <agent-kit-comment author="Loom" at="2026-10-17T10:05:00Z">
+      Agreed — the anchors hold.
+    </agent-kit-comment>
+  </agent-kit-review>
+
+  <h2>Testing</h2>
+  <p>
+    Suite, case and the runner specs: authored rows, steps and script
+    sources are the records; totals chips and the script panel are
+    chrome. The Run affordance is deferred — no dead buttons.
+  </p>
+
+  <agent-kit-test-suite kind="suite" tags="authoring" org="acme" project="semtext" key="suite-authoring">
+    <agent-kit-branch passed="18" failed="0">main</agent-kit-branch>
+    <agent-kit-branch passed="17" failed="1">develop</agent-kit-branch>
+    <script type="application/json">{ "updated_at": "2026-10-17T14:00:00Z" }</script>
+  </agent-kit-test-suite>
+
+  <agent-kit-test-case kind="case" tags="authoring" org="acme" project="semtext" key="case-board-refs">
+    <agent-kit-step>Open the board demo.</agent-kit-step>
+    <agent-kit-step>Extract without JavaScript.</agent-kit-step>
+    <agent-kit-step>Compare the record sets.</agent-kit-step>
+    <agent-kit-expected>Both passes agree, record for record.</agent-kit-expected>
+  </agent-kit-test-case>
+
+  <agent-kit-cypress kind="script" tags="authoring" org="acme" project="semtext" key="spec-board" file="test/e2e/agent-kit-bundle.cy.js">
+    <script type="text/plain" data-agent-kit-script>describe('agent-kit board', () => {
+  it('mints one record for the board', () => {
+    cy.visit('/demo/agent-kit.html');
+    extract().then((records) => {
+      expect(records.filter((r) => r.type === 'agent-kit-board').length).to.equal(1);
+    });
+  });
+});</script>
+  </agent-kit-cypress>
+
+  <agent-kit-cucumber kind="script" tags="authoring" org="acme" project="semtext" key="feature-extraction">
+    <script type="text/plain" data-agent-kit-script>Feature: extraction
+  Scenario: JS-off equals JS-on
+    Given an authored board
+    When the records are extracted
+    Then both passes agree, record for record</script>
+  </agent-kit-cucumber>
+
+</div>
+</body>
+</html>

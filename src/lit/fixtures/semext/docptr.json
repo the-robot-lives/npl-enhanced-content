@@ -1,0 +1,32 @@
+{
+  "pointers": {
+    "1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54": {
+      "uuid": "1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54",
+      "marker": "〚🔧:𓋹𓄿𓇳𓏏〛",
+      "file_path": "src/data/load.ts",
+      "line": 42,
+      "kind": "function",
+      "function_name": "resolveSource",
+      "description": "Resolve an embed source with the shared source policy.",
+      "snippet": "export function resolveSource(input: string): SourceRef {"
+    },
+    "7c2e91aa-03f4-5c8e-9a11-2bd6e1f0c7d9": {
+      "uuid": "7c2e91aa-03f4-5c8e-9a11-2bd6e1f0c7d9",
+      "marker": "〚📦:𓂀𓆓𓉐𓊽〛",
+      "file_path": "src/lit/shared/cached-embed.ts",
+      "line": 1,
+      "kind": "module",
+      "class": "CachedEmbedElement",
+      "description": "The service-backed embed base."
+    },
+    "b41d7c02-9e5a-5f3b-8c44-77aa01e3b2f6": {
+      "uuid": "b41d7c02-9e5a-5f3b-8c44-77aa01e3b2f6",
+      "marker": "〚🔧:𓁿𓎛𓊖𓋴〛",
+      "file_path": "src/extract/records.ts",
+      "line": 18,
+      "kind": "function",
+      "function_name": "mintsPlainRecord",
+      "description": "Whether a tag mints an extraction record."
+    }
+  }
+}
