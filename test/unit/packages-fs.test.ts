@@ -698,6 +698,25 @@ describe('expr', () => {
     expect(errs(core.execLine('expr a + 1'))).toEqual(['expr: non-integer argument']);
     expect(errs(core.execLine('expr 1 / 0'))).toEqual(['expr: division by zero']);
   });
+
+  it('BRE backslash contract: escapes never become JS metasequences', () => {
+    // A bare \b in the pattern matches a literal b under this shell's
+    // contract (deliberately stricter than GNU — see exprRegex) — the old
+    // replace-chain let it through raw and `^a\b` became a JS word
+    // boundary that stopped matching "ab" entirely.
+    expect(out(core.execLine("expr ab : 'a\\b'"))).toEqual(['2']);
+    // \\ is a literal backslash: value a\b (3 chars) matches a\\b.
+    expect(out(core.execLine("expr 'a\\b' : 'a\\\\b'"))).toEqual(['3']);
+    // The user's own § cannot collide with the old placeholder alphabet —
+    // it used to turn the pattern into a group and stop matching.
+    expect(out(core.execLine("expr a§c : 'a§c'"))).toEqual(['3']);
+    // Bare parens stay literals; the BRE \( \) group form still captures.
+    expect(out(core.execLine("expr 'x(y' : 'x(y'"))).toEqual(['3']);
+    expect(out(core.execLine("expr abc : 'a\\(.\\)c'"))).toEqual(['b']);
+    // \<char> is a literal char: \. matches a literal dot only.
+    expect(status(core.execLine("expr abc : 'a\\.c'"))).toBe(1);
+    expect(out(core.execLine("expr a.c : 'a\\.c'"))).toEqual(['3']);
+  });
 });
 
 /* ------------------------------------------------------------------ */
