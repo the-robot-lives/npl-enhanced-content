@@ -26,6 +26,11 @@ import type { PackageStub } from '../types.js';
 const stub: PackageStub = {
   name: 'text',
   description: 'GNU-style text tools — grep, sort, uniq, wc, head/tail, cut, tr, tee, xargs and friends',
+  // grep/wc/head/tail exist as simpler posix commands — this package
+  // replaces them on purpose (integration TODO #9: silences the four
+  // [packages] mount warnings). Until the chunk is resident the superseded
+  // base commands answer (manifest.ts fallback wrapper).
+  supersedes: ['grep', 'wc', 'head', 'tail'],
   commands: [
     {
       name: 'grep', summary: 'print lines matching a pattern',

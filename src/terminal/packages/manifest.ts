@@ -16,8 +16,8 @@
  * chunks (scripts/build.mjs). Full contract: ./README.md.
  */
 
-import type { PluginManifest } from '../terminal-core.js';
-import { withPackageMan, type LazyPackage } from './lazy.js';
+import type { CommandContext, CommandSpec, PluginManifest } from '../terminal-core.js';
+import { isHelpRequest, withPackageMan, type LazyPackage } from './lazy.js';
 
 /* ── package registrations — append-only; one import + one entry per lane ── */
 import { helloPackage } from './hello/stub.js';
@@ -73,8 +73,20 @@ export interface PackageMount {
  * warning naming the command so the stub can declare it. One package
  * failing to mount never stops the others. Called once per session core
  * (sem-shell.ts), after the posix/demo/cards loop.
+ *
+ * Superseded names keep a SAFETY NET while the package chunk is not
+ * resident: the wrapper below answers with the base command it replaced
+ * (loading state — the base behaviour until the chunk lands, so a
+ * cold-boot pipeline never sees the retry hint; failed state — the base
+ * behaviour plus one stderr note, so a broken chunk deploy degrades to
+ * the shell everyone had before instead of bricking the four names).
+ * Once the chunk is resident the package's own spec answers untouched.
  */
-export function mountPackages(core: { mountPlugin: (m: PluginManifest, o?: { supersede?: readonly string[] }) => unknown; hasCommand: (n: string) => boolean }): PackageMount[] {
+export function mountPackages(core: {
+  mountPlugin: (m: PluginManifest, o?: { supersede?: readonly string[] }) => unknown;
+  hasCommand: (n: string) => boolean;
+  commandSpec: (n: string) => CommandSpec | undefined;
+}): PackageMount[] {
   const out: PackageMount[] = [];
   for (const pkg of PACKAGES) {
     const names = pkg.commands.map((c) => c.name);
@@ -83,11 +95,36 @@ export function mountPackages(core: { mountPlugin: (m: PluginManifest, o?: { sup
     for (const n of undeclared) {
       console.warn(`[packages] ${pkg.name} replaces the existing '${n}' — declare it in the stub's supersedes to silence this`);
     }
+    const bases = new Map<string, CommandSpec>();
+    for (const n of collisions) {
+      const base = core.commandSpec(n);
+      if (base !== undefined) bases.set(n, base);
+    }
+    const failedNoted = new Set<string>();
+    const commands = pkg.commands.map((spec): CommandSpec => {
+      const base = bases.get(spec.name);
+      if (base === undefined) return spec;
+      return {
+        ...spec,
+        run(ctx: CommandContext) {
+          const state = pkg.state();
+          if (state === 'resident' || isHelpRequest(ctx.args)) {
+            spec.run(ctx); // the package owns the name (and --help) from the stub
+            return;
+          }
+          if (state === 'failed' && !failedNoted.has(spec.name)) {
+            failedNoted.add(spec.name);
+            ctx.err(`${spec.name}: package chunk failed to load — using the base command`);
+          }
+          base.run(ctx);
+        },
+      };
+    });
     const manifest: PluginManifest = {
       name: `pkg-${pkg.name}`,
       version: '0.1.0',
       description: pkgCommandsDescription(pkg.name),
-      commands: pkg.commands,
+      commands,
       files: [],
     };
     let ok = true;

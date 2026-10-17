@@ -250,6 +250,7 @@ describe('package mounts supersede base commands (never a thrown mount)', () => 
       const supersedeArgs: ReadonlyArray<readonly string[] | undefined> = [];
       const fakeCore = {
         hasCommand: (n: string) => n === 'hello',
+        commandSpec: (n: string) => core.commandSpec(n),
         mountPlugin: (m: PluginManifest, o?: { supersede?: readonly string[] }) => {
           supersedeArgs.push(o?.supersede);
           return core.mountPlugin(m, o);
@@ -277,7 +278,19 @@ describe('package mounts supersede base commands (never a thrown mount)', () => 
       const mounts = mountPackages(core);
       expect(mounts.every((pm) => pm.ok)).toBe(true); // the blocker: mount died wholesale before
       const text = mounts.find((pm) => pm.pkg === 'text');
-      expect(text !== undefined).toBe(true);
+      expect(text).toMatchObject({ superseded: ['grep', 'wc', 'head', 'tail'], undeclared: [] });
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('text declares supersedes for grep/wc/head/tail (integration TODO #9) — no mount warnings', () => {
+    const core = new TerminalCore();
+    expect(core.mountPlugin(posixPlugin).ok).toBe(true);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      mountPackages(core);
+      expect(warn).not.toHaveBeenCalled();
     } finally {
       warn.mockRestore();
     }
@@ -285,5 +298,59 @@ describe('package mounts supersede base commands (never a thrown mount)', () => 
 
   it('packagesPlugin stays importable for lane suites (single-manifest view)', () => {
     expect(packagesPlugin.commands.length).toBeGreaterThanOrEqual(PACKAGES.length);
+  });
+});
+
+describe('superseded base commands answer while the package chunk is absent (integration TODO #9 net)', () => {
+  const errText = (r: ExecResult): string[] => r.lines.filter((l) => l.kind === 'stderr').map((l) => l.text);
+
+  it('a cold pipeline through a superseded name runs the BASE command (no retry hint, no broken pipe)', async () => {
+    const core = new TerminalCore();
+    expect(core.mountPlugin(posixPlugin).ok).toBe(true);
+    mountPackages(core); // text supersedes wc; the vitest chunk import fails honest
+    for (const pkg of PACKAGES as readonly LazyPackage[]) await pkg.ensure();
+    const r = core.execLine('echo hi | wc -l');
+    // the base wc answered while text's chunk is a dead fetch in vitest:
+    expect(r.lines.some((l) => l.kind === 'stdout' && /^ *1$/.test(l.text))).toBe(true);
+    expect(errText(r).join('\n')).toContain('using the base command'); // one honest note
+  });
+
+  it('the note prints once per command; repeat calls are silent', async () => {
+    const core = new TerminalCore();
+    expect(core.mountPlugin(posixPlugin).ok).toBe(true);
+    mountPackages(core);
+    for (const pkg of PACKAGES as readonly LazyPackage[]) await pkg.ensure();
+    core.execLine('printf x | wc -c');
+    const second = core.execLine('printf xy | wc -c');
+    expect(errText(second)).toEqual([]);
+    // x + the pipe's one line-sugar \n = 2 bytes; xy + \n = 3.
+    expect(second.lines.some((l) => l.kind === 'stdout' && /^ *3$/.test(l.text))).toBe(true);
+  });
+
+  it('--help still answers from the stub while the chunk is absent', async () => {
+    const core = new TerminalCore();
+    expect(core.mountPlugin(posixPlugin).ok).toBe(true);
+    mountPackages(core);
+    for (const pkg of PACKAGES as readonly LazyPackage[]) await pkg.ensure();
+    const r = core.execLine('wc --help');
+    expect(r.lines.filter((l) => l.kind === 'stdout').length).toBeGreaterThan(0);
+    expect(errText(r)).toEqual([]); // no failure note: help is stub contract
+  });
+
+  it('once the chunk is resident the package spec answers (no fallback, no note)', async () => {
+    // fake text: a resident chunk whose wc prints a marker line
+    const fakePkg = createLazyPackage(
+      { name: 'faketext', supersedes: ['wc'], commands: [{ name: 'wc', summary: 'fake wc', usage: 'wc — fake' }] },
+      () => Promise.resolve({ commands: [{ name: 'wc', usage: 'wc — fake', run: (ctx) => ctx.out('FAKE-WC') }] }),
+    );
+    await fakePkg.ensure();
+    const core = new TerminalCore();
+    core.mountPlugin(posixPlugin);
+    core.mountPlugin(
+      { name: 'pkg-faketext', version: '0', description: '', commands: fakePkg.commands, files: [] },
+      { supersede: ['wc'] },
+    );
+    const r = core.execLine('printf z | wc');
+    expect(r.lines.filter((l) => l.kind === 'stdout').map((l) => l.text)).toEqual(['FAKE-WC']); // resident path — no note possible
   });
 });

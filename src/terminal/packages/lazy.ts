@@ -50,6 +50,11 @@ export interface LazyPackage {
   ensure(): Promise<boolean>;
   /** True once the chunk's real specs are resident. */
   loaded(): boolean;
+  /** Chunk-load lifecycle: `loading` (fetch in flight), `resident`
+   *  (real specs answer), `failed` (the fetch rejected). The supersedes
+   *  mount consults this to keep a replaced base command answering until
+   *  — and only until — the package takes over (manifest.ts). */
+  state(): 'loading' | 'resident' | 'failed';
   /** Command names this package can answer `man` for right now. */
   manNames(): ReadonlySet<string>;
   /** Man page lines for one command: the chunk's page once resident, else
@@ -62,7 +67,7 @@ export interface LazyPackage {
 }
 
 /** True when the invocation only asks for help (answered from the stub). */
-function isHelpRequest(args: readonly string[]): boolean {
+export function isHelpRequest(args: readonly string[]): boolean {
   return args.includes('--help') || args.includes('-h');
 }
 
@@ -146,6 +151,7 @@ export function createLazyPackage(stub: PackageStub, load: () => Promise<Package
     commands: stub.commands.map(specFor),
     ensure,
     loaded: () => resident,
+    state: () => (resident ? 'resident' : failed ? 'failed' : 'loading'),
     manNames: () => new Set([...chunkMan.keys(), ...stubMan.keys()]),
     manPage: (name) => chunkMan.get(name) ?? stubMan.get(name) ?? null,
     supersedes: new Set(stub.supersedes ?? []),
