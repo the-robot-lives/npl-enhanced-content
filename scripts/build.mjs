@@ -116,7 +116,11 @@ const targets = [
     // in ROADMAP "Size budgets".
     // 126 → 144 KB (2026-10-14, user decision): docs-overhaul content landed
     // at 132.3 raw. Recorded in ROADMAP "Size budgets".
-    budgetKb: 144,
+    // 144 → 152 KB (2026-10-18): interactive containers (sem-workflow /
+    // sem-site-tree / sem-file-tree + the shared tree engine) joined the
+    // single bundle per the no-CSS-only-tags registration contract —
+    // measured 150.1 raw. Recorded in ROADMAP "Size budgets".
+    budgetKb: 152,
     required: true,
   },
   {

@@ -97,6 +97,17 @@ import './lit/sem-tldr.js';
  * src/lit/sem-browser.ts is the registration the lazy scanner keys on). */
 export { SemBrowser, SEM_BROWSER_TAG } from './lit/sem-browser.js';
 import './lit/sem-browser.js';
+/* interactive containers (spec/schema/sem-workflow.md, sem-site-tree.md,
+ * sem-file-tree.md) — lazy-first: each tag also ships as its own
+ * chunks/<tag>.js via the lazy manifest; src/lit/<tag>.ts are the
+ * registrations the scanner keys on (the trees share src/lit/sem-tree.ts,
+ * which registers nothing and factors into a shared chunk). */
+export { SemWorkflow, parseStepModels } from './lit/sem-workflow.js';
+import './lit/sem-workflow.js';
+export { SemSiteTree } from './lit/sem-site-tree.js';
+import './lit/sem-site-tree.js';
+export { SemFileTree } from './lit/sem-file-tree.js';
+import './lit/sem-file-tree.js';
 /* Data visualizer — inline data sources (spec/data-visualizer.md) */
 export { SemDataVisualizer } from './lit/sem-data-visualizer.js';
 import './lit/sem-data-visualizer.js';

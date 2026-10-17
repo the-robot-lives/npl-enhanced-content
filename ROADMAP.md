@@ -73,7 +73,7 @@ guardrail discipline they document.
 
 | Artifact | Budget | Measured (2026-10-13) |
 |---|---|---|
-| `semtext.js` (one bundle) | **144 KB** (raised from 126 — user decision 2026-10-14) | 132.3 raw / 41.9 gzipped — in budget |
+| `semtext.js` (one bundle) | **152 KB** (raised from 144 — interactive containers, 2026-10-18) | 150.1 raw / 46.6 gzipped (2026-10-18) — in budget |
 | `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
 | `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
 | `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
@@ -133,6 +133,13 @@ decision): the docs-overhaul content (spec v0.7 reference/tag review, sem-shell,
 sem-browser, npl class form) measured 132.3 raw / 41.9 gzipped — inside the
 new line. Any future bump still goes through this section and
 `scripts/build.mjs` together.
+
+Core bundle budget (2026-10-18) raised `semtext.js` 144 → 152 KB raw: the
+interactive containers (sem-workflow / sem-site-tree / sem-file-tree and the
+shared tree engine they lazy-ship) joined the single bundle per the
+no-CSS-only-tags registration contract (`lit-all-tags-registered.test.ts` —
+every schema tag answers `customElements.get()` once the core loads), the same
+sem-browser wiring. Measured 150.1 raw / 46.6 gzipped — inside the new line.
 
 
 ## History (recorded decisions — preserved)

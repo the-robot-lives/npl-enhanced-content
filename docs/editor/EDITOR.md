@@ -242,7 +242,7 @@ already ships: `{ specVersion, tags: [{ name, family, summary, description,
 attributes[{name, required, type, allowedValues, default, description}], children[{name,
 note}], example, optionsIn? }] }`). Notes the editor depends on:
 
-- 55 tags today (sem + npl; the `semext-*` / `agent-kit-*` namespaces are wired
+- 58 tags today (sem + npl; the `semext-*` / `agent-kit-*` namespaces are wired
   but carry no schema contracts yet), `tagCount` is advisory — never hard-code it. Companion child tags
   (`sem-fact`, `sem-property`, `sem-detail`, `sem-view`, `sem-step`, `sem-event`,
   `sem-profile`, `sem-reference`, the `npl-*` parts) list their options via `optionsIn`

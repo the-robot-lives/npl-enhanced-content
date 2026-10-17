@@ -64,6 +64,7 @@
     | **Facts &amp; recall** | `sem-facts` / `sem-fact`, `statement`, `conclusion`, `incorrect-statement`, `sem-question` / `sem-option` | Assertable statement/conclusion pairs -- the citable unit -- with the quiz candidates and distractors built on them |
     | **Data &amp; tables** | `sem-table`, `sem-data-visualizer`, `sem-data-source`, `sem-data-join`, `sem-data-query` | Authored tables and the data-visualizer's named buckets, joins and editable queries |
     | **Sequences &amp; progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
+    | **Interactive containers** | `sem-workflow` / `sem-step`, `sem-site-tree` / `node`, `sem-file-tree` / `node` | Steps with gate/check/if-no branches, and site/file trees (structured or text-authored) with collapse, filter and find |
     | **Definitions &amp; citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference`, `sem-tag-def` / `sem-tag-attr`, `sem-api-call` / `sem-api-param` | Closed key/value assertions, the numbered works the prose cites, and the reference-definition cards that document a vocabulary's tags and an API's endpoints |
     | **NPL** | `npl-agent`, `npl-directive`, `npl-section`, `npl-rubric`, `npl-critique`, `npl-declaration`, `npl-example`, `npl-flag` / `npl-flags`, `npl-hormones`, `npl-mindread`, `npl-mode`, `npl-mood`, `npl-poa`, `npl-ref`, `npl-thought`, `npl-vos`, `npl-artifact`, `npl-cot`, `npl-intent` | NPL prompt-engineering elements; loaded by `npl.js` / `npl-lazy.js` on top of the SemText core |
   </sem-md>
@@ -503,6 +504,65 @@
   </sem-source>
 
   <!-- ═══════════════════════════════════════════════════════════════════
+       INTERACTIVE CONTAINERS
+       ═══════════════════════════════════════════════════════════════════ -->
+  <h3 id="interactive-containers">Interactive containers</h3>
+
+  <!-- sem-workflow -------------------------------------------------------- -->
+  <h4 id="e-workflow">sem-workflow / sem-step -- steps with gates, checks and an if-no branch</h4>
+  <p><strong>Normative: <a href="#r-sem-workflow">spec/schema/sem-workflow.md</a>.</strong></p>
+  <sem-code id="c-workflow" lang="html"><pre><code>&lt;sem-workflow kind="release" duration="45m"&gt;
+  &lt;sem-step action="Build images" gate="CI green" check="gh run view"
+    if-no="fix CI, then re-run" output="dist/*.tar"&gt;push the tag&lt;/sem-step&gt;
+&lt;/sem-workflow&gt;</code></pre></sem-code>
+  <p>JS-off: a CSS-ordered list -- ordinals are workflow-scoped counters, gate (<code>&#x26e8;</code>) and check (<code>&#9656;</code>) badges are <code>::before</code>/<code>::after</code> <code>attr()</code> chrome. JS-on: an <code>if-no</code> step grows a collapsible branch (a <code>&lt;button&gt;</code> with <code>aria-expanded</code>/<code>aria-controls</code>), gated on the container's <code>data-sem-upgraded</code> marker. The workflow step parameters are a per-parent schema childForm: a <code>sem-procedure</code> step keeps its plain status-only contract, and <code>action</code> outside a workflow is an unknown-attribute warning.</p>
+  <sem-source id="s-workflow" label="Live: sem-workflow">
+    <sem-workflow id="x-workflow" kind="release" duration="45m" role="list">
+      <sem-step id="x-wf-1" role="listitem" action="Build images" gate="CI green" check="gh run view" if-no="fix CI, then re-run" status="done">push the tag</sem-step>
+      <sem-step id="x-wf-2" role="listitem" action="Deploy stage" if-no="stop and page the release captain">merge to stage</sem-step>
+    </sem-workflow>
+  </sem-source>
+
+  <!-- sem-site-tree ------------------------------------------------------- -->
+  <h4 id="e-site-tree">sem-site-tree / node -- a tree authored as nested nodes</h4>
+  <p><strong>Normative: <a href="#r-sem-site-tree">spec/schema/sem-site-tree.md</a>.</strong></p>
+  <sem-code id="c-site-tree" lang="html"><pre><code>&lt;sem-site-tree label="Monorepo layout"&gt;
+  &lt;node path="src" label="Source" kind="dir"&gt;
+    &lt;node path="src/lit" kind="dir"&gt;&lt;node path="src/lit/app.ts"&gt;&lt;/node&gt;&lt;/node&gt;
+  &lt;/node&gt;
+&lt;/sem-site-tree&gt;</code></pre></sem-code>
+  <p>JS-off: a static nested list purely via CSS (guides, counters, <code>attr()</code> labels). JS-on: one shared engine -- per-node collapse (<code>aria-expanded</code>; <code>[collapsed]</code> hides descendants), a filter box that keeps ancestor chains visible, and find with <code>data-match</code> marks plus an Enter-cycled current match -- all gated on <code>data-sem-upgraded</code>. <code>path</code> is required in tree context (schema childForm); a stray <code>node</code> is an orphan-part warning.</p>
+  <sem-source id="s-site-tree" label="Live: sem-site-tree">
+    <sem-site-tree id="x-site-tree" label="Spec layout" role="tree">
+      <node path="spec" label="Specs" kind="dir" role="treeitem">
+        <node path="spec/schema" kind="dir" role="group">
+          <node path="spec/schema/sem-workflow.md" kind="file" role="treeitem"></node>
+          <node path="spec/schema/sem-site-tree.md" kind="file" role="treeitem"></node>
+        </node>
+      </node>
+    </sem-site-tree>
+  </sem-source>
+
+  <!-- sem-file-tree ------------------------------------------------------- -->
+  <h4 id="e-file-tree">sem-file-tree -- the same model authored as text</h4>
+  <p><strong>Normative: <a href="#r-sem-file-tree">spec/schema/sem-file-tree.md</a>.</strong></p>
+  <sem-code id="c-file-tree" lang="html"><pre><code>&lt;sem-file-tree mode="text"&gt;&lt;pre&gt;
+assets/
+&#x251c;&#x2500;&#x2500; icons/
+&#x2502;   &#x2514;&#x2500;&#x2500; logo.svg
+&#x2514;&#x2500;&#x2500; app.js
+&lt;/pre&gt;&lt;/sem-file-tree&gt;</code></pre></sem-code>
+  <p>The pre <strong>is</strong> the record: JS-off it renders verbatim, nothing fabricated; JS-on the shared engine parses the indentation (4-column box segments, or the smallest whitespace indent unit; a trailing <code>/</code> marks a directory) and renders generated view rows with the same collapse/filter/find chrome. A structured <code>&lt;node&gt;</code> form is also accepted (dispatched on content).</p>
+  <sem-source id="s-file-tree" label="Live: sem-file-tree">
+    <sem-file-tree id="x-file-tree" mode="text" label="Themes" role="tree"><pre>
+themes/
+&#x251c;&#x2500;&#x2500; _vocabulary.css
+&#x2514;&#x2500;&#x2500; _print.css
+</pre></sem-file-tree>
+  </sem-source>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════
        DEFINITIONS & CITATIONS
        ═══════════════════════════════════════════════════════════════════ -->
   <h3 id="definitions--citations">Definitions &amp; citations</h3>
@@ -669,6 +729,9 @@
     | `&lt;sem-reader controls outline-depth&gt;` &gt; optional `&lt;nav aria-label="Contents"&gt;` | `div.sem-reader[data-controls][data-outline-depth]` &gt; same optional nav; chrome, mints nothing |
     | `&lt;sem-md label view-as="rendered\|raw" controls&gt;` &gt; Markdown text | `div.sem-md[data-label][data-view-as][data-controls]` &gt; Markdown text |
     | `&lt;sem-table controls sticky&gt;` &gt; `&lt;table&gt;` | `div.sem-table[data-controls][data-sticky]` &gt; authored `&lt;table&gt;` (`&lt;th scope="col"&gt;`, `td[data-value]` sort keys) |
+    | `&lt;sem-workflow kind duration label&gt;` / `&lt;sem-step action description gate check if-no output status&gt;` | `div.sem-workflow[data-kind][data-duration][data-label]` &gt; `div.sem-step[data-action][data-description][data-gate][data-check][data-if-no][data-output][data-status]` |
+    | `&lt;sem-site-tree label mode&gt;` / `&lt;node path label kind collapsed&gt;` | `div.sem-site-tree[data-label][data-mode]` &gt; `div.sem-node[data-path][data-label][data-kind]`, nested |
+    | `&lt;sem-file-tree mode label&gt;` | `div.sem-file-tree[data-mode][data-label]`; text form keeps the authored `&lt;pre&gt;`, structured form nests `div.sem-node[data-path]` |
     | `&lt;sem-browser src label&gt;` &gt; fallback figure | `div.sem-browser[data-src]` &gt; the fallback children — with no script the div IS the framed document |
   </sem-md>
 
@@ -728,6 +791,9 @@
     <sem-reference id="r-sem-reader" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-reader.md" cite="spec/schema/sem-reader.md">Schema -- sem-reader.</sem-reference>
     <sem-reference id="r-sem-table" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-table.md" cite="spec/schema/sem-table.md">Schema -- sem-table.</sem-reference>
     <sem-reference id="r-sem-progress" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-progress.md" cite="spec/schema/sem-progress.md">Schema -- sem-progress.</sem-reference>
+    <sem-reference id="r-sem-workflow" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-workflow.md" cite="spec/schema/sem-workflow.md">Schema -- sem-workflow / sem-step.</sem-reference>
+    <sem-reference id="r-sem-site-tree" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-site-tree.md" cite="spec/schema/sem-site-tree.md">Schema -- sem-site-tree / node.</sem-reference>
+    <sem-reference id="r-sem-file-tree" role="listitem" href="https://github.com/noizu-labs-ml/npl-enhanced-content/blob/develop/spec/schema/sem-file-tree.md" cite="spec/schema/sem-file-tree.md">Schema -- sem-file-tree.</sem-reference>
   </sem-references>
 
 </sem-enhanced-document>

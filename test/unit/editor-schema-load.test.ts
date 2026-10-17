@@ -31,11 +31,13 @@ describe('editor schema loader', () => {
     expect(loadSchema().specVersion.length).toBeGreaterThan(0);
   });
 
-  it('carries the 54 normative tags; the advisory count agrees', () => {
+  it('carries the 58 normative tags; the advisory count agrees', () => {
     const schema = loadSchema();
-    // 54 = the v0.7.2 index (49 + sem-browser) + the round-2 reference
-    // definitions (sem-tag-def / sem-tag-attr / sem-api-call / sem-api-param).
-    expect(schema.tags.length).toBe(54);
+    // 58 = the v0.7.2 index (49 + sem-browser) + the round-2 reference
+    // definitions (sem-tag-def / sem-tag-attr / sem-api-call / sem-api-param)
+    // + the interactive containers (sem-workflow / sem-site-tree /
+    // sem-file-tree / node, 2026-10-18).
+    expect(schema.tags.length).toBe(58);
     // tagCount is advisory (EDITOR.md §3.1) — assert agreement, never rely on it
     // Lookup-only seeds: sem-chat + sem-enhanced-document + agent. (sem-browser
     // was a seed until the v0.7.2 artifact regen promoted it to a tag.)
