@@ -1,0 +1,21 @@
+# render-card demo — sections, subtitle and footer (blueprint theme).
+name: your-first-card
+title: The anatomy of a card
+subtitle: heading, prose, sections, footer
+theme: blueprint
+description: |
+  A card carries a NAME (the frame rules), a title, an optional
+  subtitle, the body, an optional footer — and the body may carry
+  its own sections. A line starting with #s begins one:
+
+  ## Sections
+
+  Each section keeps its heading while the frame wraps its prose
+  to the same inner width as the rest of the card.
+
+  ## Reading modes
+
+  `render-card --plain` prints everything above with no frame
+  glyphs at all; `render-card --themes` draws one sample card in
+  every registered theme for side-by-side comparison.
+footer: render-card --help for the full flag list

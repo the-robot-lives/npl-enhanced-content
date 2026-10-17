@@ -7,10 +7,14 @@
  *   # full-line comments only; "---" / "..." document markers are ignored
  *   name: render-demo          # the NAME spelled into the top/bottom rule
  *   title: SemText in one file
- *   theme: zigzag              # optional; zigzag | double | rounded | ornate | ascii
+ *   subtitle: read it three ways   # optional; the line under the title
+ *   footer: semtext.dev/docs      # optional; the line above the bottom rule
+ *   theme: zigzag              # optional; see `render-card --list-themes`
  *   width: 64                  # optional frame width in columns (24..120)
  *   description: |             # literal block scalar; ">" folds to one paragraph
  *     The body prose, wrapped to the frame.
+ *     ## A section               # a "#"-heading line starts a new section
+ *     More prose, under its own heading.
  *
  * Rules kept deliberately small: `key: value` scalars (optionally quoted
  * with ' or "), literal `|`/folded `>` block scalars for description,
@@ -26,14 +30,50 @@ export interface CardFile {
   name: string;
   /** The underlined heading line, or null. */
   title: string | null;
-  /** The wrapped body prose ('' allowed). */
+  /** The line under the title, or null. */
+  subtitle: string | null;
+  /** The prose body, sections included ('' allowed). */
   description: string;
+  /** The line above the bottom rule, or null. */
+  footer: string | null;
   /** Theme id, or null for the default theme. */
   theme: string | null;
   /** Requested frame width in columns, or null for the default. */
   width: number | null;
   /** Non-fatal notes (unknown keys, empty values, name fallback). */
   warnings: string[];
+}
+
+/** One section of a description: the prose before its next "#"-heading. */
+export interface CardSection {
+  /** The "#"-heading text, or null for the prose before any heading. */
+  heading: string | null;
+  /** The section's lines ('' = a paragraph break). */
+  body: string;
+}
+
+const HEADING_PATTERN = /^#{1,6} +(.+?) *$/;
+
+/**
+ * Split a description into sections at "#"-heading lines (a Markdown-ish
+ * convention, 1–6 #s): prose before any heading is the intro section with
+ * a null heading. Heading lines only count at the START of a description
+ * line — a # inside a sentence is data, as everywhere else in a card.
+ */
+export function splitSections(description: string): CardSection[] {
+  const sections: CardSection[] = [];
+  let current: CardSection = { heading: null, body: '' };
+  for (const line of description.split('\n')) {
+    const match = HEADING_PATTERN.exec(line);
+    if (match) {
+      if (current.body !== '' || current.heading !== null) sections.push(current);
+      current = { heading: match[1]!, body: '' };
+      continue;
+    }
+    current.body = current.body === '' ? line : `${current.body}\n${line}`;
+  }
+  if (current.body !== '' || current.heading !== null) sections.push(current);
+  return sections;
 }
 
 export class CardFileError extends Error {
@@ -119,7 +159,9 @@ export function parseCardFile(source: string, opts: { label?: string } = {}): Ca
 
   let name: string | null = null;
   let title: string | null = null;
+  let subtitle: string | null = null;
   let description = '';
+  let footer: string | null = null;
   let theme: string | null = null;
   let width: number | null = null;
 
@@ -130,7 +172,7 @@ export function parseCardFile(source: string, opts: { label?: string } = {}): Ca
     if (trimmed === '' || trimmed.startsWith('#') || trimmed === '---' || trimmed === '...') continue;
     const match = KEY_PATTERN.exec(raw);
     if (!match) {
-      throw new CardFileError(`line ${i + 1}: expected "key: value" (name, title, description, theme or width)`, i + 1);
+      throw new CardFileError(`line ${i + 1}: expected "key: value" (name, title, subtitle, description, footer, theme or width)`, i + 1);
     }
     const key = match[1]!.toLowerCase();
     const rest = match[2]!.trim();
@@ -160,6 +202,10 @@ export function parseCardFile(source: string, opts: { label?: string } = {}): Ca
       name = value;
     } else if (key === 'title') {
       title = value;
+    } else if (key === 'subtitle') {
+      subtitle = value;
+    } else if (key === 'footer') {
+      footer = value;
     } else if (key === 'theme') {
       theme = value;
     } else if (key === 'width') {
@@ -179,5 +225,5 @@ export function parseCardFile(source: string, opts: { label?: string } = {}): Ca
     name = base.replace(/\.card$/i, '');
     warnings.push('no "name:" — using the file name');
   }
-  return { name, title, description, theme, width, warnings };
+  return { name, title, subtitle, description, footer, theme, width, warnings };
 }

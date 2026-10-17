@@ -11,6 +11,7 @@
     { "path": "/demo/README.md", "src": "files/README.md" },
     { "path": "/demo/render-demo.card", "src": "files/render-demo.card" },
     { "path": "/demo/render-subsection.card", "src": "files/render-subsection.card" },
-    { "path": "/demo/render-toc.card", "src": "files/render-toc.card" }
+    { "path": "/demo/render-toc.card", "src": "files/render-toc.card" },
+    { "path": "/demo/your-first-card.card", "src": "files/your-first-card.card" }
   ]
 }
