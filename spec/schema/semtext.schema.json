@@ -896,6 +896,439 @@
         },
         "id": {}
       }
+    },
+    "agent-kit-issue": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-epic": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-bug": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-user-story": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-task": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-sub-task": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": true,
+      "extends": "cachedEmbed",
+      "attributes": {
+        "uuid": {
+          "type": "token"
+        },
+        "state": {
+          "type": "token",
+          "values": [
+            "open",
+            "in-progress",
+            "review",
+            "done",
+            "cancelled"
+          ]
+        },
+        "labels": {
+          "type": "any"
+        }
+      },
+      "children": [
+        "agent-kit-last-updated",
+        "agent-kit-title",
+        "agent-kit-description",
+        "agent-kit-state",
+        "agent-kit-labels"
+      ],
+      "childRules": [
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-title",
+          "severity": "error"
+        },
+        {
+          "rule": "exactlyOne",
+          "selector": "agent-kit-description",
+          "severity": "error"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-last-updated",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-state",
+          "severity": "warning"
+        },
+        {
+          "rule": "atMostOne",
+          "selector": "agent-kit-labels",
+          "severity": "warning"
+        }
+      ]
+    },
+    "agent-kit-ticket-ref": {
+      "source": "spec/schema/agent-kit/ticket-ref.md",
+      "record": true,
+      "extends": "reference",
+      "attributes": {
+        "key": {
+          "type": "token",
+          "required": true
+        }
+      }
+    },
+    "agent-kit-last-updated": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-last-updated",
+        "span.agent-kit-last-updated"
+      ]
+    },
+    "agent-kit-title": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-title",
+        "span.agent-kit-title"
+      ]
+    },
+    "agent-kit-description": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-description",
+        "span.agent-kit-description"
+      ]
+    },
+    "agent-kit-state": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-state",
+        "span.agent-kit-state"
+      ]
+    },
+    "agent-kit-labels": {
+      "source": "spec/schema/agent-kit/tickets.md",
+      "record": false,
+      "partOf": [
+      "agent-kit-issue",
+      "agent-kit-epic",
+      "agent-kit-bug",
+      "agent-kit-user-story",
+      "agent-kit-task",
+      "agent-kit-sub-task"
+      ],
+      "classAliases": [
+        "div.agent-kit-labels",
+        "span.agent-kit-labels"
+      ]
     }
   }
 }

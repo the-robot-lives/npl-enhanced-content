@@ -471,8 +471,6 @@ const LAZY_TARGETS = [
     budgetKb: 8,
     fullBundle: 'agent-kit.js',
     tags: 'agent-kit-*',
-    // Introduced empty (walking skeleton) — see the semext-lazy note.
-    allowEmpty: true,
   },
 ];
 

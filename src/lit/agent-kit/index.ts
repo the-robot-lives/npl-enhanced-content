@@ -52,9 +52,24 @@
  */
 
 /* Components — alphabetical; one two-line pair each, nothing shared.
- * The namespace is intentionally empty at introduction: the walking
- * skeleton ships the bundle/loader/manifest/contract machinery only.
- * Drop the first component's two-line pair right below this comment. */
+ * The generic ticket renderer (ticket-shared.ts) and the chrome helpers
+ * (chrome.ts) carry no registrations of their own — only the per-tag
+ * files below do. */
+
+export { AkitBug } from './agent-kit-bug.js';
+import './agent-kit-bug.js';
+export { AkitEpic } from './agent-kit-epic.js';
+import './agent-kit-epic.js';
+export { AkitIssue } from './agent-kit-issue.js';
+import './agent-kit-issue.js';
+export { AkitSubTask } from './agent-kit-sub-task.js';
+import './agent-kit-sub-task.js';
+export { AkitTask } from './agent-kit-task.js';
+import './agent-kit-task.js';
+export { AkitTicketRef } from './agent-kit-ticket-ref.js';
+import './agent-kit-ticket-ref.js';
+export { AkitUserStory } from './agent-kit-user-story.js';
+import './agent-kit-user-story.js';
 
 /* Namespace helpers (src/lit/agent-kit/shared.ts). */
 

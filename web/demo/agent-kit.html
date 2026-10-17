@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · agent-kit bundle showcase</title>
+
+<!-- sem:inline theme minimal-tech-light -->
+<!-- sem:inline vocabulary -->
+
+<style>
+  .sem-enhanced-document { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.01em; margin: 0 0 .5rem; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 2.25rem 0 .5rem; }
+  p  { margin: .6rem 0; }
+</style>
+
+<!-- The agent-kit namespace bundle — every agent-kit-* component on this
+     page registers from this one script (dist/agent-kit.js). -->
+<!-- sem:inline agent-kit -->
+</head>
+
+<body>
+<div class="sem-enhanced-document">
+  <h1>agent-kit bundle — showcase</h1>
+  <p>The <code>agent-kit-*</code> components: cached embeds of upstream
+  work-management records. The authored inner content IS the record —
+  with JavaScript off this page reads exactly the same prose; with it on,
+  each card gains chrome (meta row, share footer) that extraction never
+  sees.</p>
+
+  <h2>Tickets</h2>
+  <p>One generic renderer, six tags. This issue carries the full record:
+  reference quartet, uuid (so the share footer renders), state and labels
+  as attributes.</p>
+
+  <agent-kit-issue id="ticket-akit-001" kind="ticket" tags="extract,chrome" org="acme" project="semtext" key="AKIT-001"
+                   uuid="3f1c9a2e-8b74-4f6a-9d21-7ae5c0b4d101"
+                   state="in-progress" labels="extract,chrome"
+                   last-refreshed="2026-10-17T09:24:00Z">
+    <agent-kit-title>Extractor drops class-form parts</agent-kit-title>
+    <agent-kit-description>
+      <code>extractRecords</code> misses <code>.agent-kit-title</code>
+      aliases when the class appears on a wrapper element. Reproduces on
+      every page that styles parts through the class spelling.
+    </agent-kit-description>
+  </agent-kit-issue>
+
+  <p>The same record as a bug, with state and labels authored as children
+  instead of attributes, and no uuid — the card has no share footer:</p>
+
+  <agent-kit-bug kind="ticket" tags="css" org="acme" project="semtext" key="AKIT-003">
+    <agent-kit-title>Vocabulary display line collides with semext</agent-kit-title>
+    <agent-kit-description>
+      The agent-kit per-tag display lines must never fold into one comma
+      list, or parallel component branches conflict on every merge.
+    </agent-kit-description>
+    <agent-kit-last-updated>2026-10-17T11:40:00Z</agent-kit-last-updated>
+    <agent-kit-state>review</agent-kit-state>
+    <agent-kit-labels>css</agent-kit-labels>
+  </agent-kit-bug>
+
+  <p>A task with a cached snapshot: the inline JSON is the enrichment the
+  authoring pipeline cached — the stamp line renders under the upgrade
+  claim and stays out of every record:</p>
+
+  <agent-kit-task kind="ticket" tags="build" org="acme" project="semtext" key="AKIT-005" status="fresh">
+    <agent-kit-title>Wire the agent-kit lazy manifest</agent-kit-title>
+    <agent-kit-description>
+      The manifest chunk loader registers components on first sight of
+      their tag; this page does not use it (one inline script registers
+      everything), but a multi-page site would.
+    </agent-kit-description>
+    <script type="application/json">
+      { "key": "AKIT-005", "state": "done", "updated_at": "2026-10-14T17:55:00Z" }
+    </script>
+  </agent-kit-task>
+
+  <p>Epic and user story round out the family; the reference below jumps
+  back to the issue at the top of this section:</p>
+
+  <agent-kit-epic kind="ticket" tags="authoring" org="acme" project="semtext" key="AKIT-002" state="open" labels="authoring">
+    <agent-kit-title>Authoring v2 — the agent-kit bundle</agent-kit-title>
+    <agent-kit-description>
+      Twenty-one registered components across tickets, personas, boards,
+      and test definitions, all cached embeds with livePolicy never.
+    </agent-kit-description>
+  </agent-kit-epic>
+
+  <agent-kit-user-story kind="ticket" tags="docs" org="acme" project="semtext" key="AKIT-004" state="open">
+    <agent-kit-title>Author writes a ticket without touching JS</agent-kit-title>
+    <agent-kit-description>
+      A hand-authored XHTML document renders a readable ticket card with
+      styles off or scripts off — the authored body is the record.
+    </agent-kit-description>
+  </agent-kit-user-story>
+
+  <p>Inline references: <agent-kit-ticket-ref key="AKIT-001">the extractor issue</agent-kit-ticket-ref>
+  and <agent-kit-ticket-ref key="AKIT-003">the vocabulary collision</agent-kit-ticket-ref>
+  scroll their cards into view; a malformed key like
+  <agent-kit-ticket-ref key="akit-9">this one</agent-kit-ticket-ref>
+  stays inert prose with a console warning.</p>
+
+</div>
+</body>
+</html>
