@@ -2,6 +2,11 @@
 
 ## 2026-10-18 (0.9.0 — fallback tier removal)
 
+- **Authoring refresh tooling (Phase 7):** `bin/semtext-refresh.mjs` (`npm run refresh`) — a pure cache-region
+  splicer (`src/tools/cache-splicer.js`: marker-only rewrites, byte-identical prose, timestamp-normalized
+  `--check`, `--seed` authoring, malformed-marker errors) plus lazy fail-soft adapters (`src/tools/adapters.js`:
+  agentkit / docptr / styleguide / annotate / media) wired through `src/tools/refresh-cli.js`; 64 new unit tests,
+  no new dependencies, no dist-bundle impact.
 - **Breaking (0.8.3 → 0.9.0): the standalone fallback tier is gone.** The retired
   artifacts (`dist/semtext-fallback.js`, the `./fallback`/`./reading`/`./extract`/`./md`
   package exports, the `sem:inline fallback` marker, its budget row) had already left the
