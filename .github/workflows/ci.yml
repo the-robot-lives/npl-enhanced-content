@@ -194,6 +194,14 @@ jobs:
           rm -rf cdn-payload
           mkdir -p cdn-payload/themes
           cp dist/semtext.js dist/semtext-lazy.js dist/semtext-manifest.json cdn-payload/
+          # Lazy families beyond the core: npl + the Phase-7 semext/agent-kit
+          # surface — bundle, lazy loader, manifest and chunk dir travel
+          # together, or a versioned URL serves a broken import graph.
+          for f in npl semext agent-kit; do
+            cp "dist/${f}.js" "dist/${f}-lazy.js" "dist/${f}-manifest.json" cdn-payload/
+            if [ -d "dist/${f}-chunks" ]; then cp -R "dist/${f}-chunks" cdn-payload/; fi
+          done
+          if [ -d dist/chunks ]; then cp -R dist/chunks cdn-payload/; fi
           cp themes/*.css cdn-payload/themes/
           find cdn-payload -type f | sort
       - name: Install mc
