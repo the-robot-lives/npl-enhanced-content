@@ -7,7 +7,7 @@ shell) from the same one-command build:
 
 | Artifact | Global | Role |
 |---|---|---|
-| `dist/semtext.js` | `SemText` | The single Lit 3 IIFE. Defines the interactive custom elements (`src/lit/`), carries the vanilla handlers for everything no component defines (`src/fallback/`), the prose-reading renderers (`src/reading/`), the Markdown renderer (`src/md/`), and the extraction recipe (`src/extract/`, exposed as `SemText.extractRecords` / `SemText.extractText`). |
+| `dist/semtext.js` | `SemText` | The single Lit 3 IIFE. Defines the interactive custom elements (`src/lit/`), carries the vanilla handlers for everything no component defines (`src/vanilla/`, renamed from `src/fallback/` in 0.9.0), the prose-reading renderers (`src/reading/`), the Markdown renderer (`src/md/`), and the extraction recipe (`src/extract/`, exposed as `SemText.extractRecords` / `SemText.extractText`). |
 | `dist/npl.js` | `NPL` | The `npl-*` namespace bundle (provider picker, mode chrome, lazy entry) — code-split chunks under `dist/npl-chunks/`. |
 | `dist/semtext-lazy.js` / `dist/npl-lazy.js` | — | Opt-in loaders that fetch their bundle + code-split `dist/chunks/` on demand. |
 | `dist/semtext-agent.js` | — | Browser build of the semtext-agent CLI core (the node CLI itself runs from `bin/semtext-agent.mjs`). |
