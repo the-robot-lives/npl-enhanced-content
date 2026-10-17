@@ -236,6 +236,7 @@ export class SemEditorCode extends SemElement {
     if (this.#strip && this.#result) {
       renderStrip(this.#strip, this.#result, issues);
     }
+    this.host?.onIssues?.(issues, failed);
   }
 
   #rehighlightSoon(): void {

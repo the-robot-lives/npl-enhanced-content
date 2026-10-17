@@ -1,6 +1,6 @@
 {
   "name": "semtext",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "//specVersion": "Draft revision of spec/conventions.{html,md} that the demo pages and landing copy self-label. Bump it WITH the spec, not with releases \u2014 `version` is the package, `specVersion` is the format draft.",
   "specVersion": "0.7",
   "description": "SemText \u2014 XHTML-first semantic markup: one document that reads as a styled interactive page, a structural record for LLMs, and plain text in a terminal. One Lit bundle (dist/semtext.js + its stylesheet + themes); degrades to plain prose with JavaScript off. Zero React.",

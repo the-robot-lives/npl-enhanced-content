@@ -200,25 +200,36 @@ export function wireDocument(editor: SemEditor, ctx: EditorContext): DocumentWir
   ctx.shell = hooks;
 
   // ── insert roads: + zones, slash, toolbar request (surface = document) ──
+  // Read-only views skip the editing roads entirely (Instrument `readonly`).
   const canvas = editor.querySelector('.sem-ed-canvas');
-  detach.push(
-    wireInsert({
-      ctx,
-      canvas: canvas instanceof HTMLElement ? canvas : null,
-      getSelectedId: () => ctx.selectedId,
-    }),
-  );
+  if (!editor.readonly) {
+    detach.push(
+      wireInsert({
+        ctx,
+        canvas: canvas instanceof HTMLElement ? canvas : null,
+        getSelectedId: () => ctx.selectedId,
+      }),
+    );
+  }
 
   // ── io: export/copy/open requests + the one Cmd/Ctrl+S binder ──
   // surface = the editor element, NOT document: N editors on one page stay
   // isolated (a document-default would stack N export handlers that outlive
   // removed editors), and requests always target the shell itself (§9.2).
+  // The export filename prefers the shell's editable document name (the
+  // title bar input) over a frozen <title> snapshot.
   const title = documentTitle(ctx.doc);
   const io = wireIo({
     ctx,
     surface: editor,
     draftsKey: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'document',
     getMode: () => editor.mode,
+    filename: (doc) => {
+      const name = editor.docName ?? documentTitle(doc);
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      return `${slug === '' ? 'document' : slug}.sem.html`;
+    },
+    onSaved: () => editor.markSaved(),
   });
   detach.push(io.detach);
 
@@ -239,6 +250,16 @@ export function wireDocument(editor: SemEditor, ctx: EditorContext): DocumentWir
         },
         offsetToPos: (offset) => ctx.doc.offsetToPos(offset),
         announce: (message) => ctx.announce(message),
+        // code → shell: parse verdicts feed the status bar + problems list;
+        // caret moves select the element under the caret in the canvas (§2.6
+        // reverse direction; the pane's own drive window still wins).
+        onIssues: (issues, failed) => editor.reportIssues(issues, failed),
+        onCodeSelection: (selection) => {
+          const pos = selection.focus;
+          if (pos === null) return;
+          const el = ctx.doc.elementAtOffset(pos.offset);
+          if (el !== null && el.id !== ctx.selectedId) ctx.select(el.id);
+        },
       };
       codeEl.source = ctx.doc.serialize();
     }
@@ -255,6 +276,7 @@ export function wireDocument(editor: SemEditor, ctx: EditorContext): DocumentWir
   // ── controllers for every top-level host (idempotent) ──
   const attachTopLevel = (): void => {
     if (canvas === null || !(canvas instanceof HTMLElement)) return;
+    if (editor.readonly) return; // read-only: no contenteditable controllers
     for (const el of Array.from(canvas.children)) {
       if (isChromeNode(el)) continue;
       const stamp = el.getAttribute('data-sem-edit-node');

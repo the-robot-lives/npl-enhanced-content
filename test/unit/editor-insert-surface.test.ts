@@ -319,7 +319,7 @@ describe('attachPlusZones', () => {
 
     (zones[1].querySelector('button') as HTMLButtonElement).click();
     expect(opened).toEqual([{ parentId: rootId, index: 1 }]);
-    expect(zones[1].querySelector('button')?.getAttribute('aria-label')).toBe('Insert block between position 1 and 2');
+    expect(zones[1].querySelector('button')?.getAttribute('aria-label')).toBe('Add block between position 1 and 2');
 
     // foreign child added → restamped (4 boundaries); chrome-only churn is not
     container.appendChild(document.createElement('p'));

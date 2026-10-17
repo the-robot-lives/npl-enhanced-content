@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 /**
- * editor-shell-element — `<sem-editor>` frame tests (EDITOR.md §5.1–5.3, §7).
+ * editor-shell-element — `<sem-editor>` Instrument-frame tests (EDITOR.md
+ * §5.1–5.5, §7).
  *
  * Runs against the fake EditorDocument (test/unit/helpers/fake-editor-doc.ts)
  * until the model lane's implementation lands; everything asserted here goes
@@ -35,34 +36,36 @@ function makeEditor(): { el: SemEditor; doc: EditorDocument } {
 const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 30));
 
 function toolbarOf(el: SemEditor): HTMLDivElement {
-  return el.querySelector('.sem-ed-toolbar') as HTMLDivElement;
+  return el.querySelector('.sem-ed-topbar') as HTMLDivElement;
 }
 
 function buttonByLabel(el: SemEditor, label: string): HTMLButtonElement | null {
   const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('button'));
-  return buttons.find((b) => b.textContent?.trim() === label) ?? null;
+  return buttons.find((b) => b.getAttribute('aria-label') === label) ?? null;
 }
 
 describe('<sem-editor> frame', () => {
-  it('wires the window chrome, toolbar, outline and live region', () => {
+  it('wires the top bar, outline tree, inspector host, status bar and live region', () => {
     const { el } = makeEditor();
-    expect(el.querySelector('.sem-window')).not.toBeNull();
-    expect(el.querySelector('.sem-window-titlebar')).not.toBeNull();
+    expect(el.querySelector('.sem-ed-frame')).not.toBeNull();
     expect(el.querySelector('[role="toolbar"]')).not.toBeNull();
-    expect(el.querySelector('[role="listbox"]')).not.toBeNull();
-    const live = el.querySelector('[role="status"]');
+    expect(el.querySelector('[role="tree"]')).not.toBeNull();
+    expect(el.querySelector('.sem-ed-inspector')).not.toBeNull();
+    const live = el.querySelector('.sem-ed-live');
     expect(live?.getAttribute('aria-live')).toBe('polite');
-    const viewport = el.querySelector('.sem-window-viewport');
+    const viewport = el.querySelector('.sem-ed-panes');
     expect(viewport?.getAttribute('role')).toBe('region');
+    expect(el.querySelector('.sem-ed-statusbar')).not.toBeNull();
     el.remove();
   });
 
-  it('openDocument stamps edit-mode, title and data-mode; canvas shows the Phase-3 empty state', () => {
+  it('openDocument stamps edit-mode, data-mode, the doc name and a clean dirty dot', () => {
     const { el } = makeEditor();
     expect(el.hasAttribute('edit-mode')).toBe(true);
     expect(el.getAttribute('data-mode')).toBe('wysiwyg');
-    expect(el.querySelector('.sem-window-tab-title')?.textContent).toContain('Meeting Notes');
-    expect(el.querySelector('.sem-ed-empty')?.textContent).toContain('Phase 3');
+    expect((el.querySelector('.sem-ed-doc-name') as HTMLInputElement).value).toBe('Meeting Notes');
+    expect(el.querySelector('.sem-ed-dot')?.hasAttribute('data-on')).toBe(false);
+    expect(el.querySelector('.sem-ed-status-saved')?.textContent).toContain('Saved');
     el.remove();
   });
 
@@ -75,7 +78,7 @@ describe('<sem-editor> frame', () => {
 });
 
 describe('mode switching', () => {
-  it('reflects data-mode, syncs the radiogroup and emits sem-edit-mode', async () => {
+  it('reflects data-mode, syncs the radiogroup, updates the status bar and emits sem-edit-mode', async () => {
     const { el } = makeEditor();
     const seen: string[] = [];
     el.addEventListener('sem-edit-mode', (e) => seen.push((e as CustomEvent).detail.mode));
@@ -85,6 +88,7 @@ describe('mode switching', () => {
     expect(seen).toEqual(['code']);
     expect(el.querySelector('[data-mode-value="code"]')?.getAttribute('aria-checked')).toBe('true');
     expect(el.querySelector('[data-mode-value="wysiwyg"]')?.getAttribute('aria-checked')).toBe('false');
+    expect(el.querySelector('.sem-ed-status-mode')?.textContent).toBe('Code');
     el.remove();
   });
 
@@ -139,13 +143,89 @@ describe('undo / redo buttons', () => {
   });
 });
 
-describe('outline', () => {
-  it('lists elements depth-first with titles', () => {
+describe('dirty / saved state', () => {
+  it('marks the dot dirty on change and clears it via markSaved()', async () => {
+    const { el, doc } = makeEditor();
+    doc.transaction('test', (tx) => {
+      tx.push({ type: 'setAttr', node: 'n-sec', name: 'data-x', value: '1' });
+    });
+    await flush();
+    expect(el.querySelector('.sem-ed-dot')?.hasAttribute('data-on')).toBe(true);
+    expect(el.querySelector('.sem-ed-status-saved')?.textContent).toBe('Unsaved changes');
+
+    el.markSaved();
+    await flush();
+    expect(el.querySelector('.sem-ed-dot')?.hasAttribute('data-on')).toBe(false);
+    expect(el.querySelector('.sem-ed-status-saved')?.textContent).toContain('Saved');
+    el.remove();
+  });
+
+  it('reports word + element counts in the status bar', () => {
     const { el } = makeEditor();
-    const rows = Array.from(el.querySelectorAll('[role="option"]'));
-    expect(rows.length).toBe(3);
-    expect(rows[0]?.getAttribute('data-sem-ed-node')).toBe('n-title');
-    expect(rows[2]?.getAttribute('data-sem-ed-node')).toBe('n-h');
+    const counts = el.querySelector('.sem-ed-status-counts')?.textContent ?? '';
+    expect(counts).toContain('element');
+    expect(counts).toContain('word');
+    el.remove();
+  });
+
+  it('surfaces parse issues in the status bar with a jump list', () => {
+    const { el } = makeEditor();
+    el.reportIssues(
+      [{ code: 'test', severity: 'error', message: 'Unexpected token', range: { start: 4, end: 9 } }],
+      true,
+    );
+    const btn = el.querySelector('.sem-ed-status-problems') as HTMLButtonElement;
+    expect(btn.textContent).toBe('1 problem');
+    expect(btn.className).toContain('has-problems');
+    const panel = el.querySelector('.sem-ed-problems') as HTMLElement;
+    expect(panel.hidden).toBe(true);
+    btn.click();
+    expect(panel.hidden).toBe(false);
+    const jump = panel.querySelector('.sem-ed-problem-jump') as HTMLButtonElement;
+    expect(jump.textContent).toBe('Unexpected token');
+    el.remove();
+  });
+});
+
+describe('document name', () => {
+  it('edits the name in the title bar and writes through to a <title> node', async () => {
+    const { el, doc } = makeEditor();
+    const input = el.querySelector('.sem-ed-doc-name') as HTMLInputElement;
+    input.value = 'Renamed Doc';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await flush();
+    expect(el.docName).toBe('Renamed Doc');
+    const titleNode = doc.node('n-title') as { children: Array<{ id: string }> };
+    expect(doc.textOf(titleNode.children[0].id)).toBe('Renamed Doc');
+    el.remove();
+  });
+});
+
+describe('outline (semantic tree)', () => {
+  it('lists semantic blocks with content-derived titles; metadata (title) is not a row', () => {
+    const { el } = makeEditor();
+    const rows = Array.from(el.querySelectorAll('[role="treeitem"]'));
+    expect(rows.length).toBe(2);
+    expect(rows[0]?.getAttribute('data-sem-ed-node')).toBe('n-sec');
+    expect(rows[1]?.getAttribute('data-sem-ed-node')).toBe('n-h');
+    // content-derived label: the heading's own words, not the tag name
+    expect(rows[1]?.querySelector('.sem-ed-outline-title')?.textContent).toBe('Agenda');
+    expect(rows[1]?.getAttribute('aria-level')).toBe('2');
+    el.remove();
+  });
+
+  it('hides presentational wrappers but keeps their semantic descendants', () => {
+    const { el } = makeEditor();
+    const doc = fakeDoc('<sem-doc>…</sem-doc>', [
+      fEl('n-p', 'p', [], [
+        fEl('n-note', 'sem-note', [fAttr('variant', 'info')], [fText('n-t', 'Hello there')]),
+      ]),
+    ]);
+    el.openDocument(doc);
+    const rows = Array.from(el.querySelectorAll('[role="treeitem"]'));
+    expect(rows.map((r) => r.getAttribute('data-sem-ed-node'))).toEqual(['n-note']);
+    // descriptor view is unwired in this harness → the tag is the base
+    expect(rows[0]?.querySelector('.sem-ed-outline-title')?.textContent).toBe('sem-note — info');
     el.remove();
   });
 
@@ -183,6 +263,41 @@ describe('outline', () => {
   });
 });
 
+describe('inspector', () => {
+  it('shows schema fields for the selected element and applies live', async () => {
+    const { el, doc } = makeEditor();
+    (el.ctx as unknown as { schema: unknown }).schema = {
+      schemaFor: (tag: string) =>
+        tag === 'heading'
+          ? {
+              tag,
+              attrs: [
+                { name: 'level', type: 'string', allowedValues: ['1', '2', '3'] },
+                { name: 'collapsed', type: 'boolean' },
+              ],
+            }
+          : null,
+    };
+    el.ctx?.select('n-h');
+    await flush();
+    const select = el.querySelector('.sem-ed-inspector select') as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    expect(select.value).toBe('2');
+    select.value = '3';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await flush();
+    const heading = doc.node('n-h') as { attrs: Array<{ name: string; value: string | null }> };
+    expect(heading.attrs.find((a) => a.name === 'level')?.value).toBe('3');
+    el.remove();
+  });
+
+  it('shows the empty state with nothing selected', () => {
+    const { el } = makeEditor();
+    expect(el.querySelector('.sem-ed-inspector-empty')?.textContent).toContain('Select an element');
+    el.remove();
+  });
+});
+
 describe('breadcrumbs', () => {
   it('renders the ancestor chain with the current location', () => {
     const { el } = makeEditor();
@@ -213,7 +328,7 @@ describe('keyboard shortcuts (§7)', () => {
     doc.transaction('test', (tx) => {
       tx.push({ type: 'setAttr', node: 'n-sec', name: 'data-x', value: '1' });
     });
-    const frame = el.querySelector('.sem-window') as HTMLElement;
+    const frame = el.querySelector('.sem-ed-frame') as HTMLElement;
     frame.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }));
     await flush();
     const sec = doc.node('n-sec') as { attrs: Array<{ name: string }> };
@@ -232,7 +347,7 @@ describe('keyboard shortcuts (§7)', () => {
       tx.push({ type: 'setAttr', node: 'n-sec', name: 'data-x', value: '1' });
     });
     const input = document.createElement('input');
-    (el.querySelector('.sem-window') as HTMLElement).appendChild(input);
+    (el.querySelector('.sem-ed-frame') as HTMLElement).appendChild(input);
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }));
     expect(doc.canUndo()).toBe(true);
     el.remove();
@@ -240,7 +355,7 @@ describe('keyboard shortcuts (§7)', () => {
 
   it('Cmd/Ctrl+Shift+E cycles the mode', async () => {
     const { el } = makeEditor();
-    const frame = el.querySelector('.sem-window') as HTMLElement;
+    const frame = el.querySelector('.sem-ed-frame') as HTMLElement;
     frame.dispatchEvent(new KeyboardEvent('keydown', { key: 'E', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }));
     await el.updateComplete;
     expect(el.mode).toBe('code');
@@ -249,9 +364,9 @@ describe('keyboard shortcuts (§7)', () => {
 
   it('Cmd/Ctrl+Shift+O focuses the outline', () => {
     const { el } = makeEditor();
-    const frame = el.querySelector('.sem-window') as HTMLElement;
+    const frame = el.querySelector('.sem-ed-frame') as HTMLElement;
     frame.dispatchEvent(new KeyboardEvent('keydown', { key: 'O', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }));
-        const focusedRow = document.activeElement as HTMLElement;
+    const focusedRow = document.activeElement as HTMLElement;
     expect(focusedRow.className).toContain('sem-ed-outline-item');
     el.remove();
   });
@@ -265,17 +380,51 @@ describe('toolbar actions', () => {
     for (const type of ['sem-edit-insert-request', 'sem-edit-export-request', 'sem-edit-open-request']) {
       el.addEventListener(type, () => seen.push(type));
     }
-    buttonByLabel(el, 'Insert…')?.click();
-    buttonByLabel(el, 'Export…')?.click();
-    buttonByLabel(el, 'Open…')?.click();
+    buttonByLabel(el, 'Insert')?.click();
+    buttonByLabel(el, 'Export')?.click();
+    buttonByLabel(el, 'Open')?.click();
     expect(seen).toEqual(['sem-edit-insert-request', 'sem-edit-export-request', 'sem-edit-open-request']);
     const insertDetail = ((): unknown => {
       let detail: unknown;
       el.addEventListener('sem-edit-insert-request', (e) => (detail = (e as CustomEvent).detail), { once: true });
-      buttonByLabel(el, 'Insert…')?.click();
+      buttonByLabel(el, 'Insert')?.click();
       return detail;
     })();
     expect(insertDetail).toEqual({ parent: 'n-h', index: null });
+    el.remove();
+  });
+
+  it('toggles the outline and inspector panels', () => {
+    const { el } = makeEditor();
+    const frame = el.querySelector('.sem-ed-frame') as HTMLElement;
+    // defaults depend on container width (narrow ⇒ sheets open); assert flips
+    const flip = (label: string, key: 'outlineOpen' | 'inspectorOpen'): void => {
+      const before = frame.dataset[key] === 'true';
+      buttonByLabel(el, label)?.click();
+      expect(frame.dataset[key]).toBe(before ? 'false' : 'true');
+      buttonByLabel(el, label)?.click();
+      expect(frame.dataset[key]).toBe(before ? 'true' : 'false');
+    };
+    flip('Outline', 'outlineOpen');
+    flip('Properties', 'inspectorOpen');
+    el.remove();
+  });
+});
+
+describe('read-only mode', () => {
+  it('disables the editing verbs and announces the state', async () => {
+    const { el, doc } = makeEditor();
+    doc.transaction('test', (tx) => {
+      tx.push({ type: 'setAttr', node: 'n-sec', name: 'data-x', value: '1' });
+    });
+    await flush();
+    el.readonly = true;
+    await el.updateComplete;
+    expect(el.hasAttribute('readonly')).toBe(true);
+    expect(buttonByLabel(el, 'Insert')?.disabled).toBe(true);
+    expect(buttonByLabel(el, 'Undo')?.disabled).toBe(true);
+    expect(el.querySelector('.sem-ed-status-ro')?.hidden).toBe(false);
+    expect(el.querySelector('.sem-ed-status-saved')?.textContent).toBe('Read-only');
     el.remove();
   });
 });
