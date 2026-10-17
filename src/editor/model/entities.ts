@@ -195,6 +195,22 @@ export function escapeAttr(value: string, quote: '"' | "'"): string {
   return quote === '"' ? escaped.replace(/"/g, '&quot;') : escaped.replace(/'/g, '&apos;');
 }
 
+/**
+ * Make an edited comment body safe to wrap in `<!-- … -->`. Comments have
+ * no entity escapes, so the only hazards are the dashes themselves: `--`
+ * is forbidden in a well-formed comment and `-->` would end it early.
+ * Every dash run is broken with spaces (`--` → `- -`, `---` → `- - -`)
+ * and a trailing `-` gets one too, so the closing `-->` never gains a
+ * fourth dash. Authored (unedited) comments keep their source bytes — the
+ * untouched round-trip invariant wins there; this guards editor-typed
+ * bodies.
+ */
+export function escapeCommentBody(value: string): string {
+  return value
+    .replace(/-{2,}/g, (run) => '- '.repeat(run.length).trim())
+    .replace(/-$/, '- ');
+}
+
 /** Source-range helper for issue construction over `raw` slices. */
 export function rangeAt(start: number, raw: string): SourceRange {
   return { start, end: start + raw.length };

@@ -12,6 +12,11 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 8));
+/** The chunk-404 degradation lands a few macrotasks after boot; a single
+ *  tick races under a loaded runner (153-file suite) — poll instead. */
+const tickUntil = async (cond: () => boolean): Promise<void> => {
+  for (let i = 0; i < 250 && !cond(); i++) await tick();
+};
 
 describe('npl-lazy — class-form alias route', () => {
   beforeAll(async () => {
@@ -19,7 +24,7 @@ describe('npl-lazy — class-form alias route', () => {
       '<div class="npl-flag" data-kind="concept">aliased flag</div>' +
       '<div class="npl-notshipped">stays prose</div>';
     await import('../../src/lazy/npl.js');
-    await tick();
+    await tickUntil(() => document.querySelector('npl-flag')?.hasAttribute('data-sem-lazy-error') === true);
   });
 
   it('rewrote the manifest-known alias to tag form at boot', () => {
