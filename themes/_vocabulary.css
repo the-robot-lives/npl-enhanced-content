@@ -2049,3 +2049,40 @@ sem-shell[data-paint="canvas"] .sem-term-surface {
 :is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-group-label {
   font-variant-caps: all-small-caps; font-weight: 600; color: var(--sem-muted); }
 /* ── end sem-api-call ── */
+/* ── shell-v3-tabs-ui ──
+   Tab strip container + the new-tab (+) button (CORE-V2 §11.2/§11.3).
+   The tabs themselves reuse the shell-v2-osc-tabs .sem-window-tab styles. */
+sem-terminal .sem-term-tabs, sem-shell .sem-term-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: 0 0.5rem;
+  border-bottom: 1px solid var(--sem-border, #e4e7ec);
+}
+sem-terminal .sem-window-tab-new, sem-shell .sem-window-tab-new {
+  appearance: none;
+  border: 0;
+  background: none;
+  align-self: center;
+  margin-left: 0.25rem;
+  padding: 0 0.5rem;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 1.05em;
+  line-height: 1.4;
+  color: var(--sem-muted, #667085);
+  cursor: pointer;
+}
+sem-terminal .sem-window-tab-new:hover, sem-shell .sem-window-tab-new:hover {
+  color: var(--sem-fg, #101828);
+  background: rgba(127, 127, 127, 0.14);
+}
+sem-terminal .sem-window-tab-new:focus-visible, sem-shell .sem-window-tab-new:focus-visible {
+  outline: 2px solid var(--sem-accent, #4f46e5);
+  outline-offset: -2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  sem-terminal .sem-window-tab-new, sem-shell .sem-window-tab-new { transition: none; }
+}
+/* ── end shell-v3-tabs-ui ── */

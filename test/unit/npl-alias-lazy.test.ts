@@ -14,10 +14,16 @@ import { describe, it, expect, beforeAll } from 'vitest';
 const tick = () => new Promise((resolve) => setTimeout(resolve, 8));
 // the chunk-failure path is async on both ends (import rejection lands a
 // macrotask late) — poll for the marker instead of trusting a fixed tick,
-// which misfires on loaded CI workers
+// which misfires on loaded CI workers. Two pollers coexist (the 0.8 line
+// landed the same fix as `tickUntil`); both poll, neither trusts a tick.
 const until = async (fn: () => boolean, ms = 1000): Promise<void> => {
   const end = Date.now() + ms;
   while (!fn() && Date.now() < end) await new Promise((r) => setTimeout(r, 8));
+};
+/** The chunk-404 degradation lands a few macrotasks after boot; a single
+ *  tick races under a loaded runner (153-file suite) — poll instead. */
+const tickUntil = async (cond: () => boolean): Promise<void> => {
+  for (let i = 0; i < 250 && !cond(); i++) await tick();
 };
 
 describe('npl-lazy — class-form alias route', () => {
@@ -26,7 +32,7 @@ describe('npl-lazy — class-form alias route', () => {
       '<div class="npl-flag" data-kind="concept">aliased flag</div>' +
       '<div class="npl-notshipped">stays prose</div>';
     await import('../../src/lazy/npl.js');
-    await tick();
+    await tickUntil(() => document.querySelector('npl-flag')?.hasAttribute('data-sem-lazy-error') === true);
   });
 
   it('rewrote the manifest-known alias to tag form at boot', () => {
