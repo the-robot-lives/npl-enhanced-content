@@ -122,7 +122,12 @@ const targets = [
     // joined the single bundle per the no-CSS-only-tags registration
     // contract — 150.1 on that base, 151.5 after the family A merge).
     // Recorded in ROADMAP "Size budgets".
-    budgetKb: 152,
+    // 152 → 154 KB (2026-10-18, 0.9.1–0.9.3 trains together: the SEMTEX
+    // bug-wave handlers + Phase 7 vocabulary + the 0.9.3 features all ride
+    // the single bundle; measured 153.5 raw / 47.7 gzipped on main 9863d23
+    // — the first train to cross the 152 line, failing --strict-budget on
+    // main CI). Recorded in ROADMAP "Size budgets".
+    budgetKb: 154,
     required: true,
   },
   {

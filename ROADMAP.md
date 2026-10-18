@@ -74,7 +74,7 @@ guardrail discipline they document.
 
 | Artifact | Budget | Measured (2026-10-13) |
 |---|---|---|
-| `semtext.js` (one bundle) | **152 KB** (raised from 126 — user decision 2026-10-14; 144 → 145 after family A containers, 2026-10-18; 145 → 152 after the interactive containers joined the single bundle the same day) | 151.5 raw / 47.1 gzipped with both lanes merged — in budget |
+| `semtext.js` (one bundle) | **154 KB** (raised from 126 — user decision 2026-10-14; 144 → 145 after family A containers, 2026-10-18; 145 → 152 after the interactive containers joined the single bundle the same day; 152 → 154 after the 0.9.1–0.9.3 trains, same day) | 153.5 raw / 47.7 gzipped with all three trains merged — in budget |
 | `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
 | `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
 | `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
@@ -149,6 +149,14 @@ every schema tag answers `customElements.get()` once the core loads), the same
 sem-browser wiring, measured on the family A base. Measured 150.1 raw / 46.6
 gzipped on that base; 151.5 raw / 47.1 gzipped once both lanes merged — inside
 the new line.
+
+Core bundle budget (2026-10-18) raised `semtext.js` 152 → 154 KB raw: the
+first train to cross the 152 line was the combined 0.9.1–0.9.3 landing —
+the SEMTEX high-bug wave (flashcards index/verdicts, quiz wrong-pick flow,
+progress re-scan guard, reveal/details wiring), the Phase 7 vocabulary, and
+the 0.9.3 features all ride the single bundle. Measured 153.5 raw / 47.7
+gzipped on main 9863d23, failing `--strict-budget` on main CI; raised with
+history per the established convention rather than trimming feature code.
 
 
 ## History (recorded decisions — preserved)
