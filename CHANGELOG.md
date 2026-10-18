@@ -2,6 +2,20 @@
 
 ## 2026-10-18
 
+- **post-0.9.x cypress hardening: quiz-details rescan claim + site shim
+  removal + deflaked specs.** `vanilla/details` never claimed its root
+  (`data-sem-upgraded`), so the 50 ms rescan re-ran the pass forever and a
+  just-revealed span (`sem-highlight sem-revealed`) still matched the
+  pass's own input selector — every reveal was replaced back to
+  `.sem-occluded` on the tick after it happened (retry-based checks saw
+  it, same-tick probes didn't); roots now claimed like facts.ts.
+  `web/site/index.html` dropped its page-local
+  `makeCardsKeyboardOperable` shim — 0.9.1 deck wiring owns Enter/Space,
+  so shim + runtime double-toggled `.sem-flipped` to a net no-flip. Specs
+  fixed to the shipped meter contract: quiz wrong pick is a retry (score
+  `0/0` until the correct pick), and chip-index assertions no longer pin
+  the unseeded demo deck's per-load random order (#82).
+
 - **validate scope excludes web/demo.** `npm run validate` on pristine
   develop reported 18 pre-existing errors, all confined to `web/demo/*`
   pages lagging the current vocabulary; demos are frozen historical
