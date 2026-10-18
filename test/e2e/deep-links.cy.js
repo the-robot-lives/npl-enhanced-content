@@ -36,7 +36,12 @@ describe('deep links', () => {
   it('selects the flashcard that contains the target', () => {
     cy.visit('/demo/index.html#f-device');
     cy.get('#f-device').should('have.class', 'sem-current').and('be.visible');
-    cy.get('.sem-facts[data-view-as="flashcards"] .sem-facts-meter').should('contain', '2/3');
+    // the meter is a chip index — position shows as the aria-current chip.
+    // The demo deck is unseeded (randomFor falls back to Date.now()), so the
+    // deep-linked card's position varies per load; assert the index tracks
+    // it rather than pinning a slot.
+    cy.get('.sem-facts[data-view-as="flashcards"] .sem-facts-meter button[aria-current="true"]')
+      .should('have.attr', 'aria-label').and('match', /^Card [0-9]+$/);
   });
 
   it('activates the view enclosing a descendant id and keeps the hash', () => {

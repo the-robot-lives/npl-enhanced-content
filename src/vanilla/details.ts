@@ -32,5 +32,10 @@ export function enhanceDetails(scope: ParentNode): void {
       });
       h.replaceWith(span);
     });
+    // claim the root: reveal() leaves the span carrying `.sem-highlight`,
+    // which still matches this pass's own input selector — an unclaimed
+    // root would let the rescan replace just-revealed spans back to
+    // `.sem-occluded` on the tick after every reveal
+    root.setAttribute('data-sem-upgraded', '');
   });
 }

@@ -55,10 +55,13 @@ describe('sem-facts', () => {
     it('quiz: wrong pick marked wrong, spent pick inert', () => {
       const qz = '.sem-facts[data-view-as="quiz"] ';
       cy.get(qz + '.sem-current .sem-quiz-options button[data-correct="false"]').first().click();
-      cy.get(qz + '.sem-current .sem-quiz-options button.sem-wrong-pick').should('have.length', 1);
-      cy.get(qz + '.sem-facts-meter').should('contain', 'score 0/1');
-      // the spent pick is disabled; any further enabled pick keeps the miss score
-      cy.get(qz + '.sem-current .sem-quiz-options button:enabled').first().click();
+      cy.get(qz + '.sem-current .sem-quiz-options button.sem-wrong-pick')
+        .should('have.length', 1)
+        .and('be.disabled');
+      // a wrong pick is a retry, not a score event — the meter only counts
+      // completed questions (SEMTEX-004: keep picking until the correct one)
+      cy.get(qz + '.sem-facts-meter').should('contain', 'score 0/0');
+      cy.get(qz + '.sem-current .sem-quiz-options button[data-correct="true"]').click();
       cy.get(qz + '.sem-facts-meter').should('contain', 'score 0/1');
     });
 
