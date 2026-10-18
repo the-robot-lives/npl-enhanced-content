@@ -6,7 +6,7 @@
   develop reported 18 pre-existing errors, all confined to `web/demo/*`
   pages lagging the current vocabulary; demos are frozen historical
   examples, so the default scope narrows to `web/site/**` + `spec/*`
-  (scope fix, not a content fix) — everything outside demo stays gated.
+  (scope fix, not a content fix) — everything outside demo stays gated (#81).
 
 ## 2026-10-18 (0.9.3 — first family-complete versioned snapshot)
 
