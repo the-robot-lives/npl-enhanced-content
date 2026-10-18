@@ -1061,30 +1061,16 @@ section { padding-block: var(--pg-space) 0; }
         : 'Recomputed live — and it differs from the list view, which is a bug worth reporting.';
   }
 
-  /* Flashcard flip is bound to a click on the .sem-fact <div>, with no role,
-     no tabindex and no key handler — so with the vanilla handler alone the
-     flip is mouse-only (WCAG 2.1.1). The gap is in src/fallback/facts.ts and the
-     fix belongs there; this closes it for this page so the demo is not the
-     one interaction a keyboard user cannot reach. */
-  function makeCardsKeyboardOperable() {
-    Array.prototype.forEach.call(deck.querySelectorAll('.sem-fact'), function (card) {
-      card.setAttribute('tabindex', '0');
-      card.setAttribute('role', 'button');
-      card.setAttribute('aria-label', 'Flip card to show the conclusion');
-      card.addEventListener('keydown', function (e) {
-        if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
-        e.preventDefault();
-        card.classList.toggle('sem-flipped');
-      });
-    });
-  }
+  /* Flashcard flip keyboard reachability (tabindex, role, Enter/Space,
+     aria-expanded) is owned by the runtime deck wiring itself since 0.9.1
+     (vanilla/facts-deck); an earlier page-side shim here double-toggled
+     .sem-flipped with the runtime handler and killed the flip. */
 
   function setView(mode) {
     deck.innerHTML = pristine;
     deck.removeAttribute('data-sem-upgraded');
     deck.setAttribute('data-view-as', mode);
     if (window.SemText) window.SemText.enhanceFacts(scope);
-    if (mode === 'flashcards') makeCardsKeyboardOperable();
     if (current) current.textContent = mode;
     Array.prototype.forEach.call(toggle.querySelectorAll('button'), function (b) {
       b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === mode));

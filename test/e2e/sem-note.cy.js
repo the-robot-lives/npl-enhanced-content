@@ -37,7 +37,8 @@ describe('v0.4 baseline (web/demo/index.html)', () => {
     cy.get(fc + '.sem-current.sem-flipped .sem-conclusion').should('be.visible');
     cy.get(fc + '[data-act="next"]').click();
     cy.get(fc + '.sem-current').should('have.length', 1);
-    cy.get(fc + '.sem-facts-meter').should('contain', '2/3');
+    // the meter is a chip index — position shows as the aria-current chip
+    cy.get(fc + '.sem-facts-meter button[aria-current="true"]').should('have.attr', 'aria-label', 'Card 2');
   });
 
   it('quiz view: conclusion hidden, options scored, distractors count', () => {
