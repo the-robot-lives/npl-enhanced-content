@@ -228,6 +228,37 @@ sem-agent > :is(name, bio, instructions), sem-fact > :is(statement, conclusion, 
 :is(sem-step, .sem-step)::after { white-space: nowrap; }
 /* ── end sem-step ── */
 
+/* ── sem-bind hydration chrome ── */
+/* The sem-bind runtime writes per-step status as `data-sem-bind-status`
+   (the payload's exact spelling: complete|pending|error|skipped|none)
+   PLUS the mapped catalog attribute (done|todo|blocked) so the glyphs
+   above keep rendering. `skipped` and `none` have no catalog spelling —
+   skipped gets its own muted marker; none clears both attributes. */
+:is(sem-step, .sem-step)[data-sem-bind-status="skipped"] {
+  border-left-style: dotted; color: var(--sem-muted);
+}
+:is(sem-step, .sem-step)[data-sem-bind-status="skipped"]::after {
+  content: " ↷"; color: var(--sem-muted);
+}
+/* Bind payload chrome — comment line under a step, the taken fork(s),
+   and the never-blank state line a bound element renders while loading,
+   on error or when a payload comes back empty. */
+.sem-bind-comment { color: var(--sem-muted); font-size: .85em; margin-top: .25rem; }
+.sem-bind-choice { margin-top: .3rem; font-size: .9em; }
+.sem-bind-choice-label { font-variant-caps: all-small-caps; color: var(--sem-muted); margin-right: .35em; }
+.sem-bind-choice-option { font-weight: 600; }
+.sem-bind-choice-reason { color: var(--sem-muted); }
+.sem-bind-choice-walk { margin: .3rem 0 0; padding-left: 1.25rem; }
+.sem-bind-choice-walk li { margin: .15rem 0; }
+.sem-bind-state { font-size: .85em; margin-top: .25rem; }
+.sem-bind-state:is(.sem-bind-error) { color: var(--sem-wrong); }
+.sem-bind-state:is(.sem-bind-pending) { color: var(--sem-muted); }
+.sem-bind-state:is(.sem-bind-empty) { color: var(--sem-muted); font-style: italic; }
+/* sem-progress payload meter rides the same track/fill chrome the
+   vanilla handler builds; only the caption row is its own. */
+.sem-bind-progress-label { display: block; font-size: .85em; color: var(--sem-muted); }
+/* ── end sem-bind ── */
+
 /* properties */
 :is(sem-properties, .sem-properties) { margin: 1rem 0; border: 1px solid var(--sem-border);
   border-radius: 12px; overflow: hidden; background: var(--sem-surface); }

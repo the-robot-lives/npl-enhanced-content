@@ -2,6 +2,22 @@
 
 ## 2026-10-18
 
+- **sem-bind port: the live-data runtime + hydrated progress/procedure
+  elements land upstream.** Faithful port of the semtext.dev subtree delta
+  (#182, #184 — landed there 2026-10-18): `src/lit/bind.ts` (parse →
+  fetch → hydrate runtime — bind declarations incl. relative-URL
+  resolution against the document base, KV-definition plan hydration,
+  popup-login token flow, polling, per-element payload intake);
+  `sem-progress` + `sem-procedure` graduated out of `sem-stubs.ts` into
+  their own modules and grew the bind intake alongside the already-real
+  plan/runbook/workflow hydration; bind chrome (per-step status markers,
+  choice/fork rendering, never-blank state line, progress caption) added
+  to `themes/_vocabulary.css`; the unit tier gained the sem-bind
+  parse/attach/hydrate suites (58 tests); demo page
+  `web/demo/sem-bind.html` + payload fixtures under `web/demo/data/`.
+  Bundle budget 154 → 165 KB to absorb the runtime (measured 164.5 raw /
+  51.2 gzipped; see `scripts/build.mjs` + ROADMAP "Size budgets").
+
 - **post-0.9.x cypress hardening: quiz-details rescan claim + site shim
   removal + deflaked specs.** `vanilla/details` never claimed its root
   (`data-sem-upgraded`), so the 50 ms rescan re-ran the pass forever and a

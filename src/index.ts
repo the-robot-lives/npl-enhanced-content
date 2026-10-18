@@ -111,6 +111,37 @@ export { SemSiteTree } from './lit/sem-site-tree.js';
 import './lit/sem-site-tree.js';
 export { SemFileTree } from './lit/sem-file-tree.js';
 import './lit/sem-file-tree.js';
+/* sem-bind graduates — display elements that grew the sem-bind payload
+ * intake (see src/lit/bind.ts); same scanner-keyed registrations. */
+export { SemProgress } from './lit/sem-progress.js';
+import './lit/sem-progress.js';
+export { SemProcedure } from './lit/sem-procedure.js';
+import './lit/sem-procedure.js';
+/* sem-bind — the live-data runtime (parse → fetch → hydrate; see
+ * src/lit/bind.ts). The bound elements wire it themselves; these named
+ * exports serve programmatic hosts and the unit tier. */
+export {
+  parseBind,
+  isPollKind,
+  loadToken,
+  storeToken,
+  clearToken,
+  buildAuthorizeUrl,
+  consumeBindHash,
+  requestBindToken,
+  fetchBindJson,
+  hydrateFor,
+  hydrateProgress,
+  hydratePlan,
+  sanitizeMarkup,
+  renderBindState,
+  attachBind,
+  stopBind,
+  BindableElement,
+  AGENTONOMI_ORIGIN,
+  TOKEN_KEY,
+  DEFAULT_REFRESH_MS,
+} from './lit/bind.js';
 /* Data visualizer — inline data sources (spec/data-visualizer.md) */
 export { SemDataVisualizer } from './lit/sem-data-visualizer.js';
 import './lit/sem-data-visualizer.js';

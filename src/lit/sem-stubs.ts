@@ -25,7 +25,8 @@ import { SemElement } from './base.js';
  *
  * If one of these grows real behaviour, it graduates to its own
  * `sem-<name>.ts` module and out of this file (sem-reveal did exactly
- * that in the same round).
+ * that in the same round; sem-progress and sem-procedure left for the
+ * sem-bind payload intake).
  */
 
 export class SemAudiences extends SemElement {}
@@ -55,14 +56,8 @@ SemElement.register('sem-event', SemEvent);
 export class SemFact extends SemElement {}
 SemElement.register('sem-fact', SemFact);
 
-export class SemProcedure extends SemElement {}
-SemElement.register('sem-procedure', SemProcedure);
-
 export class SemProfile extends SemElement {}
 SemElement.register('sem-profile', SemProfile);
-
-export class SemProgress extends SemElement {}
-SemElement.register('sem-progress', SemProgress);
 
 export class SemProperty extends SemElement {}
 SemElement.register('sem-property', SemProperty);

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · sem-bind — live data on sem-* elements</title>
+<!-- sem:inline theme minimal-tech-light -->
+<!-- sem:inline vocabulary -->
+<style>
+  .sem-enhanced-document { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.01em; margin: 0 0 .5rem; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 2.25rem 0 .5rem; }
+  p  { margin: .6rem 0; }
+  code { font-size: .9em; }
+</style>
+<!-- sem-bind demo: one pipeline, every source. JS-off the page reads as
+     prose + the authed record; JS-on the binds fetch, poll and hydrate.
+     Served from dist/demo/ (npm run build, then npm run serve). -->
+<!-- sem:inline bundle -->
+</head>
+
+<body>
+<div class="sem-enhanced-document">
+  <h1>sem-bind — live data on sem-* elements</h1>
+  <p>One hydration pipe for every source: a plain URL — a full
+  <code>https://…</code> address or a same-origin relative path like
+  <code>./data/…</code> resolved against this page (static JSON, no
+  auth) — an <code>agent-kit/…</code> shorthand (the agentonomi status
+  routes, bearer-token auth with popup login on 401), or a direct
+  <code>payload</code> property (no server at all — demos and tests).
+  Token lives in <code>localStorage["semtext.bind.token"]</code>, per
+  origin, never a cookie.</p>
+  <p>A bound element attaches once: later <code>sem-bind</code>
+  attribute changes are ignored by the attach guard — reload the page
+  to repoint a bind.</p>
+
+  <h2>Static JSON — percent progress</h2>
+  <p><code>./data/progress-percent.json</code> → <code>{percent, comment}</code>.
+  Progress binds poll (30s default); this one is tightened to 15s via
+  <code>sem-refresh="15"</code> so the refetch is visible in devtools.</p>
+  <sem-progress sem-bind="./data/progress-percent.json" sem-refresh="15"></sem-progress>
+  <pre>{ "percent": 42, "comment": "scouting repos" }</pre>
+
+  <h2>Static JSON — step / steps progress</h2>
+  <p>The fraction form: <code>{step: 3, steps: 7, comment}</code> renders
+  the same meter at step/steps with a <code>step 3 / 7</code> caption.</p>
+  <sem-progress sem-bind="./data/progress-steps.json"></sem-progress>
+  <pre>{ "step": 3, "steps": 7, "comment": "building KV table" }</pre>
+
+  <h2>Direct payload — no server</h2>
+  <p>The inline script below assigns <code>el.payload = {...}</code>;
+  with JavaScript off these two stay empty — payload intake is a JS-on
+  surface by definition.</p>
+  <sem-progress id="payload-percent"></sem-progress>
+  <sem-progress id="payload-steps"></sem-progress>
+  <script>
+    document.getElementById('payload-percent').payload = { percent: 68, comment: 'hydrate from a property — no fetch' };
+    document.getElementById('payload-steps').payload = { step: 5, steps: 8, comment: 'same pipe, direct intake' };
+  </script>
+
+  <h2>Plan + status dictionary</h2>
+  <p><code>./data/plan-status.json</code> carries a plan body and a
+  per-step dictionary — every catalog status plus a taken fork (single
+  object) and a walked sequence (array). The fetched definition REPLACES
+  the authored steps below once it lands; with JavaScript off the
+  authored record is what reads.</p>
+  <sem-procedure id="plan-bound" kind="runbook" sem-bind="./data/plan-status.json">
+    <sem-step id="s1" status="done">authored placeholder — replaced by the fetched plan</sem-step>
+    <sem-step id="s2">authored placeholder</sem-step>
+  </sem-procedure>
+
+  <h2>Plan from a KV definition — the agentonomi {definition, status} shape</h2>
+  <p><code>./data/plan-definition.json</code> carries no <code>plan</code>
+  markup at all — just a <code>definition</code> object whose
+  <code>steps</code> array (strings or <code>{id|key, label|title}</code>)
+  plus the per-step <code>status</code> dictionary. This is exactly what
+  <code>GET /status/…/plan/{id}</code> returns from a fully KV-defined
+  record. The element below has no authored children, so hydration
+  generates the step list from the definition and the dictionary
+  annotates it like any authored record; authored children would win if
+  present. With JavaScript off this one stays empty — the definition
+  only exists in the fixture.</p>
+  <sem-plan sem-bind="./data/plan-definition.json"></sem-plan>
+  <pre>{ "definition": { "steps": [ {"id": "kv", "label": "…"}, … ] },
+  "status": { "kv": { "status": "complete", "comment": "…" }, … } }</pre>
+
+  <h2>agent-kit shorthand — a live record</h2>
+  <p><code>agent-kit/{org}/proj/{project}/{kind}/{id}</code> resolves to
+  <code>https://agentonomi.com/status/…</code>. This bind points at a
+  seeded demo row (<code>the-robot-lives/proj/infrastructure</code>,
+  progress <code>demo-1</code>): on 401 the login popup opens, and with a
+  token stored under <code>semtext.bind.token</code> it hydrates from
+  production and polls every 30s.</p>
+  <sem-progress sem-bind="agent-kit/the-robot-lives/proj/infrastructure/progress/demo-1"></sem-progress>
+
+  <h2>Deliberate error states</h2>
+  <p>This bind points at an org that does not exist. With no session it
+  renders the auth-pending line while the login flow runs; once a token
+  is stored the missing org answers 404 and the element settles into the
+  bind error state — on purpose:</p>
+  <sem-progress sem-bind="agent-kit/demo-org/proj/semtext/progress/demo-1"></sem-progress>
+  <p>A bind value that resolves to nothing — here a
+  <code>javascript:</code> URL, rejected by the scheme guard — renders
+  the unparseable-bind error without fetching:</p>
+  <sem-progress sem-bind="javascript:alert(1)"></sem-progress>
+  <p>A bound element never sits blank and silent.</p>
+
+  <h2>Auth flow</h2>
+  <p>On a 401 from any host the runtime opens
+  <code>https://agentonomi.com/embed/authorize?redirect_uri=…&amp;state=…</code>
+  in a popup; the embed posts
+  <code>{type: "semtext-bind-token", access_token, expires_in, state}</code>
+  back and closes. Popup blocked → full-page redirect; the token returns
+  in the <code>#access_token=…</code> fragment and is verified, stored and
+  stripped on the next load.</p>
+</div>
+</body>
+</html>
