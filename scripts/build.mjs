@@ -127,7 +127,11 @@ const targets = [
     // the single bundle; measured 153.5 raw / 47.7 gzipped on main 9863d23
     // — the first train to cross the 152 line, failing --strict-budget on
     // main CI). Recorded in ROADMAP "Size budgets".
-    budgetKb: 154,
+    // 154 → 165 KB (2026-10-18, sem-bind port from semtext.dev #182/#184:
+    // the live-data runtime + the hydrated sem-progress / sem-procedure
+    // intake joined the single bundle; measured 164.5 raw / 51.2 gzipped).
+    // Recorded in ROADMAP "Size budgets".
+    budgetKb: 165,
     required: true,
   },
   {
