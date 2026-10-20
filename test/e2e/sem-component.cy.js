@@ -12,8 +12,16 @@ describe('sem-component', () => {
     cy.get('#c-waitlist .sem-component-head').should('exist');
     cy.get('#c-waitlist .sem-component-head').children().first().should('have.text', 'noizu-waitlist');
     cy.get('#c-waitlist .sem-component-status').should('have.text', 'live').and('have.attr', 'data-status', 'live');
-    // authored children sit between head and meta, untouched
-    cy.get('#c-waitlist .sem-component-head').next().should('contain', 'Lightweight waitlist form');
+    // authored children sit between head and meta as bare nodes, untouched
+    cy.get('#c-waitlist').should(($c) => {
+      const kids = [...$c[0].childNodes];
+      const at = (n) => kids.findIndex((x) => x.nodeType === 1 && x.classList.contains(n));
+      const head = at('sem-component-head');
+      const meta = at('sem-component-meta');
+      expect(head, 'head chrome precedes meta').to.be.lessThan(meta);
+      const between = kids.slice(head + 1, meta).map((x) => x.textContent || '').join('');
+      expect(between).to.contain('Lightweight waitlist form');
+    });
   });
 
   it('renders meta chrome with type, source and labels', () => {

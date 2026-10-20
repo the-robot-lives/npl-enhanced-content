@@ -455,10 +455,22 @@ export function validateSource(source, schema, { filename = '<input>' } = {}) {
   for (const a of doc.querySelectorAll('a[href^="#"]')) {
     drift(a.getAttribute('href'), lines.get(a), 'link');
   }
+  const cardTags = new Set(
+    [...doc.querySelectorAll('sem-component[tag], .sem-component[data-sem-component-tag]')].map((el) =>
+      (el.getAttribute('tag') || el.getAttribute('data-sem-component-tag') || '').toLowerCase()
+    )
+  );
   for (const el of doc.querySelectorAll('sem-see-also, .sem-see-also')) {
     const kind = (el.getAttribute('reference') || el.getAttribute('data-reference') || 'section').toLowerCase();
-    if (kind === 'file') continue; // files resolve outside the document
     const target = (el.getAttribute('target') || el.getAttribute('data-target') || '').trim();
+    if (!target) continue;
+    if (kind === 'file') continue; // files resolve outside the document
+    if (kind === 'component') {
+      // a component reference resolves by card tag OR by id
+      if (cardTags.has(target.toLowerCase())) continue;
+      drift(target, lines.get(el), `<sem-see-also reference="component">`);
+      continue;
+    }
     drift(target, lines.get(el), `<sem-see-also reference="${kind}">`);
   }
 

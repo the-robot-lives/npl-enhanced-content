@@ -14,7 +14,8 @@ describe('sem-see-also hover preview', () => {
     cy.get('.sem-popover').should('be.visible');
     cy.get('.sem-popover').should('contain', 'Inventory');
     cy.get('#sa-inventory .sem-see-also-link').trigger('mouseleave');
-    cy.get('.sem-popover', { timeout: 6000 }).should('not.exist');
+    // hide() marks the shared box hidden (200ms grace) — the node persists
+    cy.get('.sem-popover', { timeout: 6000 }).should('not.be.visible');
   });
 
   it('previews a component target with the card summary', () => {

@@ -10,6 +10,7 @@ describe('sem-see-also modal', () => {
   it('opens a dialog with a clone of the target section', () => {
     cy.visit('/demo/component-cards.html');
     cy.get('#sa-inventory .sem-see-also-link').click();
+    cy.get('.sem-see-also-modal').should('have.descendants', '.sem-see-also-modal-panel');
     cy.get('.sem-see-also-modal-panel').should('have.attr', 'role', 'dialog');
     cy.get('.sem-see-also-modal-panel').should('have.attr', 'aria-modal', 'true');
     cy.get('.sem-see-also-modal-content h2#inventory').should('not.exist'); // ids stripped
@@ -17,7 +18,7 @@ describe('sem-see-also modal', () => {
     // the original document is untouched
     cy.get('#inventory').should('exist');
     cy.get('body').type('{esc}');
-    cy.get('.sem-see-also-modal-backdrop').should('not.exist');
+    cy.get('.sem-see-also-modal').should('not.exist');
   });
 
   it('Escape closes and focus returns to the link', () => {
@@ -25,7 +26,7 @@ describe('sem-see-also modal', () => {
     cy.get('#sa-waitlist .sem-see-also-link').click();
     cy.get('.sem-see-also-modal-panel').should('exist');
     cy.get('body').type('{esc}');
-    cy.get('.sem-see-also-modal-backdrop').should('not.exist');
+    cy.get('.sem-see-also-modal').should('not.exist');
     cy.focused().should('have.class', 'sem-see-also-link');
   });
 

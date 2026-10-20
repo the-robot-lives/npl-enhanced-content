@@ -13,11 +13,14 @@ export class SemSeeAlso extends SemElement {
 
   updated(): void {
     if (this.#wired) return;
-    if (this.querySelector(':scope > *')) {
-      void this.whenChildrenReady(':scope > *').then(() => this.#enhance());
-    } else {
-      this.#enhance();
-    }
+    // Defer to after-parse (the sem-component pattern). The element
+    // upgrades mid-parse — before the authored label (usually a bare TEXT
+    // node) exists — and enhancing then minted an empty label clone
+    // (0-width link, dead hover/click). whenChildrenReady is wrong here:
+    // its `:scope > *` matches only ELEMENT children, so a text-only label
+    // never resolves it. afterParse waits for DOMContentLoaded while the
+    // document is loading and runs immediately once parsed.
+    this.afterParse('sem-see-also-wire', () => this.#enhance());
   }
 
   #enhance(): void {
