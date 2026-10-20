@@ -33,7 +33,7 @@ import { enhanceViews } from './views.js';
 import { enhanceReveal } from './reveal.js';
 import { enhanceProgress } from './progress.js';
 import { enhanceAudience } from './audience.js';
-import { enhanceTarget } from './target.js';
+import { enhanceTarget, settleTarget } from './target.js';
 
 export type VanillaHandler = (scope: ParentNode) => void;
 
@@ -78,5 +78,6 @@ export {
   enhanceProgress,
   enhanceAudience,
   enhanceTarget,
+  settleTarget,
 };
 export { wireFactsDeck } from './facts-deck.js';

@@ -102,12 +102,41 @@ function run(): void {
 // re-scan calls back into the document scope.
 let wired = false;
 
+/** The initial resolution must land only once the enhancement passes have
+ * stopped moving the document. A bare `setTimeout(run, 0)` fires after one
+ * macrotask — while a slow-loading page is still mid-parse, BEFORE the
+ * reveal/deck/note passes have wrapped the target (no `<details>` yet, deck
+ * not upgraded), and the `wired` latch then blocks the DOMContentLoaded
+ * init from ever retrying: the deep link was silently lost (0.9.1
+ * regression — `#hash` on a slow page opened nothing). Instead the passes
+ * call `settleTarget()` when they finish; the run is re-armed until the
+ * structure quiets, then resolves against the finished document. */
+let settleTimer = 0;
+
+function runWhenSettled(): void {
+  window.clearTimeout(settleTimer);
+  settleTimer = window.setTimeout(() => {
+    if (document.readyState === 'loading') {
+      runWhenSettled(); // passes are still mid-parse — let them finish
+      return;
+    }
+    run();
+  }, 60); // just past the re-scan's 50ms debounce
+}
+
+/** Called by the enhancement passes (init + every re-scan) after their
+ * structural work so initial resolution lands on the settled document. */
+export function settleTarget(): void {
+  if (!wired) return; // not armed yet — enhanceTarget schedules the first pass
+  runWhenSettled();
+}
+
 export function enhanceTarget(scope: ParentNode): void {
   if (scope !== document) return; // hash state is per document, not per scope
   if (wired) return;
   wired = true;
   window.addEventListener('hashchange', run);
-  window.setTimeout(run, 0);
+  runWhenSettled();
 
   let opened: Element[] = [];
   window.addEventListener('beforeprint', () => {
