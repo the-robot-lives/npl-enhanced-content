@@ -74,7 +74,7 @@ guardrail discipline they document.
 
 | Artifact | Budget | Measured (2026-10-13) |
 |---|---|---|
-| `semtext.js` (one bundle) | **165 KB** (raised from 126 — user decision 2026-10-14; 144 → 145 after family A containers, 2026-10-18; 145 → 152 after the interactive containers joined the single bundle the same day; 152 → 154 after the 0.9.1–0.9.3 trains, same day; 154 → 165 for the sem-bind port from semtext.dev #182/#184, same day) | 164.5 raw / 51.2 gzipped with the sem-bind runtime in the bundle |
+| `semtext.js` (one bundle) | **173 KB** (raised from 126 — user decision 2026-10-14; 144 → 145 after family A containers, 2026-10-18; 145 → 152 after the interactive containers joined the single bundle the same day; 152 → 154 after the 0.9.1–0.9.3 trains, same day; 154 → 165 for the sem-bind port from semtext.dev #182/#184, same day; 165 → 172 for the 0.9.5 modal-shell factoring + sem-component / sem-see-also, 2026-10-21; 172 → 173 when the Oct-18 baseline CI fixes (#87) merged into the same bundle, 2026-10-21) | 172.1 raw / 53.2 gzipped with the component-eval element 9 pair in the bundle |
 | `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
 | `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
 | `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
@@ -157,6 +157,15 @@ progress re-scan guard, reveal/details wiring), the Phase 7 vocabulary, and
 the 0.9.3 features all ride the single bundle. Measured 153.5 raw / 47.7
 gzipped on main 9863d23, failing `--strict-budget` on main CI; raised with
 history per the established convention rather than trimming feature code.
+
+Core bundle budget (2026-10-21) raised `semtext.js` 165 → 172 KB raw: 0.9.5
+factors the modal viewer's shell into a shared modal module
+(`src/shared/modal.ts`, the data-visualizer modal keeps its public API) and
+lands the component-inventory pair — `sem-component` (the
+component-registry card, spec/schema/sem-component.md) and `sem-see-also`
+(the related-reference affordance with popover preview, modal and the
+`#ref=` deep link, spec/schema/sem-see-also.md). Measured 171.2 raw /
+52.9 gzipped on that base.
 
 
 ## History (recorded decisions — preserved)

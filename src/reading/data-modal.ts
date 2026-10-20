@@ -19,6 +19,7 @@
 
 import { param } from '../shared/attr.js';
 import { canCopy, copyText } from '../shared/clipboard.js';
+import { closeModalShell, modalShellOpenFor, openModalShell } from '../shared/modal.js';
 import { setParam } from '../shared/state.js';
 import { parseViews, resolveView, visibleColumns } from '../data/table.js';
 import { activeViewName, parseDataDeepLink } from '../data/deeplink.js';
@@ -33,93 +34,35 @@ const SOURCE = 'sem-data-source, .sem-data-source';
 
 const MODAL_FLAG = 'data-sem-modal-open';
 
-interface ModalState {
-  container: Element;
-  backdrop: HTMLElement;
-  restoreFocus: HTMLElement | null;
-  onKey: (e: KeyboardEvent) => void;
-}
-
-let openState: ModalState | null = null;
 /** A deep link opens the modal at most once per page load. */
 let openedByLink = false;
 
 export function modalOpenFor(container: Element): boolean {
-  return container.hasAttribute(MODAL_FLAG);
+  return modalShellOpenFor(container, MODAL_FLAG);
 }
 
-function focusables(panel: HTMLElement): HTMLElement[] {
-  return Array.from(
-    panel.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], textarea, input, select, [tabindex]:not([tabindex="-1"])',
-    ),
-  );
-}
-
-/** Open the full-page modal: teleport the container's children into it. */
+/**
+ * Open the full-page modal: teleport the container's children into it.
+ * The dialog semantics (backdrop, panel, close button, Escape, focus
+ * trap, teleport/restore) live in shared/modal.ts since 0.9.5 — the
+ * visualizer names its historical `sem-data-modal*` classes and resets
+ * its own Expand chrome on close.
+ */
 export function openDataModal(container: Element): void {
-  if (openState) closeDataModal();
-  const backdrop = document.createElement('div');
-  backdrop.className = 'sem-data-modal';
-  const panel = document.createElement('div');
-  panel.className = 'sem-data-modal-panel';
-  panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-modal', 'true');
-  panel.setAttribute('aria-label', 'Expanded data' + (container.id ? ' — ' + container.id : ''));
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.className = 'sem-data-modal-close';
-  close.textContent = 'Close';
-  panel.appendChild(close);
-  const content = document.createElement('div');
-  content.className = 'sem-data-modal-content';
-  panel.appendChild(content);
-  backdrop.appendChild(panel);
-  document.body.appendChild(backdrop);
-
-  const restoreFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  Array.from(container.childNodes).forEach((node) => content.appendChild(node));
-  container.setAttribute(MODAL_FLAG, '');
-
-  const onKey = (e: KeyboardEvent): void => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      closeDataModal();
-      return;
-    }
-    if (e.key !== 'Tab') return;
-    const items = focusables(panel);
-    if (!items.length) return;
-    const first = items[0];
-    const last = items[items.length - 1];
-    const active = document.activeElement;
-    if (e.shiftKey && (active === first || !panel.contains(active))) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && active === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  };
-  document.addEventListener('keydown', onKey, true);
-  close.addEventListener('click', closeDataModal);
-  close.focus();
-
-  openState = { container, backdrop, restoreFocus, onKey };
+  openModalShell(container, {
+    label: 'Expanded data' + (container.id ? ' — ' + container.id : ''),
+    backdropClass: 'sem-data-modal',
+    panelClass: 'sem-data-modal-panel',
+    closeClass: 'sem-data-modal-close',
+    contentClass: 'sem-data-modal-content',
+    flagAttr: MODAL_FLAG,
+    onClose: (c) => c.querySelectorAll('.sem-data-expand').forEach((b) => b.setAttribute('aria-expanded', 'false')),
+  });
 }
 
 /** Close the modal: restore the children in order, hand focus back. */
 export function closeDataModal(): void {
-  if (!openState) return;
-  const { container, backdrop, restoreFocus, onKey } = openState;
-  openState = null;
-  document.removeEventListener('keydown', onKey, true);
-  const content = backdrop.querySelector('.sem-data-modal-content');
-  if (content) Array.from(content.childNodes).forEach((node) => container.appendChild(node));
-  container.removeAttribute(MODAL_FLAG);
-  backdrop.remove();
-  container.querySelectorAll('.sem-data-expand').forEach((b) => b.setAttribute('aria-expanded', 'false'));
-  restoreFocus?.focus();
+  closeModalShell({ flagAttr: MODAL_FLAG });
 }
 
 /* ------------------------------------------------------------ tools row */

@@ -49,7 +49,7 @@ listed with its full entry in [SS5](#5-element-entries).
 | **Sequences & progress** | `sem-chronology` / `sem-event`, `sem-procedure` / `sem-step`, `sem-progress` | Ordered, status-annotated content -- timelines, procedures and completion meters |
 | **Interactive containers** | `sem-workflow` / `sem-step`, `sem-site-tree` / `node`, `sem-file-tree` / `node` | Steps with gate/check/if-no branches, and site/file trees (structured or text-authored) with collapse, filter and find |
 | **Agent-kit records** | `agent-kit-issue` / `-epic` / `-bug` / `-user-story` / `-task` / `-sub-task`, `agent-kit-ticket-ref`, `agent-kit-user-persona` / `agent-kit-agent-persona`, `agent-kit-acceptance-criteria` / `agent-kit-criterion`, `agent-kit-custom-assert`, `agent-kit-board`, `agent-kit-organization` / `agent-kit-project`, `agent-kit-chatroom`, `agent-kit-asset` / `agent-kit-artifact` / `agent-kit-review`, `agent-kit-test-suite` / `agent-kit-test-case` / `agent-kit-cypress` / `agent-kit-cucumber` | Project-tracking records over cached snapshots -- tickets, personas, criteria, boards, chat logs, media and test results; `livePolicy: never`, JS-off == JS-on |
-| **Definitions & citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference`, `sem-tag-def` / `sem-tag-attr`, `sem-api-call` / `sem-api-param` | Closed key/value assertions, the numbered works the prose cites, and the reference-definition cards that document a vocabulary's tags and an API's endpoints |
+| **Definitions & citations** | `sem-properties` / `sem-property`, `sem-references` / `sem-reference`, `sem-tag-def` / `sem-tag-attr`, `sem-api-call` / `sem-api-param`, `sem-component`, `sem-see-also` | Closed key/value assertions, the numbered works the prose cites, the reference-definition cards that document a vocabulary's tags and an API's endpoints, and the related-reference affordances (component-inventory cards, see-also links with preview/modal) |
 | **NPL** | `npl-agent`, `npl-directive`, `npl-section`, `npl-rubric`, `npl-critique`, `npl-declaration`, `npl-example`, `npl-flag` / `npl-flags`, `npl-hormones`, `npl-mindread`, `npl-mode`, `npl-mood`, `npl-poa`, `npl-ref`, `npl-thought`, `npl-vos`, `npl-artifact`, `npl-cot`, `npl-intent` | NPL prompt-engineering elements; loaded by `npl.js` / `npl-lazy.js` on top of the SemText core |
 
 Every element's normative schema lives under `spec/schema/<element>.md`
@@ -457,6 +457,19 @@ vocabulary tag's or an API endpoint's contract, authored once, rendered
 as a card (native table) for readers and extracted as one structured
 record for machines.
 **Normative: `spec/schema/sem-tag-def.md`, `spec/schema/sem-api-call.md`.**
+
+**sem-component** -- a component-inventory card: one entry of a
+component registry (tag, name, source, type, status, labels -- the
+`components/manifest.yaml` vocabulary) with the description as authored
+children. Cards read like any record: graders build the inventory from
+the attributes, readers get a card with head and meta chrome.
+**Normative: `spec/schema/sem-component.md`.**
+
+**sem-see-also** -- a related-reference affordance: one related target
+(section, component card, or file) rendered as a link with a hover
+preview, a click-to-modal clone, and a View-all-in-a-new-tab escape
+hatch. Deep link `#ref=<id>` opens a named see-also's modal directly.
+**Normative: `spec/schema/sem-see-also.md`.**
 
 **sem-reveal** -- Q-A disclosure, hidden until the reader acts.
 **Normative: `spec/schema/sem-reveal.md`.**
@@ -940,6 +953,8 @@ exception: `<incorrect-statement>`'s class form is the unprefixed
 | `<sem-chronology view-as>` / `<sem-event when until status>` | `div.sem-chronology[data-view-as]` > `div.sem-event[data-when][data-until][data-status]` (+ `<time datetime>`) |
 | `<sem-code lang filename mark wrap controls>` > `<pre><code>` | `div.sem-code[data-lang][data-filename][data-mark][data-controls]` > `<pre><code>` |
 | `<sem-references kind>` / `<sem-reference id href cite>` | `div.sem-references[data-kind]` > `div.sem-reference[id][data-href][data-cite]`; citations are plain `<a href="#id">` |
+| `<sem-component tag name source type status labels>` | `div.sem-component[data-sem-component-tag][role=article]`; head `.sem-component-head` + meta `.sem-component-meta` chrome (script tier) |
+| `<sem-see-also reference target preview insert-as href>` | `div.sem-see-also[data-insert-as]` > `.sem-see-also-link` + `.sem-see-also-view` chrome (script tier); authored children stay as the JS-off label |
 | `<sem-source label view-as="html\|source">` > any content | `div.sem-source[data-label][data-view-as]` > any content; transparent wrapper, mints nothing |
 | `<sem-reader controls outline-depth>` > optional `<nav aria-label="Contents">` | `div.sem-reader[data-controls][data-outline-depth]` > same optional nav; chrome, mints nothing |
 | `<sem-md label view-as="rendered\|raw" controls>` > Markdown text | `div.sem-md[data-label][data-view-as][data-controls]` > Markdown text |

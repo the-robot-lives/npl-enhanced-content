@@ -15,7 +15,12 @@
         "description": "Exactly one per document when the document uses the SemText vocabulary; plain HTML without vocabulary is not a SemText document (conventions.md §1).",
         "requiredWhenVocabularyPresent": true
       },
-      "tierMarkers": {
+      "idDrift": {
+      "severity": "warning",
+      "description": "Authored in-document fragment references (a[href^='#'], sem-see-also section/component targets) must resolve to an id in the same document. Deep-link grammar examples (values containing '=' or '&') and the listed demo hrefs are exempt.",
+      "skipHrefs": ["#sem-audience=operator", "#x-deploy/argocd"]
+    },
+    "tierMarkers": {
         "attributes": [
           "data-sem-upgraded"
         ],
@@ -318,6 +323,62 @@
           "values": [
             "margin"
           ]
+        }
+      }
+    },
+    "sem-component": {
+      "source": "spec/schema/sem-component.md",
+      "record": true,
+      "extends": "container",
+      "attributes": {
+        "tag": {
+          "type": "token",
+          "required": true
+        },
+        "name": {
+          "type": "text"
+        },
+        "source": {
+          "type": "text"
+        },
+        "type": {
+          "type": "text"
+        },
+        "status": {
+          "type": "token",
+          "values": ["planned", "wip", "live", "deprecated"],
+          "default": null
+        },
+        "labels": {
+          "type": "flaglist"
+        }
+      }
+    },
+    "sem-see-also": {
+      "source": "spec/schema/sem-see-also.md",
+      "record": true,
+      "attributes": {
+        "reference": {
+          "type": "token",
+          "values": ["section", "component", "file"],
+          "default": "section"
+        },
+        "target": {
+          "type": "text",
+          "required": true
+        },
+        "preview": {
+          "type": "token",
+          "values": ["tldr", "file"],
+          "default": "tldr"
+        },
+        "insert-as": {
+          "type": "token",
+          "values": ["link", "inline"],
+          "default": "link"
+        },
+        "href": {
+          "type": "text"
         }
       }
     },

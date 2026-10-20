@@ -21,6 +21,7 @@ import { READER, enhanceReaderElement, disposeReaderElement } from './reader.js'
 import { TABLE, enhanceTableElement } from './table.js';
 import { SOURCE, enhanceSourceElement } from './source.js';
 import { DATA_SOURCE, DATA_VISUALIZER, enhanceDataVisualizerElement } from './data.js';
+import { SEE_ALSO, applySeeAlsoDeepLink, enhanceSeeAlsoElement } from './see-also.js';
 
 const upgraded = (el: Element): boolean => el.hasAttribute('data-sem-upgraded');
 
@@ -73,6 +74,16 @@ export function enhanceData(scope: ParentNode): void {
   });
 }
 
+/** see-also — previews/modal/deep-link wiring (runs before the reader). */
+export function enhanceSeeAlso(scope: ParentNode): void {
+  scope.querySelectorAll(SEE_ALSO).forEach((el) => {
+    if (upgraded(el)) return;
+    enhanceSeeAlsoElement(el);
+    el.setAttribute('data-sem-upgraded', '');
+  });
+  if (scope === document) applySeeAlsoDeepLink();
+}
+
 /** The reader runs LAST: its outline reads the headings other handlers leave alone. */
 export function enhanceReader(scope: ParentNode): void {
   scope.querySelectorAll(READER).forEach((el) => {
@@ -82,7 +93,7 @@ export function enhanceReader(scope: ParentNode): void {
   });
 }
 
-export const handlers = [enhanceCode, enhanceReferences, enhanceGlossary, enhanceTable, enhanceData, enhanceSource, enhanceReader];
+export const handlers = [enhanceCode, enhanceReferences, enhanceGlossary, enhanceTable, enhanceData, enhanceSeeAlso, enhanceSource, enhanceReader];
 
 /** Run every reading handler over a scope. */
 export function enhance(scope: ParentNode = document): void {
@@ -90,4 +101,4 @@ export function enhance(scope: ParentNode = document): void {
   for (const handler of handlers) handler(scope);
 }
 
-export { enhanceCodeElement, enhanceReferencesElement, enhanceGlossaryElement, enhanceTableElement, enhanceDataVisualizerElement, enhanceSourceElement, enhanceReaderElement, disposeReaderElement };
+export { enhanceCodeElement, enhanceReferencesElement, enhanceGlossaryElement, enhanceTableElement, enhanceDataVisualizerElement, enhanceSeeAlsoElement, enhanceSourceElement, enhanceReaderElement, disposeReaderElement };

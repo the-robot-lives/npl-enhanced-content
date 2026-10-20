@@ -65,6 +65,12 @@ export { SemDetails } from './lit/sem-details.js';
 import './lit/sem-details.js';
 export { SemReveal } from './lit/sem-reveal.js';
 import './lit/sem-reveal.js';
+/* component inventory + related references (spec/schema/sem-component.md,
+ * sem-see-also.md, 0.9.5) */
+export { SemComponent } from './lit/sem-component.js';
+import './lit/sem-component.js';
+export { SemSeeAlso } from './lit/sem-see-also.js';
+import './lit/sem-see-also.js';
 /* reference-definition cards (spec/schema/sem-tag-def.md, sem-api-call.md) */
 export { SemTagDef } from './lit/sem-tag-def.js';
 import './lit/sem-tag-def.js';
@@ -268,6 +274,9 @@ export {
   disposeReaderElement,
 } from './reading/index.js';
 export { enhanceCore, enhanceMdScan as enhanceMdDocument, enhanceReading };
+/* see-also deep link + modal shell — programmatic hosts and the unit tier */
+export { enhanceSeeAlsoElement, resetSeeAlsoLatch } from './reading/see-also.js';
+export { openModalShell, closeModalShell, modalShellOpenFor } from './shared/modal.js';
 
 function init(): void {
   // Load-bearing order: the core's sem-source snapshot pass must precede
