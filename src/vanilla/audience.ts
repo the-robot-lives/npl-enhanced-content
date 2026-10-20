@@ -25,6 +25,12 @@ const WRAPPER = 'sem-enhanced-document, .sem-enhanced-document';
 const wiredScopes = new WeakSet<ParentNode>();
 let documentWired = false;
 
+// The authored default on <html>, latched at the first document-scope call.
+// <html> is parsed before any bundle code runs, so the latch is safe; the
+// attribute must NOT be re-read later — after the first apply it holds the
+// resolved profile, not the default.
+let htmlAuthored: string | null | undefined;
+
 export function enhanceAudience(scope: ParentNode): void {
   const html = document.documentElement;
   // A pane-scoped call (a host embedding examples) reads the profile block
@@ -40,17 +46,25 @@ export function enhanceAudience(scope: ParentNode): void {
   const wrapper = isDocument
     ? document.querySelector(WRAPPER)
     : (scope.querySelector(WRAPPER) ?? document.querySelector(WRAPPER));
-  // The author's default, captured once: after the first apply, the html
-  // attribute holds the resolved profile, not the default.
-  const authored =
-    (wrapper && (wrapper.getAttribute('data-audience') || wrapper.getAttribute('audience'))) ||
-    html.getAttribute('data-audience');
-  const closure = closureFor(root);
+  if (isDocument && htmlAuthored === undefined) htmlAuthored = html.getAttribute('data-audience');
 
   const apply = (): void => {
+    // Everything this reads must be derived AT APPLICATION TIME. The wired
+    // hashchange listener may have been installed by the first pass call,
+    // which on a slow-loading page runs mid-parse — BEFORE the audience
+    // block has been parsed (0.9.1 regression: a demo carries it after the
+    // bundle script). A closure snapshotted then is empty forever, so every
+    // later profile application failed open (unknown token → visible) and a
+    // hash switch never re-gated anything. The wrapper's authored default is
+    // a static content attribute — safe to re-read; the html one is our own
+    // write target — hence the latch above.
+    const authored =
+      (wrapper && (wrapper.getAttribute('data-audience') || wrapper.getAttribute('audience'))) ||
+      (isDocument ? htmlAuthored : html.getAttribute('data-audience'));
     const active = getParam('sem-audience') || authored || null;
     if (active) html.setAttribute('data-audience', active);
     else html.removeAttribute('data-audience');
+    const closure = closureFor(root);
     scope.querySelectorAll<HTMLElement>('[data-audience], [audience]').forEach((el) => {
       if (el === html || el === wrapper) return; // default markers, not restrictions
       const spec = el.getAttribute('data-audience') ?? el.getAttribute('audience');
