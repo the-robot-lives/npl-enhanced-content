@@ -136,7 +136,12 @@ const targets = [
     // component-inventory pair, element 9 of the component-eval platform)
     // joined the single bundle; measured 171.2 raw / 52.9 gzipped).
     // Recorded in ROADMAP "Size budgets".
-    budgetKb: 172,
+    // 172 → 173 KB (2026-10-21, same train: the Oct-18 baseline CI fixes
+    // (#87 — deep-link settle + audience apply-time derivation) merged in
+    // via update-branch added ~0.9 KB on top of the feature's 171.2;
+    // measured 172.1 raw / 53.2 gzipped — 0.1 over the 172 line, failing
+    // --strict-budget on the PR). Recorded in ROADMAP "Size budgets".
+    budgetKb: 173,
     required: true,
   },
   {
