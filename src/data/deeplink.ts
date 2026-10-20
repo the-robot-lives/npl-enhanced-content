@@ -11,6 +11,8 @@
  *   #dv=<visualizer-id>&view=<name>     container-scoped state
  *   #dv=<id>&q=<encoded>                the edited default query (DV-Q5)
  *   &modal=1                            minted from the modal — reopen it
+ *   #ref=<see-also-id>                  open the sem-see-also modal named by
+ *                                       the id (0.9.5, spec/schema/sem-see-also.md)
  */
 
 import { visibleColumns, type ViewSpec } from './table.js';
@@ -24,11 +26,13 @@ export interface DataDeepLink {
   view: string | null;
   /** Edited default query text, percent-encoded in the hash. */
   q: string | null;
+  /** sem-see-also element id whose preview modal should open. */
+  ref: string | null;
   /** Open the modal after applying the rest. */
   modal: boolean;
 }
 
-const KEYS = new Set(['dv', 'bucket', 'view', 'q']);
+const KEYS = new Set(['dv', 'bucket', 'view', 'q', 'ref']);
 
 function decode(value: string): string {
   try {
@@ -41,7 +45,7 @@ function decode(value: string): string {
 /** Parse the data-viz segments out of a hash. Null when none are present. */
 export function parseDataDeepLink(hash: string): DataDeepLink | null {
   const raw = hash.startsWith('#') ? hash.slice(1) : hash;
-  const link: DataDeepLink = { dv: null, bucket: null, view: null, q: null, modal: false };
+  const link: DataDeepLink = { dv: null, bucket: null, view: null, q: null, ref: null, modal: false };
   let any = false;
   for (const segment of raw.split('&')) {
     if (segment === '') continue;
@@ -56,7 +60,7 @@ export function parseDataDeepLink(hash: string): DataDeepLink | null {
     if (eq < 0 || !KEYS.has(name)) continue;
     const value = decode(segment.slice(eq + 1));
     if (value === '') continue;
-    link[name as 'dv' | 'bucket' | 'view' | 'q'] = value;
+    link[name as 'dv' | 'bucket' | 'view' | 'q' | 'ref'] = value;
     any = true;
   }
   return any ? link : null;
@@ -69,6 +73,7 @@ export function serializeDataDeepLink(link: DataDeepLink): string {
   if (link.bucket) segments.push('bucket=' + encodeURIComponent(link.bucket));
   if (link.view) segments.push('view=' + encodeURIComponent(link.view));
   if (link.q) segments.push('q=' + encodeURIComponent(link.q));
+  if (link.ref) segments.push('ref=' + encodeURIComponent(link.ref));
   if (link.modal) segments.push('modal=1');
   return segments.join('&');
 }

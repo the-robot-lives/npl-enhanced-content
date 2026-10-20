@@ -131,7 +131,12 @@ const targets = [
     // the live-data runtime + the hydrated sem-progress / sem-procedure
     // intake joined the single bundle; measured 164.5 raw / 51.2 gzipped).
     // Recorded in ROADMAP "Size budgets".
-    budgetKb: 165,
+    // 165 → 172 KB (2026-10-21, 0.9.5: the shared modal shell factored out
+    // of the data-visualizer modal + sem-component / sem-see-also (the
+    // component-inventory pair, element 9 of the component-eval platform)
+    // joined the single bundle; measured 171.2 raw / 52.9 gzipped).
+    // Recorded in ROADMAP "Size budgets".
+    budgetKb: 172,
     required: true,
   },
   {

@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-21
+
+- **`sem-component` + `sem-see-also`: component-inventory cards and
+  related-reference entries land upstream (#86).** Component-eval
+  platform item 9. `sem-component` renders a `components/manifest.yaml`
+  entry as a card (tag/name/type/status/source/labels; authored children
+  are the description record; head prepended, meta appended, authored
+  DOM never moved). `sem-see-also` renders one related target — a
+  section id, a component tag, or a file — as a link with a shared
+  popover hover preview, a click-through into the factored shared modal
+  shell (`src/shared/modal.ts`; `data-modal.ts` now delegates to it),
+  a View-all new-tab affordance, and the `#ref=<id>` deep link alongside
+  `#dv=` (new `ref` key in `src/data/deeplink.ts`). Extraction
+  (`buildComponent`/`buildSeeAlso`), schema defs + prose contracts,
+  conventions, vocabulary CSS, `web/demo/component-cards.html` fixture,
+  e2e (`sem-component`, `sem-see-also-hover/-modal/-deep-link`) and unit
+  tests (modal-shell, data-deeplink, both elements) ride along.
+
 ## 2026-10-18
 
 - **sem-bind port: the live-data runtime + hydrated progress/procedure

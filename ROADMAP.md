@@ -158,6 +158,15 @@ the 0.9.3 features all ride the single bundle. Measured 153.5 raw / 47.7
 gzipped on main 9863d23, failing `--strict-budget` on main CI; raised with
 history per the established convention rather than trimming feature code.
 
+Core bundle budget (2026-10-21) raised `semtext.js` 165 → 172 KB raw: 0.9.5
+factors the modal viewer's shell into a shared modal module
+(`src/shared/modal.ts`, the data-visualizer modal keeps its public API) and
+lands the component-inventory pair — `sem-component` (the
+component-registry card, spec/schema/sem-component.md) and `sem-see-also`
+(the related-reference affordance with popover preview, modal and the
+`#ref=` deep link, spec/schema/sem-see-also.md). Measured 171.2 raw /
+52.9 gzipped on that base.
+
 
 ## History (recorded decisions — preserved)
 

@@ -3999,3 +3999,72 @@ agent-kit-ticket-ref[data-sem-upgraded], .agent-kit-ticket-ref[data-sem-upgraded
   font-size: 0.8em;
 }
 /* ── end agent-kit testing ── */
+
+/* phase 7 — component inventory + related references (spec/sem-component.md,
+   spec/sem-see-also.md, 0.9.5). Headless: every knob is a --sem-* variable
+   (defaults here; a page or theme may override any of them). */
+:where(html) {
+  --sem-component-gap: .55rem;
+  --sem-component-pad: .8rem 1rem;
+  --sem-component-border: var(--sem-border);
+  --sem-component-radius: 12px;
+  --sem-component-status-live: var(--sem-correct);
+  --sem-component-status-wip: var(--sem-note-warning);
+  --sem-component-status-deprecated: var(--sem-note-danger);
+  --sem-component-status-planned: var(--sem-muted);
+  --sem-see-also-accent: var(--sem-accent);
+  --sem-see-also-radius: 999px;
+}
+
+:is(sem-component, .sem-component) {
+  display: block;
+  margin: 1rem 0;
+  padding: var(--sem-component-pad);
+  border: 1px solid var(--sem-component-border);
+  border-radius: var(--sem-component-radius);
+}
+.sem-component-head { display: flex; align-items: baseline; gap: var(--sem-component-gap);
+  flex-wrap: wrap; margin-bottom: .45rem; }
+.sem-component-tag { font-family: ui-monospace, monospace; font-size: .9em; }
+.sem-component-name { font-weight: 600; }
+.sem-component-status { font-size: .78rem; font-variant-caps: all-small-caps;
+  letter-spacing: .05em; padding: .05rem .6rem; border: 1px solid var(--sem-component-border);
+  border-radius: var(--sem-see-also-radius); color: var(--sem-muted); }
+.sem-component-status[data-status="live"] { color: var(--sem-component-status-live); }
+.sem-component-status[data-status="wip"] { color: var(--sem-component-status-wip); }
+.sem-component-status[data-status="deprecated"] { color: var(--sem-component-status-deprecated); }
+.sem-component-status[data-status="planned"] { color: var(--sem-component-status-planned); }
+.sem-component-body { display: block; }
+.sem-component-meta { display: flex; align-items: baseline; gap: var(--sem-component-gap);
+  flex-wrap: wrap; margin-top: .55rem; font-size: .82rem; color: var(--sem-muted); }
+.sem-component-source { font-family: ui-monospace, monospace; font-size: .85em; }
+.sem-component-labels { display: inline-flex; gap: .35rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+.sem-component-labels li { padding: 0 .55rem; border: 1px solid var(--sem-component-border);
+  border-radius: var(--sem-see-also-radius); }
+
+:is(sem-see-also, .sem-see-also) { display: inline; }
+/* The authored children are the JS-off record; once wired they move into the
+   link's label clone, so hide the originals (glossary hide-rule pattern). */
+:is(sem-see-also, .sem-see-also)[data-sem-upgraded] > :where(:not([data-sem-chrome])) { display: none; }
+.sem-see-also-link { color: var(--sem-see-also-accent); text-decoration: underline dotted;
+  text-underline-offset: .2em; cursor: pointer; }
+.sem-see-also-link:focus-visible { outline: 2px solid var(--sem-see-also-accent); outline-offset: 2px; }
+.sem-see-also-view { font-size: .8rem; color: var(--sem-muted); margin-left: .4rem;
+  text-decoration: none; border-bottom: 1px dotted var(--sem-muted); }
+.sem-see-also-inline { display: block; margin: .5rem 0; padding: .6rem .9rem;
+  border: 1px dashed var(--sem-component-border); border-radius: var(--sem-component-radius); }
+.sem-see-also-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center;
+  justify-content: center; padding: 1.5rem; background: rgb(0 0 0 / .45); }
+.sem-see-also-modal-panel { background: var(--sem-surface); color: inherit; box-sizing: border-box;
+  border: 1px solid var(--sem-border); border-radius: 16px; width: min(48rem, 100%); max-height: 100%;
+  overflow: auto; padding: 1rem; }
+.sem-see-also-modal-close { all: unset; font: inherit; font-size: .8rem; cursor: pointer; margin-bottom: .5rem;
+  padding: .15rem .9rem; border: 1px solid var(--sem-border); border-radius: var(--sem-see-also-radius); }
+.sem-see-also-modal-close:focus-visible { outline: 2px solid var(--sem-see-also-accent); outline-offset: 2px; }
+.sem-see-also-path { font-family: ui-monospace, monospace; font-size: .85em; }
+
+@media print {
+  .sem-see-also-modal, .sem-see-also-view { display: none !important; }
+  :is(sem-see-also, .sem-see-also)[data-sem-upgraded] > :where(:not([data-sem-chrome])) { display: inline !important; }
+}
+/* ── end component inventory / see-also ── */
