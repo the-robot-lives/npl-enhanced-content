@@ -236,6 +236,7 @@ import './lit/sem-changelogs.js';
  * (the former standalone fallback bundle's code, renamed 0.9.0). */
 import {
   enhance as enhanceCore,
+  settleTarget,
   type VanillaHandler,
 } from './vanilla/index.js';
 export type { VanillaHandler } from './vanilla/index.js';
@@ -251,6 +252,7 @@ export {
   enhanceProgress,
   enhanceAudience,
   enhanceTarget,
+  settleTarget,
 } from './vanilla/index.js';
 import { enhance as enhanceMdScan } from './md/index.js';
 export { enhanceMd, enhanceMdElement, normalizeMd, parseBlocks, safeUrl } from './md/index.js';
@@ -273,6 +275,10 @@ function init(): void {
   enhanceCore(document);
   enhanceMdScan(document);
   enhanceReading(document);
+  // Passes settled — the initial deep-link resolution waits for exactly
+  // this (a mid-parse `setTimeout(run, 0)` fired before the reveal/deck
+  // passes had wrapped the target and the `wired` latch never retried).
+  settleTarget();
 }
 
 /* Late-mounted DOM (SPA islands, Hologram renders, async embeds) never
@@ -292,6 +298,7 @@ function rescan(): void {
     enhanceCore(document);
     enhanceMdScan(document);
     enhanceReading(document);
+    settleTarget(); // structure may have moved — re-arm the deep-link settle
   }, 50);
 }
 
