@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-26
+
+- docs: doc-sweep (pointers-check, layout, arch, schema, threat-model)
+
 ## 2026-10-21
 
 - **`sem-component` + `sem-see-also`: component-inventory cards and

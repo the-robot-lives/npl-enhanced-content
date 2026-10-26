@@ -7,11 +7,15 @@ shell) from the same one-command build:
 
 | Artifact | Global | Role |
 |---|---|---|
-| `dist/semtext.js` | `SemText` | The single Lit 3 IIFE. Defines the interactive custom elements (`src/lit/`), carries the vanilla handlers for everything no component defines (`src/vanilla/`, renamed from `src/fallback/` in 0.9.0), the prose-reading renderers (`src/reading/`), the Markdown renderer (`src/md/`), and the extraction recipe (`src/extract/`, exposed as `SemText.extractRecords` / `SemText.extractText`). |
+| `dist/semtext.js` | `SemText` | The single Lit 3 IIFE. Defines the interactive custom elements (`src/lit/`), carries the vanilla handlers for everything no component defines (`src/vanilla/`), the prose-reading renderers (`src/reading/`), the Markdown renderer (`src/md/`), and the extraction recipe (`src/extract/`, exposed as `SemText.extractRecords` / `SemText.extractText`). |
 | `dist/npl.js` | `NPL` | The `npl-*` namespace bundle (provider picker, mode chrome, lazy entry) — code-split chunks under `dist/npl-chunks/`. |
-| `dist/semtext-lazy.js` / `dist/npl-lazy.js` | — | Opt-in loaders that fetch their bundle + code-split `dist/chunks/` on demand. |
-| `dist/semtext-agent.js` | — | Browser build of the semtext-agent CLI core (the node CLI itself runs from `bin/semtext-agent.mjs`). |
-| `dist/semtext-js-shell.js` | `SemTextJSShell` | The js-shell evaluator bundle. |
+| `dist/semext.js` | `SemTextExt` | The `semext-*` namespace bundle (embeds, containers, component cards) — own chunk lane. |
+| `dist/agent-kit.js` | `AgentKit` | The `agent-kit-*` namespace bundle — own chunk lane. |
+| `dist/semtext-lazy.js` / `dist/npl-lazy.js` / `dist/semext-lazy.js` / `dist/agent-kit-lazy.js` | — | Opt-in loaders that fetch their bundle + code-split chunks on demand (manifests: `dist/*-manifest.json`). http(s) only — saved single files use the full bundles. |
+| `dist/semtext-agent.js` | `SemTextAgent` | Browser build of the semtext-agent CLI core (the node CLI itself runs from `bin/semtext-agent.mjs`). |
+| `dist/semtext-js-shell.js` | `SemTextShell` | The js-shell evaluator bundle (interactive terminal; opt-in tool). |
+| `dist/semtext-nano.js` | `SemTextNano` | Nano editor body, loaded on first use (opt-in tool). |
+| `dist/semtext-editor.js` | `SemTextEditor` | The editor surface: shell + controller + insert/dnd/io (opt-in tool). |
 | `dist/semtext.css` | — | The vocabulary base (built from `themes/_vocabulary.css`): every `sem-*` element gets its box before any definition; all hide rules, gated on `[data-sem-upgraded]`. |
 | `dist/themes/semtext-theme-<name>.css` | — | One file per theme, `--sem-*` tokens on `[data-sem-theme]` (built from `themes/<name>.css`). |
 
@@ -35,11 +39,14 @@ not block.
 
 | Artifact | Budget (KB minified) |
 |---|---|
-| `semtext.js` | 145 (raised from 126, 2026-10-14; 144 → 145 after family A, 2026-10-18) |
+| `semtext.js` | 173 (history: 96 → 126 → 144 → 145 → 152 → 154 → 165 → 173, 2026-10-13…21; see `scripts/build.mjs` + ROADMAP "Size budgets") |
 | `npl.js` | 52 |
+| `semext.js` | 48 |
+| `agent-kit.js` | 48 |
 | `semtext-agent.js` | 24 |
-| `semtext-js-shell.js` | 256 |
-| `semtext-lazy.js` / `npl-lazy.js` (loaders) | 8 each |
+| `semtext-js-shell.js` / `semtext-editor.js` | 256 each — **report-only** (opt-in tools, deliberately uncapped, user decision 2026-10-17) |
+| `semtext-nano.js` | 24 — report-only (same decision) |
+| `*-lazy.js` (loaders) | 8 each |
 
 The bundle is the former five artifacts merged (analysis estimate ~89.5 KB
 raw / ~30 KB gzip; measured size is printed on every build). Per-tier

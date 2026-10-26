@@ -2,17 +2,21 @@
 
 No relational persistence, KV store, or runtime config layer exists in this
 repo. The repo is **spec-first**: its primary "schema" is the markup/data
-interface contract for NPL-enhanced XHTML documents. Repo layout:
+interface contract for NPL-enhanced XHTML documents, backed by the
+machine-readable `spec/schema/semtext.schema.json` that `semtext-validate`
+reads (the validator hardcodes no parallel rule set). Repo layout:
 [PROJ-LAYOUT.md](PROJ-LAYOUT.md).
 
 | Data kind | Source | Documented here |
 |-----------|--------|-----------------|
-| Data interface schema (markup contract) | `spec/conventions.md`, `spec/schema/sem-note.md` | §1, §2 |
-| Data files (canonical spec HTML) | `spec/conventions.html`, `web/demo/index.html` | §3 |
+| Data interface schema (markup contract) | `spec/conventions.md`, `spec/schema/sem-*.md` | §1, §2 |
+| Machine-readable contract | `spec/schema/semtext.schema.json` | §1 (validator input) |
+| Data files (canonical spec HTML, fixtures, index) | `spec/conventions.html`, `web/demo/*`, `web/demo/data/*`, `elements.json` | §3 |
 | Config file schemas | `package.json`, `vite.config.ts`, `tsconfig.json`, `cypress.config.js` | §4 |
+| Agent/CLI tool contracts | `bin/semtext*.mjs`, `src/agent/` | `README.md` § agent toolkit |
 | Persistence / KV | — (none) | — |
 
-## 1. Document interface schema (conventions.md v0.5)
+## 1. Document interface schema (conventions.md v0.7)
 
 NPL-enhanced documents are XHTML readable by three consumers: browser (styled/
 interactive), LLM (structural), terminal. Canonical form: **custom elements
@@ -104,10 +108,14 @@ Change order: schema → spec → code.
 
 | Path | Purpose | Shape |
 |------|---------|-------|
-| `spec/conventions.md` | Authoring spec source of truth (v0.5 draft, tag form canonical) | Markdown, 10 sections + open questions + Appendix A (class-form alias) |
-| `spec/conventions.html` | The spec as a SemText document in the canonical tag form (dogfood) | Folder-form XHTML: linked theme + vocabulary CSS, shipped bundles by `src`, no inline CSS/JS |
+| `spec/conventions.md` | Authoring spec source of truth (v0.7 draft, tag form canonical) | Markdown, sections + open questions + Appendix A (class-form alias) |
+| `spec/conventions.html` | The spec as a SemText document in the canonical tag form (dogfood) | GENERATED from conventions.md by `scripts/gen-conventions-html.mjs` (`gen:conventions:check` gates drift) |
+| `spec/schema/semtext.schema.json` | Machine-readable element/attribute contract | JSON schema: vocabulary, per-element attribute contracts, x-semtext severities — the validator's only rule source |
+| `elements.json` | GENERATED element index (npm run build:elements-index) | Flat JSON: one record per vocabulary element |
 | `web/demo/reading-lit.html` | Reference tag-form document, both tiers | Single-file XHTML, `sem:inline` markers |
 | `web/demo/index.html` | Reference class-form alias document (v0.4 baseline) | Single-file XHTML: inlined vocabulary CSS + vanilla JS |
+| `web/demo/sem-bind.html` + `web/demo/data/*` | Live-data demo + bind payload fixtures | XHTML page + JSON/YAML/CSV payloads the bind runtime fetches |
+| `web/demo/editor.html` · `shell.html` · `semext.html` · `agent-kit.html` · … | Namespace/tool demo fixtures | XHTML pages, one surface each |
 
 ## 4. Config file schemas
 
@@ -116,17 +124,17 @@ Change order: schema → spec → code.
 | Field | Value |
 |-------|-------|
 | `type` | `module` |
-| `exports` | `./lit` → `dist/semtext.js`, `./lazy` → `dist/semtext-lazy.js`, `./npl` → `dist/npl.js`, `./npl-lazy` → `dist/npl-lazy.js`, `./agent` → `dist/semtext-agent.js`, `./themes/*` → `themes/*`. No `.` export — each artifact is a classic IIFE script that installs a global and exports nothing (D9). The retired per-tier exports (`./fallback`, `./reading`, `./extract`, `./md`) are gone as of 0.9.0. |
-| `files` | `dist`, `themes` |
-| `dependencies` | `lit ^3.3.3` |
-| `devDependencies` | `cypress ^15`, `typescript ^5.6`, `vite ^6`, `vitest ^5`, `happy-dom ^20` |
-| scripts | `build` (`scripts/build.mjs` + `scripts/build-standalone.mjs`), `build:strict` (same, budget-enforcing), `test` / `test:open` (cypress e2e), `serve` (vite preview :4173) |
+| `exports` | `./lit` → `dist/semtext.js`, `./npl` → `dist/npl.js`, `./semext` → `dist/semext.js`, `./agent-kit` → `dist/agent-kit.js`, `./lazy` / `./npl-lazy` / `./semext-lazy` / `./agent-kit-lazy` → the on-demand loaders, `./agent` → `dist/semtext-agent.js`, `./themes/*` → `themes/*`. No `.` export — each artifact is a classic IIFE script that installs a global and exports nothing (D9). The retired per-tier exports (`./fallback`, `./reading`, `./extract`, `./md`) are gone as of 0.9.0. |
+| `bin` | `semtext` → `bin/semtext.mjs`, `semtext-validate` → `bin/semtext-validate.mjs`, `semtext-agent` → `bin/semtext-agent.mjs` |
+| `files` | `dist`, `themes`, `bin`, `src/validate`, `spec/schema` |
+| `dependencies` | `lit ^3.3.3`; peer (optional) `happy-dom ^20`, `xslt-processor ^5` — CLI/validator-only runtimes |
+| scripts | `build` / `build:strict` (bundles + budgets), `test` (cypress e2e), `test:unit` (vitest), `validate` (vocabulary gate over `web/site/**` + `spec/*.html`), `refresh`, `gen:conventions` (+`:check`), `build:elements-index`, `build:prompts`, `serve` (vite preview :4173) |
 
 ### Tool configs
 
 | File | Key settings |
 |------|--------------|
-| `vite.config.ts` | Dev/preview only — the five-artifact build lives in `scripts/build.mjs` |
+| `vite.config.ts` | Dev/preview only — the multi-artifact build lives in `scripts/build.mjs` |
 | `tsconfig.json` | TypeScript compile options for vite build |
 | `cypress.config.js` | E2E spec path `test/e2e`, baseUrl pointed at the vite preview server |
 
