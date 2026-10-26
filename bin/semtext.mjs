@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// 〚📁:𓀝𓜖𓌁𓶚〛 semtext CLI :: User-facing semtext CLI: pipes first, terminal browser second; grep-style exit contract (0 ok / 1 usage/parse / 2 no matches).
 /**
  * semtext — user-facing CLI: pipes first, terminal browser second.
  *

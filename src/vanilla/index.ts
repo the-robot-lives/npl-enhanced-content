@@ -1,3 +1,4 @@
+// 〚📦:𓉈𔖒𓯮𔀈〛 vanilla handlers :: Core vanilla handlers: progressive enhancement with zero Lit dependency; ships only inside dist/semtext.js.
 /**
  * SemText — core vanilla handlers (one-bundle surface, spec v0.6).
  *

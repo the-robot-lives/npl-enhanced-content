@@ -42,6 +42,7 @@
 <sem-enhanced-document id="doc" role="main">
 
   <sem-reader id="rd" controls="outline,progress,focus,type,color,print,audience" outline-depth="4"></sem-reader>
+  <p>&lt;!-- 〚📁:𐦛𔐫𔁥𓵦〛 conventions spec :: Normative format spec and conventions for the SemText XHTML vocabulary (draft v0.7, Lit-only surface, tag form canonical). --&gt;</p>
 
   <h1>SemText -- Format Spec &amp; Conventions</h1>
   <p><strong>DRAFT v0.7 -- Lit-only surface, tag form canonical.</strong> v0.7 renames the fact child <code>&lt;sem-distractor&gt;</code> to <code>&lt;incorrect-statement&gt;</code> (breaking; no backward-compatible alias). SemText is an XHTML vocabulary of <strong>custom elements</strong>: <code>&lt;sem-enhanced-document&gt;</code>, <code>&lt;sem-note variant=&quot;tip&quot;&gt;</code>, <code>&lt;sem-facts view-as=&quot;quiz&quot;&gt;</code>, <code>&lt;sem-fact&gt;</code> with <code>&lt;statement&gt;</code> and <code>&lt;conclusion&gt;</code>, <code>&lt;sem-step status=&quot;done&quot;&gt;</code>, <code>&lt;sem-property key=&quot;...&quot;&gt;</code>. Element names say what content <em>is</em>; <strong>attributes are attributes</strong> (<code>view-as</code>, <code>status</code>, <code>key</code>, <code>kind</code>, <code>tags</code>, <code>controls</code>), never <code>data-*</code>. That is the form every example in this spec, the schemas, and the reference documents use, and the form every consumer -- theme CSS, the one script (vanilla handlers, reading and Markdown renderers, Lit components), extraction -- accepts as its first-class input.</p>

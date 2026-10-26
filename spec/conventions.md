@@ -1,3 +1,4 @@
+<!-- 〚📁:𐦛𔐫𔁥𓵦〛 conventions spec :: Normative format spec and conventions for the SemText XHTML vocabulary (draft v0.7, Lit-only surface, tag form canonical). -->
 # SemText -- Format Spec & Conventions
 
 **DRAFT v0.7 -- Lit-only surface, tag form canonical.** v0.7 renames the fact child

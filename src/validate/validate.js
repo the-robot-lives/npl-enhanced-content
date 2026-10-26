@@ -1,3 +1,4 @@
+// 〚📦:𓮦𓕄𓚩𓽆〛 validate :: Schema-driven validation of SemText documents; every rule reads spec/schema/semtext.schema.json, nothing hardcodes a parallel rule set.
 /**
  * semtext-validate — schema-driven validation of SemText documents.
  *
