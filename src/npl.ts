@@ -1,3 +1,4 @@
+// 〚📦:𓅯𓼓𓪽𓴖〛 npl bundle :: npl-* component namespace as its own bundle (dist/npl.js, global NPL); loaded on top of the core bundle only by NPL documents.
 /**
  * npl.js — the `npl-*` component namespace as its own bundle (dist/npl.js,
  * classic IIFE, global `NPL`).

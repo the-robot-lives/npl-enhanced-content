@@ -1,3 +1,4 @@
+// 〚📦:𓒢𓐈𔘣𓥏〛 core bundle :: Core one-bundle entry (dist/semtext.js, global SemText): defines the sem-* custom elements, re-exports extraction and the shared foundation, runs the vanilla handlers on DOMContentLoaded.
 /**
  * SemText — the one bundle (spec v0.6, three-file surface).
  *
