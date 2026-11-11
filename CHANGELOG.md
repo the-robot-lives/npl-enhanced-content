@@ -2,7 +2,7 @@
 
 ## 2026-11-11
 
-- **shell 1.3 — lazy packages load on first use, not at boot.**
+- **shell 1.3 — lazy packages load on first use, not at boot (#100).**
   `createLazyPackage` no longer starts the `semtext-pkg-<pkg>.js` chunk
   import at module evaluation: the first non-help invocation of a
   package command kicks it (one shared in-flight promise per package),
