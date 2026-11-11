@@ -56,7 +56,7 @@
   `web/demo/auto-id-renders.html` + e2e `sem-reference-auto-id.cy.js`;
   unit suites for slug/auto-id/numbering/renders/validator.
   `elements.json` regenerated. Bundle budget 173 → 175 KB (measured
-  174.8 raw / 54.0 gzipped, was 172.1 / 53.2).
+  174.8 raw / 54.0 gzipped, was 172.1 / 53.2). — → stage (#95), → main (#96) (main tree-identical to develop; no back-merge needed)
 - **`semtext focus` + `.sem.md` support: purpose-driven collapse lands in
   the agent toolkit and both CLIs.** New `.sem.md` parser
   (`src/agent/markdown-sections.ts`, re-exported through the agent
