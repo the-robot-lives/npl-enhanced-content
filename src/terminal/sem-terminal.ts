@@ -585,6 +585,11 @@ export class SemTerminal extends SemElement {
     }
   }
 
+  /** Whether a replayable script is attached — the replay button's state. */
+  protected get replayable(): boolean {
+    return this.#hasScript;
+  }
+
   /* ---------------------------------------------------------------- *
    * render
    * ---------------------------------------------------------------- */
