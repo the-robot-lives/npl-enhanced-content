@@ -2,6 +2,8 @@
 
 ## 2026-11-11
 
+- **shell element UX + theme batch (feature/shell-element).** Wheel/touch scroll passthrough, keyboard copy, history persistence + 5000-line cap, caret-preserving Tab completion, `run()` + `sem-shell-ready`/`sem-shell-command`, sandboxed `open`, forced-colors live swap, one `--sem-term-*` palette (4.5:1 tested), title-bar/tab/replay chrome fixes.
+
 - **shell docs reconciled with shipped code; DEFERRED.md added.** PLUGINS.md (async `run`, `app`/`tab` actions, packages + `supersede`, `vfs.attachBackend`/`vfs.storageErrors`, loader trust model + CDN policy), CORE-V2.md (status, async §6.5, lazy-chunk reality vs invariant 1, report-only budget, as-built paths), WASM-POC.md, `docs/arch/bundles.md`, ROADMAP shell size rows; new `docs/terminal/DEFERRED.md`. Docs only (feature/shell-docs).
 
 - **shell packages batch (feature/shell-packages):** lazy-load `loading <pkg>…` status line on first use (3.4); net defaults to fetch with `credentials: 'omit'` (sync XHR only as fallback, false cookie/boot comments fixed) (4.8); awk loop (1e6 iterations) and jq call-step (1e6) runaway budgets (4.9).

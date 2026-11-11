@@ -1324,23 +1324,59 @@ npl-vos, .npl-vos { display: block; }
 :is(npl-flags, .npl-flags) > .npl-flags-preset-invalid::after { content: " — unknown"; }
 /* ── end npl-flags ── */
 
+/* ── sem-term palette tokens ──
+   THE terminal palette. Canvas (render/screen-shape.ts), DOM mirror and the
+   class CSS below all read it; src/terminal/screen/palette.ts TERM_PALETTE
+   carries the same values (test/unit/terminal-palette.test.ts pins them).
+   Every colour is >= 4.5:1 on --sem-term-bg. Dark by design — the terminal
+   is a dark island inside light and dark themes alike. */
+:root, sem-terminal, sem-shell {
+  --sem-term-bg: #0f1216;
+  --sem-term-fg: #d7dee7;
+  --sem-term-muted: #9aa7b5;
+  --sem-term-accent: #7ec8a2;
+  --sem-term-chrome: #161b21;
+  --sem-term-tab-active: #222a33;
+  --sem-term-border: #2c3a37;
+  --sem-term-ansi-0: #7a8494;
+  --sem-term-ansi-1: #e5534e;
+  --sem-term-ansi-2: #7dc475;
+  --sem-term-ansi-3: #ddb267;
+  --sem-term-ansi-4: #61afef;
+  --sem-term-ansi-5: #c678dd;
+  --sem-term-ansi-6: #56b6c2;
+  --sem-term-ansi-7: #abb2bf;
+  --sem-term-ansi-8: #8b94a3;
+  --sem-term-ansi-9: #f06c74;
+  --sem-term-ansi-10: #98c379;
+  --sem-term-ansi-11: #e5c07b;
+  --sem-term-ansi-12: #61afef;
+  --sem-term-ansi-13: #c678dd;
+  --sem-term-ansi-14: #56b6c2;
+  --sem-term-ansi-15: #d7dee7;
+}
+/* ── end sem-term palette tokens ── */
 /* sem-shell / sem-terminal — the interactive shell (light DOM: this
    stylesheet is the only style channel; every rule scopes to both the
    reusable core and the demo element). With the script absent the
    authored static transcript keeps these classes and reads as a terminal
    excerpt; the prompt line only ever exists after the upgrade. */
 sem-terminal, sem-shell { display: block; }
-sem-terminal .sem-shell-frame, sem-shell .sem-shell-frame { background: #101418; border: 1px solid var(--sem-border, #ccc); border-radius: 12px; color: #d6dde6;
+sem-terminal .sem-shell-frame, sem-shell .sem-shell-frame { background: var(--sem-term-bg); border: 1px solid var(--sem-term-border); border-radius: 12px; color: var(--sem-term-fg);
   font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: .75rem 1rem; max-height: 24rem; overflow: auto; }
 sem-terminal .sem-shell-transcript, sem-shell .sem-shell-transcript { white-space: pre-wrap; overflow-wrap: anywhere; }
 sem-terminal .sem-shell-line:empty::before, sem-shell .sem-shell-line:empty::before { content: "\00a0"; }
 sem-terminal .sem-shell-cmd, sem-shell .sem-shell-cmd { color: #fff; }
-sem-terminal .sem-shell-ps1, sem-shell .sem-shell-ps1 { color: #7ec8a2; }
+sem-terminal .sem-shell-ps1, sem-shell .sem-shell-ps1 { color: var(--sem-term-accent); }
 sem-terminal .sem-shell-error, sem-shell .sem-shell-error { color: #ff8f7a; }
 sem-terminal .sem-shell-prompt, sem-shell .sem-shell-prompt { display: flex; gap: .5rem; margin-top: .5rem; align-items: baseline; }
-sem-terminal .sem-shell-input, sem-shell .sem-shell-input { flex: 1; min-width: 0; background: transparent; border: 0; border-top: 1px solid var(--sem-border, #ccc);
+sem-terminal .sem-shell-input, sem-shell .sem-shell-input { flex: 1; min-width: 0; background: transparent; border: 0; border-top: 1px solid var(--sem-term-border);
   color: inherit; font: inherit; padding: .35rem 0 .1rem; outline: none; }
-sem-terminal .sem-shell-input:focus, sem-shell .sem-shell-input:focus { border-top-color: #7ec8a2; }
+@media (pointer: coarse) {
+  sem-terminal .sem-shell-input, sem-shell .sem-shell-input,
+  sem-terminal .sem-tui-filter, sem-shell .sem-tui-filter { font-size: 16px; } /* iOS zooms inputs < 16px */
+}
+sem-terminal .sem-shell-input:focus, sem-shell .sem-shell-input:focus { border-top-color: var(--sem-term-accent); }
 sem-terminal, sem-shell { position: relative; }
 sem-terminal .sem-shell-replay, sem-shell .sem-shell-replay { position: absolute; top: .55rem; right: .7rem; background: transparent; color: #7ec8a2;
   border: 1px solid #2c3a37; border-radius: 6px; font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -1354,35 +1390,35 @@ sem-terminal .sem-shell-stop, sem-shell .sem-shell-stop { position: absolute; to
   padding: .25rem .55rem; cursor: pointer; }
 sem-terminal .sem-shell-stop:hover, sem-shell .sem-shell-stop:hover { border-color: #e6b450; }
 sem-terminal .sem-shell-demo-hint, sem-shell .sem-shell-demo-hint { position: absolute; top: .8rem; right: 6.2rem;
-  color: #9aa7b5; font: 400 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; pointer-events: none; }
+  color: var(--sem-term-muted); font: 400 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; pointer-events: none; }
 @media print {
   sem-terminal .sem-shell-demo-hint, sem-shell .sem-shell-demo-hint { display: none; }
 }
-sem-terminal .sem-shell-status, sem-shell .sem-shell-status { color: #5b6b64; }
-sem-terminal .sem-shell-comment, sem-shell .sem-shell-comment { color: #9aa7b5; font-style: italic; }
+sem-terminal .sem-shell-status, sem-shell .sem-shell-status { color: var(--sem-term-muted); }
+sem-terminal .sem-shell-comment, sem-shell .sem-shell-comment { color: var(--sem-term-muted); font-style: italic; }
 /* ANSI from commands (ls dir color, bat highlighting): fixed-code whitelist → spans */
 sem-terminal .sem-ansi-b, sem-shell .sem-ansi-b { font-weight: 600; }
 sem-terminal .sem-ansi-dim, sem-shell .sem-ansi-dim { opacity: .55; }
-sem-terminal .sem-ansi-c30, sem-shell .sem-ansi-c30 { color: #4b5563; }
-sem-terminal .sem-ansi-c31, sem-shell .sem-ansi-c31 { color: #ff8f7a; }
-sem-terminal .sem-ansi-c32, sem-shell .sem-ansi-c32 { color: #8fd6a0; }
-sem-terminal .sem-ansi-c33, sem-shell .sem-ansi-c33 { color: #e6c77a; }
-sem-terminal .sem-ansi-c34, sem-shell .sem-ansi-c34 { color: #7ab8e6; }
-sem-terminal .sem-ansi-c35, sem-shell .sem-ansi-c35 { color: #c79ae6; }
-sem-terminal .sem-ansi-c36, sem-shell .sem-ansi-c36 { color: #6fd3d3; }
-sem-terminal .sem-ansi-c37, sem-shell .sem-ansi-c37 { color: #d6dde6; }
+sem-terminal .sem-ansi-c30, sem-shell .sem-ansi-c30 { color: var(--sem-term-ansi-0); }
+sem-terminal .sem-ansi-c31, sem-shell .sem-ansi-c31 { color: var(--sem-term-ansi-1); }
+sem-terminal .sem-ansi-c32, sem-shell .sem-ansi-c32 { color: var(--sem-term-ansi-2); }
+sem-terminal .sem-ansi-c33, sem-shell .sem-ansi-c33 { color: var(--sem-term-ansi-3); }
+sem-terminal .sem-ansi-c34, sem-shell .sem-ansi-c34 { color: var(--sem-term-ansi-4); }
+sem-terminal .sem-ansi-c35, sem-shell .sem-ansi-c35 { color: var(--sem-term-ansi-5); }
+sem-terminal .sem-ansi-c36, sem-shell .sem-ansi-c36 { color: var(--sem-term-ansi-6); }
+sem-terminal .sem-ansi-c37, sem-shell .sem-ansi-c37 { color: var(--sem-term-ansi-7); }
 /* the read-only flashcard view (semtext tui) */
 sem-terminal .sem-tui, sem-shell .sem-tui { outline: none; margin-top: .5rem; display: flex; flex-direction: column; gap: .45rem; }
 sem-terminal .sem-tui-head, sem-shell .sem-tui-head { color: #7ec8a2; }
 sem-terminal .sem-tui-card, sem-shell .sem-tui-card { border: 1px solid #2c3a37; border-radius: 8px; padding: .5rem .7rem; background: #161b21; white-space: pre-wrap; }
 sem-terminal .sem-tui-front, sem-shell .sem-tui-front { color: #fff; font-weight: 600; }
 sem-terminal .sem-tui-back, sem-shell .sem-tui-back { color: #d6dde6; font-weight: 400; }
-sem-terminal .sem-tui-meta, sem-shell .sem-tui-meta { color: #5b6b64; }
+sem-terminal .sem-tui-meta, sem-shell .sem-tui-meta { color: var(--sem-term-muted); }
 sem-terminal .sem-tui-empty, sem-shell .sem-tui-empty { font-weight: 400; color: #9aa7b5; }
 sem-terminal .sem-tui-filter, sem-shell .sem-tui-filter { background: transparent; border: 0; border-bottom: 1px solid #2c3a37; color: inherit;
   font: inherit; padding: .25rem 0; outline: none; }
 sem-terminal .sem-tui-filter:focus, sem-shell .sem-tui-filter:focus { border-bottom-color: #7ec8a2; }
-sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
+sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: var(--sem-term-muted); }
 @media print {
   sem-terminal .sem-shell-frame, sem-shell .sem-shell-frame { max-height: none; overflow: visible; background: none; border: 0; color: inherit; }
   sem-terminal .sem-shell-prompt, sem-shell .sem-shell-prompt { display: none; }
@@ -2064,30 +2100,30 @@ sem-terminal .sem-ansi-blink, sem-shell .sem-ansi-blink { animation: sem-ansi-bl
 @media (prefers-reduced-motion: reduce) {
   sem-terminal .sem-ansi-blink, sem-shell .sem-ansi-blink { animation: none; }
 }
-sem-terminal .sem-ansi-c90, sem-shell .sem-ansi-c90 { color: #9aa5b1; }
-sem-terminal .sem-ansi-c91, sem-shell .sem-ansi-c91 { color: #ff8f7a; }
-sem-terminal .sem-ansi-c92, sem-shell .sem-ansi-c92 { color: #8fd6a0; }
-sem-terminal .sem-ansi-c93, sem-shell .sem-ansi-c93 { color: #e6c77a; }
-sem-terminal .sem-ansi-c94, sem-shell .sem-ansi-c94 { color: #7ab8e6; }
-sem-terminal .sem-ansi-c95, sem-shell .sem-ansi-c95 { color: #c79ae6; }
-sem-terminal .sem-ansi-c96, sem-shell .sem-ansi-c96 { color: #6fd3d3; }
-sem-terminal .sem-ansi-c97, sem-shell .sem-ansi-c97 { color: #f2f5f8; }
-sem-terminal .sem-ansi-bg40, sem-shell .sem-ansi-bg40 { background: rgba(107,114,128,.35); }
-sem-terminal .sem-ansi-bg41, sem-shell .sem-ansi-bg41 { background: rgba(255,143,122,.28); }
-sem-terminal .sem-ansi-bg42, sem-shell .sem-ansi-bg42 { background: rgba(143,214,160,.28); }
-sem-terminal .sem-ansi-bg43, sem-shell .sem-ansi-bg43 { background: rgba(230,199,122,.28); }
-sem-terminal .sem-ansi-bg44, sem-shell .sem-ansi-bg44 { background: rgba(122,184,230,.28); }
-sem-terminal .sem-ansi-bg45, sem-shell .sem-ansi-bg45 { background: rgba(199,154,230,.28); }
-sem-terminal .sem-ansi-bg46, sem-shell .sem-ansi-bg46 { background: rgba(111,211,211,.28); }
-sem-terminal .sem-ansi-bg47, sem-shell .sem-ansi-bg47 { background: rgba(214,221,230,.22); }
-sem-terminal .sem-ansi-bg100, sem-shell .sem-ansi-bg100 { background: rgba(107,114,128,.35); }
-sem-terminal .sem-ansi-bg101, sem-shell .sem-ansi-bg101 { background: rgba(255,143,122,.28); }
-sem-terminal .sem-ansi-bg102, sem-shell .sem-ansi-bg102 { background: rgba(143,214,160,.28); }
-sem-terminal .sem-ansi-bg103, sem-shell .sem-ansi-bg103 { background: rgba(230,199,122,.28); }
-sem-terminal .sem-ansi-bg104, sem-shell .sem-ansi-bg104 { background: rgba(122,184,230,.28); }
-sem-terminal .sem-ansi-bg105, sem-shell .sem-ansi-bg105 { background: rgba(199,154,230,.28); }
-sem-terminal .sem-ansi-bg106, sem-shell .sem-ansi-bg106 { background: rgba(111,211,211,.28); }
-sem-terminal .sem-ansi-bg107, sem-shell .sem-ansi-bg107 { background: rgba(214,221,230,.22); }
+sem-terminal .sem-ansi-c90, sem-shell .sem-ansi-c90 { color: var(--sem-term-ansi-8); }
+sem-terminal .sem-ansi-c91, sem-shell .sem-ansi-c91 { color: var(--sem-term-ansi-9); }
+sem-terminal .sem-ansi-c92, sem-shell .sem-ansi-c92 { color: var(--sem-term-ansi-10); }
+sem-terminal .sem-ansi-c93, sem-shell .sem-ansi-c93 { color: var(--sem-term-ansi-11); }
+sem-terminal .sem-ansi-c94, sem-shell .sem-ansi-c94 { color: var(--sem-term-ansi-12); }
+sem-terminal .sem-ansi-c95, sem-shell .sem-ansi-c95 { color: var(--sem-term-ansi-13); }
+sem-terminal .sem-ansi-c96, sem-shell .sem-ansi-c96 { color: var(--sem-term-ansi-14); }
+sem-terminal .sem-ansi-c97, sem-shell .sem-ansi-c97 { color: var(--sem-term-ansi-15); }
+sem-terminal .sem-ansi-bg40, sem-shell .sem-ansi-bg40 { background: color-mix(in srgb, var(--sem-term-ansi-0) 30%, transparent); }
+sem-terminal .sem-ansi-bg41, sem-shell .sem-ansi-bg41 { background: color-mix(in srgb, var(--sem-term-ansi-1) 30%, transparent); }
+sem-terminal .sem-ansi-bg42, sem-shell .sem-ansi-bg42 { background: color-mix(in srgb, var(--sem-term-ansi-2) 30%, transparent); }
+sem-terminal .sem-ansi-bg43, sem-shell .sem-ansi-bg43 { background: color-mix(in srgb, var(--sem-term-ansi-3) 30%, transparent); }
+sem-terminal .sem-ansi-bg44, sem-shell .sem-ansi-bg44 { background: color-mix(in srgb, var(--sem-term-ansi-4) 30%, transparent); }
+sem-terminal .sem-ansi-bg45, sem-shell .sem-ansi-bg45 { background: color-mix(in srgb, var(--sem-term-ansi-5) 30%, transparent); }
+sem-terminal .sem-ansi-bg46, sem-shell .sem-ansi-bg46 { background: color-mix(in srgb, var(--sem-term-ansi-6) 30%, transparent); }
+sem-terminal .sem-ansi-bg47, sem-shell .sem-ansi-bg47 { background: color-mix(in srgb, var(--sem-term-ansi-7) 30%, transparent); }
+sem-terminal .sem-ansi-bg100, sem-shell .sem-ansi-bg100 { background: color-mix(in srgb, var(--sem-term-ansi-8) 30%, transparent); }
+sem-terminal .sem-ansi-bg101, sem-shell .sem-ansi-bg101 { background: color-mix(in srgb, var(--sem-term-ansi-9) 30%, transparent); }
+sem-terminal .sem-ansi-bg102, sem-shell .sem-ansi-bg102 { background: color-mix(in srgb, var(--sem-term-ansi-10) 30%, transparent); }
+sem-terminal .sem-ansi-bg103, sem-shell .sem-ansi-bg103 { background: color-mix(in srgb, var(--sem-term-ansi-11) 30%, transparent); }
+sem-terminal .sem-ansi-bg104, sem-shell .sem-ansi-bg104 { background: color-mix(in srgb, var(--sem-term-ansi-12) 30%, transparent); }
+sem-terminal .sem-ansi-bg105, sem-shell .sem-ansi-bg105 { background: color-mix(in srgb, var(--sem-term-ansi-13) 30%, transparent); }
+sem-terminal .sem-ansi-bg106, sem-shell .sem-ansi-bg106 { background: color-mix(in srgb, var(--sem-term-ansi-14) 30%, transparent); }
+sem-terminal .sem-ansi-bg107, sem-shell .sem-ansi-bg107 { background: color-mix(in srgb, var(--sem-term-ansi-15) 30%, transparent); }
 
 /* ── shell-v2-osc-tabs ── */
 /* The tab strip + status-dot tones for the shared window chrome
@@ -2386,6 +2422,40 @@ sem-shell[data-paint="canvas"] .sem-term-surface {
 :is(sem-api-call, .sem-api-call)[data-sem-upgraded] .sem-apicall-group-label {
   font-variant-caps: all-small-caps; font-weight: 600; color: var(--sem-muted); }
 /* ── end sem-api-call ── */
+/* ── sem-term window chrome (5.2) ──
+   Title bar + tab strip inside the dark frame, on the sem-term tokens (the
+   page theme must not leak in: the shared .sem-window-tab-active rule paints
+   --sem-surface, which is white in light themes). The replay/stop control
+   lives IN the title bar's actions slot — never absolutely positioned over
+   the tab strip. */
+sem-terminal .sem-window-titlebar, sem-shell .sem-window-titlebar {
+  display: flex; align-items: center; gap: .5rem; min-width: 0;
+  margin: -.75rem -1rem .5rem; padding: .4rem .75rem;
+  background: var(--sem-term-chrome); border-bottom: 1px solid var(--sem-term-border);
+  border-radius: 11px 11px 0 0; color: var(--sem-term-muted);
+  font: 600 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+sem-terminal .sem-window-titlebar .sem-window-tab, sem-shell .sem-window-titlebar .sem-window-tab {
+  min-width: 0; padding: .1rem .6rem; border-radius: 6px; color: var(--sem-term-muted);
+}
+sem-terminal .sem-window-titlebar .sem-window-tab-active, sem-shell .sem-window-titlebar .sem-window-tab-active,
+sem-terminal .sem-window-tabs .sem-window-tab-active, sem-shell .sem-window-tabs .sem-window-tab-active {
+  color: var(--sem-term-fg); background: var(--sem-term-tab-active);
+}
+sem-terminal .sem-window-tabs .sem-window-tab, sem-shell .sem-window-tabs .sem-window-tab { color: var(--sem-term-muted); }
+sem-terminal .sem-window-tab-new, sem-shell .sem-window-tab-new { color: var(--sem-term-muted); }
+sem-terminal .sem-window-tab-new:hover, sem-shell .sem-window-tab-new:hover { color: var(--sem-term-fg); }
+sem-terminal .sem-term-tabs, sem-shell .sem-term-tabs { border-bottom-color: var(--sem-term-border); margin: -.25rem -1rem .5rem; }
+sem-terminal .sem-window-tab-close, sem-shell .sem-window-tab-close { color: inherit; }
+sem-terminal .sem-window-actions, sem-shell .sem-window-actions {
+  display: flex; align-items: center; gap: .5rem; margin-left: auto; flex: none;
+}
+sem-terminal .sem-window-actions .sem-shell-replay, sem-shell .sem-window-actions .sem-shell-replay,
+sem-terminal .sem-window-actions .sem-shell-stop, sem-shell .sem-window-actions .sem-shell-stop,
+sem-terminal .sem-window-actions .sem-shell-demo-hint, sem-shell .sem-window-actions .sem-shell-demo-hint {
+  position: static; top: auto; right: auto;
+}
+/* ── end sem-term window chrome ── */
 /* ── shell-v3-tabs-ui ──
    Tab strip container + the new-tab (+) button (CORE-V2 §11.2/§11.3).
    The tabs themselves reuse the shell-v2-osc-tabs .sem-window-tab styles. */

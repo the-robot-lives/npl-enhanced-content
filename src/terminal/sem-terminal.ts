@@ -169,6 +169,9 @@ export class SemTerminal extends SemElement {
   }
 
   #booted = false;
+  #readyFired = false;
+  /** localStorage key for persisted command history (set by the `local-storage` attribute). */
+  #historyKey: string | null = null;
   #playbackHandle: PlaybackHandle | null = null;
   #playbackStopped = false;
   #hasScript = false;
@@ -223,7 +226,10 @@ export class SemTerminal extends SemElement {
       this.#session.runner.mouse(info);
     },
     onWheelScroll: (dy) => {
+      // Consumed only when the viewport really moved — at a limit the page scrolls.
+      const before = this.screen.viewportTop();
       this.screen.scrollBy(dy);
+      if (this.screen.viewportTop() === before) return false;
       this.requestUpdate();
       return true;
     },
@@ -289,6 +295,7 @@ export class SemTerminal extends SemElement {
     session.tabId = tab.id;
     this.#setupCoreBase(session);
     this.#sessions.push(session);
+    this.#bindHistory(session);
     return session;
   }
 
@@ -348,6 +355,7 @@ export class SemTerminal extends SemElement {
       session.feed.write(`${line.text}\r\n`);
     }
     session.lines = [...session.lines, ...newLines];
+    if (session.lines.length > MAX_TRANSCRIPT_LINES) session.lines = session.lines.slice(-MAX_TRANSCRIPT_LINES);
     if (session === this.#session) this.lines = session.lines;
   }
 
@@ -398,15 +406,48 @@ export class SemTerminal extends SemElement {
     }
     // The canvas surface needs a rendered frame first; reconnects re-run
     // this and the guard makes it idempotent (§8 attach).
-    void this.updateComplete.then(() => this.#ensureRenderer());
+    void this.updateComplete.then(() => {
+      this.#ensureRenderer();
+      if (!this.#readyFired) {
+        this.#readyFired = true;
+        this.dispatchEvent(new CustomEvent('sem-shell-ready', { bubbles: true, composed: true, detail: { element: this } }));
+      }
+    });
+    this.#watchForcedColors();
     this.#applyTabTheme();
     this.#menu.attach();
     this.#injectMenuCss();
   }
 
+  /** Forced-colors can flip while mounted (OS high-contrast toggle): re-check, swap renderer. */
+  #forcedMq: MediaQueryList | null = null;
+  #onForcedChange = (event: { matches: boolean }): void => {
+    // Already on the right paint path? (mirror-only ⇔ forced.)
+    if (event.matches === (this.#mirrorOnly !== null)) return;
+    this.#renderer?.detach();
+    this.#renderer = null;
+    this.#mirrorOnly?.detach();
+    this.#mirrorOnly = null;
+    this.#domView = false;
+    this.#ensureRenderer();
+    this.requestUpdate();
+  };
+
+  #watchForcedColors(): void {
+    if (this.#forcedMq !== null) return;
+    const view = this.ownerDocument?.defaultView;
+    if (!view || typeof view.matchMedia !== 'function') return;
+    const mq = view.matchMedia('(forced-colors: active)');
+    if (typeof mq?.addEventListener !== 'function') return;
+    mq.addEventListener('change', this.#onForcedChange);
+    this.#forcedMq = mq;
+  }
+
   disconnectedCallback(): void {
     this.#stopPlayback(false);
     this.#menu.detach();
+    this.#forcedMq?.removeEventListener('change', this.#onForcedChange);
+    this.#forcedMq = null;
     this.#input.detach();
     this.#inputSurface = null;
     this.#offEnv?.();
@@ -449,6 +490,8 @@ export class SemTerminal extends SemElement {
       ]);
       return;
     }
+    this.#historyKey = `semtext:shell:history:v1:${key}`;
+    for (const session of this.#sessions) this.#bindHistory(session);
     const backend = attachLocalStorage(this.core.vfs, { key });
     // Boot mounts re-seed storage (their flushes write the fresh tree);
     // peek NOW, before any of that, so a reload restores the user's tree
@@ -460,6 +503,35 @@ export class SemTerminal extends SemElement {
         this.appendLines([{ kind: 'stderr', text: 'local-storage: stored state was unreadable — re-seeded' }]);
       }
     });
+  }
+
+  /** Restore persisted command history into a session and persist on change. */
+  #bindHistory(session: TerminalSession): void {
+    const key = this.#historyKey;
+    if (key === null) return;
+    const store = (): Storage | null => {
+      try {
+        return (this.ownerDocument?.defaultView ?? window).localStorage;
+      } catch {
+        return null;
+      }
+    };
+    try {
+      const raw = store()?.getItem(key);
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (Array.isArray(parsed)) session.cooked.loadHistory(parsed as string[]);
+      }
+    } catch {
+      // unreadable history is dropped silently — it is a convenience, not state
+    }
+    session.cooked.onHistory = (history) => {
+      try {
+        store()?.setItem(key, JSON.stringify(history));
+      } catch {
+        // quota / privacy mode — history just stops persisting
+      }
+    };
   }
 
   /* ---------------------------------------------------------------- *
@@ -650,6 +722,19 @@ export class SemTerminal extends SemElement {
    * render
    * ---------------------------------------------------------------- */
 
+  /** Replay / stop control — lives in the title bar's actions slot (never over the tab strip). */
+  #scriptActions(): TemplateResult | null {
+    if (!this.#hasScript) return null;
+    return this.playing || this.demoRunning
+      ? html`<span class="sem-shell-demo-hint">Esc to take over</span
+          ><button type="button" class="sem-shell-stop" aria-label="Stop the scripted demo" @click=${() => this.stopDemo()}>
+            stop demo
+          </button>`
+      : html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
+          replay
+        </button>`;
+  }
+
   render(): TemplateResult {
     const tabs = this.tabModel.tabs;
     const tabbed = tabs.length > 1 || this.tabs;
@@ -658,7 +743,11 @@ export class SemTerminal extends SemElement {
     const total = this.screen.altScreen ? this.screen.rows : this.screen.totalLines();
     return html`
       <div class="sem-shell-frame" @click=${this.#focusInput} @keydown=${this.#onFrameKeydown}>
-        ${renderWindowTitlebar({ title: this.titleFeed.title || 'sem shell', tone: this.titleFeed.status.tone })}
+        ${renderWindowTitlebar({
+          title: this.titleFeed.title || 'sem shell',
+          tone: this.titleFeed.status.tone,
+          actions: this.#scriptActions(),
+        })}
         ${tabs.length > 1 || this.tabs
           ? html`<div class="sem-term-tabs" @click=${this.#onTabStripClick} @keydown=${this.#onTabStripKeydown}>
               ${renderTabStrip({
@@ -682,16 +771,6 @@ export class SemTerminal extends SemElement {
                 +
               </button>
             </div>`
-          : null}
-        ${this.#hasScript
-          ? this.playing || this.demoRunning
-            ? html`<button type="button" class="sem-shell-stop" aria-label="Stop the scripted demo" @click=${() => this.stopDemo()}>
-                  stop demo
-                </button>
-                <span class="sem-shell-demo-hint">Esc to take over</span>`
-            : html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
-                replay
-              </button>`
           : null}
         <div
           class="sem-shell-panel"
@@ -951,14 +1030,14 @@ export class SemTerminal extends SemElement {
     else this.#mirrorOnly?.drain(damage);
   }
 
-  /** Theme ANSI-16 from the --sem-ansi-N tokens, cached until metrics move. */
+  /** Theme ANSI-16 from the --sem-term-ansi-N tokens, cached until metrics move. */
   #themeAnsi(index: number): Rgb | null {
     const cached = this.#ansiCache[index];
     if (cached !== undefined) return cached;
     const view = this.ownerDocument?.defaultView;
     let rgb: Rgb | null = null;
     if (view !== null && view !== undefined && typeof view.getComputedStyle === 'function') {
-      rgb = parseRgbToken(view.getComputedStyle(this).getPropertyValue(`--sem-ansi-${index}`).trim());
+      rgb = parseRgbToken(view.getComputedStyle(this).getPropertyValue(`--sem-term-ansi-${index}`).trim());
     }
     this.#ansiCache[index] = rgb;
     return rgb;
@@ -1240,6 +1319,12 @@ export class SemTerminal extends SemElement {
 
   #focusInput(): void {
     if (this.tui) return;
+    // An app owns the screen: the visible prompt is gone, so a click on the
+    // surface must land on the hidden input (the canvas has no focus of its own).
+    if (this.appLive) {
+      this.#input.focus();
+      return;
+    }
     this.#inputEl()?.focus();
   }
 
@@ -1281,13 +1366,30 @@ export class SemTerminal extends SemElement {
     // bracket above covers only the synchronous prefix — side channels
     // fired inside the continuation attribute to whoever runs then.
     if (outcome instanceof Promise) {
-      void outcome.then((result) => this.#applyExecResult(session, result));
+      void outcome.then((result) => this.#applyExecResult(session, result, value));
       return;
     }
-    this.#applyExecResult(session, outcome);
+    this.#applyExecResult(session, outcome, value);
   }
 
-  #applyExecResult(session: TerminalSession, result: ExecResult): void {
+  /**
+   * Embedder surface: run one command line in the active tab, exactly as if
+   * typed and submitted (the transcript echoes it). Fires `sem-shell-command`.
+   */
+  run(line: string): void {
+    this.#execLine(this.#session, String(line));
+  }
+
+  #applyExecResult(session: TerminalSession, result: ExecResult, line?: string): void {
+    if (line !== undefined) {
+      this.dispatchEvent(
+        new CustomEvent('sem-shell-command', {
+          bubbles: true,
+          composed: true,
+          detail: { line, tab: session.label, status: session.core.state.lastStatus },
+        }),
+      );
+    }
     if (session === this.#session) this.cwd = result.state.cwd;
     if (result.clear) {
       this.#clearTranscript(session);
@@ -1319,14 +1421,19 @@ export class SemTerminal extends SemElement {
 
   /**
    * The only side effects the core can request. `window`: content into a
-   * new window — the blob carries exactly the bytes the command emitted (a
-   * stored virtual file, verbatim — nothing built from user input);
+   * new window. The content is a stored virtual file — user-authored, so
+   * UNTRUSTED. A blob: URL is same-origin with the page (its scripts could
+   * read localStorage), so HTML is never opened directly: it is wrapped in a
+   * document holding an `<iframe sandbox="allow-scripts">` (no
+   * allow-same-origin → opaque origin, no storage/cookie/parent access).
    * `noopener,noreferrer` cuts the window-opener channel both ways.
    * `tui`: the read-only flashcard view over extracted records.
    */
   #openWindow(action: WindowAction): void {
     const view = this.ownerDocument?.defaultView ?? window;
-    const url = view.URL.createObjectURL(new view.Blob([action.blob], { type: action.contentType }));
+    const html = action.contentType.toLowerCase().startsWith('text/html');
+    const body = html ? sandboxedHtmlDocument(action.blob, action.filename) : action.blob;
+    const url = view.URL.createObjectURL(new view.Blob([body], { type: action.contentType }));
     const win = view.open(url, '_blank', 'noopener,noreferrer');
     if (!win) {
       this.appendLines([{ kind: 'stderr', text: `open: ${action.filename}: the browser blocked the pop-up window` }]);
@@ -1370,7 +1477,8 @@ export class SemTerminal extends SemElement {
       }
     }
     // Ctrl+PgUp/PgDn cycle, Alt+1..9 jump. Only meaningful past one tab.
-    if (this.tabModel.count > 1) {
+    // Not on macOS: Option+digit types symbols there — Alt+1..9 would hijack it.
+    if (this.tabModel.count > 1 && !(event.altKey && isMacPlatform())) {
       const target = this.tabModel.keyToTarget({
         key: event.key,
         ctrlKey: event.ctrlKey,
@@ -1385,7 +1493,7 @@ export class SemTerminal extends SemElement {
       }
     }
     if (this.appLive) {
-      if (event.key === 'c' && event.ctrlKey && !event.altKey && !event.metaKey) {
+      if (event.key === 'c' && event.ctrlKey && !event.altKey && !event.metaKey && this.#input.selection.isEmpty()) {
         event.preventDefault();
         this.#session.runner.requestInterrupt();
         return;
@@ -1567,6 +1675,34 @@ export class SemTerminal extends SemElement {
 SemElement.register('sem-terminal', SemTerminal);
 
 /** DOM KeyboardEvent → the normalized KeyEvent the discipline/app take (§7.1). */
+const escapeAttr = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * Wrapper document for untrusted VFS HTML: the content lives in a srcdoc
+ * iframe sandboxed with allow-scripts ONLY (never allow-same-origin), so its
+ * scripts run in an opaque origin and cannot reach the host page's storage.
+ */
+export function sandboxedHtmlDocument(content: string, title: string): string {
+  return (
+    '<!doctype html><html><head><meta charset="utf-8">' +
+    `<title>${escapeAttr(title)}</title>` +
+    '<style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100%}</style></head><body>' +
+    `<iframe sandbox="allow-scripts" title="${escapeAttr(title)}" srcdoc="${escapeAttr(content)}"></iframe>` +
+    '</body></html>'
+  );
+}
+
+/** Option+digit types symbols on macOS; Alt+1..9 tab jumps stay off there. */
+export function isMacPlatform(): boolean {
+  const nav = typeof navigator === 'undefined' ? null : navigator;
+  if (nav === null) return false;
+  return /mac|iphone|ipad/i.test(nav.platform || nav.userAgent || '');
+}
+
+/** Transcript cap per session — older lines scroll off the DOM list. */
+export const MAX_TRANSCRIPT_LINES = 5000;
+
 function toKeyEvent(event: KeyboardEvent): KeyEvent {
   return { key: event.key, ctrl: event.ctrlKey, alt: event.altKey, shift: event.shiftKey, meta: event.metaKey };
 }
