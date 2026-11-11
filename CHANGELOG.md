@@ -2,13 +2,14 @@
 
 ## 2026-11-11
 
+- **shell docs reconciled with shipped code; DEFERRED.md added.** PLUGINS.md (async `run`, `app`/`tab` actions, packages + `supersede`, `vfs.attachBackend`/`vfs.storageErrors`, loader trust model + CDN policy), CORE-V2.md (status, async §6.5, lazy-chunk reality vs invariant 1, report-only budget, as-built paths), WASM-POC.md, `docs/arch/bundles.md`, ROADMAP shell size rows; new `docs/terminal/DEFERRED.md`. Docs only (feature/shell-docs).
+
 - **shell packages batch (feature/shell-packages):** lazy-load `loading <pkg>…` status line on first use (3.4); net defaults to fetch with `credentials: 'omit'` (sync XHR only as fallback, false cookie/boot comments fixed) (4.8); awk loop (1e6 iterations) and jq call-step (1e6) runaway budgets (4.9).
 
 - **shell storage — coalesced localStorage, paginated S3, OIDC popup handoff.** localStorage persists coalesce into one microtask per tick and skip subtrees owned by other mounted backends; S3 listings follow continuation tokens (recursive rm/hydrate complete past 1000 keys), reject NaN/non-positive caps, normalise the mountpoint; the `noopener` OIDC popup returns its code over a `semtext-s3-auth` BroadcastChannel (reference `web/demo/shell-oidc-redirect.html`).
 
 - **shell core — grouped help + did-you-mean, loader origin-policy fix, atomic mountPlugin, S3 mount attach restored (feature/shell-core).**
   `help` groups by plugin and takes `<cmd>`; unknown commands suggest the nearest name; the loader classifies resolved URLs (HTTPS://, `/\host`, `//host` no longer bypass; cross-origin needs https + hex/SRI integrity, also for files[].src); mountPlugin validates before mounting, throwing completers and live `ctx.commands` closed; `mount` attaches the backend again (new `Vfs.seed` for hydration), refuses occupied/`/` mountpoints; writes to read-only mounts warn.
-
 - **shell 2.4 — menu focus return, tab/tabpanel ARIA, flashcard role (#102).**
   Closing the context menu now focuses the prompt input (else the
   hidden canvas input, else the host with a tabindex fallback) instead

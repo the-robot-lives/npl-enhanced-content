@@ -1,6 +1,7 @@
 # Terminal Core v2 — Epoch 2 architecture
 
-Status: **design (approved direction, not implemented)** · Owner: terminal lane ·
+Status: **M1–M6 shipped; later rounds added lazy packages, async commands and tabs (see "Status
+update 2026-11-11" below). Still design-only: the items in `docs/terminal/DEFERRED.md`** · Owner: terminal lane ·
 Drafted 2026-10-14 · Amended 2026-10-14 (canvas-everywhere renderer; 256 KB shell
 budget; DOM view via `renderer` attribute + context menu — see Decisions) ·
 Companion to `src/terminal/PLUGINS.md` (the v1 plugin
@@ -15,8 +16,26 @@ the ANSI/VT parser (`src/terminal/ansi/`, ansi lane), the shared window
 chrome (`src/shared/window-chrome.ts`, sem-browser lane), the script runner
 with in-view autostart and typed playback (`src/terminal/script/`,
 script-runner lane), and the card/subsection/toc render commands
-(render-card lane). No code ships with this document; it is the contract the
-Epoch 2 implementation is written against.
+(render-card lane). The text below was written as the contract the Epoch 2 implementation was
+built against; where shipped code differs, the status update directly below
+and the "Reconciliation notes" (inline, marked **2026-11-11**) win.
+
+> **Status update 2026-11-11.** Shipped in `src/terminal/`: screen model
+> (`screen/`), cooked/raw discipline and input (`input/`, `line/`), the
+> `TerminalApp` runner (`app/runner.ts`), canvas + DOM mirror renderers
+> (`render/`), OSC titles (`title/`), env/direnv (`env/direnv.ts`), tabs
+> (`tabs/`), the apps `bat` and `nano` (`apps/`), the lazy command
+> packages (`packages/`), the wasm runtime as a package
+> (`packages/wasm`, `wasm/`) and async commands (below). Module paths that
+> differ from §3's table: the scrollbar is `src/shared/sem-scroll.ts`
+> (shared, not `src/terminal/chrome/`); the POSIX plugin is
+> `src/terminal/plugins/posix/` (not a flat `plugins/posix-sh.ts`). The
+> global name of the bundle is `SemTextShell` (scripts/build.mjs:215).
+> **Three statements below are superseded by what shipped:** invariant 1
+> ("no runtime fetch") is no longer absolute — see §1 reconciliation;
+> the "256 KB shell budget" (Decision 2, §13.1) is REPORT-ONLY, not a
+> gate (user decision 2026-10-17, scripts/build.mjs:223-226); and
+> `CommandSpec.run` may return a Promise — see §6.5.
 
 > **Decisions (user, 2026-10-14).**
 > 1. **Canvas everywhere.** The canvas driver is the one rendering path and is
@@ -51,7 +70,8 @@ The ROADMAP's non-negotiable invariants apply unchanged, and three of them
 shape this design hard enough to restate:
 
 1. **Canonical artifact = standalone XHTML, IIFE classic scripts, no runtime
-   fetch, file:// double-click works.** Every v2 capability must fit the
+   fetch, file:// double-click works.** *(2026-11-11 reconciliation: true
+   of the base shell bundle only — see below.)* Every v2 capability must fit the
    `semtext-js-shell.js` IIFE bundle — and since the 2026-10-14 decision they
    all do by construction: the canvas driver is compiled into the same classic
    bundle (§8.4), so there is no runtime fetch, no dynamic import, and file://
@@ -68,6 +88,27 @@ shape this design hard enough to restate:
    authored static transcript (a `role="log"` div with past lines, no input
    element — see `web/demo/shell.html`) is replaced on first connect exactly
    as today; v2 changes what happens *after* replacement only.
+
+**2026-11-11 reconciliation of invariant 1.** The base shell
+(`semtext-js-shell.js`, IIFE) is still self-contained: it boots, runs its
+bundled plugins (posix, demo, `cat`/`ls`/…), draws, and accepts input with
+no network on `file://`. But since the packages round (#100, "lazy
+packages load on first use, not at boot") the shell also uses **lazy ES
+module chunks loaded by runtime `import()`** — `semtext-pkg-<name>.js`
+(`src/terminal/packages/lazy.ts:43-47`, built by scripts/build.mjs, one per
+package: text, jq, net, fs, archive, git, diff, awk, hello, wasm),
+`nano-app.js` for `nano` (scripts/build.mjs:230-246), and the wasm worker
+`worker-wasm.js`. These load on FIRST USE, never at boot, and must be
+served next to the shell script. Behaviour:
+
+- **http(s), chunks served:** commands work; the first call of a package
+  command awaits the chunk (the `run` Promise, §6.5).
+- **`file://`:** the base shell works; a package command or `nano` fails
+  its chunk import (browser module-loading rules for `file://`) and prints
+  a load error naming the chunk; `--help`/`man` still answer from the
+  stub. The wasm worker degrades in-thread (`wasm/runner.ts:119-134`).
+- The canvas driver is still bundled in the one IIFE (§8.4) — only
+  *commands*, not rendering, are lazy.
 
 Two more contracts are frozen by this document:
 
@@ -173,9 +214,17 @@ New modules (all under `src/terminal/` unless noted):
 | `render/canvas.ts` | the renderer — glyph atlas, damage paint, DPR, selection overlay (in-bundle; the one visible path) |
 | `render/mirror.ts` | the v1 DOM renderer, demoted: hidden synchronised mirror (a11y tree, find-in-page, copy; promoted to the visible paint by forced-colors / 2d-context failure, `renderer="dom"`, or the context menu — §8.5) |
 | `chrome/context-menu.ts` | the terminal context menu (§8.5): renders the window-chrome actions registry on the canvas surface; per-element view-switch state in `sessionStorage` |
-| `chrome/sem-scroll.ts` | Lit scrollbar component |
+| `src/shared/sem-scroll.ts` (shared; not under `chrome/`) | Lit scrollbar component |
 | `chrome/tabs.ts` | tab model (per-tab session, shared VFS) |
 | `env/direnv.ts` | `.envrc` subset evaluation on `cd` |
+
+**2026-11-11 as-built paths** (the table above is the original plan):
+`discipline/*` is `line/discipline.ts`; `apps/api.ts` + runner is
+`app/runner.ts` (apps themselves in `apps/bat`, `apps/nano`);
+`chrome/context-menu.ts` is `menu/context-menu.ts`; `chrome/tabs.ts` is
+`tabs/tabs-model.ts` + `tabs/session.ts`; the scrollbar is
+`src/shared/sem-scroll.ts`; the posix plugin is `plugins/posix/`; title
+feeds are `title/title-feed.ts`.
 
 ## 4. Screen model
 
@@ -433,6 +482,26 @@ lands, and the emit path retires only when parity is verified (§14 M5).
 First apps: `bat` pager (Epoch 2), `semtext tui` grid version (Epoch 2),
 `nano` (Epoch 3).
 
+### 6.5 Async commands (shipped; additive — **2026-11-11**)
+
+`CommandSpec.run` is `void | Promise<void>` (`terminal-core.ts:150-152`).
+This is what lets a package stub await its lazy chunk mid-line (§1
+reconciliation) and what `wasm` batch runs ride on.
+
+- `TerminalCore.execLine(input)` returns `ExecResult | Promise<ExecResult>`
+  (`terminal-core.ts:630`). A line whose stages are all synchronous still
+  returns the `ExecResult` object itself, so v1 callers are untouched; from
+  the first stage that returns a Promise, the remaining stages continue in a
+  promise chain (`#runStageRest`, `terminal-core.ts:674-686`).
+- A stage's Promise is awaited before the next stage reads stdin, so
+  pipeline order and `$?` semantics are preserved. A rejection becomes a
+  `<cmd>: <message>` stderr line and the stage ends normally with the
+  usual status rules (`terminal-core.ts:766-776`).
+- The element consumes both shapes in `#execLine` (`sem-terminal.ts:1272`).
+- **Not shipped** (see `DEFERRED.md`): a command queue, `AbortSignal`
+  cancellation, Ctrl+C → 130 for non-app commands, streaming output.
+  An in-flight async command cannot be interrupted from the keyboard.
+
 ## 7. Input model — keys, mouse, paste, sendKeys
 
 ### 7.1 Key normalization and the chord grammar
@@ -607,6 +676,11 @@ wild, on one bundle, with nothing for the author to wire.
 
 ### 8.4 Loading — one bundle, no fetch (invariant 1 by construction)
 
+> **2026-11-11:** true for the *renderer*; the shell's lazy command
+> packages and `nano` chunk are runtime-imported ES modules (§1
+> reconciliation). Read "nothing is fetched" below as "nothing needed to
+> boot and draw is fetched".
+
 `semtext-js-shell.js` (IIFE, file://-safe) ships everything: §3–§7, the
 canvas driver, and the DOM mirror — including both opt-in view switches
 (§8.5). There is no `semtext-shell-canvas.js` chunk and no second script
@@ -720,7 +794,7 @@ by user choice, not only by browser failure and e2e.
 
 ## 10. Virtual scrollbar — `sem-scroll`
 
-A Lit component (`src/terminal/chrome/sem-scroll.ts`) — chrome, so it may
+A Lit component (`src/shared/sem-scroll.ts`) — chrome, so it may
 live in the shadow root of the shell frame; it draws **no native scrollbar**:
 
 - Track + thumb as absolutely-positioned divs; thumb geometry maps the
@@ -811,8 +885,13 @@ and §12's direnv hooks feed the same variables — no new channels invented.
 
 | Artifact | Budget today | After Epoch 1 (est.) | v2 budget | Rationale |
 |---|---|---|---|---|
-| `semtext-js-shell.js` | 96 KB (74.8 measured) | ~88–92 KB (ansi parser, script-runner, cards, demo files) | **256 KB raw** | the user's number (2026-10-14): screen + discipline + input + apps + scrollbar + direnv + **the canvas driver, bundled (no separate chunk)** |
+| `semtext-js-shell.js` | 96 KB (74.8 measured) | ~88–92 KB (ansi parser, script-runner, cards, demo files) | **256 KB raw — REPORT-ONLY since 2026-10-17 (user decision; not a gate, scripts/build.mjs:223-226; shipped build is ~290 KB)** | the user's number (2026-10-14): screen + discipline + input + apps + scrollbar + direnv + **the canvas driver, bundled (no separate chunk)** |
 | `semtext.js` (core) | 145 KB (144.3 measured; raised from 126, 2026-10-14; 144 → 145 post family A, 2026-10-18) | unchanged | **unchanged** | terminal code must never grow the document bundle (existing rule, `scripts/build.mjs`) |
+
+**2026-11-11:** the shell and editor bundles print their budget row but
+never fail `--strict-budget` (`budgetReportOnly`, scripts/build.mjs:50-52);
+the 256 KB figure is a reporting reference, not a limit. Reader bundles keep
+hard budgets.
 
 Gzip target: shell ≤ 90 KB (canvas included; derived at the current raw:gzip
 ratio). Every budget line keeps the existing build discipline: printed per
