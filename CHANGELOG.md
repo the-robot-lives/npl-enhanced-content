@@ -2,6 +2,18 @@
 
 ## 2026-11-11
 
+- `nano` fix: build `nano-app.js` as an ES module (was IIFE with no
+  exports — the LazyNano stub's `import('./nano-app.js')` resolved but
+  `mod.NanoEditor` was undefined, so `new undefined()` threw inside the
+  import's success handler and nano could never start from the built
+  bundle); the LazyNano constructor now maps both failure modes (missing
+  usable `NanoEditor` export / throwing constructor) to the same null
+  editor as a rejected import, so the existing start() path reports
+  'nano: editor chunk failed to load' and exits 1. Budget 24 → 32 KB
+  (ES chunk keeps every export; measured 27.3 raw / 8.0 gz vs IIFE 17.9),
+  `docs/arch/bundles.md` nano rows corrected, 4 new unit tests
+  (test/unit/nano-command.test.ts). (#PR)
+
 - **0.9.6 — `sem-reference` real handler (AUTO-ID, footnote chrome) +
   `sem-procedure` / `sem-step` / `sem-tldr` / `sem-summary` renders.**
   `sem-reference` and `sem-step` graduate out of `sem-stubs.ts`. An
