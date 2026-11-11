@@ -2,6 +2,8 @@
 
 ## 2026-11-11
 
+- **shell element UX + theme batch (feature/shell-element).** Wheel/touch scroll passthrough, keyboard copy, history persistence + 5000-line cap, caret-preserving Tab completion, `run()` + `sem-shell-ready`/`sem-shell-command`, sandboxed `open`, forced-colors live swap, one `--sem-term-*` palette (4.5:1 tested), title-bar/tab/replay chrome fixes.
+
 - **shell 2.4 — menu focus return, tab/tabpanel ARIA, flashcard role (#102).**
   Closing the context menu now focuses the prompt input (else the
   hidden canvas input, else the host with a tabindex fallback) instead

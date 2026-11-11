@@ -153,6 +153,37 @@ terminal (alternate screen, no dependencies beyond Node's stdlib) and
 restores the terminal on quit or error. Without a TTY it refuses to start
 with a stderr note and exit code 1.
 
+## Embedding `<sem-shell>` / `<sem-terminal>`
+
+**Attributes** — `local-storage[="key"]` persists the virtual file tree and the
+command history (key defaults to the element id); `plugins="url …"` mounts
+extra command manifests; `script` / `start-script` replay a scripted demo;
+`tabs` shows the tab strip from the start.
+
+**Methods** — `run(line)` runs a command line in the active tab exactly as if
+typed (the transcript echoes it); `sendKeys(spec)` injects keys through the
+same path as the keyboard.
+
+**Events** (bubbling, composed `CustomEvent`s) — `sem-shell-ready` fires once
+the element has booted and painted; `sem-shell-command` fires after each
+command finishes, with `detail = { line, tab, status }`.
+
+```js
+const sh = document.querySelector('sem-shell');
+sh.addEventListener('sem-shell-command', (e) => console.log(e.detail.line, e.detail.status));
+sh.addEventListener('sem-shell-ready', () => sh.run('ls'));
+```
+
+**Keyboard / touch** — Ctrl+Shift+C (and Ctrl/Cmd+C while a selection exists)
+copies the canvas selection; the wheel and touch-drag scroll the scrollback and
+hand off to the page at the scroll limits. `open <file.html>` renders VFS HTML
+inside a `sandbox="allow-scripts"` iframe (opaque origin: no access to the host
+page's storage).
+
+**Theming** — the terminal palette is the `--sem-term-bg/-fg/-muted/-accent` and
+`--sem-term-ansi-0..15` tokens in `themes/_vocabulary.css` (all >= 4.5:1 on
+`--sem-term-bg`); canvas, DOM mirror and class CSS share it.
+
 ## Authoring refresh (`semtext-refresh`)
 
 `npm run refresh -- <subcommand> [options] <file-or-glob>...` keeps
