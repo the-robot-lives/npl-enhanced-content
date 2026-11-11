@@ -46,9 +46,6 @@ const out = (r: ExecResult): string[] => r.lines.filter((l) => l.kind === 'stdou
 const errs = (r: ExecResult): string[] => r.lines.filter((l) => l.kind === 'stderr').map((l) => l.text);
 const status = (r: ExecResult): number => r.state.lastStatus;
 
-/** A never-resolving instance: proves the true pre-load (stub) behaviour. */
-const stubOnly = createLazyPackage(wasmStub, () => new Promise(() => {}));
-
 beforeEach(() => {
   core = new TerminalCore();
   expect(core.mountPlugin(posixPlugin).ok).toBe(true); // cat/echo for the piped stages
@@ -58,14 +55,19 @@ beforeEach(() => {
 });
 
 describe('wasm — the lazy path end to end', () => {
-  it('the stub answers before the chunk; ensure() swaps in the real spec', async () => {
+  it('--help answers from the stub before any chunk bytes load', () => {
     expect(pkg.loaded()).toBe(false);
-    const pre = core.execLine('wasm'); // not loaded yet: one honest stderr line, exit 1
-    expect(status(pre)).toBe(1);
-    expect(errs(pre)[0]).toMatch(/^wasm: /);
+    const pre = core.execLine('wasm --help'); // help kicks no load
+    expect(status(pre)).toBe(0);
+    expect(pkg.loaded()).toBe(false);
     expect(pkg.manPage('wasm')!.join('\n')).toContain('short page');
+  });
 
-    expect(await pkg.ensure()).toBe(true);
+  it('a cold invocation loads the chunk mid-line and runs the real spec (no retry hint)', async () => {
+    expect(pkg.loaded()).toBe(false);
+    const r = await core.execLine('wasm /bin/hello.wasm | cat'); // ONE awaited line
+    expect(out(r)).toEqual(['hello from wasm']); // real wasm output, cold
+    expect(errs(r)).toEqual([]);
     expect(pkg.loaded()).toBe(true);
     expect(pkg.manPage('wasm')!.join('\n')).toContain('WASI command module'); // chunk page, live
   });
@@ -85,12 +87,17 @@ describe('wasm — the lazy path end to end', () => {
   });
 
   it('the app hook claims only once the chunk is resident (§6.4)', async () => {
-    // Pre-load (a never-resolving instance): the stub's app declines, so a
-    // tty stage falls back to run()'s honest error — no app action.
+    // Pre-load (a dead-chunk instance): the stub's app declines, so the tty
+    // stage falls back to run() — which awaits the failed load and reports
+    // it honestly. No app action, exit 1.
+    const dead = createLazyPackage(wasmStub, () => Promise.reject(new Error('offline')));
     const stubCore = new TerminalCore();
     stubCore.vfs.mountFile('/bin/hello.wasm', binaryString(fixtureBytes('hello')));
-    stubCore.mountPlugin({ name: 'pkg-stub', version: '0', commands: stubOnly.commands, files: [] });
-    expect(stubCore.execLine('wasm /bin/hello.wasm').actions.some((a) => a.kind === 'app')).toBe(false);
+    stubCore.mountPlugin({ name: 'pkg-stub', version: '0', commands: dead.commands, files: [] });
+    const pre = await stubCore.execLine('wasm /bin/hello.wasm');
+    expect(pre.actions.some((a) => a.kind === 'app')).toBe(false);
+    expect(status(pre)).toBe(1);
+    expect(errs(pre)[0]).toContain('failed to load');
     // Post-load: the tty stage hands over to WasmRunApp — an app action,
     // no `exit N` line (the app reports its own status when it exits).
     const r = core.execLine('wasm /bin/hello.wasm');
