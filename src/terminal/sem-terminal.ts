@@ -200,6 +200,7 @@ export class SemTerminal extends SemElement {
    */
   readonly #input = new InputModel({
     dispatchKey: (ev) => this.#routeKey(ev),
+    exitApp: () => this.#exitActiveApp(),
     isRawMode: () => this.appLive,
     isAltScreen: () => this.screen.altScreen,
     insertCooked: (text) => this.#insertCooked(text),
@@ -522,20 +523,29 @@ export class SemTerminal extends SemElement {
     this.#input.sendKeys(spec);
   }
 
-  /** The InputHost dispatch seam: raw → the active app, cooked → its discipline. */
-  #routeKey(ev: KeyEvent): void {
+  /** The InputHost dispatch seam: raw → the active app (it claims every
+   * key), cooked → its discipline (which may leave Tab unclaimed so the
+   * browser keeps its focus meaning). */
+  #routeKey(ev: KeyEvent): boolean {
     if (this.appLive) {
       this.#session.runner.key(ev);
       this.#touchApp();
-      return;
+      return true;
     }
     const input = this.#inputEl();
     if (input) {
       const caret = input.selectionStart ?? input.value.length;
       this.#session.cooked.syncFrom(input.value, caret);
     }
-    this.#session.cooked.key(ev);
+    const claimed = this.#session.cooked.key(ev);
     this.#mirrorInput(this.#session.cooked.buffer, this.#session.cooked.caret);
+    return claimed;
+  }
+
+  /** F6 while an app is live: exit cleanly (§7.1) — the app's own teardown
+   * path, not the interrupt ladder. */
+  #exitActiveApp(): void {
+    if (this.appLive) this.#session.runner.requestExit();
   }
 
   /** Cooked paste/composition insert: one key event per code point. */

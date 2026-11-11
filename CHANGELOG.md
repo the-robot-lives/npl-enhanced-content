@@ -2,6 +2,15 @@
 
 ## 2026-11-11
 
+- **keyboard trap removed — the shell is always escapable (WCAG 2.1.2).**
+  Tab on an empty prompt line and Shift+Tab keep their native focus
+  meaning (the hidden input surface now honours the discipline's verdict
+  for Tab instead of blanket-consuming every key); the hidden canvas input
+  is `tabindex=-1` (never an invisible tab stop); F6 exits a live
+  full-screen app cleanly through `AppRunner.requestExit()` (exit 0, the
+  app's own teardown path — distinct from Ctrl+C's interrupt/130) and
+  keeps its browser focus-panes meaning in prompt mode. (+5 unit tests.)
+
 - **quiet boot — one clean `shell ready` line, no CDN-refusal demo.**
   The shell's first paint collapses the 14 per-plugin/per-package mount
   lines + hint into a single `shell ready — N plugins, M packages, K
