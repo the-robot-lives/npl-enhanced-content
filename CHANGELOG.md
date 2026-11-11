@@ -14,6 +14,23 @@
   both CLIs now pass the convention through. (+6 regression tests; full
   unit suite green.) (#99)
 
+- **shell 1.3 — lazy packages load on first use, not at boot (#100).**
+  `createLazyPackage` no longer starts the `semtext-pkg-<pkg>.js` chunk
+  import at module evaluation: the first non-help invocation of a
+  package command kicks it (one shared in-flight promise per package),
+  awaits it, and runs the real spec in the same call — `echo '{}' | jq .`
+  now resolves cold in one line with real jq output; the
+  "still loading — try again" hint is gone. Superseded names (the
+  mountPackages safety net) run the base command immediately and kick
+  the same load in the background — pipe semantics unchanged; failed
+  loads keep the honest per-chunk error (stub path, exit 1) and a
+  once-per-name note over the base (wrapper path). The supersede
+  wrapper now forwards Promises from both the package spec and the
+  base — the same silent-drop truncation the shell-v3 round fixed in
+  the lazy stub wrapper (CORE-V2 async commands).
+  `mountPackages` takes an injectable package list so tests drive the
+  exact wrapper.
+
 - **visible demo stop control + no focus theft (WCAG 2.2.2 / 2.4.3).**
   While a scripted demo runs, the top-right slot shows a `stop demo`
   button and an "Esc to take over" hint (new `demoRunning` state drives

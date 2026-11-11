@@ -10,9 +10,10 @@
 //
 // Feature: package contract
 //   Scenario: stub entries match the chunk 1:1 (names + usage); manPages cover all
-//   Scenario: --help is answered from the stub before the chunk arrives;
-//             an early invocation gets the retry hint; a failed load names
-//             the chunk; the man page swaps once resident
+//   Scenario: --help is answered from the stub before the chunk arrives
+//             (kicks no load); a cold invocation loads and runs in one
+//             awaited call; a failed load names the chunk; the man page
+//             swaps once resident
 // Feature: curl
 //   Scenario: GET to stdout, pipes to posix stages, exit 0; empty body
 //   Scenario: -X/-H/-d/-u wire shape (method, joined parts, content-type,
@@ -193,21 +194,77 @@ describe('net package contract', () => {
     expect(outs[0]).toBe(netStub.commands[0]!.usage); // the stub's usage line
   });
 
-  it('an invocation that beats the fetch gets the retry hint, not a hang', () => {
-    const never = createLazyPackage(netStub, () => new Promise<PackageModule>(() => {}));
-    const spec = never.commands.find((c) => c.name === 'wget')!;
-    const r = runDirect(spec, ['http://api.test/text']);
-    expect(r.code).toBe(1);
-    expect(r.errs).toEqual(['wget: chunk still loading — try again']);
+  it('a cold invocation waits on the in-flight load and then runs the real command', async () => {
+    let release!: (mod: PackageModule) => void;
+    const gate = new Promise<PackageModule>((resolve) => {
+      release = resolve;
+    });
+    const pkg = createLazyPackage(netStub, () => gate); // the chunk is "in flight"
+    const spec = pkg.commands.find((c) => c.name === 'wget')!;
+    const outs: string[] = [];
+    const errorLines: string[] = [];
+    let code: number | null = null;
+    const p = spec.run({
+      args: ['http://api.test/text'],
+      stdin: null,
+      vfs: core.vfs,
+      state: core.state,
+      color: false,
+      commands: core.commands,
+      out: (t: string) => outs.push(t),
+      err: (t: string) => errorLines.push(t),
+      emit: () => {},
+      exit: (c: number) => {
+        code = c;
+      },
+    } as unknown as CommandContext);
+    // Release the gate: the loaded chunk's spec answers the SAME cold call.
+    release({
+      commands: [
+        {
+          name: 'wget',
+          usage: 'wget URL',
+          run(ctx: CommandContext) {
+            return new Promise<void>((resolve) => {
+              setTimeout(() => {
+                ctx.out(`FETCHED ${ctx.args[0]}`);
+                ctx.exit(0);
+                resolve();
+              }, 5);
+            });
+          },
+        },
+      ],
+    });
+    await p;
+    expect(outs).toEqual(['FETCHED http://api.test/text']); // the same cold call ran the real spec
+    expect(errorLines).toEqual([]); // no "try again" hint anywhere
+    expect(code).toBe(0);
   });
 
   it('a failed load names the chunk and exits 1', async () => {
     const failing = createLazyPackage(netStub, () => Promise.reject(new Error('no network')));
     await expect(failing.ensure()).resolves.toBe(false);
     const spec = failing.commands.find((c) => c.name === 'http')!;
-    const r = runDirect(spec, ['http://api.test/json']);
-    expect(r.code).toBe(1);
-    expect(r.errs[0]).toContain('semtext-pkg-net.js');
+    // run() is async now — the ctx capture must await it (runDirect is sync-only).
+    const errorLines: string[] = [];
+    let code: number | null = null;
+    await spec.run({
+      args: ['http://api.test/json'],
+      stdin: null,
+      vfs: core.vfs,
+      state: core.state,
+      color: false,
+      commands: core.commands,
+      out: () => {},
+      err: (t: string) => errorLines.push(t),
+      emit: () => {},
+      exit: (c: number) => {
+        code = c;
+      },
+    } as unknown as CommandContext);
+    expect(code).toBe(1);
+    expect(errorLines[0]).toContain('semtext-pkg-net.js');
   });
 
   it('the man page swaps from the stub short page to the chunk page', async () => {
