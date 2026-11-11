@@ -401,6 +401,65 @@ describe('storage + Tab completion', () => {
   });
 });
 
+describe('demo stop control + focus (§2.5)', () => {
+  const runningShell = async (): Promise<SemShell> => {
+    delete (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver;
+    const shell = document.createElement('sem-shell') as SemShell;
+    shell.setAttribute('start-script', '$ echo demo-running\n@sleep 2\n$ echo done');
+    document.body.appendChild(shell);
+    await vi.waitFor(
+      () => {
+        const input = shell.querySelector('.sem-shell-input') as HTMLInputElement | null;
+        expect(input).not.toBeNull();
+        expect(input!.readOnly).toBe(true); // the demo owns the keyboard
+      },
+      { timeout: 3000, interval: 50 },
+    );
+    await shell.updateComplete;
+    return shell;
+  };
+
+  it('a running demo shows a visible stop control and an Esc hint; clicking it hands the terminal back', async () => {
+    const shell = await runningShell();
+    expect(shell.demoRunning).toBe(true);
+    expect(shell.querySelector('.sem-shell-stop')).not.toBeNull();
+    expect(shell.querySelector('.sem-shell-demo-hint')).not.toBeNull();
+    (shell.querySelector('.sem-shell-stop') as HTMLButtonElement).click();
+    await shell.updateComplete;
+    expect(shell.demoRunning).toBe(false);
+    const input = shell.querySelector('.sem-shell-input') as HTMLInputElement;
+    expect(input.readOnly).toBe(false);
+    expect(shell.querySelector('.sem-shell-stop')).toBeNull();
+    expect(shell.querySelector('.sem-shell-replay')).not.toBeNull();
+    shell.remove();
+  }, 10000);
+
+  it('a demo ending while the reader is elsewhere does not steal focus or scroll back', async () => {
+    const shell = await runningShell();
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    outside.focus();
+    expect(document.activeElement).toBe(outside);
+    shell.stopDemo(); // the demo ends with focus outside the shell
+    await shell.updateComplete;
+    expect(shell.demoRunning).toBe(false);
+    expect(document.activeElement).toBe(outside); // no yank back
+    shell.remove();
+    outside.remove();
+  }, 10000);
+
+  it('stopping while the reader is inside the shell returns focus to the prompt', async () => {
+    const el = await attach('sem-shell');
+    const input = el.querySelector('.sem-shell-input') as HTMLInputElement;
+    input.focus();
+    el.playing = true;
+    el.stopDemo();
+    await el.updateComplete;
+    expect(document.activeElement).toBe(input);
+    expect(input.readOnly).toBe(false);
+  });
+});
+
 describe('start-script site-path fetch (r2.1)', () => {
   const realFetch = globalThis.fetch;
   afterEach(() => {

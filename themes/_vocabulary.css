@@ -1346,6 +1346,18 @@ sem-terminal .sem-shell-replay, sem-shell .sem-shell-replay { position: absolute
   border: 1px solid #2c3a37; border-radius: 6px; font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   padding: .25rem .55rem; cursor: pointer; opacity: .8; }
 sem-terminal .sem-shell-replay:hover, sem-shell .sem-shell-replay:hover { opacity: 1; border-color: #7ec8a2; }
+/* §2.5: while a demo runs, the replay button becomes a visible STOP control
+   (WCAG 2.2.2 — moving content needs a visible pause/stop) with a hint that
+   Escape also hands the terminal back. Same top-right slot as replay. */
+sem-terminal .sem-shell-stop, sem-shell .sem-shell-stop { position: absolute; top: .55rem; right: .7rem; background: transparent;
+  color: #e6b450; border: 1px solid #6b5a2e; border-radius: 6px; font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: .25rem .55rem; cursor: pointer; }
+sem-terminal .sem-shell-stop:hover, sem-shell .sem-shell-stop:hover { border-color: #e6b450; }
+sem-terminal .sem-shell-demo-hint, sem-shell .sem-shell-demo-hint { position: absolute; top: .8rem; right: 6.2rem;
+  color: #9aa7b5; font: 400 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; pointer-events: none; }
+@media print {
+  sem-terminal .sem-shell-demo-hint, sem-shell .sem-shell-demo-hint { display: none; }
+}
 sem-terminal .sem-shell-status, sem-shell .sem-shell-status { color: #5b6b64; }
 sem-terminal .sem-shell-comment, sem-shell .sem-shell-comment { color: #9aa7b5; font-style: italic; }
 /* ANSI from commands (ls dir color, bat highlighting): fixed-code whitelist → spans */
@@ -1375,6 +1387,7 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
   sem-terminal .sem-shell-frame, sem-shell .sem-shell-frame { max-height: none; overflow: visible; background: none; border: 0; color: inherit; }
   sem-terminal .sem-shell-prompt, sem-shell .sem-shell-prompt { display: none; }
   sem-terminal .sem-shell-replay, sem-shell .sem-shell-replay { display: none; }
+  sem-terminal .sem-shell-stop, sem-shell .sem-shell-stop { display: none; }
 }
 
 /* ── npl-hormones ── */
