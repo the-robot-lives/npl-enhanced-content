@@ -31,3 +31,11 @@ tags: [agent, mcp, tooling]
 
 `could-have`: valuable only after the CLI pair (US-301, US-404) exists; it is
 distribution, not capability.
+
+**focus tool (2026-11-11).** `semtext focus` (purpose-driven collapse) landed
+upstream ahead of the MCP wrapper: the pipeline lives in
+`bin/lib/focus/focus.mjs` as `focus(doc, opts, deps)` with injectable deps
+(classifier / summarizer / cache / clock), so the MCP layer stays a thin
+wrapper with no logic to drift — the same shape this story requires of the
+extract/validate tools. Docs: `docs/focus.md` (config, cache layout, exit
+contracts). MCP tool wrapping this entry point: **PENDING**.

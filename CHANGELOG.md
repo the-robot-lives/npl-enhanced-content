@@ -13,7 +13,17 @@
   (`SemTerminal.replayable`, via `markScripted`), so an unscripted boot
   emits exactly one stdout line and zero stderr. (#92)
 
-## 2026-11-11
+- `nano` fix: build `nano-app.js` as an ES module (was IIFE with no
+  exports — the LazyNano stub's `import('./nano-app.js')` resolved but
+  `mod.NanoEditor` was undefined, so `new undefined()` threw inside the
+  import's success handler and nano could never start from the built
+  bundle); the LazyNano constructor now maps both failure modes (missing
+  usable `NanoEditor` export / throwing constructor) to the same null
+  editor as a rejected import, so the existing start() path reports
+  'nano: editor chunk failed to load' and exits 1. Budget 24 → 32 KB
+  (ES chunk keeps every export; measured 27.3 raw / 8.0 gz vs IIFE 17.9),
+  `docs/arch/bundles.md` nano rows corrected, 4 new unit tests
+  (test/unit/nano-command.test.ts). (#91)
 
 - **0.9.6 — `sem-reference` real handler (AUTO-ID, footnote chrome) +
   `sem-procedure` / `sem-step` / `sem-tldr` / `sem-summary` renders.**
@@ -38,6 +48,57 @@
   unit suites for slug/auto-id/numbering/renders/validator.
   `elements.json` regenerated. Bundle budget 173 → 175 KB (measured
   174.8 raw / 54.0 gzipped, was 172.1 / 53.2).
+- **`semtext focus` + `.sem.md` support: purpose-driven collapse lands in
+  the agent toolkit and both CLIs.** New `.sem.md` parser
+  (`src/agent/markdown-sections.ts`, re-exported through the agent
+  bundle): ATX sections own content until a same-or-higher heading
+  (fence-aware), optional `<sem-section id/kind/tags>` markers bind
+  authored ids (else mint `x-sec-*`), authored `<sem-tldr>` is carried
+  verbatim, `kind="hard-rule"`/`data-pin` pins a section; outline /
+  expand / filter accept `.md`/`.sem.md` in both CLIs alongside XHTML.
+  `semtext focus <file> --purpose "<text>"` keeps purpose-serving
+  sections verbatim and collapses the rest to TL;DR reveals: task match
+  (exact normalized → cache, else one batched `:choice` over top-5
+  token-Jaccard neighbours with a `none` option), content-addressed
+  TL;DR cache keyed by collapsed-body sha256 with drift detection
+  (index prior sha → unified diff → ONE batched `:boolean`: no ⇒ rebind
+  the old summary, yes ⇒ tweak it), ONE batched `:score` relevance round
+  on a 10-level rubric, pinned/`--keep` always relevant. Flags:
+  `--notes` (task footnotes), `--track-refs` (referenced-file drift),
+  `--write-back` (idempotent `<sem-tldr data-auto data-digest>` upkeep,
+  path-confined), `--write-notes`, `--no-llm` (cache-only fallback),
+  `--refresh`, `--dry-run` (planned-call JSON, no network/cache),
+  `--classifier alibaba|jev`, `--threshold`, `--keep`, `--format
+  md|html|text|json`, `--verbose`. Config via
+  `$XDG_CONFIG_HOME/semtext/config.yaml` (tiny YAML subset — no new
+  deps), precedence flag > env > config > default; cache under
+  `$XDG_CACHE_HOME/semtext` (tasks.jsonl, sections/, notes/, index/),
+  atomic writes. Credential errors name the env vars (never values) and
+  suggest `--no-llm`. Pipe exit contract 0/1/2, agent JSON-default with
+  2/1. Docs: `docs/focus.md`; US-405 notes the future MCP wrapper
+  (PENDING). 60 new unit specs (markdown-sections, focus core, CLI
+  contracts over both binaries).
+- **Terminal render mode: `<sem-tui>` wrapper + `render-mode="tui"` on any
+  SemText element.** Every element can now present itself as terminal
+  text — box-drawing callouts, `▸/▾` disclosure carets honoring
+  `collapsed`/`open`, `├─ └─` tree glyphs for nested records, aligned
+  table columns, `[TL;DR]` labels, `[sem-xyz: summary]` placeholders for
+  non-textual elements — reusing the pipe CLI's extraction recipe
+  (`src/extract/records.ts` + `parseTreeContainer`) through a new pure
+  module `src/shared/text-render/`. Mode resolution: own
+  `render-mode`/`tui` attribute > nearest `<sem-tui>` frame's current
+  mode > rich; the outermost tui element renders the whole subtree and
+  nested sem-* never double-frame. `<sem-tui>` adds `cols` (default 80),
+  `theme` (dark/light/amber/green via `--sem-tui-*` custom properties)
+  and an optional `toggle` Rich/Terminal switch (real button,
+  `aria-pressed`, bubbling `sem-render-mode-change`). The terminal view
+  mounts `<pre class="sem-tui" part="tui" aria-label=…>` while authored
+  children are CSS-hidden — nothing moves, so extraction stays
+  byte-identical and flipping back restores rich wiring. New document
+  driver `src/lit/shared/render-mode.ts` (installed from the core
+  barrel); new element registered in the lazy manifest, schema
+  (`spec/schema/sem-tui.md` + global `render-mode`/`tui` attributes) and
+  `elements.json`; demo `web/demo/sem-tui.html`; docs `docs/sem-tui.md`.
 
 ## 2026-10-26
 

@@ -244,6 +244,27 @@ export { SemFaqs, SemFaq } from './lit/sem-faqs.js';
 import './lit/sem-faqs.js';
 export { SemChangelogs, SemChangelog } from './lit/sem-changelogs.js';
 import './lit/sem-changelogs.js';
+/* sem-tui — the terminal-frame wrapper (render-mode context provider):
+ * the subtree switch between rich and the terminal text view, plus the
+ * document driver that resolves `render-mode="tui"` / `tui` attributes
+ * everywhere (src/lit/shared/render-mode.ts, pure renderers in
+ * src/shared/text-render). Programmatic hosts may install the driver
+ * themselves on a different document; the core barrel installs one for
+ * this document below. */
+export { SemTui } from './lit/sem-tui.js';
+import './lit/sem-tui.js';
+export {
+  resolveRenderMode,
+  hasTuiRenderingAncestor,
+  nearestTuiCols,
+  mountTui,
+  unmountTui,
+  rescanRenderModes,
+} from './lit/shared/render-mode.js';
+import { installRenderModeDriver } from './lit/shared/render-mode.js';
+export type { RenderMode } from './lit/shared/render-mode.js';
+export { renderElementAsText } from './shared/text-render/index.js';
+export type { TextRenderOptions } from './shared/text-render/index.js';
 
 /* Core vanilla handlers — sem-views/progress/audiences, deep links, the
  * sem-source snapshot pass and the other elements no Lit component defines
@@ -325,6 +346,11 @@ if (typeof document !== 'undefined') {
   } else {
     init();
   }
+  // The render-mode driver: one scan + mutation/attribute watches for
+  // `render-mode="tui"` elements and every `<sem-tui>` subtree. Installed
+  // after the handler scheduling above, so a same-event DOMContentLoaded
+  // scan lands after the content passes.
+  installRenderModeDriver(document);
   if (typeof MutationObserver !== 'undefined' && document.documentElement) {
     const observer = new MutationObserver((records) => {
       for (const record of records) {
