@@ -2,6 +2,8 @@
 
 ## 2026-11-11
 
+- **fix(shell): clean prompt — no rule above the input, just a blinking cursor.** The `.sem-shell-input` `border-top` drew a horizontal rule above the command prompt; removed it (and the `:focus` border-colour rule) so the prompt is the `$` label and a blinking accent caret (`caret-color: var(--sem-term-accent)`), terminal-style.
+
 - **fix(vanilla/target): deep link resolves once, not on every mutation re-scan.** `settleTarget()` re-ran the hash-target `scrollIntoView({block:'start'})` on every 50ms enhancement re-scan; a page with live content (autoplaying `sem-shell` demos, carousels) mutates forever, so the reader was yanked to the hash target constantly. Latch the initial resolution (`resolved`): re-scans and pending settle timers no longer re-scroll once landed (or when there is no hash); `hashchange` resets the latch for a new target. Preserves the 0.9.1 slow-page retry (re-arms until the first successful resolution). +3 regression tests.
 
 - **shell element UX + theme batch (feature/shell-element).** Wheel/touch scroll passthrough, keyboard copy, history persistence + 5000-line cap, caret-preserving Tab completion, `run()` + `sem-shell-ready`/`sem-shell-command`, sandboxed `open`, forced-colors live swap, one `--sem-term-*` palette (4.5:1 tested), title-bar/tab/replay chrome fixes.

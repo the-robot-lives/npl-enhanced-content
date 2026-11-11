@@ -1370,13 +1370,12 @@ sem-terminal .sem-shell-cmd, sem-shell .sem-shell-cmd { color: #fff; }
 sem-terminal .sem-shell-ps1, sem-shell .sem-shell-ps1 { color: var(--sem-term-accent); }
 sem-terminal .sem-shell-error, sem-shell .sem-shell-error { color: #ff8f7a; }
 sem-terminal .sem-shell-prompt, sem-shell .sem-shell-prompt { display: flex; gap: .5rem; margin-top: .5rem; align-items: baseline; }
-sem-terminal .sem-shell-input, sem-shell .sem-shell-input { flex: 1; min-width: 0; background: transparent; border: 0; border-top: 1px solid var(--sem-term-border);
-  color: inherit; font: inherit; padding: .35rem 0 .1rem; outline: none; }
+sem-terminal .sem-shell-input, sem-shell .sem-shell-input { flex: 1; min-width: 0; background: transparent; border: 0;
+  color: inherit; font: inherit; padding: .35rem 0 .1rem; outline: none; caret-color: var(--sem-term-accent); }
 @media (pointer: coarse) {
   sem-terminal .sem-shell-input, sem-shell .sem-shell-input,
   sem-terminal .sem-tui-filter, sem-shell .sem-tui-filter { font-size: 16px; } /* iOS zooms inputs < 16px */
 }
-sem-terminal .sem-shell-input:focus, sem-shell .sem-shell-input:focus { border-top-color: var(--sem-term-accent); }
 sem-terminal, sem-shell { position: relative; }
 sem-terminal .sem-shell-replay, sem-shell .sem-shell-replay { position: absolute; top: .55rem; right: .7rem; background: transparent; color: #7ec8a2;
   border: 1px solid #2c3a37; border-radius: 6px; font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
