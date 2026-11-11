@@ -2,6 +2,9 @@
 
 ## 2026-11-11
 
+- **shell core — grouped help + did-you-mean, loader origin-policy fix, atomic mountPlugin, S3 mount attach restored (feature/shell-core).**
+  `help` groups by plugin and takes `<cmd>`; unknown commands suggest the nearest name; the loader classifies resolved URLs (HTTPS://, `/\host`, `//host` no longer bypass; cross-origin needs https + hex/SRI integrity, also for files[].src); mountPlugin validates before mounting, throwing completers and live `ctx.commands` closed; `mount` attaches the backend again (new `Vfs.seed` for hydration), refuses occupied/`/` mountpoints; writes to read-only mounts warn.
+
 - **shell 2.4 — menu focus return, tab/tabpanel ARIA, flashcard role (#102).**
   Closing the context menu now focuses the prompt input (else the
   hidden canvas input, else the host with a tabindex fallback) instead
