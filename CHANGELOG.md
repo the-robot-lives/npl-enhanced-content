@@ -10,6 +10,18 @@
   and the shell content region is a `role=tabpanel` labelled by the
   active tab; the inline flashcard widget is `role=group`, not dialog.
 
+- **focus: nested markdown renders once.** `semtext focus --format md` on a
+  document with nested headings emitted every child section twice — the
+  flattened parent entry rendered its whole-subtree `raw` span, then each
+  child rendered again (a 13-section playbook doc came out ≈522 lines, two
+  byte-identical copies). The focus doc assembly now slices each section's
+  raw to its OWN span (stops at the first child heading); json contract
+  unchanged (14 sections stay 14). `outline` text also miscounted markdown
+  nesting ("12 nested" for 13 children): markdown `blocks` is self-excluded
+  while the shared renderer assumed the XHTML self-included convention —
+  both CLIs now pass the convention through. (+6 regression tests; full
+  unit suite green.) (#99)
+
 - **shell 1.3 — lazy packages load on first use, not at boot (#100).**
   `createLazyPackage` no longer starts the `semtext-pkg-<pkg>.js` chunk
   import at module evaluation: the first non-help invocation of a
