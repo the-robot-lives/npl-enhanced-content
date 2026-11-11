@@ -229,3 +229,30 @@ describe('CLI', () => {
     expect(parsed.totals.errors).toBe(0);
   });
 });
+
+describe('sem-reference AUTO-ID (sem-references.md § Auto-id)', () => {
+  const doc = (refs) => `<!doctype html>
+<html lang="en"><body><sem-enhanced-document>
+<p><a href="#refs-rfc-6749">[1]</a></p>
+<sem-references id="refs">${refs}</sem-references>
+</sem-enhanced-document></body></html>`;
+
+  it('an id-less reference with a cite is info auto-id, and its derived id satisfies id-drift', () => {
+    const r = validateSource(doc('<sem-reference cite="RFC 6749">OAuth.</sem-reference>'), schema);
+    expect(errorsOf(r)).toEqual([]);
+    expect(warningsOf(r)).toEqual([]);
+    const info = r.diagnostics.filter((d) => d.severity === 'info');
+    expect(info.map((d) => d.rule)).toEqual(['auto-id']);
+    expect(info[0].message).toContain('refs-rfc-6749');
+  });
+
+  it('an id-less reference with neither cite nor href is an error', () => {
+    const r = validateSource(doc('<sem-reference id="refs-rfc-6749" cite="RFC 6749">a</sem-reference><sem-reference>b</sem-reference>'), schema);
+    expect(errorsOf(r).map((d) => d.rule)).toEqual(['reference-id']);
+  });
+
+  it('a derived id colliding with an existing id warns', () => {
+    const r = validateSource(doc('<sem-reference id="refs-rfc-6749" cite="x">a</sem-reference><sem-reference cite="RFC 6749">b</sem-reference>'), schema);
+    expect(warningsOf(r).map((d) => d.rule)).toContain('reference-id');
+  });
+});

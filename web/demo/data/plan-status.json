@@ -1,0 +1,33 @@
+{
+  "plan": "<sem-procedure kind=\"runbook\"><sem-step id=\"s1\">provision Infisical path</sem-step><sem-step id=\"s2\">port-forward MinIO admin</sem-step><sem-step id=\"s3\">apply the secrets stack</sem-step><sem-step id=\"s4\">sync operator and verify lengths</sem-step><sem-step id=\"s5\">cut the release PR</sem-step></sem-procedure>",
+  "status": {
+    "s1": {
+      "status": "complete",
+      "comment": "path app/semtext seeded, 14 keys"
+    },
+    "s2": {
+      "status": "complete",
+      "comment": "127.0.0.1:9000 up"
+    },
+    "s3": {
+      "status": "error",
+      "comment": "InfisicalSecret rejected the hostAPI override",
+      "choice": {
+        "option": "pin spec.hostAPI and re-apply",
+        "reason": "missing hostAPI syncs from cloud and 401s"
+      }
+    },
+    "s4": {
+      "status": "skipped"
+    },
+    "s5": {
+      "status": "pending",
+      "choice": [
+        {"option": "fix-forward on develop", "reason": "sandbox posture, velocity first"},
+        {"option": "revert the secrets stack", "reason": "rejected — destroys seeded keys"},
+        {"option": "open infra PR with the pinned hostAPI", "reason": "taken"}
+      ]
+    }
+  },
+  "revision": 7
+}

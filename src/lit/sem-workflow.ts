@@ -15,9 +15,16 @@
  *
  * `parseStepModels` is the pure record model, exported for the unit tier
  * and any extraction consumer.
+ *
+ * Bindable: `sem-bind="<url | agent-kit/{org}/proj/{project}/workflow/{id}>"`
+ * or a direct `payload` property hydrates `{plan, status}` — definition
+ * markup becomes the body and the status dictionary lands on the
+ * `sem-step` children (see bind.ts). Fetches once on connect; no polling.
  */
 
+import type { PropertyValues } from 'lit';
 import { SemElement } from './base.js';
+import { BindableElement } from './bind.js';
 
 /** One authored step, read off the DOM. Attr spelling is dual: the
  *  component reads `data-x` first, then the bare `x` (conventions.md §2).
@@ -66,10 +73,11 @@ export function parseStepModels(workflow: ParentNode): StepModel[] {
   }));
 }
 
-export class SemWorkflow extends SemElement {
+export class SemWorkflow extends BindableElement {
   #wired = false;
 
-  updated(): void {
+  updated(changed: PropertyValues): void {
+    super.updated(changed); // BindableElement: payload intake + sem-bind attach
     if (this.#wired) return;
     this.afterParse('sem-workflow', () => {
       if (!this.#wired && this.isConnected) {

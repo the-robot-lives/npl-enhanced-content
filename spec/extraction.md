@@ -95,7 +95,7 @@ interface SemRecord {
    `.sem-facts-meter`, `.sem-quiz-options`, `.sem-views-tabs`,
    `.sem-note-summary`, `.sem-progress-track`, `.sem-progress-fill`,
    `.sem-code-chrome`, `.sem-code-status`, `.sem-references-backlinks`,
-   `.sem-references-link`, `.sem-popover` (the script's preview
+   `.sem-references-link`, `.sem-procedure-meta`, `.sem-popover` (the script's preview
    surface, appended to `<body>`), `.sem-reader-chrome`,
    `.sem-reader-outline`, `.sem-reader-progress`, `.sem-table-chrome`,
    `.sem-table-status`, `.sem-table-filter`, `.sem-source-chrome`,

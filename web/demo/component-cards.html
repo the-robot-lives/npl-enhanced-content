@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · Component cards &amp; see-also</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- sem:inline theme minimal-tech-light -->
+<!-- sem:inline vocabulary -->
+<style type="text/tailwindcss">
+  .sem-enhanced-document { @apply mx-auto max-w-3xl px-4 py-10; }
+  h1 { @apply text-2xl font-bold tracking-tight mb-2; }
+  h2 { @apply text-lg font-semibold mt-8 mb-2; }
+</style>
+<!-- sem:inline bundle -->
+</head>
+
+<body>
+<div class="sem-enhanced-document" id="doc-root">
+
+  <h1>Component Inventory — cards &amp; cross-references</h1>
+  <p>Demo fixture for <code>sem-component</code> and <code>sem-see-also</code>
+  (0.9.5). Hover a see-also for the popover preview; click it for the modal;
+  "View all" opens the target in a new tab. Deep link:
+  <code>#ref=sa-waitlist</code> opens the waitlist see-also's modal.</p>
+
+  <h2 id="inventory">Inventory</h2>
+
+  <sem-component id="c-waitlist" tag="noizu-waitlist" name="Waitlist"
+    source="src/components/waitlist/noizu-waitlist.ts"
+    type="web-component" status="live" labels="form telemetry">
+    Lightweight waitlist form: email capture, Infisical-backed provisioning,
+    ArgoCD deploy hook.
+  </sem-component>
+
+  <sem-component id="c-annotator" tag="sem-annotate-host" name="Annotate host"
+    source="Projects/annotate.therobotlives.com"
+    type="script" status="wip" labels="comments">
+    Page-comments host: visitors pin comments to elements; the team triages
+    them in the annotate console.
+  </sem-component>
+
+  <sem-component id="c-planned" tag="noizu-fleet" name="Fleet dashboard"
+    source="Projects/fleet.noizu.com" type="site" status="planned">
+    Fleet-wide status board fed by SigNoz uptime pushes.
+  </sem-component>
+
+  <h2 id="cross-refs">Cross references</h2>
+
+  <p>See <sem-see-also id="sa-waitlist" reference="component" target="noizu-waitlist">the waitlist card</sem-see-also>
+  for the intake flow, or the <sem-see-also id="sa-inventory" reference="section" target="#inventory">inventory above</sem-see-also>.
+  The wiring lives in
+  <sem-see-also id="sa-file" reference="file" target="src/reading/see-also.ts" preview="file">src/reading/see-also.ts</sem-see-also>.</p>
+
+  <p>Embedded in place:
+  <sem-see-also id="sa-inline" reference="section" target="#cross-refs" insert-as="inline">this very section</sem-see-also>.</p>
+
+</div>
+</body>
+</html>

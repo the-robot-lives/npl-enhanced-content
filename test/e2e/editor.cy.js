@@ -145,7 +145,20 @@ describe('semtext-editor bundle (§9)', () => {
   });
 
   it('properties item list removes a fact (the +/- item road)', () => {
-    canvasEl().find('sem-facts#top-facts').rightclick();
+    // Synthetic contextmenu on the HOST: since the 0.9.1 deck layout the
+    // facts host is filled edge to edge by its facts, so a pointer
+    // right-click at the host's center lands on a nested sem-fact — that
+    // fact's own EditController opens a second, overlapping menu whose
+    // Properties… opens the fact (not the facts) modal. Dispatching on the
+    // host reaches the same contextmenu listener a real right-click on the
+    // host's padding would, with the facts binding as the target.
+    canvasEl().find('sem-facts#top-facts').then(($facts) => {
+      const r = $facts[0].getBoundingClientRect();
+      $facts[0].dispatchEvent(new MouseEvent('contextmenu', {
+        bubbles: true, cancelable: true,
+        clientX: Math.round(r.left + r.width / 2), clientY: Math.round(r.top + r.height / 2),
+      }));
+    });
     cy.get('[role="menuitem"]').contains('Properties…').click();
     cy.get('dialog.sem-ed-modal button[aria-label^="Remove fact"]').last().click();
     cy.get('dialog.sem-ed-modal button').contains('Save').click();

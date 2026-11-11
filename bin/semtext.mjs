@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// 〚📁:𓀝𓜖𓌁𓶚〛 semtext CLI :: User-facing semtext CLI: pipes first, terminal browser second; grep-style exit contract (0 ok / 1 usage/parse / 2 no matches).
 /**
  * semtext — user-facing CLI: pipes first, terminal browser second.
  *
@@ -34,6 +35,7 @@ import {
   current,
   rawSource
 } from '../src/agent/tui-state.js';
+import { guardWorkspacePath } from './semtext-agent.mjs';
 
 const HELP = `semtext — browse, filter and format SemText documents
 
@@ -41,12 +43,15 @@ Usage: semtext <command> [args] [options]
 
 Commands:
   outline <file|->  [--depth N] [--json]   heading tree of the document
+                                           (.md/.sem.md supported)
   filter  <file|->  [criteria] [--text|--json]
-                                           matching blocks as normalised XHTML
-  format  <file|->  [--text|--json]        the document, normalised
+                                           matching blocks, normalised
+  format  <file|->  [--text|--json]        normalised document
   view    <file|->                         plain text of the whole document
-  expand  <file|-> <id> [--format F] [--json]
+  expand  <file|-> <id> [--format t|x] [--json]
                                            one block, in full
+  focus   <file|-> --purpose TEXT [options]
+                                           purpose-driven collapse (see below)
   tui     <file>                           interactive terminal browser
 
 Filter criteria (AND-combined):
@@ -57,6 +62,16 @@ Filter criteria (AND-combined):
 Output:  --text rendered plain text (format/view) · --json machine-readable
 TUI keys: arrows or j/k move · Enter expand/collapse · / search ·
           n next match · r raw source · q quit
+
+Focus (purpose-driven collapse; any .md/.sem.md/.html document):
+  focus <file|-> --purpose "..." [--threshold N] [--match-threshold N]
+        [--format md|html|text|json] [--keep IDS] [--notes] [--track-refs]
+        [--write-back] [--write-notes] [--classifier alibaba|jev]
+        [--model M] [--cache-dir DIR] [--config FILE] [--no-llm]
+        [--refresh] [--dry-run] [--verbose]
+  Relevant sections stay verbatim; the rest collapse to
+  "heading + TL;DR (collapsed — semtext expand <file> <id>)". Needs
+  classifier credentials (see docs/focus.md); --no-llm works cache-only.
 
 Exit codes: 0 ok · 1 usage or parse error · 2 no matches
 Errors go to stderr only; pipe commands write data to stdout only.`;
@@ -150,9 +165,19 @@ function parseArgs(argv) {
   const opts = { _: [] };
   // `--text` is filter's match criteria (takes a value) but format/view's
   // output flag (boolean) — decide from the command, i.e. the first
-  // positional token.
+  // positional token. Focus flags are focus-only so every other command
+  // keeps its strict unknown-option contract.
   const command = argv.find((a) => !a.startsWith('-'));
   const textTakesValue = command === 'filter';
+  const isFocus = command === 'focus';
+  const focusBooleans = new Set([
+    '--no-llm', '--refresh', '--dry-run', '--verbose', '--track-refs',
+    '--notes', '--write-back', '--write-notes'
+  ]);
+  const focusFlagWith = new Set([
+    '--purpose', '--threshold', '--match-threshold', '--keep',
+    '--cache-dir', '--config', '--classifier', '--model'
+  ]);
   const flagWith = new Set([
     '--depth', '--format', '--type', '--id', '--kind', '--tag', '--audience',
     '--attr', '--selector', '--label'
@@ -161,7 +186,12 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === '-h' || a === '--help') opts.help = true;
     else if (a === '--json') opts.json = true;
-    else if (a === '--text') {
+    else if (isFocus && focusBooleans.has(a)) opts[a.slice(2)] = true;
+    else if (isFocus && focusFlagWith.has(a)) {
+      const v = argv[++i];
+      if (v === undefined) throw new UsageError(`${a} expects a value`);
+      opts[a.slice(2)] = v;
+    } else if (a === '--text') {
       if (textTakesValue) {
         const v = argv[++i];
         if (v === undefined) {
@@ -193,7 +223,19 @@ function parseArgs(argv) {
 
 function commandOutline(core, opts) {
   const [file] = opts._;
-  const root = documentRoot(readInput(file));
+  const source = readInput(file);
+  if (core.isMarkdownSource(source, file === '-' ? null : file)) {
+    let depth = Infinity;
+    if (opts.depth !== undefined) {
+      depth = Number(opts.depth);
+      if (!Number.isFinite(depth) || depth < 1) throw new UsageError('--depth expects a positive number');
+    }
+    const nodes = core.mdOutline(source, depth);
+    if (opts.json) return emit(nodes, true);
+    if (!nodes.length) throw new NoMatches('no headings in markdown document');
+    return emit(outlineText(nodes).join('\n'), false);
+  }
+  const root = documentRoot(source);
   let depth = Infinity;
   if (opts.depth !== undefined) {
     depth = Number(opts.depth);
@@ -207,7 +249,30 @@ function commandOutline(core, opts) {
 
 function commandFilter(core, opts) {
   const [file] = opts._;
-  const root = documentRoot(readInput(file));
+  const source = readInput(file);
+  if (core.isMarkdownSource(source, file === '-' ? null : file)) {
+    if (opts.audience || opts.attr || opts.selector) {
+      throw new UsageError('--audience/--attr/--selector are XHTML-only — markdown documents have sections only');
+    }
+    let hits;
+    try {
+      hits = core.mdFilter(source, {
+        type: opts.type,
+        id: opts.id,
+        kind: opts.kind,
+        tag: opts.tag,
+        text: opts.text
+      });
+    } catch (e) {
+      throw new UsageError(e.message);
+    }
+    if (!hits.length) throw new NoMatches('no sections match the given criteria');
+    if (opts.json) return emit(hits, true);
+    if (opts.text) return emit(hits.map((h) => h.text).join('\n\n'), false);
+    // Default: raw markdown slices, one section per block.
+    return emit(hits.map((h) => h.content).join('\n'), false);
+  }
+  const root = documentRoot(source);
   let blocks;
   try {
     blocks = core.filterBlocks(root, {
@@ -255,8 +320,21 @@ function commandExpand(core, opts) {
   if (!id) throw new UsageError('expand needs a block id');
   const format = opts.format || 'text';
   if (format !== 'text' && format !== 'xhtml') throw new UsageError('--format must be "text" or "xhtml"');
-  const root = documentRoot(readInput(file));
+  const source = readInput(file);
   let content;
+  if (core.isMarkdownSource(source, file === '-' ? null : file)) {
+    // 'xhtml' on markdown returns the section's raw source slice — the
+    // lossless canonical payload (documented in docs/focus.md).
+    try {
+      content = core.mdExpand(source, id, format);
+    } catch (e) {
+      if (/no block with id/i.test(e.message || '')) throw new NoMatches(e.message);
+      throw new DomainError(e.message);
+    }
+    if (opts.json) return emit({ id, format, content }, true);
+    return emit(content, false);
+  }
+  const root = documentRoot(source);
   try {
     content = core.expand(root, id, format);
   } catch (e) {
@@ -265,6 +343,23 @@ function commandExpand(core, opts) {
   }
   if (opts.json) return emit({ id, format, content }, true);
   emit(content, false);
+}
+
+/* ------------------------------------------------------------------ *
+ * Focus — purpose-driven collapse (decisions live in bin/lib/focus/)
+ * ------------------------------------------------------------------ */
+
+async function commandFocus(core, opts) {
+  const { runFocus } = await import('./lib/focus/cli.mjs');
+  const r = await runFocus({
+    core,
+    parseRoot: (source) => documentRoot(source),
+    opts,
+    stderr: (line) => process.stderr.write(line + '\n'),
+    guardPath: (p, what) => guardWorkspacePath(p, what)
+  });
+  emit(r.payload, r.json);
+  if (r.wrote) process.stderr.write(`semtext: focus — wrote ${r.wrote}\n`);
 }
 
 /* ------------------------------------------------------------------ *
@@ -466,6 +561,9 @@ export async function main(argv = process.argv.slice(2)) {
           case 'expand':
             commandExpand(core, opts);
             return 0;
+          case 'focus':
+            await commandFocus(core, opts);
+            return 0;
           default:
             throw new UsageError(`unknown command "${command}"`);
         }
@@ -477,6 +575,14 @@ export async function main(argv = process.argv.slice(2)) {
       return 2;
     }
     if (e instanceof UsageError || e instanceof DomainError) {
+      process.stderr.write(`semtext: ${e.message}\n`);
+      return 1;
+    }
+    if (e && e.focusKind === 'usage') {
+      process.stderr.write(`semtext: ${e.message}\n`);
+      return 1;
+    }
+    if (e && e.focusKind === 'domain') {
       process.stderr.write(`semtext: ${e.message}\n`);
       return 1;
     }

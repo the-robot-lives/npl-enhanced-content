@@ -1,3 +1,4 @@
+// 〚📦:𓮦𓕄𓚩𓽆〛 validate :: Schema-driven validation of SemText documents; every rule reads spec/schema/semtext.schema.json, nothing hardcodes a parallel rule set.
 /**
  * semtext-validate — schema-driven validation of SemText documents.
  *
@@ -41,6 +42,24 @@ const { Window } = await (async () => {
     throw new Error('semtext-validate needs the "happy-dom" package — install it (npm i -D happy-dom)');
   }
 })();
+
+/**
+ * sem-reference AUTO-ID — plain-JS twin of src/shared/reference-id.ts
+ * (the bin runs without a build; test/unit/reference-id.test.ts pins the
+ * two to the same outputs). Lowercase, every non-[a-z0-9] run → "-",
+ * trim "-"; id = (<sem-references id> || "refs") + "-" + slug(cite||href).
+ */
+export function referenceSlugJs(cite) {
+  return String(cite).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function deriveReferenceIdJs(ref) {
+  const p = (n) => ref.getAttribute('data-' + n) ?? ref.getAttribute(n);
+  const slug = referenceSlugJs(p('cite') || p('href') || '');
+  if (!slug) return null;
+  const block = ref.parentElement && ref.parentElement.closest('sem-references, .sem-references');
+  return ((block && block.getAttribute('id')) || 'refs') + '-' + slug;
+}
 
 /* ------------------------------------------------------------------ *
  * Schema loading
@@ -429,12 +448,68 @@ export function validateSource(source, schema, { filename = '<input>' } = {}) {
     }
   }
 
-  // document-level child rules from the schema (root scope)
-  for (const cr of x.document.childRules || []) {
-    const n = roots.length === 1 ? countChildMatches(roots[0], cr.selector) : 0;
-    if (cr.rule === 'atMostOne' && n > 1) {
-      push(cr.severity || 'warning', 'child-structure', `document allows at most one <${cr.selector}> under the root, found ${n}`);
+  // -- id drift (in-document fragment references) ---------------------
+  // Every authored a[href^="#"] and every sem-see-also section/component
+  // target must resolve to an id present in the SAME document. Anything
+  // else drifts silently: the link renders, the target never appears.
+  // Warning severity (the doc may legitimately be a fragment of a larger
+  // site — say so and move on, never block).
+  const ids = new Set(
+    [...doc.querySelectorAll('[id]')].map((el) => el.getAttribute('id'))
+  );
+
+  // -- sem-reference AUTO-ID (sem-references.md § Auto-id) --------------
+  // An id-less reference is valid: the runtime (and extraction) derive
+  // <block-id>-<referenceSlug(cite)>. Report the derived id as info, add
+  // it to the drift id set, flag the underivable (no cite/href) as an
+  // error and two refs deriving one id as a warning.
+  for (const ref of doc.querySelectorAll('sem-reference, .sem-reference')) {
+    if (ref.getAttribute('id')) continue;
+    const derived = deriveReferenceIdJs(ref);
+    const line = lines.get(ref);
+    if (!derived) {
+      push('error', 'reference-id', 'sem-reference has no id and no cite/href to derive one from (sem-references.md § Auto-id)', line);
+    } else if (ids.has(derived)) {
+      push('warning', 'reference-id', `auto-id "${derived}" collides with an existing id — author an id or a distinct cite`, line);
+    } else {
+      ids.add(derived);
+      push('info', 'auto-id', `sem-reference auto-id'd as "${derived}"`, line);
     }
+  }
+  const driftCfg = x.document.idDrift || {};
+  const skipHrefs = new Set(driftCfg.skipHrefs || []);
+  const drift = (value, line, what) => {
+    if (!value || value === '#') return;
+    if (skipHrefs.has(value)) return; // documented deep-link demo, not a page anchor
+    const frag = value.startsWith('#') ? value.slice(1) : value;
+    // Deep-link grammar examples (`#dv=x&q=…`) are parameters, not ids;
+    // container/child form resolves the CHILD id (src/fallback/target.ts).
+    if (frag.includes('=') || frag.includes('&')) return;
+    const candidate = frag.includes('/') ? frag.slice(frag.lastIndexOf('/') + 1) : frag;
+    if (candidate && !ids.has(candidate)) {
+      push(driftCfg.severity || 'warning', 'id-drift', `${what} points at "#${frag}" but no element in this document carries that id`, line);
+    }
+  };
+  for (const a of doc.querySelectorAll('a[href^="#"]')) {
+    drift(a.getAttribute('href'), lines.get(a), 'link');
+  }
+  const cardTags = new Set(
+    [...doc.querySelectorAll('sem-component[tag], .sem-component[data-sem-component-tag]')].map((el) =>
+      (el.getAttribute('tag') || el.getAttribute('data-sem-component-tag') || '').toLowerCase()
+    )
+  );
+  for (const el of doc.querySelectorAll('sem-see-also, .sem-see-also')) {
+    const kind = (el.getAttribute('reference') || el.getAttribute('data-reference') || 'section').toLowerCase();
+    const target = (el.getAttribute('target') || el.getAttribute('data-target') || '').trim();
+    if (!target) continue;
+    if (kind === 'file') continue; // files resolve outside the document
+    if (kind === 'component') {
+      // a component reference resolves by card tag OR by id
+      if (cardTags.has(target.toLowerCase())) continue;
+      drift(target, lines.get(el), `<sem-see-also reference="component">`);
+      continue;
+    }
+    drift(target, lines.get(el), `<sem-see-also reference="${kind}">`);
   }
 
   return { diagnostics: diagnostics.sort((a, b) => a.line - b.line) };

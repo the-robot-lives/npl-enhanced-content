@@ -1,0 +1,17 @@
+{
+  "definition": {
+    "title": "ship the bind API",
+    "steps": [
+      {"id": "kv", "label": "KV table + changeset 102"},
+      {"id": "routes", "label": "status/plan REST routes"},
+      {"id": "ingress", "label": "apex ingress path split"},
+      {"id": "embed", "label": "embed authorize + token flow"}
+    ]
+  },
+  "status": {
+    "kv": {"status": "complete", "comment": "applied to stage + prod, verified in databasechangelog"},
+    "routes": {"status": "complete", "comment": "GET/PUT status/plan/run-book/workflow + /plan/:id"},
+    "ingress": {"status": "complete", "choice": {"option": "split the apex path list", "reason": "/status /plan /embed 404'd into the SPA catch-all"}},
+    "embed": {"status": "pending", "comment": "popup login proved end to end; site release pending"}
+  }
+}

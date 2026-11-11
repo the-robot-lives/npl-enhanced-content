@@ -21,6 +21,7 @@ import { deriveSummary } from '../shared/summary.js';
 import { normalizeMd } from '../shared/mdsource.js';
 import { parseMarks } from '../shared/marks.js';
 import { trimTrailingWs } from '../shared/trim.js';
+import { deriveReferenceId } from '../shared/reference-id.js';
 
 /** One extracted record. Shape is normative; see spec/extraction.md §2. */
 export interface SemRecord {
@@ -73,6 +74,12 @@ const RECORD_TYPES = [
   'sem-code',
   'sem-references',
   'sem-reference',
+  // component-eval item 9 (spec/schema/sem-component.md,
+  // spec/schema/sem-see-also.md): the inventory card mints a component
+  // record (the manifest vocabulary, labels split); the related-reference
+  // entry mints a see-also record pointing at its target.
+  'sem-component',
+  'sem-see-also',
   // R/W2 (spec/schema/sem-table.md); sem-reader is chrome and is NOT here
   'sem-table',
   // R/W2.2 (spec/schema/sem-md.md)
@@ -113,6 +120,8 @@ const CHROME_CLASSES = [
   'sem-references-backlinks',
   'sem-references-link',
   'sem-popover',
+  // sem-procedure: the enhanced progress line ("2 of 4 done") is derived
+  'sem-procedure-meta',
   // R/W2
   'sem-reader-chrome',
   'sem-reader-outline',
@@ -593,6 +602,47 @@ function buildReference(el: Element): Payload {
   };
 }
 
+/** The component card's manifest vocabulary (spec/schema/sem-component.md). */
+function labelList(el: Element): string[] {
+  const raw = param(el, 'labels');
+  if (!raw) return [];
+  const out: string[] = [];
+  const pieces = raw.split(/[\s,]+/);
+  for (let i = 0; i < pieces.length; i++) {
+    const t = pieces[i].trim();
+    if (t) out.push(t);
+  }
+  return out;
+}
+
+function buildComponent(el: Element): Payload {
+  return {
+    fields: {
+      tag: param(el, 'tag') || '',
+      name: param(el, 'name') || '',
+      source: param(el, 'source') || '',
+      type: param(el, 'type') || '',
+      status: param(el, 'status') || '',
+      labels: labelList(el)
+    },
+    // The authored children are the description (the JS-off record).
+    text: prose(el)
+  };
+}
+
+function buildSeeAlso(el: Element): Payload {
+  return {
+    fields: {
+      reference: param(el, 'reference') || 'section',
+      target: param(el, 'target') || '',
+      preview: param(el, 'preview') || 'tldr',
+      insertAs: param(el, 'insert-as') || 'link'
+    },
+    // The authored children are the label.
+    text: prose(el)
+  };
+}
+
 function buildTable(el: Element): Payload {
   // Rows come back in AUTHORED order: the reading bundle stamps
   // `data-sem-source-index` before its sort ever moves a row, so the
@@ -721,6 +771,10 @@ function payloadFor(type: string, el: Element): Payload {
       return buildCode(el);
     case 'sem-reference':
       return buildReference(el);
+    case 'sem-component':
+      return buildComponent(el);
+    case 'sem-see-also':
+      return buildSeeAlso(el);
     case 'sem-md':
       return buildMd(el);
     case 'sem-tag-def':
@@ -780,7 +834,11 @@ export function extractRecordPairs(root: Document | Element): RecordPair[] {
   // wiring and marks them (runtime state is always data-*); a minted id
   // must never surface as a record id or JS-on extraction diverges from
   // the authored page.
+  // sem-reference is the one exception: its AUTO-ID is a pure function of
+  // authored attributes (shared/reference-id.ts), so both tiers derive the
+  // same id — the authored id when present, else <block>-<slug(cite)>.
   function authoredId(el: Element): string | null {
+    if (recordType(el) === 'sem-reference') return deriveReferenceId(el);
     return el.hasAttribute('data-sem-minted-id') ? null : el.getAttribute('id');
   }
 

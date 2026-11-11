@@ -12,6 +12,7 @@
 
 import { param } from '../shared/attr.js';
 import { attachPreview, cloneContent } from '../shared/popover.js';
+import { ensureReferenceId } from '../shared/reference-id.js';
 
 export const REFERENCES = ':is(sem-references, .sem-references)';
 const REFERENCE = ':is(sem-reference, .sem-reference)';
@@ -27,9 +28,12 @@ export function citers(id: string, exclude: Element): HTMLAnchorElement[] {
 
 export function enhanceReferencesElement(root: Element): void {
   root.querySelectorAll(':scope > ' + REFERENCE).forEach((ref) => {
-    const id = ref.id;
+    // id-less refs get the derived AUTO-ID (shared/reference-id.ts) first
+    const id = ensureReferenceId(ref);
     if (!id) return;
-    const href = param(ref, 'href');
+    // cite is the locator (v0.6+); href its compat alias — link whichever is a URL
+    const cite = param(ref, 'cite');
+    const href = param(ref, 'href') || (cite && /^https?:\/\//i.test(cite) ? cite : null);
     if (href && !ref.querySelector(':scope > .sem-references-link')) {
       const a = document.createElement('a');
       a.className = 'sem-references-link';
