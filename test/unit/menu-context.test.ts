@@ -197,6 +197,18 @@ describe('menu lifecycle + a11y', () => {
     expect(document.activeElement).toBe(surface);
   });
 
+  it('close returns focus to host.focusReturnTarget (not body) when provided', () => {
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    const h = fakeHost(surface, { focusReturnTarget: () => input });
+    const c = new ContextMenuController(h, { doc: document });
+    c.attach();
+    c.open({ x: 10, y: 10 });
+    c.close();
+    expect(document.activeElement).toBe(input);
+    c.detach();
+  });
+
   it('Tab dismisses without activating', () => {
     controller.open({ x: 10, y: 10 });
     itemById('copy')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
