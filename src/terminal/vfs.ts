@@ -186,6 +186,25 @@ export class Vfs {
     return best;
   }
 
+  /**
+   * Dry-run of mountFile's path rules: throws exactly when mountFile(path)
+   * would, touching nothing — lets callers validate a batch before mounting.
+   */
+  validateMountPath(path: string): void {
+    const parts = assertMountPath(path);
+    let node: VfsNode = this.root;
+    for (let i = 0; i < parts.length; i++) {
+      const next: VfsNode | undefined = (node as VfsDir).children.find((child) => child.name === parts[i]);
+      if (!next) return;
+      if (i === parts.length - 1) {
+        if (next.kind === 'dir') throw new Error(`vfs: "${path}" is a directory`);
+        return;
+      }
+      if (next.kind !== 'dir') throw new Error(`vfs: "${path}" walks through a file ("${parts[i]}")`);
+      node = next;
+    }
+  }
+
   /** Attach a durable backend at its declared mountpoint. */
   attachBackend(backend: VfsBackend): void {
     this.mounts.set(backend.mountpoint, backend);
@@ -198,7 +217,19 @@ export class Vfs {
   /** Fire-and-forget flush; records + reports failures, never throws. */
   #flush(backend: VfsBackend, op: VfsStorageError['op'], path: string, run: () => Promise<void>): void {
     const writing = op === 'write' || op === 'mkdirp' || op === 'rm' || op === 'rename';
-    if (writing && !backend.writable) return;
+    if (writing && !backend.writable) {
+      // Surface it: the in-memory write stands, but it will not persist.
+      const error: VfsStorageError = {
+        backend: backend.id,
+        mountpoint: backend.mountpoint,
+        op,
+        path,
+        message: 'read-only mount: change kept in memory only, not persisted',
+      };
+      this.storageErrors.push(error);
+      this.onError?.(error);
+      return;
+    }
     run().catch((cause: unknown) => {
       const error: VfsStorageError = {
         backend: backend.id,
@@ -225,6 +256,18 @@ export class Vfs {
    * directory occupies the spot, or when the path walks through a file.
    */
   mountFile(path: string, content: string): VfsFile {
+    return this.#put(path, content, true);
+  }
+
+  /**
+   * Seed a file into the cache WITHOUT flushing to any backend — used to
+   * hydrate a mount from the store it already mirrors (no re-upload).
+   */
+  seed(path: string, content: string): VfsFile {
+    return this.#put(path, content, false);
+  }
+
+  #put(path: string, content: string, flush: boolean): VfsFile {
     const parts = assertMountPath(path);
     let node: VfsDir = this.root;
     for (let i = 0; i < parts.length - 1; i++) {
@@ -245,12 +288,12 @@ export class Vfs {
     if (found && found.kind === 'dir') throw new Error(`vfs: "${path}" is a directory`);
     if (found && found.kind === 'file') {
       found.content = content;
-      this.#flushFor(path, 'write', (backend) => backend.write(path, content));
+      if (flush) this.#flushFor(path, 'write', (backend) => backend.write(path, content));
       return found;
     }
     const file: VfsFile = { kind: 'file', name, content };
     node.children.push(file);
-    this.#flushFor(path, 'write', (backend) => backend.write(path, content));
+    if (flush) this.#flushFor(path, 'write', (backend) => backend.write(path, content));
     return file;
   }
 
