@@ -2,6 +2,8 @@
 
 ## 2026-11-11
 
+- **fix(vanilla/target): deep link resolves once, not on every mutation re-scan.** `settleTarget()` re-ran the hash-target `scrollIntoView({block:'start'})` on every 50ms enhancement re-scan; a page with live content (autoplaying `sem-shell` demos, carousels) mutates forever, so the reader was yanked to the hash target constantly. Latch the initial resolution (`resolved`): re-scans and pending settle timers no longer re-scroll once landed (or when there is no hash); `hashchange` resets the latch for a new target. Preserves the 0.9.1 slow-page retry (re-arms until the first successful resolution). +3 regression tests.
+
 - **shell element UX + theme batch (feature/shell-element).** Wheel/touch scroll passthrough, keyboard copy, history persistence + 5000-line cap, caret-preserving Tab completion, `run()` + `sem-shell-ready`/`sem-shell-command`, sandboxed `open`, forced-colors live swap, one `--sem-term-*` palette (4.5:1 tested), title-bar/tab/replay chrome fixes.
 
 - **shell docs reconciled with shipped code; DEFERRED.md added.** PLUGINS.md (async `run`, `app`/`tab` actions, packages + `supersede`, `vfs.attachBackend`/`vfs.storageErrors`, loader trust model + CDN policy), CORE-V2.md (status, async §6.5, lazy-chunk reality vs invariant 1, report-only budget, as-built paths), WASM-POC.md, `docs/arch/bundles.md`, ROADMAP shell size rows; new `docs/terminal/DEFERRED.md`. Docs only (feature/shell-docs).

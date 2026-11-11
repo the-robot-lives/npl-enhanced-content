@@ -1,0 +1,3 @@
+# Union-merge dated work-log entries so parallel branches landing the same
+# day stop conflicting on the top heading (PI-005). Built-in git union driver.
+CHANGELOG.md merge=union
