@@ -1,4 +1,4 @@
-import { html, type PropertyValues, type TemplateResult } from 'lit';
+import { html, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { ansiSpans, type AnsiSpan } from './ansi/index.js';
 import { SemElement } from '../lit/base.js';
 import {
@@ -52,7 +52,7 @@ import { DOMMirror } from './render/mirror.js';
 import { screenView, type PaintScreen, type Rgb } from './render/screen-shape.js';
 import type { CanvasRenderer } from './render/canvas.js';
 import type { CellMetrics, ScreenRenderer } from './render/types.js';
-import { renderTabStrip, renderWindowTitlebar } from '../shared/window-chrome.js';
+import { renderTabStrip, renderWindowTitlebar, tabDomId } from '../shared/window-chrome.js';
 import '../shared/sem-scroll.js'; // side-effect: register <sem-scroll> (§10)
 import type { KeyEvent } from './screen/types.js';
 import type { AppSpawnAction } from './terminal-core.js';
@@ -135,6 +135,7 @@ export class SemTerminal extends SemElement {
   /** Every live session, oldest first (strip order mirrors the TabModel). */
   readonly #sessions: TerminalSession[] = [];
   /** This element's prompt input id — unique per instance (§2.3). */
+  readonly #panelId = `sem-shell-panel-${promptInputSeq + 1}`;
   readonly #inputId = `sem-shell-input-${++promptInputSeq}`;
   /** The session the strip points at — the source of every active-path read. */
   #session: TerminalSession;
@@ -651,6 +652,8 @@ export class SemTerminal extends SemElement {
 
   render(): TemplateResult {
     const tabs = this.tabModel.tabs;
+    const tabbed = tabs.length > 1 || this.tabs;
+    const activeTab = tabs.find((tab) => tab.id === this.tabModel.activeId);
     // Alt screen: no scrollback — total==visible hides the scrollbar (§10).
     const total = this.screen.altScreen ? this.screen.rows : this.screen.totalLines();
     return html`
@@ -666,6 +669,8 @@ export class SemTerminal extends SemElement {
                 })),
                 label: 'Shell tabs',
                 closable: true,
+                idPrefix: this.#inputId,
+                panelId: this.#panelId,
               })}
               <button
                 type="button"
@@ -688,6 +693,13 @@ export class SemTerminal extends SemElement {
                 replay
               </button>`
           : null}
+        <div
+          class="sem-shell-panel"
+          style="display: contents"
+          id=${this.#panelId}
+          role=${tabbed ? 'tabpanel' : nothing}
+          aria-labelledby=${tabbed && activeTab !== undefined ? tabDomId(this.#inputId, String(activeTab.id)) : nothing}
+        >
         <div class="sem-term-surface">
           <sem-scroll
             class="sem-term-scrollbar"
@@ -699,6 +711,7 @@ export class SemTerminal extends SemElement {
         </div>
         <div class="sem-shell-transcript" role="log" aria-live="polite" aria-label="Shell transcript">
           ${this.lines.map((line) => this.#renderLine(line))}
+        </div>
         </div>
         ${this.appLive ? null : this.tui ? this.#renderTui() : this.#renderPrompt()}
       </div>
@@ -728,7 +741,7 @@ export class SemTerminal extends SemElement {
     const state = this.tui!;
     const card = state.cards[state.index] ?? null;
     return html`
-      <div class="sem-tui" role="dialog" aria-label="SemText cards — read-only view" tabindex="0" @keydown=${this.#onTuiOverlayKeydown}>
+      <div class="sem-tui" role="group" aria-label="SemText cards — read-only view" tabindex="0" @keydown=${this.#onTuiOverlayKeydown}>
         <div class="sem-tui-head">
           tui — ${state.title} · ${tuiPosition(state)}${state.filter !== '' ? ` · filter: ${state.filter}` : ''}
         </div>
@@ -1005,6 +1018,16 @@ export class SemTerminal extends SemElement {
         self.#browserPassthroughArmed = true;
       },
       surface: () => self,
+      focusReturnTarget: () => {
+        // The host element is not focusable — land on the prompt input, else
+        // the canvas lane's hidden input, else the host (tabindex fallback).
+        const target =
+          self.querySelector<HTMLElement>('.sem-shell-input') ??
+          self.querySelector<HTMLElement>('.sem-shell-hidden-input');
+        if (target !== null) return target;
+        if (!self.hasAttribute('tabindex')) self.setAttribute('tabindex', '-1');
+        return self;
+      },
     };
   }
 

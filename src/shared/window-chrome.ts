@@ -40,6 +40,7 @@
  */
 
 import { html, type TemplateResult } from 'lit';
+import { ifDefined } from 'lit/directives/if-defined.js';
 
 /** The class-name contract. Keep in one place; the CSS keys off these. */
 export const WINDOW_CHROME = {
@@ -59,6 +60,8 @@ export const WINDOW_CHROME = {
   tabs: 'sem-window-tabs',
   /** The per-tab close affordance; rendered only when the strip is closable. */
   tabClose: 'sem-window-tab-close',
+  /** Presentational wrapper pairing a tab with its SIBLING close button. */
+  tabCell: 'sem-window-tab-cell',
   /** The tab that names what the viewport shows. */
   tabActive: 'sem-window-tab-active',
   /** The tab's label text (updates from the loaded document). */
@@ -175,6 +178,15 @@ export interface WindowTabStripOptions {
   label?: string;
   /** Render a close affordance per tab; the host delegates the clicks. */
   closable?: boolean;
+  /** Prefix for the tab ids (`<prefix>-tab-<id>`); unique per strip on a page. */
+  idPrefix?: string;
+  /** Id of the tabpanel the tabs control (`aria-controls`). Omitted = no link. */
+  panelId?: string;
+}
+
+/** The DOM id of a tab — the panel's `aria-labelledby` target. */
+export function tabDomId(idPrefix: string, tabId: string): string {
+  return `${idPrefix}-tab-${tabId}`;
 }
 
 /** Strip class for a tab: base + active. */
@@ -190,19 +202,23 @@ function tabClasses(tab: WindowTab): string {
  * delegates clicks by `data-tab-close`.
  */
 export function renderTabStrip(options: WindowTabStripOptions): TemplateResult {
-  const { tabs, label = 'Tabs', closable = false } = options;
+  const { tabs, label = 'Tabs', closable = false, idPrefix = 'sem-window', panelId } = options;
   return html`
     <div class=${WINDOW_CHROME.tabs} role="tablist" aria-label=${label}>
       ${tabs.map(
         (tab) => html`
-          <div
-            class=${tabClasses(tab)}
-            role="tab"
-            aria-selected=${tab.active === true}
-            tabindex=${tab.active === true ? 0 : -1}
-            data-tab-id=${tab.id}
-          >
-            <span class=${WINDOW_CHROME.tabTitle}>${tab.title}</span>
+          <div class=${WINDOW_CHROME.tabCell} role="presentation">
+            <div
+              class=${tabClasses(tab)}
+              role="tab"
+              id=${tabDomId(idPrefix, tab.id)}
+              aria-selected=${tab.active === true}
+              aria-controls=${ifDefined(panelId)}
+              tabindex=${tab.active === true ? 0 : -1}
+              data-tab-id=${tab.id}
+            >
+              <span class=${WINDOW_CHROME.tabTitle}>${tab.title}</span>
+            </div>
             ${closable
               ? html`<button
                   type="button"
@@ -226,7 +242,7 @@ export function renderTabStrip(options: WindowTabStripOptions): TemplateResult {
  * together). Labels go in via `textContent`; the host owns the events.
  */
 export function createTabStrip(options: WindowTabStripOptions): HTMLElement {
-  const { tabs, label = 'Tabs', closable = false } = options;
+  const { tabs, label = 'Tabs', closable = false, idPrefix = 'sem-window', panelId } = options;
   const doc = typeof document === 'undefined' ? null : document;
   if (doc === null) throw new Error('createTabStrip needs a document');
 
@@ -236,9 +252,14 @@ export function createTabStrip(options: WindowTabStripOptions): HTMLElement {
   strip.setAttribute('aria-label', label);
 
   for (const tab of tabs) {
+    const group = doc.createElement('div');
+    group.className = WINDOW_CHROME.tabCell;
+    group.setAttribute('role', 'presentation');
     const cell = doc.createElement('div');
     cell.className = tabClasses(tab);
     cell.setAttribute('role', 'tab');
+    cell.id = tabDomId(idPrefix, tab.id);
+    if (panelId !== undefined) cell.setAttribute('aria-controls', panelId);
     cell.setAttribute('aria-selected', tab.active === true ? 'true' : 'false');
     cell.setAttribute('tabindex', tab.active === true ? '0' : '-1');
     cell.setAttribute('data-tab-id', tab.id);
@@ -247,6 +268,7 @@ export function createTabStrip(options: WindowTabStripOptions): HTMLElement {
     cellTitle.className = WINDOW_CHROME.tabTitle;
     cellTitle.textContent = tab.title; // textContent — the title is never HTML
     cell.appendChild(cellTitle);
+    group.appendChild(cell);
 
     if (closable) {
       const close = doc.createElement('button');
@@ -255,9 +277,9 @@ export function createTabStrip(options: WindowTabStripOptions): HTMLElement {
       close.setAttribute('aria-label', `Close ${tab.title}`);
       close.setAttribute('data-tab-close', tab.id);
       close.textContent = '×';
-      cell.appendChild(close);
+      group.appendChild(close);
     }
-    strip.appendChild(cell);
+    strip.appendChild(group);
   }
   return strip;
 }

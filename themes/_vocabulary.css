@@ -2136,6 +2136,12 @@ sem-terminal .sem-ansi-bg107, sem-shell .sem-ansi-bg107 { background: rgba(214,2
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+.sem-window-tab-cell {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.sem-window-tab-cell .sem-window-tab-close { padding: 0.25rem 0.375rem; }
 .sem-window-tab-close {
   appearance: none;
   border: 0;

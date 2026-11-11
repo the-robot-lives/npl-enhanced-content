@@ -2,6 +2,14 @@
 
 ## 2026-11-11
 
+- **shell 2.4 — menu focus return, tab/tabpanel ARIA, flashcard role.**
+  Closing the context menu now focuses the prompt input (else the
+  hidden canvas input, else the host with a tabindex fallback) instead
+  of dropping to `<body>`; tab close buttons are siblings of the
+  `role=tab` (no nested interactive), tabs carry ids + `aria-controls`
+  and the shell content region is a `role=tabpanel` labelled by the
+  active tab; the inline flashcard widget is `role=group`, not dialog.
+
 - **shell 1.3 — lazy packages load on first use, not at boot (#100).**
   `createLazyPackage` no longer starts the `semtext-pkg-<pkg>.js` chunk
   import at module evaluation: the first non-help invocation of a

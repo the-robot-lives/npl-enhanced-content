@@ -134,3 +134,25 @@ describe('window-chrome tab strip', () => {
     expect(back).toBe('busy');
   });
 });
+
+describe('tab ARIA structure (shell 2.4)', () => {
+  for (const [name, build] of [
+    ['lit', () => { const h = document.createElement('div'); render(renderTabStrip({ tabs: THREE_TABS, closable: true, idPrefix: 'p', panelId: 'panel-1' }), h); return h.firstElementChild as HTMLElement; }],
+    ['imperative', () => createTabStrip({ tabs: THREE_TABS, closable: true, idPrefix: 'p', panelId: 'panel-1' })],
+  ] as const) {
+    it(`${name}: no role=tab contains a button; close is a sibling`, () => {
+      const strip = build();
+      const tabs = [...strip.querySelectorAll('[role="tab"]')] as HTMLElement[];
+      expect(tabs).toHaveLength(3);
+      for (const tab of tabs) {
+        expect(tab.querySelector('button')).toBeNull();
+        expect(tab.nextElementSibling?.tagName).toBe('BUTTON');
+      }
+    });
+    it(`${name}: each tab has an id and aria-controls`, () => {
+      const tabs = [...build().querySelectorAll('[role="tab"]')] as HTMLElement[];
+      expect(tabs.map((t) => t.id)).toEqual(['p-tab-t1', 'p-tab-t2', 'p-tab-t3']);
+      expect(tabs.every((t) => t.getAttribute('aria-controls') === 'panel-1')).toBe(true);
+    });
+  }
+});
