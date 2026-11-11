@@ -8,7 +8,8 @@
 // Feature: the core stays SemText-free
 //   Scenario: a bare <sem-terminal> has no demo commands
 // Feature: the demo plugin on <sem-shell>
-//   Scenario: boot reports the local mount and the refused CDN demo plugin
+//   Scenario: a quiet boot — one stdout line, zero stderr, no demo noise
+//   Scenario: a scripted boot adds the replay hint (and only then)
 //   Scenario: ls / semtext run through the prompt
 // Feature: terminal mechanics
 //   Scenario: up/down history with draft restore; Ctrl+L clears
@@ -106,17 +107,32 @@ describe('the core stays SemText-free', () => {
 });
 
 describe('<sem-shell> — the demo plugin', () => {
-  it('boots with the local mount and the refused CDN demo plugin', async () => {
+  it('boots quiet: exactly one stdout line, zero stderr, no fetches, no replay talk', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     const el = await attach('sem-shell');
-    expect(el.lines.some((l) => l.text.includes('semtext-demo 0.1.0 mounted'))).toBe(true);
-    await vi.waitFor(() =>
-      expect(el.lines.some((l) => l.kind === 'stderr' && l.text.includes('integrity'))).toBe(true),
-    );
-    expect(fetchMock).not.toHaveBeenCalled(); // refused before any network request
-    expect(el.core.loadErrors).toHaveLength(1);
+    const stdout = el.lines.filter((l) => l.kind === 'stdout');
+    expect(stdout).toHaveLength(1);
+    expect(stdout[0]!.text).toMatch(/^shell ready — \d+ plugins, \d+ packages, \d+ commands \(type help\)$/);
+    expect(el.lines.filter((l) => l.kind === 'stderr')).toHaveLength(0);
+    expect(el.lines.some((l) => l.text.includes('replay'))).toBe(false);
+    expect(el.lines.some((l) => l.text.includes('mounted'))).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled(); // the CDN-refusal demo is gone
     expect(el.core.hasCommand('semtext')).toBe(true);
+  });
+
+  it('a scripted boot adds exactly one replay hint; an unscripted one adds none', async () => {
+    const el = document.createElement('sem-shell') as SemShell;
+    el.setAttribute('start-script', '$ echo scripted');
+    document.body.appendChild(el);
+    await el.updateComplete;
+    const hints = el.lines.filter((l) => l.kind === 'stdout' && l.text === 'press replay to watch the demo.');
+    expect(hints).toHaveLength(1);
+    // the hint follows the single quiet boot line, not a stack of mount chatter
+    const stdout = el.lines.filter((l) => l.kind === 'stdout');
+    expect(stdout[0]!.text).toMatch(/^shell ready — /);
+    expect(stdout[1]!.text).toBe('press replay to watch the demo.');
+    expect(el.querySelector('.sem-shell-replay')).not.toBeNull();
   });
 
   it('ls and semtext run through the prompt', async () => {

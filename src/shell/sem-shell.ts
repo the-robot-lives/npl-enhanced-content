@@ -32,11 +32,6 @@ import {
  *   - semtext-demo the /demo documents and the semtext/open commands
  *                (src/terminal/plugins/demo/)
  *
- * Then it demonstrates the PLUGINS.md CDN rule by attempting a third plugin
- * from an absolute https URL with no integrity hash: the loader refuses it
- * BEFORE any network request, prints the refusal as a stderr line, and
- * records it on core.loadErrors.
- *
  * Real remote plugins are the parent element's job:
  * `<sem-terminal plugins="https://cdn/…/manifest.json#sha256-… …">`.
  *
@@ -73,8 +68,13 @@ export class SemShell extends SemTerminal {
   #autoRunning = false;
   /** Only the first session gets the boot novelty lines (§11.2: tabs are quiet). */
   #firstSessionHooked = false;
-  /** The CDN-refusal demo plays once per element, not once per tab. */
-  #cdnDemoShown = false;
+  /**
+   * The first session still owes its replay hint — emitted only once a
+   * replayable script is actually attached (the boot `script` attr, an
+   * inline start-script, or a fetched start-script file). No script ⇒
+   * no hint: the boot paint stays one clean line.
+   */
+  #bootHintOwed = false;
   /**
    * The fetched start-script FILE body (r2 follow-up): kept so the replay
    * button can re-attach the same demo — `#hasScript` alone can't, the
@@ -123,8 +123,10 @@ export class SemShell extends SemTerminal {
   /**
    * Per-session command setup (§11.2): the bundled manifests mount on every
    * tab's core, so `help`/`ls`/`bat` work everywhere. The boot novelty —
-   * the "type help" banner and the CDN-refusal demo — stays with the FIRST
-   * session; a new tab is a fresh shell, not a fresh demo.
+   * the one quiet `shell ready` line and, when a script exists, the replay
+   * hint — stays with the FIRST session; a new tab is a fresh shell, not a
+   * fresh demo. Mount failures surface as stderr (they never happen at
+   * boot; if one does, it must be loud).
    */
   protected override configureSessionCore(core: TerminalCore, emit: (lines: ShellLine[]) => void): void {
     const lines: ShellLine[] = [];
@@ -135,13 +137,14 @@ export class SemShell extends SemTerminal {
     // picks up the packages' pages (applyPackageMan is identity for
     // manifests that carry no `man` command). Registration is appending to
     // src/terminal/packages/manifest.ts — nothing else changes here.
+    let plugins = 0;
+    let packages = 0;
+    let commands = 0;
     for (const manifest of [posixPlugin, demoPlugin, cardsPlugin]) {
       const mounted = core.mountPlugin(applyPackageMan(manifest));
       if (mounted.ok) {
-        lines.push({
-          kind: 'stdout',
-          text: `plugin ${manifest.name} ${manifest.version} mounted — ${manifest.commands.length} commands`,
-        });
+        plugins += 1;
+        commands += manifest.commands.length;
       } else {
         lines.push({ kind: 'stderr', text: `plugin ${manifest.name}: ${mounted.error}` });
       }
@@ -150,27 +153,22 @@ export class SemShell extends SemTerminal {
       const pkg = PACKAGES.find((p) => p.name === pm.pkg);
       const count = pkg?.commands.length ?? 0;
       if (pm.ok) {
-        lines.push({ kind: 'stdout', text: `package ${pm.pkg} mounted — ${count} command${count === 1 ? '' : 's'} (lazy)` });
+        packages += 1;
+        commands += count;
       } else {
         lines.push({ kind: 'stderr', text: `package ${pm.pkg}: ${pm.error}` });
       }
     }
+    lines.push({
+      kind: 'stdout',
+      text: `shell ready — ${plugins} plugins, ${packages} packages, ${commands} commands (type help)`,
+    });
     if (!this.#firstSessionHooked) {
       this.#firstSessionHooked = true;
-      lines.push({ kind: 'stdout', text: 'type help to begin — or press replay to watch the demo.' });
+      this.#bootHintOwed = true;
+      this.#emitBootHint();
     }
     emit(lines);
-    // The CDN-rule demo: absolute https, no integrity — refused pre-fetch.
-    // Asserted via core.loadErrors in the unit tests (session 1's core is
-    // the active `el.core` at boot).
-    if (!this.#cdnDemoShown) {
-      this.#cdnDemoShown = true;
-      void core.loadPluginFromUrl('https://cdn.noizu.com/semtext/plugins/extra/manifest.json').then((result) => {
-        if (!result.ok) {
-          emit([{ kind: 'stderr', text: `plugin https://cdn.noizu.com/…: ${result.error}` }]);
-        }
-      });
-    }
   }
 
   /**
@@ -256,6 +254,23 @@ export class SemShell extends SemTerminal {
   /* ------------------------------------------------------------------ *
    * in-view autostart (src/terminal/script/)
    * ------------------------------------------------------------------ */
+
+  /**
+   * A script attached itself (the boot `script`/`playback` flow, an inline
+   * start-script, or a fetched start-script file) — the owed replay hint
+   * may now fire. No script attached ⇒ the hint never prints.
+   */
+  protected override markScripted(): void {
+    super.markScripted();
+    this.#emitBootHint();
+  }
+
+  /** The replay hint: printed once, only when replay actually exists. */
+  #emitBootHint(): void {
+    if (!this.#bootHintOwed || !this.replayable) return;
+    this.#bootHintOwed = false;
+    this.appendLines([{ kind: 'stdout', text: 'press replay to watch the demo.' }]);
+  }
 
   #attachAutostart(): void {
     const value = this.getAttribute('start-script');

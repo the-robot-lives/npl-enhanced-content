@@ -2,6 +2,19 @@
 
 ## 2026-11-11
 
+- **quiet boot — one clean `shell ready` line, no CDN-refusal demo.**
+  The shell's first paint collapses the 14 per-plugin/per-package mount
+  lines + hint into a single `shell ready — N plugins, M packages, K
+  commands (type help)` stdout line (mount failures still surface as
+  stderr); the deliberate `cdn.noizu.com` CDN-refusal demo block and its
+  `#cdnDemoShown` field are deleted (removed once in v0.7.2 e218d23,
+  reintroduced in c317853, now permanent per owner 2026-11-11); the
+  replay hint prints only when a replayable script is actually attached
+  (`SemTerminal.replayable`, via `markScripted`), so an unscripted boot
+  emits exactly one stdout line and zero stderr.
+
+## 2026-11-11
+
 - **0.9.6 — `sem-reference` real handler (AUTO-ID, footnote chrome) +
   `sem-procedure` / `sem-step` / `sem-tldr` / `sem-summary` renders.**
   `sem-reference` and `sem-step` graduate out of `sem-stubs.ts`. An
