@@ -224,3 +224,13 @@ describe('forced-colors + platform', () => {
     }
   });
 });
+
+describe('window chrome placement (5.2)', () => {
+  it('the replay control lives in the title bar actions slot, not over the tab strip', async () => {
+    delete (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver;
+    const el = await attach({ 'start-script': '$ echo hi\n@sleep 2\n$ echo done' });
+    await vi.waitFor(() => expect(el.querySelector('.sem-shell-replay, .sem-shell-stop')).not.toBeNull(), { timeout: 3000, interval: 50 });
+    const replay = el.querySelector('.sem-shell-replay, .sem-shell-stop')!;
+    expect(replay.closest('.sem-window-titlebar .sem-window-actions')).not.toBeNull();
+  });
+});

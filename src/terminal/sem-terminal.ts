@@ -722,6 +722,19 @@ export class SemTerminal extends SemElement {
    * render
    * ---------------------------------------------------------------- */
 
+  /** Replay / stop control — lives in the title bar's actions slot (never over the tab strip). */
+  #scriptActions(): TemplateResult | null {
+    if (!this.#hasScript) return null;
+    return this.playing || this.demoRunning
+      ? html`<span class="sem-shell-demo-hint">Esc to take over</span
+          ><button type="button" class="sem-shell-stop" aria-label="Stop the scripted demo" @click=${() => this.stopDemo()}>
+            stop demo
+          </button>`
+      : html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
+          replay
+        </button>`;
+  }
+
   render(): TemplateResult {
     const tabs = this.tabModel.tabs;
     const tabbed = tabs.length > 1 || this.tabs;
@@ -730,7 +743,11 @@ export class SemTerminal extends SemElement {
     const total = this.screen.altScreen ? this.screen.rows : this.screen.totalLines();
     return html`
       <div class="sem-shell-frame" @click=${this.#focusInput} @keydown=${this.#onFrameKeydown}>
-        ${renderWindowTitlebar({ title: this.titleFeed.title || 'sem shell', tone: this.titleFeed.status.tone })}
+        ${renderWindowTitlebar({
+          title: this.titleFeed.title || 'sem shell',
+          tone: this.titleFeed.status.tone,
+          actions: this.#scriptActions(),
+        })}
         ${tabs.length > 1 || this.tabs
           ? html`<div class="sem-term-tabs" @click=${this.#onTabStripClick} @keydown=${this.#onTabStripKeydown}>
               ${renderTabStrip({
@@ -754,16 +771,6 @@ export class SemTerminal extends SemElement {
                 +
               </button>
             </div>`
-          : null}
-        ${this.#hasScript
-          ? this.playing || this.demoRunning
-            ? html`<button type="button" class="sem-shell-stop" aria-label="Stop the scripted demo" @click=${() => this.stopDemo()}>
-                  stop demo
-                </button>
-                <span class="sem-shell-demo-hint">Esc to take over</span>`
-            : html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
-                replay
-              </button>`
           : null}
         <div
           class="sem-shell-panel"
@@ -1023,14 +1030,14 @@ export class SemTerminal extends SemElement {
     else this.#mirrorOnly?.drain(damage);
   }
 
-  /** Theme ANSI-16 from the --sem-ansi-N tokens, cached until metrics move. */
+  /** Theme ANSI-16 from the --sem-term-ansi-N tokens, cached until metrics move. */
   #themeAnsi(index: number): Rgb | null {
     const cached = this.#ansiCache[index];
     if (cached !== undefined) return cached;
     const view = this.ownerDocument?.defaultView;
     let rgb: Rgb | null = null;
     if (view !== null && view !== undefined && typeof view.getComputedStyle === 'function') {
-      rgb = parseRgbToken(view.getComputedStyle(this).getPropertyValue(`--sem-ansi-${index}`).trim());
+      rgb = parseRgbToken(view.getComputedStyle(this).getPropertyValue(`--sem-term-ansi-${index}`).trim());
     }
     this.#ansiCache[index] = rgb;
     return rgb;
