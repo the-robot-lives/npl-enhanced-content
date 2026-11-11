@@ -55,6 +55,27 @@
   2/1. Docs: `docs/focus.md`; US-405 notes the future MCP wrapper
   (PENDING). 60 new unit specs (markdown-sections, focus core, CLI
   contracts over both binaries).
+- **Terminal render mode: `<sem-tui>` wrapper + `render-mode="tui"` on any
+  SemText element.** Every element can now present itself as terminal
+  text — box-drawing callouts, `▸/▾` disclosure carets honoring
+  `collapsed`/`open`, `├─ └─` tree glyphs for nested records, aligned
+  table columns, `[TL;DR]` labels, `[sem-xyz: summary]` placeholders for
+  non-textual elements — reusing the pipe CLI's extraction recipe
+  (`src/extract/records.ts` + `parseTreeContainer`) through a new pure
+  module `src/shared/text-render/`. Mode resolution: own
+  `render-mode`/`tui` attribute > nearest `<sem-tui>` frame's current
+  mode > rich; the outermost tui element renders the whole subtree and
+  nested sem-* never double-frame. `<sem-tui>` adds `cols` (default 80),
+  `theme` (dark/light/amber/green via `--sem-tui-*` custom properties)
+  and an optional `toggle` Rich/Terminal switch (real button,
+  `aria-pressed`, bubbling `sem-render-mode-change`). The terminal view
+  mounts `<pre class="sem-tui" part="tui" aria-label=…>` while authored
+  children are CSS-hidden — nothing moves, so extraction stays
+  byte-identical and flipping back restores rich wiring. New document
+  driver `src/lit/shared/render-mode.ts` (installed from the core
+  barrel); new element registered in the lazy manifest, schema
+  (`spec/schema/sem-tui.md` + global `render-mode`/`tui` attributes) and
+  `elements.json`; demo `web/demo/sem-tui.html`; docs `docs/sem-tui.md`.
 
 ## 2026-10-26
 
