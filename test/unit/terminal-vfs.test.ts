@@ -237,7 +237,46 @@ describe('durable backends', () => {
     vfs.mkdir('/y');
     await settled();
     expect(backend.ops).toEqual([]); // nothing attempted
-    expect(vfs.storageErrors).toHaveLength(0); // and nothing reported
+    expect(vfs.storageErrors.every((e) => /read-only/.test(e.message))).toBe(true); // reported as a warning
     expect(vfs.nodeAt('/y')?.kind).toBe('dir'); // the in-memory tree still works
+  });
+});
+
+describe('seed + read-only warnings', () => {
+  it('seed fills the cache without flushing to the backend', async () => {
+    const vfs = new Vfs();
+    const backend = new MemoryBackend('store', '/s3');
+    vfs.attachBackend(backend);
+    vfs.seed('/s3/a.txt', 'A');
+    vfs.seed('/s3/a.txt', 'A2'); // overwrite path too
+    await settled();
+    expect(vfs.read('/s3/a.txt')).toBe('A2');
+    expect(backend.ops).toEqual([]);
+    vfs.mountFile('/s3/b.txt', 'B');
+    await settled();
+    expect(backend.ops.map((o) => o.op)).toEqual(['write']);
+  });
+
+  it('a write under a read-only mount records a storage error (kept in memory)', async () => {
+    const vfs = new Vfs();
+    const seen: string[] = [];
+    vfs.onError = (e) => seen.push(e.message);
+    vfs.attachBackend(new MemoryBackend('ro', '/ro', false));
+    vfs.mountFile('/ro/x.txt', 'X');
+    await settled();
+    expect(vfs.read('/ro/x.txt')).toBe('X');
+    expect(vfs.storageErrors).toHaveLength(1);
+    expect(seen[0]).toMatch(/read-only/);
+  });
+
+  it('validateMountPath is a dry run of mountFile', () => {
+    const vfs = new Vfs();
+    vfs.mountFile('/a/file', 'x');
+    vfs.mountFile('/d/f', 'x');
+    expect(() => vfs.validateMountPath('/a/file/deeper')).toThrow(/walks through a file/);
+    expect(() => vfs.validateMountPath('/d')).toThrow(/directory/);
+    expect(() => vfs.validateMountPath('rel')).toThrow(/absolute/);
+    expect(() => vfs.validateMountPath('/new/ok')).not.toThrow();
+    expect(vfs.nodeAt('/new')).toBeNull();
   });
 });
