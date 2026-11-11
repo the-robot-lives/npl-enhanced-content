@@ -56,7 +56,9 @@ function resolve(segment: string): Element | null {
 }
 
 function run(): void {
-  for (const segment of bareSegments()) {
+  const segments = bareSegments();
+  if (segments.length === 0) { resolved = true; return; } // no hash — nothing to resolve, stop re-arming
+  for (const segment of segments) {
     const target = resolve(segment);
     if (!target) continue;
     // Outermost first, so a card inside a view is selected after the view shows.
@@ -93,6 +95,7 @@ function run(): void {
     clearTimeout(timer);
     target.classList.add('sem-target');
     timer = window.setTimeout(() => target.classList.remove('sem-target'), 1500);
+    resolved = true; // landed once — re-scans must not re-scroll (autoplaying demos mutate forever)
     return; // first resolvable segment wins
   }
 }
@@ -101,6 +104,13 @@ function run(): void {
 // (hashchange/beforeprint/afterprint) wire ONCE no matter how often the
 // re-scan calls back into the document scope.
 let wired = false;
+
+/** Once the initial deep link has resolved (or there is no hash), stop
+ * re-arming on every re-scan. The mutation re-scan fires perpetually on a
+ * page with live content (autoplaying sem-shell demos, carousels), and
+ * re-running `run()` re-scrolls to the hash target each time — yanking the
+ * reader to the top constantly. hashchange resets this for a new target. */
+let resolved = false;
 
 /** The initial resolution must land only once the enhancement passes have
  * stopped moving the document. A bare `setTimeout(run, 0)` fires after one
@@ -116,6 +126,7 @@ let settleTimer = 0;
 function runWhenSettled(): void {
   window.clearTimeout(settleTimer);
   settleTimer = window.setTimeout(() => {
+    if (resolved) return; // already landed — a pending settle must not re-scroll
     if (document.readyState === 'loading') {
       runWhenSettled(); // passes are still mid-parse — let them finish
       return;
@@ -127,7 +138,7 @@ function runWhenSettled(): void {
 /** Called by the enhancement passes (init + every re-scan) after their
  * structural work so initial resolution lands on the settled document. */
 export function settleTarget(): void {
-  if (!wired) return; // not armed yet — enhanceTarget schedules the first pass
+  if (!wired || resolved) return; // not armed yet, or already landed — don't re-scroll on re-scan
   runWhenSettled();
 }
 
@@ -135,7 +146,7 @@ export function enhanceTarget(scope: ParentNode): void {
   if (scope !== document) return; // hash state is per document, not per scope
   if (wired) return;
   wired = true;
-  window.addEventListener('hashchange', run);
+  window.addEventListener('hashchange', () => { resolved = false; run(); });
   runWhenSettled();
 
   let opened: Element[] = [];
