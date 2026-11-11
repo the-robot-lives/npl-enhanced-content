@@ -117,6 +117,23 @@ describe('accessible surface (§2.2)', () => {
   });
 });
 
+describe('prompt input ids (§2.3)', () => {
+  it('three shells on one page get three distinct ids, each label pointing at its own input', async () => {
+    const els = [await attach('sem-shell'), await attach('sem-shell'), await attach('sem-shell')];
+    const ids = els.map((el) => (el.querySelector('.sem-shell-input') as HTMLInputElement).id);
+    expect(new Set(ids).size).toBe(3);
+    for (const el of els) {
+      const input = el.querySelector('.sem-shell-input') as HTMLInputElement;
+      const label = el.querySelector('label.sem-shell-ps1') as HTMLLabelElement;
+      expect(label.htmlFor).toBe(input.id);
+      expect(input.id).not.toBe('sem-shell-input'); // the old shared literal is gone
+    }
+    // document-wide: no duplicate ids among the prompt inputs
+    const all = [...document.querySelectorAll('.sem-shell-input')].map((n) => (n as HTMLInputElement).id);
+    expect(new Set(all).size).toBe(all.length);
+  });
+});
+
 describe('the core stays SemText-free', () => {
   it('a bare <sem-terminal> has no demo commands', async () => {
     const el = await attach('sem-terminal');

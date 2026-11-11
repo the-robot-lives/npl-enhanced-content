@@ -2,6 +2,12 @@
 
 ## 2026-11-11
 
+- **unique prompt-input ids per element.** `id="sem-shell-input"` /
+  `for="sem-shell-input"` were fixed literals, so the landing's three
+  shells shared one id (broken label association, ambiguous lookups).
+  Each instance now gets `sem-shell-input-<n>` from a module sequence;
+  the label's `for` follows. (+1 unit test: three shells, three ids.)
+
 - **one accessible transcript, author labels kept (WCAG).** Once JS paint
   is up the DOM mirror is the single `role=log` live region: `#setPaint`
   sets `aria-hidden` on `.sem-shell-transcript` for both paint values and
