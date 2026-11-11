@@ -112,7 +112,9 @@ export class SemShell extends SemTerminal {
     super.connectedCallback();
     if (this.#shellBooted) return;
     this.#shellBooted = true;
-    this.setAttribute('aria-label', 'SemText shell');
+    // The author's aria-label (e.g. per-tab demo names on the landing)
+    // wins; the default only fills the gap (§2.2: never overwrite it).
+    this.applyAccessibleDefaults();
     // Plugin mounting happens in configureSessionCore — EVERY session core
     // (each tab) needs the bundled command set, and the base class hooks
     // session 1 during its own connectedCallback above.
@@ -169,6 +171,12 @@ export class SemShell extends SemTerminal {
       this.#emitBootHint();
     }
     emit(lines);
+  }
+
+  /** The shell's default accessible name — only when the author gave none. */
+  protected override applyAccessibleDefaults(): void {
+    if (!this.hasAttribute('aria-label')) this.setAttribute('aria-label', 'SemText shell');
+    if (!this.hasAttribute('role')) this.setAttribute('role', 'region');
   }
 
   /**

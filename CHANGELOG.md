@@ -2,6 +2,16 @@
 
 ## 2026-11-11
 
+- **one accessible transcript, author labels kept (WCAG).** Once JS paint
+  is up the DOM mirror is the single `role=log` live region: `#setPaint`
+  sets `aria-hidden` on `.sem-shell-transcript` for both paint values and
+  the CSS stands it down under `[data-paint]` (no-JS keeps the authored
+  transcript readable); the mirror's nested `aria-live` div is gone (it
+  made screen readers announce every line twice). The host gets
+  `role="region"` and a default name only when the author gave none —
+  `applyAccessibleDefaults()` is a protected hook so `<sem-shell>`'s
+  default no longer loses to the base class's write order. (+4 unit tests.)
+
 - **keyboard trap removed — the shell is always escapable (WCAG 2.1.2).**
   Tab on an empty prompt line and Shift+Tab keep their native focus
   meaning (the hidden input surface now honours the discipline's verdict

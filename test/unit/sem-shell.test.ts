@@ -77,6 +77,46 @@ describe('zero-JS contract', () => {
   });
 });
 
+describe('accessible surface (§2.2)', () => {
+  const exposedLogs = (el: SemTerminal): Element[] =>
+    [...el.querySelectorAll('[role="log"]')].filter((n) => {
+      for (let p: Element | null = n; p; p = p.parentElement) {
+        if (p.getAttribute('aria-hidden') === 'true') return false;
+        if (p === el) break;
+      }
+      return true;
+    });
+
+  it('an author-supplied aria-label and role survive the upgrade', async () => {
+    const el = await attach('sem-shell');
+    el.setAttribute('aria-label', 'CLI demo — watch the render-card sequence');
+    el.setAttribute('role', 'complementary');
+    // re-run the upgrade path: connect is idempotent per element, so a
+    // second attach exercises the guarded writes with the label present.
+    el.remove();
+    document.body.appendChild(el);
+    await el.updateComplete;
+    expect(el.getAttribute('aria-label')).toBe('CLI demo — watch the render-card sequence');
+    expect(el.getAttribute('role')).toBe('complementary');
+  });
+
+  it('defaults fill the gap: region role + a name when the author gave none', async () => {
+    const el = await attach('sem-shell');
+    expect(el.getAttribute('role')).toBe('region');
+    expect(el.getAttribute('aria-label')).toBe('SemText shell');
+  });
+
+  it('exactly one exposed role=log once paint is up — the transcript steps out', async () => {
+    const el = await attach('sem-shell');
+    // happy-dom boots the DOM-paint path: mirror mounted, transcript present.
+    const transcript = el.querySelector('.sem-shell-transcript');
+    expect(transcript).not.toBeNull();
+    expect(transcript!.getAttribute('aria-hidden')).toBe('true');
+    expect(exposedLogs(el)).toHaveLength(1);
+    expect(exposedLogs(el)[0]!.className).toContain('sem-term-mirror');
+  });
+});
+
 describe('the core stays SemText-free', () => {
   it('a bare <sem-terminal> has no demo commands', async () => {
     const el = await attach('sem-terminal');

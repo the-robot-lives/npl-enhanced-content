@@ -2201,19 +2201,23 @@ sem-terminal .sem-term-scrollbar, sem-shell .sem-term-scrollbar {
    the r2 sheet hid a .sem-term-transcript class nothing renders, so the
    canvas-mode DOM transcript stayed in flow: a thousands-of-pixels block
    inside the frame that scrolled the painted surface under the titlebar
-   and, with the r2.1 flex frame, squeezed the surface to zero.) */
-sem-terminal .sem-term-transcript,
-sem-terminal .sem-shell-transcript,
-sem-shell .sem-shell-transcript {
+   and, with the r2.1 flex frame, squeezed the surface to zero.)
+   §2.2 (2026-11-11): once ANY JS paint is up ([data-paint] present), the
+   MIRROR is the text view and the one accessible log — the transcript
+   steps out of both the layout and the a11y tree (#setPaint sets
+   aria-hidden). Without JS (no data-paint) the authored transcript stays
+   readable: the zero-JS contract keeps it in flow. */
+sem-terminal:not([data-paint]) .sem-term-transcript,
+sem-terminal:not([data-paint]) .sem-shell-transcript,
+sem-shell:not([data-paint]) .sem-shell-transcript {
   display: block;
 }
-/* Canvas paint stands the round-1 transcript down — visually hidden but
-   still in the log/a11y tree (§9); the promoted mirror is the text view.
-   The attribute is set only on a successful canvas attach, so the DOM
-   fallback (no JS paint, forced-colors, failed 2d) keeps the transcript. */
-sem-terminal[data-paint="canvas"] .sem-term-transcript,
-sem-terminal[data-paint="canvas"] .sem-shell-transcript,
-sem-shell[data-paint="canvas"] .sem-shell-transcript {
+/* Painted mode stands the transcript down — visually hidden AND
+   aria-hidden (set by #setPaint), leaving the promoted/standalone mirror
+   as the single role=log live region (exactly one, both paint values). */
+sem-terminal[data-paint] .sem-term-transcript,
+sem-terminal[data-paint] .sem-shell-transcript,
+sem-shell[data-paint] .sem-shell-transcript {
   position: absolute;
   width: 1px;
   height: 1px;
