@@ -1,5 +1,21 @@
 # WASM PoC — verdict, measurements, and the path (round-3 LANE=wasm-poc)
 
+> **Status 2026-11-11: productionized as the `wasm` lazy package.** The
+> sections below record the round-3 PoC; where they describe a plan, the
+> shipped form differs. As built: the command is `src/terminal/packages/wasm/`
+> (`stub.ts` always loaded, `index.ts` = the chunk, re-exporting
+> `src/terminal/wasm/`), registered in `src/terminal/packages/manifest.ts:26,37`
+> and emitted as `semtext-pkg-wasm.js` beside the shell; the worker is
+> `src/terminal/wasm/worker-wasm.ts`, built flat as `worker-wasm.js`
+> (scripts/build.mjs:381-401). §6's hand-written `import('semtext-wasm.js')`
+> bridge and the "synchronous `run()`" premise are SUPERSEDED: `run` may
+> return a Promise (`terminal-core.ts:150-152`), so the package stub awaits
+> its chunk (`packages/lazy.ts`) and no `Object.assign` swap exists. There
+> is no execution fuel/step budget: a runaway guest in-thread cannot be
+> stopped except by Ctrl+C killing a tty app (`wasm/app.ts`) or terminating
+> the worker; see `docs/terminal/DEFERRED.md` (wasm fuel budget). The
+> shell-size context in §2.3 is stale: the report-only shell is ~290 KB.
+
 Spikes CORE-V2 **Appendix A**: the smallest real kernel surface behind the
 SAME terminal app API. Everything below ran, measured, and is committed in
 this worktree — nothing is vendored and nothing needed a system toolchain.
@@ -17,7 +33,7 @@ gzip** as a lazy chunk.
 | --- | --- | --- |
 | WASI preview1 host | `src/terminal/wasm/wasi.ts` | args/environ, fd table (0/1/2 + preopens), fd_read/write/seek/close/fdstat/filestat, prestat ×2, path_open/path_filestat_get (read-only snapshot, `..` clamps at the root), clock, random, proc_exit as a thrown sentinel, ENOSYS/ENOTSUP/EROFS stubs so real wasi libc binaries never wedge |
 | engines | `src/terminal/wasm/engine.ts` | `runWasi` (batch, sync — every host) and `runInteractive` (JSPI: only fd_read is `Suspending`-wrapped, so the guest suspends mid-instruction until stdin arrives); `jspiAvailable()` feature-detects |
-| job runner | `src/terminal/wasm/runner.ts` + `worker-main.ts` | worker-first placement with an in-thread fallback that speaks the identical protocol; worker 404/CSP degrades in-thread, never fails the job |
+| job runner | `src/terminal/wasm/runner.ts` + `worker-wasm.ts` | worker-first placement with an in-thread fallback that speaks the identical protocol; worker 404/CSP degrades in-thread, never fails the job |
 | terminal app | `src/terminal/wasm/app.ts` | `WasmRunApp` (CORE-V2 §6.1 `App`): alt screen, typed lines → guest stdin, Ctrl+D EOF, Ctrl+C kill → exit 130, `a11ySummary` as the DOM-mirror surface |
 | command | `src/terminal/wasm/command.ts` | `wasm <module.wasm> [args…]`: `app:` claims the tty (§6.4), `run()` is the piped/redirected batch path with exit-code propagation; modules load from the VFS (`.wasm` binary string or `.b64` base64); preopen = in-memory VFS snapshot at spawn |
 | fixtures | `poc/wasm/**` | the wat2wasm-free path: a ~300-line JS assembler + four programs (below); `bin/*.wasm` are committed build output, byte-re-producible by the unit suite |
@@ -62,10 +78,10 @@ until a delayed stdin Promise resolves".
   **0 hits for every marker**.
 - Lazy chunk (what registration would fetch on first use, esbuild-bundled
   + minified): **15,375 B raw / 5,519 B gzip** (`wasm-chunk.js`).
-- Worker file (`worker-main.ts`, bundled standalone): **10,172 B raw /
+- Worker file (`worker-wasm.ts`, bundled standalone): **10,172 B raw /
   3,594 B gzip**. In a production vite build the worker shares modules
   with the chunk, so the pair's true ceiling is below their sum.
-- Context: the shared worktree's `semtext-js-shell.js` currently measures
+- Context (round-3 snapshot; the cap has since become report-only, 2026-10-17): the shared worktree's `semtext-js-shell.js` then measured
   **266.2 KB (10.2 KB over the 256 KB cap)** — that overage is concurrent
   lanes' work (tabs-ui session refactor, nano, find+sed, card themes
   all landed in this tree); this lane contributed none of it (grep above)
@@ -130,7 +146,7 @@ Until then the committed `poc/wasm/asm/` path is the source of truth:
 `node poc/wasm/asm/build.mjs` regenerates `bin/*.wasm`, and
 `test/unit/wasm-shim.test.ts` fails if the pair ever drifts.
 
-## 6. Productionization (the one Cross-lane request)
+## 6. Productionization (historical plan — superseded, see the status note at top)
 
 CORE-V2 §6.4's `app?(ctx)` is synchronous, and the pipeline's `run()` is
 synchronous — a cold dynamic `import()` cannot satisfy either mid-command.
@@ -191,7 +207,7 @@ question, not this lane's), the bridge collapses to a plain
 
 The `import type` line is erased at build time — it types the swap without
 adding a byte to the bundle. The worker reference
-(`new URL('./worker-main.js', import.meta.url)`) inside the chunk is
+(`new URL('./worker-wasm.js', import.meta.url)`) inside the chunk is
 emitted as its own file by any bundler that builds the chunk; under
 `vite dev` it 404s (sources are `.ts`) and the runner degrades in-thread
 by design.

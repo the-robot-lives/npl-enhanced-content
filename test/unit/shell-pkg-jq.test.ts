@@ -880,3 +880,14 @@ describe('jq — getpath/setpath/path, indices, misc (round 2)', () => {
     expect(jq('fromjson | tojson', '"[1,2]"')).toEqual(lines('"[1,2]"')); // string content has no quotes to escape
   });
 });
+
+describe('jq — runaway budgets (4.9)', () => {
+  it('repeat(.) with no limit exits with an error instead of hanging', () => {
+    const r = run(`echo 1 | jq 'repeat(.)'`);
+    expect(status(r)).toBe(5);
+    expect(errs(r).join(' ')).toMatch(/limit exceeded/);
+  });
+  it('a bounded repeat still works', () => {
+    expect(jq('[limit(3; repeat(.))]', '1')).toEqual(lines('[\n  1,\n  1,\n  1\n]'));
+  });
+});

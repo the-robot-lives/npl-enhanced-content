@@ -159,7 +159,7 @@ describe('the core stays SemText-free', () => {
     expect(el.lines.some((l) => l.kind === 'stderr' && l.text.includes('one.json'))).toBe(true);
     type(el, 'help');
     await el.updateComplete;
-    expect(el.lines.some((l) => l.kind === 'stdout' && l.text === 'commands:')).toBe(true);
+    expect(el.lines.some((l) => l.kind === 'stdout' && l.text.startsWith('commands'))).toBe(true);
   });
 });
 

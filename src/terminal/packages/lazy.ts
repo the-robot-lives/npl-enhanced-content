@@ -136,6 +136,20 @@ export function createLazyPackage(stub: PackageStub, load: () => Promise<Package
         // dedupes concurrent first calls), await it, then hand ctx to the
         // real spec. The returned Promise reaches the shell, so the cold
         // pipeline suspends until the body ran — no retry hint, no hang.
+        // One-line status while the chunk loads (stderr, so piped stdout
+        // stays clean). The line makes the shell default the exit status to
+        // 1, so ctx.err/exit are tracked in place for the real run and the
+        // honest status is restored afterwards.
+        ctx.err(`loading ${stub.name}…`);
+        const origErr = ctx.err;
+        const origExit = ctx.exit;
+        let errSeen = false;
+        let exitSet = false;
+        const settle = (): void => {
+          ctx.err = origErr;
+          ctx.exit = origExit;
+          if (!exitSet) origExit(errSeen ? 1 : 0);
+        };
         return ensure().then((ok) => {
           if (!ok) {
             ctx.err(`${cmd.name}: package chunk failed to load (${chunkFile})`);
@@ -149,7 +163,18 @@ export function createLazyPackage(stub: PackageStub, load: () => Promise<Package
             ctx.exit(70);
             return;
           }
-          return realSpec.run(ctx);
+          ctx.err = (text) => {
+            errSeen = true;
+            origErr(text);
+          };
+          ctx.exit = (code) => {
+            exitSet = true;
+            origExit(code);
+          };
+          return Promise.resolve(realSpec.run(ctx)).then(settle, (cause: unknown) => {
+            settle();
+            throw cause;
+          });
         });
       },
       complete(ctx: CompletionContext): string[] {

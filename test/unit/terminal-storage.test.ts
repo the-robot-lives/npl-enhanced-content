@@ -80,12 +80,13 @@ describe('the local-storage backend', () => {
     expect(payload.tree.children.map((c) => (c as { name: string }).name)).toEqual(['docs']);
   });
 
-  it('a stored payload grafts over the cache; edits survive a reload round-trip', () => {
+  it('a stored payload grafts over the cache; edits survive a reload round-trip', async () => {
     const store = new MemoryStore();
     const first = factoryVfs();
     const firstBackend = attachLocalStorage(first, { key: 'k', store });
     expect(firstBackend.restore()).toBe('seeded');
     first.mountFile('/notes/user.txt', 'typed by the user');
+    await settled(); // persists coalesce into one microtask
 
     const second = factoryVfs();
     const secondBackend = attachLocalStorage(second, { key: 'k', store });
@@ -140,6 +141,48 @@ describe('the local-storage backend', () => {
     expect(vfs.storageErrors).toHaveLength(1);
     expect(seen).toEqual(['local-storage:write:/late.txt']);
     expect(vfs.read('/late.txt')).toBe('written anyway'); // the cache keeps the truth
+  });
+});
+
+describe('local-storage coalescing + mount awareness (4.5)', () => {
+  it('N writes in one tick produce ONE setItem', async () => {
+    const store = new MemoryStore();
+    const vfs = factoryVfs();
+    const backend = attachLocalStorage(vfs, { key: 'k', store });
+    backend.restore();
+    await settled();
+    const before = store.writes;
+    for (let i = 0; i < 10; i++) vfs.mountFile(`/bulk/f${i}.txt`, String(i));
+    await settled();
+    expect(store.writes - before).toBe(1);
+    const payload = JSON.parse(store.getItem(backend.storageKey) as string) as { tree: { children: Array<{ name: string }> } };
+    expect(payload.tree.children.map((c) => c.name)).toContain('bulk');
+  });
+
+  it('subtrees owned by another mounted backend are not serialised', async () => {
+    const store = new MemoryStore();
+    const vfs = factoryVfs();
+    vfs.mountFile('/s3/remote.txt', 'owned by s3');
+    vfs.attachBackend({
+      id: 'fake', writable: false, mountpoint: '/s3',
+      stat: async () => null, read: async () => null, write: async () => {}, mkdirp: async () => {},
+      rm: async () => {}, rename: async () => {}, list: async () => [],
+    });
+    const backend = attachLocalStorage(vfs, { key: 'k', store });
+    backend.restore();
+    const raw = store.getItem(backend.storageKey) as string;
+    expect(raw).not.toContain('owned by s3');
+    expect(raw).toContain('factory readme');
+    // restore keeps the live foreign subtree
+    const vfs2 = factoryVfs();
+    vfs2.mountFile('/s3/remote.txt', 'owned by s3');
+    vfs2.attachBackend({
+      id: 'fake', writable: false, mountpoint: '/s3',
+      stat: async () => null, read: async () => null, write: async () => {}, mkdirp: async () => {},
+      rm: async () => {}, rename: async () => {}, list: async () => [],
+    });
+    expect(attachLocalStorage(vfs2, { key: 'k', store }).restore()).toBe('restored');
+    expect(vfs2.read('/s3/remote.txt')).toBe('owned by s3');
   });
 });
 
@@ -252,6 +295,40 @@ describe('the s3 backend', () => {
     await signerBackend.write('docs/b.txt', 'B');
     expect(signed).toEqual([['put', 'docs/b.txt']]);
     expect(signerCalls[0]?.init?.method).toBe('PUT');
+  });
+
+  it('listings paginate past 1000 keys; recursive rm deletes every page', async () => {
+    const page = (keys: string[], next?: string): string =>
+      listXml(keys.map((k) => ['prefix/' + k, 1] as [string, number])).replace(
+        '</ListBucketResult>',
+        `<IsTruncated>${next ? 'true' : 'false'}</IsTruncated>${next ? `<NextContinuationToken>${next}</NextContinuationToken>` : ''}</ListBucketResult>`,
+      );
+    const deleted: string[] = [];
+    const calls = stubFetch((url, init) => {
+      const parsed = new URL(url);
+      if (init?.method === 'DELETE') {
+        deleted.push(decodeURIComponent(parsed.pathname));
+        return ok('');
+      }
+      if (!parsed.searchParams.has('list-type')) return undefined;
+      const token = parsed.searchParams.get('continuation-token');
+      if (!token) return ok(page(['d/a', 'd/b'], 'T1'));
+      if (token === 'T1') return ok(page(['d/c'], 'T2'));
+      return ok(page(['d/e']));
+    });
+    const backend = new S3Backend({ base: BASE, mountpoint: '/s3', mode: 'signer', signer: async (op, key) => `https://signed.example.test/${op}/${key}` });
+    await backend.rm('/d', { recursive: true });
+    expect(calls.filter((c) => c.url.includes('list-type=2'))).toHaveLength(3);
+    expect(deleted).toEqual(['/delete/d/a', '/delete/d/b', '/delete/d/c', '/delete/d/e']);
+  });
+
+  it('rejects NaN / non-positive caps and normalises the mountpoint', () => {
+    expect(createS3Backend([BASE, '/s3', 'max_objects=abc'])).toMatch(/max_objects/);
+    expect(createS3Backend([BASE, '/s3', 'max_bytes=0'])).toMatch(/max_bytes/);
+    const b = createS3Backend([BASE, '//s3//sub/']);
+    expect(typeof b).toBe('object');
+    if (typeof b === 'object') expect(b.mountpoint).toBe('/s3/sub');
+    expect(createS3Backend([BASE, '/a/../b'])).toMatch(/mountpoint/);
   });
 
   it('a failed presign surfaces as a storage error through the vfs', async () => {

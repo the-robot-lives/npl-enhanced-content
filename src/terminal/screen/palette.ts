@@ -8,10 +8,9 @@
  * the same string serving as the canvas fill style — so paint and mirror
  * cannot drift (§4.2).
  *
- * Theme mapping: the 16 ANSI slots resolve to the `--sem-ansi-<n>` custom
- * properties the terminal CSS block defines per theme (contrast-checked
- * 4.5:1 against the theme background, §9), with hard fallbacks so a bare
- * document still renders legibly. Extended-cube + truecolor refs resolve
+ * Theme mapping: the 16 ANSI slots resolve to the `--sem-term-ansi-<n>` custom
+ * properties (themes/_vocabulary.css), whose fallbacks are TERM_PALETTE —
+ * the one palette the canvas, mirror and class CSS share (§9, 4.5:1). Extended-cube + truecolor refs resolve
  * to literal colors (they are absolute, not themed).
  */
 
@@ -19,7 +18,7 @@ import { COLOR_DEFAULT, COLOR_TRUECOLOR_BASE, COLOR_TRUECOLOR_MAX } from './type
 
 /** CSS color for one palette index 0–255. Index 0–15 → themed tokens. */
 export function paletteCss(index: number): string {
-  if (index < 16) return `var(--sem-ansi-${index}, ${ANSI_FALLBACKS[index] as string})`;
+  if (index < 16) return `var(--sem-term-ansi-${index}, ${ANSI_FALLBACKS[index] as string})`;
   return cubeCss(index);
 }
 
@@ -50,13 +49,13 @@ export function truecolorCss(r: number, g: number, b: number): string {
  * the screen is fed by the parser, but refs can come from saved state).
  */
 export function cssColor(ref: number, truecolorAt: (slot: number) => readonly [number, number, number] | null): string {
-  if (ref === COLOR_DEFAULT) return 'var(--sem-fg, currentColor)';
+  if (ref === COLOR_DEFAULT) return DEFAULT_FG_CSS;
   if (ref >= COLOR_TRUECOLOR_BASE && ref <= COLOR_TRUECOLOR_MAX) {
     const rgb = truecolorAt(ref - COLOR_TRUECOLOR_BASE);
-    return rgb === null ? 'var(--sem-fg, currentColor)' : truecolorCss(rgb[0], rgb[1], rgb[2]);
+    return rgb === null ? DEFAULT_FG_CSS : truecolorCss(rgb[0], rgb[1], rgb[2]);
   }
   if (ref >= 0 && ref <= 255) return paletteCss(ref);
-  return 'var(--sem-fg, currentColor)';
+  return DEFAULT_FG_CSS;
 }
 
 /**
@@ -99,24 +98,23 @@ export class TruecolorTable {
 const CUBE_LEVELS = [0, 95, 135, 175, 215, 255] as const;
 
 /**
- * Hard fallbacks for the 16 ANSI slots (xterm defaults) — used only when
- * the theme's `--sem-ansi-<n>` ramp is absent (bare documents, unit DOM).
+ * THE terminal palette (dark; the canvas is the source of truth). Every
+ * paint path reads it: the canvas via render/screen-shape, the DOM mirror via
+ * `paletteCss` (these values are the `var()` fallbacks), and the class CSS
+ * via the `--sem-term-*` tokens in themes/_vocabulary.css, which MUST carry
+ * the same values (a unit test pins the two together). Every colour is at
+ * least 4.5:1 on `bg` (WCAG AA) — slots 0/8 are lightened for that.
  */
-const ANSI_FALLBACKS: readonly string[] = [
-  '#3b3b3b', // 0 black (theme ramps keep it readable on light bg)
-  '#c92a2a', // 1 red
-  '#2b8a3e', // 2 green
-  '#e8590c', // 3 yellow
-  '#1971c2', // 4 blue
-  '#9c36b5', // 5 magenta
-  '#0c8599', // 6 cyan
-  '#5c5f66', // 7 white (light gray — pure white is invisible on light bg)
-  '#686a72', // 8 bright black
-  '#f03e3e', // 9 bright red
-  '#40c057', // 10 bright green
-  '#fab005', // 11 bright yellow
-  '#4dabf7', // 12 bright blue
-  '#e64980', // 13 bright magenta
-  '#66d9e8', // 14 bright cyan
-  '#dee2e6', // 15 bright white
-];
+export const TERM_PALETTE = Object.freeze({
+  bg: '#0f1216',
+  fg: '#d7dee7',
+  muted: '#9aa7b5',
+  accent: '#7ec8a2',
+  ansi: Object.freeze([
+    '#7a8494', '#e5534e', '#7dc475', '#ddb267', '#61afef', '#c678dd', '#56b6c2', '#abb2bf',
+    '#8b94a3', '#f06c74', '#98c379', '#e5c07b', '#61afef', '#c678dd', '#56b6c2', '#d7dee7',
+  ]) as readonly string[],
+});
+
+const ANSI_FALLBACKS: readonly string[] = TERM_PALETTE.ansi;
+const DEFAULT_FG_CSS = `var(--sem-term-fg, ${TERM_PALETTE.fg})`;

@@ -27,6 +27,7 @@ import {
   importCommandsModule,
   isIntegrityFormat,
   PluginRefusedError,
+  resolveSourceUrl,
   splitIntegrityFragment,
   verifyIntegrity,
   type LoadDescriptor,
@@ -191,7 +192,7 @@ export interface RemoteJsonManifest {
   version: string;
   description?: string;
   load?: LoadDescriptor;
-  files?: Array<{ path: string; src?: string; content?: string }>;
+  files?: Array<{ path: string; src?: string; content?: string; integrity?: string | null }>;
 }
 
 export interface MountResult {
@@ -215,6 +216,41 @@ export interface ExecResult {
   actions: ShellAction[];
 }
 
+/** Optimal-string-alignment edit distance (insert/delete/substitute/transpose). */
+function editDistance(a: string, b: string): number {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const d: number[][] = Array.from({ length: rows }, (_, i) => [i, ...new Array<number>(cols - 1).fill(0)]);
+  for (let j = 0; j < cols; j++) d[0]![j] = j;
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i]![j] = Math.min(d[i - 1]![j]! + 1, d[i]![j - 1]! + 1, d[i - 1]![j - 1]! + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i]![j] = Math.min(d[i]![j]!, d[i - 2]![j - 2]! + 1);
+      }
+    }
+  }
+  return d[a.length]![b.length]!;
+}
+
+/** A live, read-only window onto a Map (no set/delete/clear exposed). */
+function readOnlyView<K, V>(map: Map<K, V>): ReadonlyMap<K, V> {
+  const view: ReadonlyMap<K, V> = {
+    get: (k) => map.get(k),
+    has: (k) => map.has(k),
+    get size() {
+      return map.size;
+    },
+    forEach: (cb, thisArg) => map.forEach((v, k) => cb.call(thisArg, v, k, view)),
+    keys: () => map.keys(),
+    values: () => map.values(),
+    entries: () => map.entries(),
+    [Symbol.iterator]: () => map[Symbol.iterator](),
+  };
+  return Object.freeze(view);
+}
+
 const NAME_PATTERN = /^[a-z][a-z0-9-]*$/;
 
 /**
@@ -235,6 +271,10 @@ export class TerminalCore {
     lastStatus: 0,
   };
   readonly commands = new Map<string, CommandSpec>();
+  /** Command name → owning plugin name (help grouping). */
+  #owners = new Map<string, string>();
+  /** Read-only live view of `commands` handed to command contexts. */
+  #commandsView: ReadonlyMap<string, CommandSpec> = readOnlyView(this.commands);
   readonly plugins: MountedPlugin[] = [];
   readonly loadErrors: LoadError[] = [];
   /** Page-supplied S3 signer (setS3Signer); used by s3 mounts for writes. */
@@ -249,11 +289,37 @@ export class TerminalCore {
     this.#register(
       {
         name: 'help',
-        usage: 'help — list commands',
+        usage: 'help [command] — list commands by plugin, or show one',
         run: (ctx) => {
-          ctx.out('commands:');
-          for (const spec of [...this.commands.values()].sort((a, b) => a.name.localeCompare(b.name))) {
-            ctx.out('  ' + spec.usage);
+          const want = ctx.args[0];
+          if (want !== undefined) {
+            const spec = this.commands.get(want) ?? this.commandSpec(want);
+            if (!spec) {
+              ctx.err(`help: no such command: ${want}`);
+              const guess = this.suggest(want);
+              if (guess) ctx.err(`help: did you mean '${guess}'?`);
+              return;
+            }
+            ctx.out(spec.usage);
+            ctx.out(`  provided by ${this.#owners.get(spec.name) ?? '(unknown)'}`);
+            return;
+          }
+          const groups = new Map<string, CommandSpec[]>();
+          for (const spec of this.commands.values()) {
+            const owner = this.#owners.get(spec.name) ?? '(unknown)';
+            const group = groups.get(owner);
+            if (group) group.push(spec);
+            else groups.set(owner, [spec]);
+          }
+          const owners = [...groups.keys()].sort((x, y) =>
+            x === '(builtin)' ? -1 : y === '(builtin)' ? 1 : x.localeCompare(y),
+          );
+          ctx.out('commands (`help <command>` for one):');
+          for (const owner of owners) {
+            ctx.out(`${owner}:`);
+            for (const spec of groups.get(owner)!.sort((x, y) => x.name.localeCompare(y.name))) {
+              ctx.out('  ' + spec.usage);
+            }
           }
         },
       },
@@ -312,6 +378,17 @@ export class TerminalCore {
             ctx.err(`mount: ${backend}`);
             return;
           }
+          if (backend.mountpoint === '/') {
+            (backend as { dispose?: () => void }).dispose?.();
+            ctx.err('mount: refusing to mount over / (pick a subdirectory mountpoint)');
+            return;
+          }
+          if (ctx.vfs.mounts.has(backend.mountpoint)) {
+            (backend as { dispose?: () => void }).dispose?.();
+            ctx.err(`mount: ${backend.mountpoint} is already a mountpoint (umount it first)`);
+            return;
+          }
+          ctx.vfs.attachBackend(backend);
           const detachDropped = (): void => {
             this.vfs.detachBackend(backend.mountpoint);
             (backend as { dispose?: () => void }).dispose?.();
@@ -330,7 +407,7 @@ export class TerminalCore {
             ).hydrate!;
             const put = (path: string, content: string): void => {
               try {
-                this.vfs.mountFile(backend.mountpoint + (path.startsWith('/') ? path : `/${path}`), content);
+                this.vfs.seed(backend.mountpoint + (path.startsWith('/') ? path : `/${path}`), content);
               } catch {
                 // Paths crossing the mount edge stay unseeded; hydration keeps going.
               }
@@ -475,6 +552,21 @@ export class TerminalCore {
       throw new Error(`command "${spec.name}" has no run function [${plugin}]`);
     }
     this.commands.set(spec.name, spec);
+    this.#owners.set(spec.name, plugin);
+  }
+
+  /** Closest command/alias name to `word` (edit distance ≤ 2), or null. */
+  suggest(word: string): string | null {
+    let best: string | null = null;
+    let bestDistance = Infinity;
+    for (const name of this.commandNames()) {
+      const d = editDistance(word, name);
+      if (d < bestDistance) {
+        best = name;
+        bestDistance = d;
+      }
+    }
+    return best !== null && bestDistance <= 2 && bestDistance < Math.max(word.length, 2) ? best : null;
   }
 
   hasCommand(name: string): boolean {
@@ -544,12 +636,25 @@ export class TerminalCore {
         }
         seen.add(spec.name);
       }
-      for (const entry of manifest.files ?? []) {
+      // Validate EVERYTHING before mutating anything: all-or-nothing.
+      const files = manifest.files ?? [];
+      const paths = new Set<string>();
+      for (const entry of files) {
         if (typeof entry?.content !== 'string') {
           throw new Error(`file ${entry?.path} has no inline content (src loads only from a manifest URL)`);
         }
-        this.vfs.mountFile(entry.path, entry.content);
+        if (typeof entry.path !== 'string') throw new Error(`file entry needs a path [${label}]`);
+        this.vfs.validateMountPath(entry.path);
+        paths.add(entry.path.replace(/\/+$/, ''));
       }
+      for (const path of paths) {
+        for (const other of paths) {
+          if (other !== path && other.startsWith(path + '/')) {
+            throw new Error(`file ${path} is also a directory of ${other} [${label}]`);
+          }
+        }
+      }
+      for (const entry of files) this.vfs.mountFile(entry.path, entry.content as string);
       for (const spec of commands) this.#register(spec, label, supersede);
       const plugin: MountedPlugin = { name: manifest.name, version: manifest.version };
       this.plugins.push(plugin);
@@ -568,10 +673,11 @@ export class TerminalCore {
    */
   async loadPluginFromUrl(url: string): Promise<MountResult> {
     const { base, integrity } = splitIntegrityFragment(url);
+    let pluginName = '(unknown)';
     try {
       checkSourceAllowed({ src: base, integrity }, 'manifest');
       if (integrity !== null && !isIntegrityFormat(integrity)) {
-        throw new PluginRefusedError(`bad integrity format in ${url} (want sha256-<64 hex>)`);
+        throw new PluginRefusedError(`bad integrity format in ${url} (want sha256-<64 hex> or sha256-<base64>)`);
       }
       const text = await fetchText(base);
       if (integrity !== null && !(await verifyIntegrity(text, integrity))) {
@@ -579,22 +685,36 @@ export class TerminalCore {
       }
       const json = JSON.parse(text) as RemoteJsonManifest;
       const name = typeof json?.name === 'string' ? json.name : '(unnamed)';
+      pluginName = name;
       const mounted = await this.#mountRemote(json, base, name, url);
       return { ok: true, error: null, plugin: mounted };
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : String(cause);
-      this.loadErrors.push({ plugin: '(unknown)', url, message });
+      this.loadErrors.push({ plugin: pluginName, url, message });
       return { ok: false, error: message };
     }
   }
 
   /** Files resolve inline or relative to the manifest; commands via load.src. */
   async #mountRemote(json: RemoteJsonManifest, baseUrl: string, name: string, url: string): Promise<MountedPlugin> {
-    checkSourceAllowed(json.load, `manifest ${name}`);
+    checkSourceAllowed(json.load, `manifest ${name}`, baseUrl);
     const commands = (json.load?.src ? await importCommandsModule(json.load, baseUrl) : []) as CommandSpec[];
     const files: PluginFileEntry[] = [];
     for (const entry of json.files ?? []) {
-      files.push({ path: entry.path, content: entry.content ?? (await fetchText(new URL(entry.src ?? '', baseUrl).toString())) });
+      if (entry.content !== undefined) {
+        files.push({ path: entry.path, content: entry.content });
+        continue;
+      }
+      const target = resolveSourceUrl(entry.src ?? '', baseUrl).toString();
+      checkSourceAllowed({ src: target, integrity: entry.integrity }, `manifest ${name} file ${entry.path}`);
+      if (entry.integrity != null && !isIntegrityFormat(entry.integrity)) {
+        throw new PluginRefusedError(`bad integrity format for file ${entry.path} [${name}]`);
+      }
+      const text = await fetchText(target);
+      if (entry.integrity != null && !(await verifyIntegrity(text, entry.integrity))) {
+        throw new PluginRefusedError(`refused: integrity mismatch for file ${target} [${name}]`);
+      }
+      files.push({ path: entry.path, content: text });
     }
     const result = this.mountPlugin({ name, version: json.version, description: json.description, commands, files });
     if (!result.ok) throw new Error(result.error ?? 'mount failed');
@@ -713,7 +833,7 @@ export class TerminalCore {
       vfs: this.vfs,
       state: this.state,
       color: isTty,
-      commands: this.commands,
+      commands: this.#commandsView,
       out: (text) => {
         stdout += text + '\n';
         if (isTty) lines.push({ kind: 'stdout', text }); // piped/redirected stages stay off the transcript
@@ -749,6 +869,8 @@ export class TerminalCore {
     const spec = this.commands.get(argv[0]);
     if (!spec) {
       lines.push({ kind: 'stderr', text: `sh: command not found: ${argv[0]}` });
+      const guess = this.suggest(argv[0]);
+      if (guess) lines.push({ kind: 'stderr', text: `sh: did you mean '${guess}'?` });
       this.state.lastStatus = 127;
       return { stdout: '', ran: true, spawnedApp: false };
     }

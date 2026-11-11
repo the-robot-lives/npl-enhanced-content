@@ -52,12 +52,20 @@ interface StoredPayload {
 }
 
 /** Serialize a tree to the stored JSON shape (plain data, no eval). */
-export function serializeTree(root: VfsDir): string {
-  const encode = (node: VfsNode): StoredNode =>
-    node.kind === 'file'
-      ? { kind: 'file', name: node.name, content: node.content }
-      : { kind: 'dir', name: node.name, children: node.children.map(encode) };
-  const payload: StoredPayload = { version: PAYLOAD_VERSION, tree: encode(root) };
+export function serializeTree(root: VfsDir, skipPaths: readonly string[] = []): string {
+  const skip = new Set(skipPaths);
+  const encode = (node: VfsNode, path: string): StoredNode => {
+    if (node.kind === 'file') return { kind: 'file', name: node.name, content: node.content };
+    // A subtree owned by another mounted backend is persisted by THAT
+    // backend; keep only an empty dir placeholder here.
+    if (skip.has(path)) return { kind: 'dir', name: node.name, children: [] };
+    return {
+      kind: 'dir',
+      name: node.name,
+      children: node.children.map((child) => encode(child, (path === '/' ? '' : path) + '/' + child.name)),
+    };
+  };
+  const payload: StoredPayload = { version: PAYLOAD_VERSION, tree: encode(root, '/') };
   return JSON.stringify(payload);
 }
 
@@ -106,11 +114,15 @@ export class LocalStorageBackend implements VfsBackend {
   readonly mountpoint: string;
   #store: KeyValueStore;
   #getTree: () => VfsDir;
+  #getMounts: () => Iterable<string>;
+  /** True while a coalesced persist is queued for this tick. */
+  #pending: Promise<void> | null = null;
   /** Factory snapshot captured by restore(), for reset(). */
   #pristine: VfsNode[] | null = null;
 
-  constructor(store: KeyValueStore, key: string, getTree: () => VfsDir, mountpoint = '/') {
+  constructor(store: KeyValueStore, key: string, getTree: () => VfsDir, mountpoint = '/', getMounts: () => Iterable<string> = () => []) {
     this.#store = store;
+    this.#getMounts = getMounts;
     this.key = key;
     this.#getTree = getTree;
     this.mountpoint = mountpoint;
@@ -121,9 +133,42 @@ export class LocalStorageBackend implements VfsBackend {
     return STORAGE_KEY_PREFIX + this.key;
   }
 
-  /** Re-persist the whole tree. Throws on quota errors (Vfs reports them). */
+  /** Mountpoints of OTHER backends nested inside this one's coverage. */
+  #foreignMounts(): string[] {
+    const own = this.mountpoint;
+    const out: string[] = [];
+    for (const mp of this.#getMounts()) {
+      if (mp === own || mp === '/') continue;
+      if (own === '/' || mp.startsWith(own + '/')) out.push(mp);
+    }
+    return out;
+  }
+
+  /** Re-persist the whole tree now. Throws on quota errors (Vfs reports them). */
   #persist(): void {
-    this.#store.setItem(this.storageKey, serializeTree(this.#getTree()));
+    this.#store.setItem(this.storageKey, serializeTree(this.#getTree(), this.#foreignMounts()));
+  }
+
+  /**
+   * Coalesced persist: N writes in one tick share ONE setItem, run in a
+   * microtask. Every caller awaits the same promise, so a quota error
+   * still reaches the Vfs flush that triggered it.
+   */
+  #schedulePersist(): Promise<void> {
+    if (!this.#pending) {
+      this.#pending = new Promise<void>((resolve, reject) => {
+        queueMicrotask(() => {
+          this.#pending = null;
+          try {
+            this.#persist();
+            resolve();
+          } catch (cause) {
+            reject(cause);
+          }
+        });
+      });
+    }
+    return this.#pending;
   }
 
   #nodeAt(path: string): VfsNode | null {
@@ -135,6 +180,21 @@ export class LocalStorageBackend implements VfsBackend {
       node = next;
     }
     return node;
+  }
+
+  /** Replace (or create) the node at `path` with `node`. */
+  #graft(path: string, node: VfsNode): void {
+    const parts = path.split('/').filter((p) => p !== '');
+    let dir: VfsDir = this.#getTree();
+    for (const part of parts.slice(0, -1)) {
+      let next = dir.children.find((child) => child.name === part);
+      if (!next || next.kind !== 'dir') {
+        next = { kind: 'dir', name: part, children: [] };
+        dir.children = dir.children.filter((child) => child.name !== part).concat(next);
+      }
+      dir = next;
+    }
+    dir.children = dir.children.filter((child) => child.name !== node.name).concat(node);
   }
 
   stat(path: string): Promise<VfsStat | null> {
@@ -153,19 +213,19 @@ export class LocalStorageBackend implements VfsBackend {
   }
 
   async write(_path: string, _content: string): Promise<void> {
-    await this.#persist();
+    await this.#schedulePersist();
   }
 
   async mkdirp(_path: string): Promise<void> {
-    await this.#persist();
+    await this.#schedulePersist();
   }
 
   async rm(_path: string, _opts: { recursive: boolean }): Promise<void> {
-    await this.#persist();
+    await this.#schedulePersist();
   }
 
   async rename(_from: string, _to: string): Promise<void> {
-    await this.#persist();
+    await this.#schedulePersist();
   }
 
   list(path: string): Promise<Array<{ name: string; kind: 'file' | 'dir' }>> {
@@ -199,7 +259,14 @@ export class LocalStorageBackend implements VfsBackend {
       this.#persist();
       return 'corrupt';
     }
+    // Subtrees owned by other backends were not stored; keep the live ones.
+    const live = new Map<string, VfsNode>();
+    for (const mp of this.#foreignMounts()) {
+      const node = this.#nodeAt(mp);
+      if (node) live.set(mp, node);
+    }
     tree.children = restored;
+    for (const [mp, node] of live) this.#graft(mp, node);
     this.#persist();
     return 'restored';
   }
@@ -226,7 +293,7 @@ export function attachLocalStorage(
   vfs: Vfs,
   opts: { key: string; store?: KeyValueStore; mountpoint?: string },
 ): LocalStorageBackend {
-  const backend = new LocalStorageBackend(opts.store ?? globalThis.localStorage, opts.key, () => vfs.root);
+  const backend = new LocalStorageBackend(opts.store ?? globalThis.localStorage, opts.key, () => vfs.root, opts.mountpoint ?? '/', () => vfs.mounts.keys());
   vfs.attachBackend(backend);
   return backend;
 }

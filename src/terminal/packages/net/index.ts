@@ -5,14 +5,17 @@
  * never part of the base shell bundle. Three commands — curl, wget, http —
  * over the transport seam in ./transport.ts. Reference behaviour is GNU
  * curl / GNU wget / HTTPie; where the emulation knowingly differs the man
- * pages below say so (the big one: the shell's pipeline executor is
- * synchronous, so the transport is synchronous XHR — see transport.ts for
- * why fetch() cannot sit inside `curl -s URL | jq`).
+ * pages below say so (the big one: the default transport is fetch with
+ * `credentials: 'omit'`; the shell awaits an async command's Promise, so
+ * `curl -s URL | jq` works. Sync XHR is only the fallback where fetch is
+ * absent — see transport.ts).
  *
  * Security posture (brief requirements, enforced here):
- *   - no ambient credentials, ever: the transport never enables
- *     withCredentials, so cookies/HTTP-auth are not attached to any
- *     request — credentials travel only via explicit -u / headers;
+ *   - no ambient credentials by default: the fetch transport sends
+ *     `credentials: 'omit'`, so cookies/HTTP-auth are not attached;
+ *     credentials travel only via explicit -u / headers. (The sync-XHR
+ *     FALLBACK cannot guarantee this: a same-origin XHR still sends the
+ *     page's cookies.)
  *   - an embedder allowlist hook (configureNet({ allow })) denies URLs
  *     with an explained message before anything is sent;
  *   - CORS/network failures are reported honestly: the browser makes them
@@ -153,8 +156,8 @@ function prettyBody(contentType: string, bodyText: string, color: boolean): stri
 const CURL_HELP = [
   usageOf('curl'),
   '',
-  'Transfer a URL over HTTP. Requests run on a synchronous transport:',
-  'the shell blocks until the response arrives (like foreground curl),',
+  'Transfer a URL over HTTP. Requests run on fetch (sync XHR fallback):',
+  'the shell awaits the response (like foreground curl),',
   'and the body can be piped or redirected like any command output.',
   '',
   '  -s              silent (no error messages)',
@@ -747,13 +750,13 @@ export const manPages: Record<string, string[]> = {
     '          [-i | -I] [-w FORMAT] URL',
     '',
     'DESCRIPTION',
-    '     HTTP client modelled on GNU curl. The request runs on the',
-    '     synchronous transport (transport.ts): the shell blocks until the',
-    '     response arrives, and the body flows through stdout like any',
+    '     HTTP client modelled on GNU curl. The request runs on fetch',
+    '     (transport.ts; sync XHR only where fetch is absent): the shell',
+    '     awaits the response, and the body flows through stdout like any',
     '     command output — pipes and redirection work.',
     '',
-    '     No ambient credentials are ever attached (the transport never',
-    '     enables withCredentials): cookies and HTTP auth travel only when',
+    '     Ambient credentials are not attached (fetch runs with',
+    '     credentials: omit): cookies and HTTP auth travel only when',
     '     you pass them explicitly (-u, an Authorization header).',
     '',
     '     -d implies POST and defaults Content-Type to',
