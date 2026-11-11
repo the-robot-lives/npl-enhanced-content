@@ -12,7 +12,7 @@
   nesting ("12 nested" for 13 children): markdown `blocks` is self-excluded
   while the shared renderer assumed the XHTML self-included convention —
   both CLIs now pass the convention through. (+6 regression tests; full
-  unit suite green.)
+  unit suite green.) (#99)
 
 - **visible demo stop control + no focus theft (WCAG 2.2.2 / 2.4.3).**
   While a scripted demo runs, the top-right slot shows a `stop demo`
