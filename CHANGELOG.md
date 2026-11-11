@@ -11,7 +11,7 @@
   reintroduced in c317853, now permanent per owner 2026-11-11); the
   replay hint prints only when a replayable script is actually attached
   (`SemTerminal.replayable`, via `markScripted`), so an unscripted boot
-  emits exactly one stdout line and zero stderr.
+  emits exactly one stdout line and zero stderr. (#92)
 
 ## 2026-11-11
 
