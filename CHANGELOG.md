@@ -2,6 +2,7 @@
 
 ## 2026-11-11
 
+- **shell docs reconciled with shipped code; DEFERRED.md added.** PLUGINS.md (async `run`, `app`/`tab` actions, packages + `supersede`, `vfs.attachBackend`/`vfs.storageErrors`, loader trust model + CDN policy), CORE-V2.md (status, async §6.5, lazy-chunk reality vs invariant 1, report-only budget, as-built paths), WASM-POC.md, `docs/arch/bundles.md`, ROADMAP shell size rows; new `docs/terminal/DEFERRED.md`. Docs only (feature/shell-docs).
 - **shell 2.4 — menu focus return, tab/tabpanel ARIA, flashcard role (#102).**
   Closing the context menu now focuses the prompt input (else the
   hidden canvas input, else the host with a tabindex fallback) instead
