@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Signing in…</title>
+  <meta name="robots" content="noindex">
+</head>
+<body>
+  <!--
+    Reference OIDC redirect page for the shell's `mount s3 … mode=oidc`.
+    Register this page's URL as the client's redirect_uri (same origin as
+    the shell page). The sign-in popup is opened `noopener`, so there is
+    no window.opener: the authorization code is handed back over a
+    same-origin BroadcastChannel ("semtext-s3-auth"), then the popup closes.
+  -->
+  <p id="msg" role="status">Finishing sign-in…</p>
+  <script>
+    (function () {
+      var SOURCE = 'semtext-s3-auth';
+      var params = new URLSearchParams(location.search);
+      var payload = { source: SOURCE, state: params.get('state') || '' };
+      var code = params.get('code');
+      var error = params.get('error');
+      if (code) payload.code = code;
+      else payload.error = error || 'no authorization code in redirect';
+      var msg = document.getElementById('msg');
+      try {
+        var channel = new BroadcastChannel(SOURCE);
+        channel.postMessage(payload);
+        channel.close();
+        msg.textContent = payload.code ? 'Signed in — you can close this window.' : 'Sign-in failed: ' + payload.error;
+        history.replaceState(null, '', location.pathname); // drop the code from the URL
+        setTimeout(function () { window.close(); }, 300);
+      } catch (e) {
+        msg.textContent = 'This browser cannot hand the sign-in back (BroadcastChannel unavailable).';
+      }
+    })();
+  </script>
+</body>
+</html>

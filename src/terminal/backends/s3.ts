@@ -96,6 +96,25 @@ export interface S3Entry {
 const DEFAULT_MAX_OBJECTS = 64;
 const DEFAULT_MAX_BYTES = 1024 * 1024;
 
+/** Normalize an absolute mountpoint: collapse `//`, drop trailing `/`, refuse `..`. */
+export function normalizeMountpoint(raw: string): string {
+  if (!raw.startsWith('/')) throw new Error(`s3: mountpoint must be absolute: "${raw}"`);
+  const parts = raw.split('/').filter((p) => p !== '' && p !== '.');
+  if (parts.includes('..')) throw new Error(`s3: mountpoint must not contain "..": "${raw}"`);
+  return '/' + parts.join('/');
+}
+
+/** Pagination state of one ListObjectsV2 page. */
+export function parseS3ListPage(xml: string): { truncated: boolean; nextToken: string | null } {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  const truncated = doc.getElementsByTagName('IsTruncated')[0]?.textContent?.trim() === 'true';
+  const nextToken = doc.getElementsByTagName('NextContinuationToken')[0]?.textContent?.trim() || null;
+  return { truncated, nextToken };
+}
+
+/** Hard ceiling on list pages per call (1000 keys each) — runaway guard. */
+const MAX_LIST_PAGES = 1000;
+
 /** Validate + normalize a bucket base URL. Throws with the reason. */
 export function parseS3Base(raw: string): URL {
   let url: URL;
@@ -154,7 +173,7 @@ export class S3Backend implements VfsBackend {
 
   constructor(opts: S3MountOptions) {
     this.base = parseS3Base(opts.base); // throws with the reason on a bad URL
-    this.mountpoint = opts.mountpoint;
+    this.mountpoint = normalizeMountpoint(opts.mountpoint);
     this.mode = opts.mode;
     this.writable = opts.mode !== 'public';
     this.presignEndpoint = opts.presignEndpoint;
@@ -165,7 +184,7 @@ export class S3Backend implements VfsBackend {
     this.persist = opts.persist ?? 'session';
     if (opts.mode === 'oidc') {
       this.oidc = opts.oidc;
-      this.store = new S3SessionStore(opts.mountpoint, this.persist);
+      this.store = new S3SessionStore(this.mountpoint, this.persist);
       // Pre-boot restore: a revisit reuses the tab's (or the persisted)
       // temporary session instead of re-running the sign-in dance.
       const stored = this.store?.load() ?? null;
@@ -246,13 +265,27 @@ export class S3Backend implements VfsBackend {
     return this.#fetchText(url, init);
   }
 
+  /** Every key under `prefix`, following continuation tokens page by page. */
+  async #listAll(prefix: string): Promise<S3Entry[]> {
+    const all: S3Entry[] = [];
+    let token: string | null = null;
+    for (let page = 0; page < MAX_LIST_PAGES; page++) {
+      let url = `${this.base.toString()}?list-type=2${prefix ? `&prefix=${encodeURIComponent(prefix)}` : ''}&max-keys=1000`;
+      if (token) url += `&continuation-token=${encodeURIComponent(token)}`;
+      const init: RequestInit | undefined = this.mode === 'oidc' ? { headers: await this.#signedHeaders('GET', url) } : undefined;
+      const xml = await this.#fetchText(url, init);
+      all.push(...parseS3ListXml(xml, this.base));
+      const state = parseS3ListPage(xml);
+      if (!state.truncated || !state.nextToken) break;
+      token = state.nextToken;
+    }
+    return all;
+  }
+
   /** List entries under a backend-relative dir (immediate children only). */
   async list(path: string): Promise<Array<{ name: string; kind: 'file' | 'dir' }>> {
     const prefix = path === '/' || path === '' ? '' : path.replace(/^\/+|\/+$/g, '') + '/';
-    const url = `${this.base.toString()}?list-type=2&prefix=${encodeURIComponent(prefix)}&max-keys=1000`;
-    const init: RequestInit | undefined = this.mode === 'oidc' ? { headers: await this.#signedHeaders('GET', url) } : undefined;
-    const xml = await this.#fetchText(url, init);
-    const entries = parseS3ListXml(xml, this.base);
+    const entries = await this.#listAll(prefix);
     const seen = new Map<string, 'file' | 'dir'>();
     for (const entry of entries) {
       const rest = entry.key.slice(prefix.length);
@@ -307,9 +340,7 @@ export class S3Backend implements VfsBackend {
     const clean = path.replace(/^\/+|\/+$/g, '');
     if (opts.recursive) {
       const prefix = clean === '' ? '' : clean + '/';
-      const url = `${this.base.toString()}?list-type=2&prefix=${encodeURIComponent(prefix)}&max-keys=1000`;
-      const init: RequestInit | undefined = this.mode === 'oidc' ? { headers: await this.#signedHeaders('GET', url) } : undefined;
-      for (const entry of parseS3ListXml(await this.#fetchText(url, init), this.base)) {
+      for (const entry of await this.#listAll(prefix)) {
         await this.#deleteKey(entry.key);
       }
       return;
@@ -345,9 +376,7 @@ export class S3Backend implements VfsBackend {
   ): Promise<void> {
     let entries: S3Entry[];
     try {
-      const url = `${this.base.toString()}?list-type=2&max-keys=1000`;
-      const init: RequestInit | undefined = this.mode === 'oidc' ? { headers: await this.#signedHeaders('GET', url) } : undefined;
-      entries = parseS3ListXml(await this.#fetchText(url, init), this.base);
+      entries = await this.#listAll('');
     } catch (cause) {
       report({ kind: 'stderr', text: `s3: ${this.mountpoint}: list failed: ${cause instanceof Error ? cause.message : String(cause)}` });
       return;
@@ -435,6 +464,7 @@ export class S3Backend implements VfsBackend {
     report({ kind: 'stdout', text: `s3: ${this.mountpoint}: if the popup was blocked, open this URL and retry: ${started.url}` });
     try {
       if (typeof window !== 'undefined') {
+        // noopener: the popup has no window.opener; the code returns over BroadcastChannel.
         window.open(started.url, 'semtext-s3-auth', 'width=480,height=640,noopener');
       }
       const code = await waitForAuthCode(started.state);
@@ -498,8 +528,13 @@ export class S3Backend implements VfsBackend {
 export function createS3Backend(args: string[], signer?: S3Signer): S3Backend | string {
   const base = args[0];
   if (!base) return 'usage: mount s3 <https://host/bucket/prefix/> <mountpoint> [mode=… issuer= client_id= redirect= sts= role= region= persist=]';
-  const mountpoint = args[1] ?? '/s3';
-  if (!mountpoint.startsWith('/')) return `s3: mountpoint must be absolute: "${mountpoint}"`;
+  const rawMountpoint = args[1] ?? '/s3';
+  let mountpoint: string;
+  try {
+    mountpoint = normalizeMountpoint(rawMountpoint);
+  } catch (cause) {
+    return cause instanceof Error ? cause.message : String(cause);
+  }
   const flags = new Map<string, string>();
   for (const arg of args.slice(2)) {
     const eq = arg.indexOf('=');
@@ -536,8 +571,16 @@ export function createS3Backend(args: string[], signer?: S3Signer): S3Backend | 
       sessionName: flags.get('session_name'),
     };
   }
-  const maxObjects = flags.has('max_objects') ? Number.parseInt(flags.get('max_objects')!, 10) : undefined;
-  const maxBytes = flags.has('max_bytes') ? Number.parseInt(flags.get('max_bytes')!, 10) : undefined;
+  const capFlag = (name: string): number | undefined | string => {
+    if (!flags.has(name)) return undefined;
+    const raw = flags.get(name)!;
+    const n = /^\d+$/.test(raw) ? Number.parseInt(raw, 10) : Number.NaN;
+    return Number.isSafeInteger(n) && n > 0 ? n : `s3: ${name} must be a positive integer (got "${raw}")`;
+  };
+  const maxObjects = capFlag('max_objects');
+  if (typeof maxObjects === 'string') return maxObjects;
+  const maxBytes = capFlag('max_bytes');
+  if (typeof maxBytes === 'string') return maxBytes;
   let backend: S3Backend;
   try {
     backend = new S3Backend({
