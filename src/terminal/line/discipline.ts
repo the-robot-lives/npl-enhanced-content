@@ -137,6 +137,7 @@ export class CookedLine implements LineDiscipline {
         break;
       case 'Tab':
         if (ev.shift) return false; // Shift+Tab keeps its focus meaning
+        if (this.#buffer === '') return false; // empty line: Tab keeps its focus meaning too (WCAG 2.1.2)
         this.#complete();
         return true;
       default:
@@ -232,7 +233,7 @@ export class CookedLine implements LineDiscipline {
 
   /** Tab completion — v1 `#complete`: extend, or list capped at 12. */
   #complete(): void {
-    if (this.#buffer === '') return; // empty line: Tab keeps its focus meaning
+    if (this.#buffer === '') return; // unreachable from key(): empty-line Tab never gets here
     const outcome = completeLine(this.#buffer, this.core());
     if (outcome.kind === 'none') return;
     this.#buffer = outcome.line;

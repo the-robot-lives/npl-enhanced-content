@@ -19,8 +19,9 @@ import { flatMods, modsOf, type CellMetrics, type KeyEvent, type Mods, type Mous
 
 /** What the integrating element supplies. All sync. */
 export interface InputHost {
-  /** Route a normalized key: raw → app.key(ev), cooked → discipline.key(ev). */
-  dispatchKey(ev: KeyEvent): void;
+  /** Route a normalized key: raw → app.key(ev), cooked → discipline.key(ev).
+   * True when the key was claimed (consumed by an app or the discipline). */
+  dispatchKey(ev: KeyEvent): boolean;
   /** True while a raw-mode app owns the screen. */
   isRawMode(): boolean;
   /** True while the alternate screen is active (wheel reaches the app even without reporting). */
@@ -33,6 +34,10 @@ export interface InputHost {
   dispatchMouse(info: MouseEventInfo): void;
   /** Primary-screen wheel: scroll the viewport over the scrollback. True when consumed. */
   onWheelScroll(dy: number, mods: Mods): boolean;
+  /** Exit the active full-screen app cleanly (F6, the keyboard way out —
+   * §7.1; distinct from Ctrl+C's interrupt/130). Optional: tests' fakes
+   * without it simply never exit. */
+  exitApp?(): void;
   /** Viewport row → absolute line (the scroll offset, folded in here). */
   rowToAbsoluteLine(row: number): number;
   /** Cell metrics from the active renderer (the mouse takes them as a parameter). */
@@ -84,14 +89,23 @@ export class InputModel {
   /**
    * One normalized KeyEvent. Chrome keys are intercepted before any app or
    * the discipline can see them (§7.3: the context menu wins even while
-   * app mouse-reporting is active); everything else dispatches.
+   * app mouse-reporting is active); everything else dispatches. Returns
+   * true when the key was claimed — the DOM layer prevents its default only
+   * then (an unclaimed Tab escapes so keyboard users can always leave).
    */
-  handleKey(ev: KeyEvent): void {
+  handleKey(ev: KeyEvent): boolean {
     if ((ev.key === 'F10' && ev.shift) || ev.key === 'ContextMenu') {
       this.#openMenuAtAnchor();
-      return;
+      return true;
     }
-    this.#host.dispatchKey(ev);
+    // F6 while an app owns the screen is the keyboard way out (owner
+    // decision 2026-11-11): exit cleanly, never reaching the app. In prompt
+    // mode F6 keeps its browser meaning (focus panes) — no interception.
+    if (ev.key === 'F6' && !ev.ctrl && !ev.alt && !ev.shift && !ev.meta && this.#host.isRawMode()) {
+      this.#host.exitApp?.();
+      return true;
+    }
+    return this.#host.dispatchKey(ev);
   }
 
   /** One bare key token — the v1 playback `pressKey` vocabulary plus the full grammar. */
@@ -153,8 +167,13 @@ export class InputModel {
     this.#hidden = createHiddenInput(
       {
         onKey: (ev) => {
-          this.handleKey(ev);
-          return true; // the terminal surface consumes every key it sees
+          const claimed = this.handleKey(ev);
+          // Blanket-consume everything EXCEPT an unclaimed Tab: it is the
+          // keyboard's way out of the surface (Shift+Tab, or Tab on an
+          // empty prompt line — WCAG 2.1.2). Every other unclaimed key
+          // stays consumed so browser defaults (Ctrl+R reload, PageUp
+          // scroll, F5) never leak into the page.
+          return ev.key === 'Tab' ? claimed : true;
         },
         onComposition: (kind, text) => this.handleComposition(kind, text),
         onPaste: (text) => {

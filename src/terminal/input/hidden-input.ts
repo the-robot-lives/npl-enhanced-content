@@ -39,6 +39,11 @@ export function createHiddenInput(host: HiddenInputHost, doc: Document): HiddenI
   const el = doc.createElement('input');
   el.className = 'sem-shell-hidden-input';
   el.type = 'text';
+  // Programmatic-only focus surface (§7.2): never a tab stop, or keyboard
+  // users get an invisible stop they cannot see and Tab cannot leave (WCAG
+  // 2.1.2 / 2.4.7). Entry to the shell is the visible prompt input or a
+  // surface click.
+  el.tabIndex = -1;
   el.spellcheck = false;
   el.setAttribute('autocomplete', 'off');
   el.setAttribute('autocapitalize', 'off');

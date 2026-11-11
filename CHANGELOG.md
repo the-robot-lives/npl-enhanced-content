@@ -2,6 +2,17 @@
 
 ## 2026-11-11
 
+- **keyboard trap removed — the shell is always escapable (WCAG 2.1.2).**
+  Tab on an empty prompt line and Shift+Tab keep their native focus
+  meaning (the hidden input surface now honours the discipline's verdict
+  for Tab instead of blanket-consuming every key); the hidden canvas input
+  is `tabindex=-1` (never an invisible tab stop); F6 exits a live
+  full-screen app cleanly through `AppRunner.requestExit()` (exit 0, the
+  app's own teardown path — distinct from Ctrl+C's interrupt/130) and
+  keeps its browser focus-panes meaning in prompt mode. (+5 unit tests.)
+
+## 2026-11-11
+
 - **0.9.6 — `sem-reference` real handler (AUTO-ID, footnote chrome) +
   `sem-procedure` / `sem-step` / `sem-tldr` / `sem-summary` renders.**
   `sem-reference` and `sem-step` graduate out of `sem-stubs.ts`. An
