@@ -43,6 +43,24 @@ const { Window } = await (async () => {
   }
 })();
 
+/**
+ * sem-reference AUTO-ID — plain-JS twin of src/shared/reference-id.ts
+ * (the bin runs without a build; test/unit/reference-id.test.ts pins the
+ * two to the same outputs). Lowercase, every non-[a-z0-9] run → "-",
+ * trim "-"; id = (<sem-references id> || "refs") + "-" + slug(cite||href).
+ */
+export function referenceSlugJs(cite) {
+  return String(cite).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function deriveReferenceIdJs(ref) {
+  const p = (n) => ref.getAttribute('data-' + n) ?? ref.getAttribute(n);
+  const slug = referenceSlugJs(p('cite') || p('href') || '');
+  if (!slug) return null;
+  const block = ref.parentElement && ref.parentElement.closest('sem-references, .sem-references');
+  return ((block && block.getAttribute('id')) || 'refs') + '-' + slug;
+}
+
 /* ------------------------------------------------------------------ *
  * Schema loading
  * ------------------------------------------------------------------ */
@@ -439,6 +457,25 @@ export function validateSource(source, schema, { filename = '<input>' } = {}) {
   const ids = new Set(
     [...doc.querySelectorAll('[id]')].map((el) => el.getAttribute('id'))
   );
+
+  // -- sem-reference AUTO-ID (sem-references.md § Auto-id) --------------
+  // An id-less reference is valid: the runtime (and extraction) derive
+  // <block-id>-<referenceSlug(cite)>. Report the derived id as info, add
+  // it to the drift id set, flag the underivable (no cite/href) as an
+  // error and two refs deriving one id as a warning.
+  for (const ref of doc.querySelectorAll('sem-reference, .sem-reference')) {
+    if (ref.getAttribute('id')) continue;
+    const derived = deriveReferenceIdJs(ref);
+    const line = lines.get(ref);
+    if (!derived) {
+      push('error', 'reference-id', 'sem-reference has no id and no cite/href to derive one from (sem-references.md § Auto-id)', line);
+    } else if (ids.has(derived)) {
+      push('warning', 'reference-id', `auto-id "${derived}" collides with an existing id — author an id or a distinct cite`, line);
+    } else {
+      ids.add(derived);
+      push('info', 'auto-id', `sem-reference auto-id'd as "${derived}"`, line);
+    }
+  }
   const driftCfg = x.document.idDrift || {};
   const skipHrefs = new Set(driftCfg.skipHrefs || []);
   const drift = (value, line, what) => {

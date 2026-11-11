@@ -1,25 +1,20 @@
 import { SemElement } from './base.js';
+import { SemCallout } from './callout.js';
 
 /**
- * sem-tldr — the namespace walking skeleton (spec/schema/sem-tldr.md).
+ * sem-tldr — light skim callout (spec/schema/sem-tldr.md).
  *
- * The user rule is explicit: no CSS-only elements — every element
- * registers a Lit component even when it is a no-logic display stub.
- * sem-tldr is exactly that stub, in its own module (not the claim-stub
- * file): it exists so the SemText extension machinery — bundles, lazy
- * loaders, manifests, validator families — can prove itself end to end
- * with one trivial `sem-*` element.
- *
- * The component does NOTHING: no render, no shadow root, no behaviour —
- * light-DOM children pass through untouched (the base's contract, PRD §4
- * rule 5). Everything visible is the vocabulary CSS: the block box, the
-   "TL;DR" label chrome (::before, so it is outside textContent and the
- * extraction invariant holds byte-for-byte with the script on or off).
- *
- * It registers through the CORE barrel (src/index.ts), so it ships in
- * dist/semtext.js — `customElements.get('sem-tldr')` answers in any page
- * that loads the core bundle, and `data-sem-upgraded` is claimed at
- * connect (inherited from SemElement).
+ * The callout chrome (accent rail, tinted box, "TL;DR" label) is the
+ * vocabulary CSS — `::before`, outside textContent, so the extraction
+ * invariant holds byte-for-byte and the .nojs artifact draws the same box.
+ * The enhanced render adds what CSS cannot give assistive tech: after
+ * the parse the block becomes a labelled callout — `role="note"` and an
+ * `aria-label` naming it (an authored role / aria-label always wins).
+ * Children are never touched (src/lit/callout.ts, shared with sem-summary).
  */
-export class SemTldr extends SemElement {}
+export class SemTldr extends SemCallout {
+  calloutLabel(): string {
+    return 'TL;DR';
+  }
+}
 SemElement.register('sem-tldr', SemTldr);

@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-11-11
+
+- **0.9.6 — `sem-reference` real handler (AUTO-ID, footnote chrome) +
+  `sem-procedure` / `sem-step` / `sem-tldr` / `sem-summary` renders.**
+  `sem-reference` and `sem-step` graduate out of `sem-stubs.ts`. An
+  id-less reference derives `id = <sem-references id || "refs">-` +
+  `referenceSlug(cite || href)` (lowercase, non-`[a-z0-9]` runs → `-`,
+  trimmed; `src/shared/reference-id.ts`, exported as
+  `SemText.referenceSlug` / `referenceId` / `deriveReferenceId`), marked
+  `data-sem-minted-id`; extraction reports the same derived id in both
+  tiers. The component stamps `data-ordinal` (badge-styled counter), a
+  `cite` `title` tooltip and emits `sem:reference-ready`;
+  `src/reading/references.ts` no longer skips id-less refs and links a
+  URL `cite`. `sem-procedure` prepends a `.sem-procedure-meta` progress
+  line ("1 of 4 done · 1 blocked", extraction chrome) + `data-blocked`;
+  `sem-step` stamps `data-ordinal` + `aria-current="step"`; `sem-tldr` /
+  `sem-summary` become labelled notes (`role="note"` + `aria-label`, via
+  `src/lit/callout.ts`). Validator: id-less reference = `info auto-id`
+  (no cite/href = error, collision = warning; info not counted as a
+  warning); schema `id` no longer required; spec prose for references
+  (§ Auto-id), procedure, tldr, summary, extraction chrome list; demo
+  `web/demo/auto-id-renders.html` + e2e `sem-reference-auto-id.cy.js`;
+  unit suites for slug/auto-id/numbering/renders/validator.
+  `elements.json` regenerated. Bundle budget 173 → 175 KB (measured
+  174.8 raw / 54.0 gzipped, was 172.1 / 53.2).
+
 ## 2026-10-26
 
 - docs: doc-sweep (pointers-check, layout, arch, schema, threat-model)

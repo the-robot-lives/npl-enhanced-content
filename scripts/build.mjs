@@ -141,7 +141,11 @@ const targets = [
     // via update-branch added ~0.9 KB on top of the feature's 171.2;
     // measured 172.1 raw / 53.2 gzipped — 0.1 over the 172 line, failing
     // --strict-budget on the PR). Recorded in ROADMAP "Size budgets".
-    budgetKb: 173,
+    // 173 → 175 KB (2026-11-11, 0.9.6: sem-reference graduates from the
+    // claim stubs — auto-id + footnote chrome — and sem-procedure /
+    // sem-step / sem-tldr / sem-summary grow real renders; measured
+    // 174.8 raw / 54.0 gzipped). Recorded in ROADMAP "Size budgets".
+    budgetKb: 175,
     required: true,
   },
   {

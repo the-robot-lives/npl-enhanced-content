@@ -85,6 +85,11 @@ export { SemCode } from './lit/sem-code.js';
 import './lit/sem-code.js';
 export { SemReferences } from './lit/sem-references.js';
 import './lit/sem-references.js';
+/* sem-reference — auto-id + footnote chrome (graduated from the stubs);
+ * the pure AUTO-ID rule is exported for hosts and machine consumers. */
+export { SemReference } from './lit/sem-reference.js';
+import './lit/sem-reference.js';
+export { referenceSlug, referenceId, deriveReferenceId } from './shared/reference-id.js';
 export { SemProperties } from './lit/sem-properties.js';
 import './lit/sem-properties.js';
 /* R/W2 chrome + data — thin wrappers over src/reading/* */
@@ -124,6 +129,8 @@ export { SemProgress } from './lit/sem-progress.js';
 import './lit/sem-progress.js';
 export { SemProcedure } from './lit/sem-procedure.js';
 import './lit/sem-procedure.js';
+export { SemStep } from './lit/sem-step.js';
+import './lit/sem-step.js';
 /* sem-bind — the live-data runtime (parse → fetch → hydrate; see
  * src/lit/bind.ts). The bound elements wire it themselves; these named
  * exports serve programmatic hosts and the unit tier. */

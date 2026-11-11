@@ -215,6 +215,9 @@ sem-agent > :is(name, bio, instructions), sem-fact > :is(statement, conclusion, 
 :is(sem-step, .sem-step):not([data-status]):not([status])::after {
   content: " ○"; color: var(--sem-muted);
 }
+/* enhanced progress line (sem-procedure component; extraction chrome) */
+.sem-procedure-meta { font-size: .75rem; color: var(--sem-muted); margin: 0 0 .35rem; letter-spacing: .02em; }
+:is(sem-procedure, .sem-procedure)[data-blocked] > .sem-procedure-meta { color: var(--sem-wrong); }
 /* ── end sem-procedure ── */
 
 /* ── sem-step ── */
@@ -423,6 +426,13 @@ mark.sem-code-line { display: inline-block; width: 100%; color: inherit;
 .sem-references-backlinks { margin-left: .4rem; }
 .sem-references-backlinks a, .sem-references-link { text-decoration: none; margin-left: .3rem; color: var(--sem-accent); }
 .sem-references-ref { text-decoration: none; border-bottom: 1px dotted var(--sem-accent); }
+/* sem-reference enhanced chrome: once the component stamps data-ordinal the
+   counter is drawn as a footnote number badge (JS-off: the plain "1." above).
+   The number stays the CSS counter in every tier; data-ordinal is the hook. */
+:is(sem-reference, .sem-reference)[data-ordinal]::before { content: counter(sem-reference); top: .25rem;
+  min-width: 1.35rem; padding: 0 .3rem; border-radius: 999px; text-align: center; font-size: .7rem; line-height: 1.35rem;
+  background: color-mix(in srgb, var(--sem-accent) 14%, transparent); color: var(--sem-accent); }
+:is(sem-reference, .sem-reference)[data-ordinal][title] { cursor: help; }
 
 /* popover — one preview surface per document (src/shared/popover.ts);
    native `popover` where supported, fixed div otherwise. Author rules

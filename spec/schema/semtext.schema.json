@@ -50,7 +50,8 @@
           "sem-md-chrome",
           "sem-md-body",
           "sem-md-raw",
-          "sem-md-status"
+          "sem-md-status",
+          "sem-procedure-meta"
         ]
       },
       "childRules": [
@@ -676,7 +677,7 @@
       "record": true,
       "attributes": {
         "id": {
-          "required": true
+          "note": "optional since 0.9.6: absent = AUTO-ID <block-id>-<slug(cite)> (sem-references.md § Auto-id); the validator reports info auto-id"
         },
         "href": {},
         "cite": {}

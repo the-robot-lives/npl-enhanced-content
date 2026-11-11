@@ -21,6 +21,7 @@ import { deriveSummary } from '../shared/summary.js';
 import { normalizeMd } from '../shared/mdsource.js';
 import { parseMarks } from '../shared/marks.js';
 import { trimTrailingWs } from '../shared/trim.js';
+import { deriveReferenceId } from '../shared/reference-id.js';
 
 /** One extracted record. Shape is normative; see spec/extraction.md §2. */
 export interface SemRecord {
@@ -119,6 +120,8 @@ const CHROME_CLASSES = [
   'sem-references-backlinks',
   'sem-references-link',
   'sem-popover',
+  // sem-procedure: the enhanced progress line ("2 of 4 done") is derived
+  'sem-procedure-meta',
   // R/W2
   'sem-reader-chrome',
   'sem-reader-outline',
@@ -831,7 +834,11 @@ export function extractRecordPairs(root: Document | Element): RecordPair[] {
   // wiring and marks them (runtime state is always data-*); a minted id
   // must never surface as a record id or JS-on extraction diverges from
   // the authored page.
+  // sem-reference is the one exception: its AUTO-ID is a pure function of
+  // authored attributes (shared/reference-id.ts), so both tiers derive the
+  // same id — the authored id when present, else <block>-<slug(cite)>.
   function authoredId(el: Element): string | null {
+    if (recordType(el) === 'sem-reference') return deriveReferenceId(el);
     return el.hasAttribute('data-sem-minted-id') ? null : el.getAttribute('id');
   }
 
