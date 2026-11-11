@@ -104,6 +104,8 @@ export class SemTerminal extends SemElement {
     /** The playback steps as an array — the property form of `script`. */
     playback: { type: Array },
     playing: { type: Boolean, state: true },
+    /** A subclass-driven demo (start-script autostart) owns the input (§2.5). */
+    demoRunning: { type: Boolean, state: true },
     tui: { type: Object, state: true },
     /** A full-screen app owns the screen (§6.2) — prompt hidden, keys raw. */
     appLive: { type: Boolean, state: true },
@@ -121,6 +123,8 @@ export class SemTerminal extends SemElement {
   declare script: string;
   declare playback: PlaybackStep[] | null;
   declare playing: boolean;
+  /** A subclass-driven demo (start-script autostart) owns the input (§2.5). */
+  declare demoRunning: boolean;
   declare tui: TuiState | null;
   declare appLive: boolean;
   declare tabs: boolean;
@@ -261,6 +265,7 @@ export class SemTerminal extends SemElement {
     this.script = '';
     this.playback = null;
     this.playing = false;
+    this.demoRunning = false;
     this.tui = null;
     this.appLive = false;
     this.tabs = false;
@@ -519,9 +524,29 @@ export class SemTerminal extends SemElement {
     if (input) {
       input.value = '';
       input.readOnly = false;
-      input.focus();
+      this.refocusIfEngaged();
     }
     if (announce) this.appendLines([{ kind: 'comment', text: 'playback stopped — the terminal is yours.' }]);
+  }
+
+  /**
+   * Re-focus the prompt ONLY when the reader is already inside the shell
+   * (§2.5, WCAG 2.4.3 / 3.2.1): a demo that ends while the reader has
+   * scrolled on must not yank the page back or pop a soft keyboard.
+   */
+  protected refocusIfEngaged(): void {
+    const doc = this.ownerDocument;
+    if (doc !== null && this.contains(doc.activeElement)) this.#inputEl()?.focus();
+  }
+
+  /**
+   * Stop whatever demo is running and hand the terminal back. The base
+   * stops boot playback; SemShell overrides to stop its start-script
+   * autostart first. Public so the visible "stop demo" control can call it.
+   */
+  stopDemo(): void {
+    this.demoRunning = false;
+    this.#stopPlayback(true);
   }
 
   #driver(): PlaybackDriver {
@@ -654,9 +679,14 @@ export class SemTerminal extends SemElement {
             </div>`
           : null}
         ${this.#hasScript
-          ? html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
-              replay
-            </button>`
+          ? this.playing || this.demoRunning
+            ? html`<button type="button" class="sem-shell-stop" aria-label="Stop the scripted demo" @click=${() => this.stopDemo()}>
+                  stop demo
+                </button>
+                <span class="sem-shell-demo-hint">Esc to take over</span>`
+            : html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
+                replay
+              </button>`
           : null}
         <div class="sem-term-surface">
           <sem-scroll
@@ -1416,7 +1446,7 @@ export class SemTerminal extends SemElement {
     this.#pushLines(session, lines);
     if (session === this.#session) {
       this.appLive = false;
-      void this.updateComplete.then(() => this.#inputEl()?.focus());
+      void this.updateComplete.then(() => this.refocusIfEngaged());
     }
   }
 
@@ -1475,7 +1505,7 @@ export class SemTerminal extends SemElement {
   #closeTui(userInitiated: boolean): void {
     this.tui = null;
     if (userInitiated && this.playing) this.#stopPlayback(true);
-    this.#inputEl()?.focus();
+    this.refocusIfEngaged();
   }
 
   #onTuiFilterInput(event: Event): void {

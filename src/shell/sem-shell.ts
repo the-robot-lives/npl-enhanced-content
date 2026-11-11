@@ -352,10 +352,24 @@ export class SemShell extends SemTerminal {
   #autoRunningChanged(running: boolean): void {
     if (running === this.#autoRunning) return;
     this.#autoRunning = running;
+    this.demoRunning = running; // drives the visible stop control (§2.5)
     const input = this.#shellInput();
     if (input === null) return;
     input.readOnly = running;
-    if (!running) input.focus();
+    // Never yank focus back when the demo ends off-focus (§2.5).
+    if (!running) this.refocusIfEngaged();
+  }
+
+  /** The visible "stop demo" control: stop the autostart, else boot playback. */
+  override stopDemo(): void {
+    if (this.#autostart !== null) {
+      this.#autostart.dispose();
+      this.#autostart = null;
+      this.#autoRunningChanged(false);
+      this.appendLines([{ kind: 'comment', text: 'demo stopped — the terminal is yours.' }]);
+      return;
+    }
+    super.stopDemo();
   }
 
   /**

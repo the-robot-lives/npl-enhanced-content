@@ -2,6 +2,17 @@
 
 ## 2026-11-11
 
+- **visible demo stop control + no focus theft (WCAG 2.2.2 / 2.4.3).**
+  While a scripted demo runs, the top-right slot shows a `stop demo`
+  button and an "Esc to take over" hint (new `demoRunning` state drives
+  it; `stopDemo()` stops boot playback or the start-script autostart);
+  when idle the slot is the replay button as before. Ending a demo —
+  playback stop, app exit, TUI close — now re-focuses the prompt ONLY
+  when the reader is already inside the shell (`refocusIfEngaged()`),
+  so a demo finishing off-focus no longer yanks the page back or pops
+  a soft keyboard. (+3 unit tests; the fetch-flow replay test waits for
+  the demo to end before clicking replay.)
+
 - **unique prompt-input ids per element.** `id="sem-shell-input"` /
   `for="sem-shell-input"` were fixed literals, so the landing's three
   shells shared one id (broken label association, ambiguous lookups).
