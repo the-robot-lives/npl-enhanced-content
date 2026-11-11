@@ -581,6 +581,7 @@ function quiz(el: Element, ctx: Ctx): string {
 const PLACEHOLDERS: Record<string, (el: Element) => string> = {
   'sem-chat': (el) => `chat · ${el.querySelectorAll('sem-chat-message, .sem-chat-message, [data-role]').length} messages`,
   'sem-media-gallery': (el) => `media gallery · ${el.querySelectorAll('img, video, audio, figure').length} items`,
+  'sem-media-prompt': (el) => `media prompt · ${el.querySelectorAll('sem-media-gallery img, sem-media-gallery video').length} assets`,
   'sem-upload-drop': () => 'file drop target',
   'sem-browser': (el) => `browser frame · ${truncate(param(el, 'src') || param(el, 'url') || '', 40)}`,
   'sem-data-visualizer': (el) => `data visualizer · ${truncate(param(el, 'kind') || 'chart', 30)}`,
