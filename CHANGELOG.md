@@ -12,7 +12,7 @@
   'nano: editor chunk failed to load' and exits 1. Budget 24 → 32 KB
   (ES chunk keeps every export; measured 27.3 raw / 8.0 gz vs IIFE 17.9),
   `docs/arch/bundles.md` nano rows corrected, 4 new unit tests
-  (test/unit/nano-command.test.ts). (#PR)
+  (test/unit/nano-command.test.ts). (#91)
 
 - **0.9.6 — `sem-reference` real handler (AUTO-ID, footnote chrome) +
   `sem-procedure` / `sem-step` / `sem-tldr` / `sem-summary` renders.**
