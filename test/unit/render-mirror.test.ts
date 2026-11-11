@@ -93,6 +93,12 @@ describe('mount', () => {
     expect(root.getAttribute('data-visible')).toBe('false');
     expect(root.querySelector('.sem-term-mirror-live')).not.toBeNull();
     expect(root.querySelector('.sem-term-mirror-body')).not.toBeNull();
+    // §2.2 (2026-11-11): the root log announces appended output — the
+    // nested live div must NOT be its own live region (double announcement).
+    const live = root.querySelector('.sem-term-mirror-live') as HTMLElement;
+    expect(live.hasAttribute('aria-live')).toBe(false);
+    expect(root.querySelectorAll('[aria-live]')).toHaveLength(0); // no nested live region
+    expect(root.getAttribute('aria-live')).toBe('polite'); // the root is the only one
   });
 
   it('the mirror is visually hidden until promoted', () => {

@@ -82,8 +82,8 @@ export class DOMMirror {
     root.setAttribute('aria-hidden', 'false');
     const live = doc.createElement('div');
     live.className = 'sem-term-mirror-live';
-    live.setAttribute('aria-live', 'polite');
-    live.setAttribute('aria-atomic', 'true');
+    // NO aria-live here: the root log already announces appended output —
+    // a nested live region made screen readers speak every line twice.
     const body = doc.createElement('div');
     body.className = 'sem-term-mirror-body';
     root.append(live, body);

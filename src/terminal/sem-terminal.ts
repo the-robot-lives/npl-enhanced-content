@@ -338,9 +338,32 @@ export class SemTerminal extends SemElement {
     if (session === this.#session) this.lines = session.lines;
   }
 
+  /** Default accessible name/role when the author gave none (WCAG). The
+   * subclass overrides to supply its own default label. */
+  protected applyAccessibleDefaults(): void {
+    if (!this.hasAttribute('aria-label')) this.setAttribute('aria-label', 'Terminal');
+    if (!this.hasAttribute('role')) this.setAttribute('role', 'region');
+  }
+
+  /**
+   * THE single paint-state write (§8.5): records `data-paint` AND toggles
+   * the transcript's `aria-hidden`. Once JS paint is up, the mirror is the
+   * one accessible log (exactly one `role=log` in the a11y tree — WCAG);
+   * with no paint (no JS) the authored transcript stays the readable view.
+   */
+  #setPaint(paint: 'canvas' | 'dom'): void {
+    this.dataset.paint = paint;
+    const transcript = this.querySelector('.sem-shell-transcript');
+    transcript?.setAttribute('aria-hidden', 'true');
+  }
+
   connectedCallback(): void {
     super.connectedCallback();
-    this.setAttribute('aria-label', 'Terminal');
+    // Accessible surface (WCAG): an author-supplied name/role wins; the
+    // defaults only fill the gap so the region is exposed with a name.
+    // SemShell overrides this hook with its own default — the base must
+    // NOT write first, or the subclass guard never sees the gap.
+    this.applyAccessibleDefaults();
     // .envrc chrome feeds — TAB_TITLE titles the tab whose cd loaded it
     // (attributed through #executing), TAB_THEME the tab strip (§11.3/§12).
     this.#offEnv?.();
@@ -746,7 +769,7 @@ export class SemTerminal extends SemElement {
         // renderer mounts its own mirror at attach, so useDomView is all.
         this.#domView = true;
         this.#renderer?.useDomView();
-        this.dataset.paint = 'dom';
+        this.#setPaint('dom');
         this.#markCanvasUnavailable();
       },
       onMetricsChange: (metrics) => this.#onMetrics(metrics),
@@ -768,16 +791,16 @@ export class SemTerminal extends SemElement {
       shell.viewDelegate = (choice) => {
         if (choice === 'dom') {
           renderer.useDomView();
-          this.dataset.paint = 'dom';
+          this.#setPaint('dom');
         } else {
           renderer.useCanvasView();
-          this.dataset.paint = 'canvas';
+          this.#setPaint('canvas');
         }
       };
     }
     this.#renderer = renderer;
     renderer.attach(this.#paintScreenFor(this.#session), surface);
-    this.dataset.paint = 'canvas';
+    this.#setPaint('canvas');
     shell.markCanvasAvailable?.();
     // The paint path owns the input surface from here on (bat lane's
     // required flip — core-screen deviation 2): hidden input (IME/paste),
@@ -817,7 +840,7 @@ export class SemTerminal extends SemElement {
     mirror.setVisible(true);
     this.#mirrorOnly = mirror;
     this.#domView = true;
-    this.dataset.paint = 'dom';
+    this.#setPaint('dom');
     // The mirror-only fallback paints the same surface — the input rides it
     // there too (wheel, selection, context menu have no canvas to lean on).
     this.#ensureInputAttached(surface);
