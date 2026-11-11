@@ -88,7 +88,11 @@ const RECORD_TYPES = [
   // the container mints the record; its row children
   // (sem-tag-attr / sem-api-param) are captured INSIDE it, never mint
   'sem-tag-def',
-  'sem-api-call'
+  'sem-api-call',
+  // active media-generation record (spec/schema/sem-media-prompt.md):
+  // the authored YAML + gallery + evals mint; the runtime chrome class
+  // below keeps the generated output extraction-invisible
+  'sem-media-prompt'
 ] as const;
 
 /**
@@ -168,7 +172,11 @@ const CHROME_CLASSES = [
   // `sem-cached-embed-chrome` — both are chrome whole, so JS-off
   // extraction equals JS-on (the authored inner content is the record)
   'agent-kit-chrome',
-  'sem-cached-embed-chrome'
+  'sem-cached-embed-chrome',
+  // sem-media-prompt: the params line, Generate button, edit textarea,
+  // alert, runtime gallery and evals all live in this one container —
+  // the authored YAML / gallery / evals / snapshot stay the record
+  'sem-media-prompt-chrome'
 ];
 
 /** Highlight / cloze markers, in every authoring and runtime form. */

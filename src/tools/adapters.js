@@ -214,8 +214,11 @@ async function refreshAnnotate(region, ctx) {
  * media — validate + normalize `.media.prompt` YAML regions (no network)
  * ------------------------------------------------------------------ */
 
-const MEDIA_KEYS = ['prompt', 'negative', 'aspect', 'seed'];
-const MEDIA_ASPECTS = new Set(['1:1', '16:9', '9:16', '4:3', '3:4', '21:9']);
+// The parser/renderer live in src/shared/media-prompt.js so the Lit tier
+// can share them without importing this Node-side module (dynamic
+// node:fs below). Re-exported: the CLI surface is unchanged.
+export { parseMediaPrompt, renderMediaPrompt } from '../shared/media-prompt.js';
+import { parseMediaPrompt, renderMediaPrompt } from '../shared/media-prompt.js';
 
 /**
  * The media adapter never touches the network (Asset generation is out
@@ -237,32 +240,4 @@ async function refreshMedia(region, ctx) {
   const normalized = lead + canonical.replace(/\n$/, '') + (tail ?? (canonical.endsWith('\n') ? '\n' : ''));
   if (normalized === region.body) return { status: 'unchanged' };
   return { status: 'refreshed', body: normalized };
-}
-
-/** Parse `key: value` lines; `#` comments and blank lines ignored. */
-export function parseMediaPrompt(text) {
-  const fields = {};
-  for (const [i, raw] of text.split('\n').entries()) {
-    const line = raw.trim();
-    if (!line || line.startsWith('#')) continue;
-    const colon = line.indexOf(':');
-    if (colon === -1) return { error: `line ${i + 1}: not key: value — "${line}"` };
-    const key = line.slice(0, colon).trim();
-    const value = line.slice(colon + 1).trim();
-    if (!MEDIA_KEYS.includes(key)) return { error: `line ${i + 1}: unknown key "${key}"` };
-    if (key in fields) return { error: `line ${i + 1}: duplicate key "${key}"` };
-    if (!value) return { error: `line ${i + 1}: empty value for "${key}"` };
-    fields[key] = value;
-  }
-  if (!fields.prompt) return { error: 'missing prompt' };
-  if (fields.aspect && !MEDIA_ASPECTS.has(fields.aspect)) return { error: `unknown aspect "${fields.aspect}"` };
-  if (fields.seed && !/^\d+$/.test(fields.seed)) return { error: `seed must be an integer, got "${fields.seed}"` };
-  return { fields };
-}
-
-/** Canonical render: prompt, negative, aspect, seed; trailing newline. */
-export function renderMediaPrompt(fields) {
-  return MEDIA_KEYS.filter((k) => fields[k] !== undefined)
-    .map((k) => `${k}: ${fields[k]}`)
-    .join('\n') + '\n';
 }

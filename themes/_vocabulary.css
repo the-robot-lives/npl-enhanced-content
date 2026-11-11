@@ -4190,3 +4190,48 @@ sem-tui sem-tui { margin: .75rem 0; }
   sem-tui { border-color: #94a3b8; background: transparent; color: #000; }
 }
 /* ── end sem-tui ── */
+
+/* ── sem-media-prompt — active generation record (spec/schema/sem-media-prompt.md) ──
+   The authored record (YAML block, nested gallery/evals) styles itself
+   through the existing vocabulary; only the runtime chrome needs rules.
+   Every selector targets the chrome container, so JS-off rendering is
+   untouched. */
+:is(sem-media-prompt, .sem-media-prompt) { display: block; }
+.sem-media-prompt-chrome { margin-top: .75rem; display: grid; gap: .6rem; }
+.sem-media-prompt-params {
+  margin: 0; font-size: .8rem; letter-spacing: .02em;
+  color: var(--sem-muted); font-family: ui-monospace, monospace;
+}
+.sem-media-prompt-input {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  padding: .6rem .75rem; font: inherit; font-family: ui-monospace, monospace;
+  font-size: .85rem; line-height: 1.5; tab-size: 2;
+  color: var(--sem-fg); background: var(--sem-surface);
+  border: 1px solid var(--sem-border); border-radius: 8px;
+}
+.sem-media-prompt-input:focus-visible {
+  outline: 2px solid var(--sem-accent); outline-offset: 1px;
+  border-color: var(--sem-accent);
+}
+.sem-media-prompt-generate {
+  justify-self: start; cursor: pointer;
+  padding: .45rem 1.1rem; font: inherit; font-size: .85rem; font-weight: 600;
+  color: var(--sem-accent-fg); background: var(--sem-accent);
+  border: 1px solid var(--sem-accent); border-radius: 8px;
+  transition: filter .15s ease;
+}
+.sem-media-prompt-generate:hover:not(:disabled) { filter: brightness(1.1); }
+.sem-media-prompt-generate:focus-visible { outline: 2px solid var(--sem-accent); outline-offset: 2px; }
+.sem-media-prompt-generate:disabled { opacity: .55; cursor: wait; }
+.sem-media-prompt-error {
+  padding: .5rem .75rem; font-size: .85rem; border-radius: 8px;
+  color: var(--sem-note-danger);
+  border: 1px solid var(--sem-note-danger);
+  background: color-mix(in srgb, var(--sem-note-danger) 8%, var(--sem-surface));
+}
+.sem-media-prompt-evals { display: grid; gap: .5rem; }
+.sem-media-prompt-evals > :is(sem-eval, .sem-eval) { margin: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .sem-media-prompt-generate { transition: none; }
+}
+/* ── end sem-media-prompt ── */
