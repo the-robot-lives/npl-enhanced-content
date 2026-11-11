@@ -44,6 +44,7 @@
     "spec/schema/sem-threat-model.md",
     "spec/schema/sem-tldr.md",
     "spec/schema/sem-tsgs.md",
+    "spec/schema/sem-tui.md",
     "spec/schema/sem-views.md",
     "spec/schema/sem-workflow.md",
     "spec/schema/npl/cot.md",
@@ -89,7 +90,7 @@
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 110,
+  "tagCount": 111,
   "tags": [
     {
       "name": "agent-kit-acceptance-criteria",
@@ -4832,6 +4833,83 @@
       ],
       "children": [],
       "example": "<sem-tsgs id=\"tsg-deploy\" kind=\"deploys\">\n  <sem-tsg>\n    <name>stale-image</name>\n    <title>Pod serves the old image after a green sync</title>\n    <description>ArgoCD reports Synced/Healthy but the rollout\n    did not change.</description>\n    <tags>deploy, argocd</tags>\n    <when>right after a release merge</when>\n    Confirm the pod image spec per container — Synced/Healthy alone\n    can serve a stale image.\n  </sem-tsg>\n  <sem-tsg>\n    <name>port-forward</name>\n    <title>Admin MinIO unreachable for terragrunt</title>\n    Port-forward 127.0.0.1:9000 before any --all run.\n  </sem-tsg>\n</sem-tsgs>"
+    },
+    {
+      "name": "sem-tui",
+      "family": "sem",
+      "source": "spec/schema/sem-tui.md",
+      "summary": "A subtree wrapper that switches every SemText element below it to the terminal text view: the same content `semtext format --text` prints, framed with unicode box-drawing.",
+      "description": "A subtree wrapper that switches every SemText element below it to the terminal text view: the same content `semtext format --text` prints, framed with unicode box-drawing. sem-tui is the render-mode context provider — it changes how the subtree is PRESENTED, never what it means; extraction is byte-identical with the wrapper present, in either mode.",
+      "attributes": [
+        {
+          "name": "cols",
+          "required": null,
+          "type": "integer",
+          "allowedValues": [],
+          "default": "80",
+          "description": "wrap width for the text renderers, in columns; Clamped to 20–500."
+        },
+        {
+          "name": "theme",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "dark",
+            "light",
+            "amber",
+            "green"
+          ],
+          "default": "dark",
+          "description": "one of `dark`, `light`, `amber`, `green`; selects the terminal palette (CSS custom properties `--sem-tui-bg`, `--sem-tui-fg`, `--sem-tui-accent`, `--sem-tui-dim`); Invalid values fall back to the default."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "render-mode",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "tui",
+            "rich",
+            "sem-tui"
+          ],
+          "default": null,
+          "description": "one of `tui`, `rich`; forces that element's presentation regardless of any enclosing `sem-tui`."
+        }
+      ],
+      "children": [
+        {
+          "name": "toggle",
+          "note": "boolean flag; renders the Rich/Terminal switch in the frame header. Without it the subtree is statically terminal."
+        },
+        {
+          "name": "tui",
+          "note": "boolean flag spelling of `render-mode=\"tui\"`; `tui=\"rich\"` opts back out."
+        }
+      ],
+      "example": "<sem-tui id=\"tui-auth\" cols=\"72\" theme=\"amber\" toggle>\n  <sem-note variant=\"tip\" id=\"n-rotate\">\n    Rotate JWTs per session; keep refresh tokens server-side.\n  </sem-note>\n  <sem-table id=\"tbl-auth\">…</sem-table>\n</sem-tui>"
     },
     {
       "name": "sem-view",
