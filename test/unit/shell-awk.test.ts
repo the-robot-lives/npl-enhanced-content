@@ -511,3 +511,19 @@ describe('awk — the lazy package contract', () => {
     expect(pkg.manPage('awk')!.join('\n')).toContain('SYNOPSIS');
   });
 });
+
+describe('awk — runaway loop budget (4.9)', () => {
+  it('awk BEGIN{while(1){}} exits with an error instead of hanging', () => {
+    const r = run(`awk 'BEGIN{while(1){}}'`);
+    expect(r.lines.some((l) => l.kind === 'stderr' && /loop iteration limit exceeded/.test(l.text))).toBe(true);
+    expect(r.state.lastStatus).toBe(2);
+  });
+  it('do/for(;;) loops are capped too', () => {
+    expect(run(`awk 'BEGIN{for(;;){}}'`).state.lastStatus).toBe(2);
+    expect(run(`awk 'BEGIN{do{}while(1)}'`).state.lastStatus).toBe(2);
+  });
+  it('a long bounded loop still completes', () => {
+    const r = run(`awk 'BEGIN{while(i<100000)i++; print i}'`);
+    expect(r.lines.filter((l) => l.kind === 'stdout').map((l) => l.text)).toEqual(['100000']);
+  });
+});
