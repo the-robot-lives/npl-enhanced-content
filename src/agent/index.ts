@@ -35,6 +35,19 @@ import { normalizeMd } from '../shared/mdsource.js';
 // renderer on hand without loading a second artifact.
 export { renderRecordsAsText, extractRecords } from '../extract/records.js';
 
+// ".sem.md" (semtext markdown v1): the Markdown side of the same
+// addressing contract — outline/expand/filter accept .md documents and
+// answer with the same shapes (plus optional kind/tags/tldr/pinned).
+export {
+  isMarkdownSource,
+  parseMarkdownSections,
+  flattenSections,
+  mdOutline,
+  mdExpand,
+  mdFilter
+} from './markdown-sections.js';
+export type { MdSection, MdOutlineNode, MdSectionHit } from './markdown-sections.js';
+
 /* ------------------------------------------------------------------ *
  * Types
  * ------------------------------------------------------------------ */

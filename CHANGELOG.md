@@ -25,6 +25,36 @@
   unit suites for slug/auto-id/numbering/renders/validator.
   `elements.json` regenerated. Bundle budget 173 → 175 KB (measured
   174.8 raw / 54.0 gzipped, was 172.1 / 53.2).
+- **`semtext focus` + `.sem.md` support: purpose-driven collapse lands in
+  the agent toolkit and both CLIs.** New `.sem.md` parser
+  (`src/agent/markdown-sections.ts`, re-exported through the agent
+  bundle): ATX sections own content until a same-or-higher heading
+  (fence-aware), optional `<sem-section id/kind/tags>` markers bind
+  authored ids (else mint `x-sec-*`), authored `<sem-tldr>` is carried
+  verbatim, `kind="hard-rule"`/`data-pin` pins a section; outline /
+  expand / filter accept `.md`/`.sem.md` in both CLIs alongside XHTML.
+  `semtext focus <file> --purpose "<text>"` keeps purpose-serving
+  sections verbatim and collapses the rest to TL;DR reveals: task match
+  (exact normalized → cache, else one batched `:choice` over top-5
+  token-Jaccard neighbours with a `none` option), content-addressed
+  TL;DR cache keyed by collapsed-body sha256 with drift detection
+  (index prior sha → unified diff → ONE batched `:boolean`: no ⇒ rebind
+  the old summary, yes ⇒ tweak it), ONE batched `:score` relevance round
+  on a 10-level rubric, pinned/`--keep` always relevant. Flags:
+  `--notes` (task footnotes), `--track-refs` (referenced-file drift),
+  `--write-back` (idempotent `<sem-tldr data-auto data-digest>` upkeep,
+  path-confined), `--write-notes`, `--no-llm` (cache-only fallback),
+  `--refresh`, `--dry-run` (planned-call JSON, no network/cache),
+  `--classifier alibaba|jev`, `--threshold`, `--keep`, `--format
+  md|html|text|json`, `--verbose`. Config via
+  `$XDG_CONFIG_HOME/semtext/config.yaml` (tiny YAML subset — no new
+  deps), precedence flag > env > config > default; cache under
+  `$XDG_CACHE_HOME/semtext` (tasks.jsonl, sections/, notes/, index/),
+  atomic writes. Credential errors name the env vars (never values) and
+  suggest `--no-llm`. Pipe exit contract 0/1/2, agent JSON-default with
+  2/1. Docs: `docs/focus.md`; US-405 notes the future MCP wrapper
+  (PENDING). 60 new unit specs (markdown-sections, focus core, CLI
+  contracts over both binaries).
 
 ## 2026-10-26
 
