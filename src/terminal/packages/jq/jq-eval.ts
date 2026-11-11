@@ -1353,9 +1353,16 @@ export function makeBaseEnv(vars: Iterable<readonly [string, JVal]>, shellEnv: O
 /* ── user function calls ─────────────────────────────────────────────── */
 
 const MAX_CALL_DEPTH = 400;
+/** Total user-function calls under one top-level call (runaway budget). */
+const MAX_CALL_STEPS = 1_000_000;
+let callSteps = 0;
 
 /** Call a user `def`: $params bind per output value; filters are closures. */
 function* callUser(fn: FnNode, args: Ast[], input: JVal, callEnv: Env): Generator<JVal> {
+  if (runState.depth === 0) callSteps = 0;
+  if (++callSteps > MAX_CALL_STEPS) {
+    throw jqerr(null, `jq step limit exceeded (over ${MAX_CALL_STEPS} function calls)`);
+  }
   runState.depth++;
   if (runState.depth > MAX_CALL_DEPTH) {
     runState.depth--;

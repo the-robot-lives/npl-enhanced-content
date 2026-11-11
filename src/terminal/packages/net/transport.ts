@@ -21,8 +21,9 @@
  *     allow,     // (url: URL) => true | string — false-by-string denies
  *   });
  *
- * Defaults: no allowlist (every http/https URL allowed), transport =
- * sync-XHR when `XMLHttpRequest` exists, else none (commands report
+ * Defaults: no allowlist (every http/https URL allowed), async transport =
+ * fetchTransport (credentials omitted) when `fetch` exists, else the
+ * sync-XHR fallback when `XMLHttpRequest` exists, else none (commands report
  * `no network transport` honestly instead of hanging or failing deep).
  * Module state, not shell state: the allowlist is per page, shared by
  * every tab/session — the contract has no per-session net config yet.
@@ -161,9 +162,10 @@ export function xhrTransport(req: NetRequest): NetResponse {
         // server just never sees the header, like curl's ignored --header.
       }
     }
-    // withCredentials stays false (the default): ambient cookies and HTTP
-    // auth are NEVER attached, cross-origin or not — credentials travel
-    // only when the user passes them explicitly (-u / a header).
+    // withCredentials stays false (the default), which only suppresses
+    // cross-origin cookies/HTTP auth. A SAME-ORIGIN sync XHR DOES attach
+    // the page's cookies — this is the fallback transport (fetch absent);
+    // the default fetchTransport sends `credentials: 'omit'` everywhere.
     xhr.send(req.body ?? null);
   } catch {
     throw new NetError('network', STATUS_ZERO_HELP);
@@ -195,12 +197,17 @@ export function defaultTransport(): NetTransport | null {
 }
 
 /**
- * The async transport in effect: ONLY an explicitly configured one (the
- * shell boot wires fetchTransport where fetch exists). Never an implicit
- * default — tests that expect "no transport" must not grow real fetches.
+ * The async transport in effect: an explicitly configured one wins
+ * (null forces none); an explicitly injected SYNC transport (including
+ * null) keeps the command on the sync path; otherwise the default is
+ * `fetchTransport` (credentials omitted) whenever `fetch` exists. Sync
+ * XHR stays only as the fallback when fetch is absent (see
+ * defaultTransport).
  */
 export function activeTransportAsync(): NetTransportAsync | null {
-  return config.transportAsync !== undefined ? config.transportAsync : null;
+  if (config.transportAsync !== undefined) return config.transportAsync;
+  if (config.transport !== undefined) return null;
+  return typeof fetch === 'function' ? fetchTransport : null;
 }
 
 /**

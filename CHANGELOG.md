@@ -2,6 +2,7 @@
 
 ## 2026-11-11
 
+- **shell packages batch (feature/shell-packages):** lazy-load `loading <pkg>…` status line on first use (3.4); net defaults to fetch with `credentials: 'omit'` (sync XHR only as fallback, false cookie/boot comments fixed) (4.8); awk loop (1e6 iterations) and jq call-step (1e6) runaway budgets (4.9).
 - **shell 2.4 — menu focus return, tab/tabpanel ARIA, flashcard role (#102).**
   Closing the context menu now focuses the prompt input (else the
   hidden canvas input, else the host with a tabindex fallback) instead

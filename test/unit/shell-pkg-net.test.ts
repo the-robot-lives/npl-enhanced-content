@@ -238,7 +238,7 @@ describe('net package contract', () => {
     });
     await p;
     expect(outs).toEqual(['FETCHED http://api.test/text']); // the same cold call ran the real spec
-    expect(errorLines).toEqual([]); // no "try again" hint anywhere
+    expect(errorLines).toEqual(['loading net…']); // no "try again" hint anywhere
     expect(code).toBe(0);
   });
 
@@ -264,7 +264,7 @@ describe('net package contract', () => {
       },
     } as unknown as CommandContext);
     expect(code).toBe(1);
-    expect(errorLines[0]).toContain('semtext-pkg-net.js');
+    expect(errorLines.join(' ')).toContain('semtext-pkg-net.js');
   });
 
   it('the man page swaps from the stub short page to the chunk page', async () => {
@@ -387,12 +387,14 @@ describe('curl', () => {
     expect(requests).toHaveLength(1); // the denied request never reached the transport
   });
 
-  it('without a transport (this node test env) the failure is honest', () => {
+  it('without a transport (no fetch, no XHR) the failure is honest', () => {
     resetNet();
+    vi.stubGlobal('fetch', undefined);
     const r = run('curl http://api.test/text');
     expect(status(r)).toBe(1);
     expect(errs(r)[0]).toContain('no network transport');
     expect(errs(r)[0]).toContain('configureNet');
+    vi.unstubAllGlobals();
   });
 
   it('bad scheme exits 3, unknown option exits 2, missing URL exits 2', () => {
@@ -414,7 +416,7 @@ describe('curl', () => {
   it('--help prints the rich chunk-side help, exit 0', () => {
     const r = run('curl --help');
     expect(status(r)).toBe(0);
-    expect(out(r).join('\n')).toContain('synchronous transport');
+    expect(out(r).join('\n')).toContain('Requests run on fetch');
     expect(out(r).join('\n')).toContain('%{http_code}');
   });
 
@@ -633,6 +635,17 @@ describe('net async transport (CORE-V2)', () => {
     // credentials never attach ambient auth (XHR parity); redirects follow.
     expect(fetchInits[0]!.init.credentials).toBe('omit');
     expect(fetchInits[0]!.init.redirect).toBe('follow');
+  });
+
+  it('default transport is fetch with credentials omit when fetch exists', async () => {
+    installFetch(async (url, init) => {
+      fetchInits.push({ url, init });
+      return new Response(TEXT_BODY, { status: 200 });
+    });
+    const r = (await run('curl -s http://api.test/text')) as ExecResult; // no configureNet at all
+    expect(out(r)).toEqual(['one', 'two', 'three']);
+    expect(fetchInits).toHaveLength(1);
+    expect(fetchInits[0]!.init.credentials).toBe('omit');
   });
 
   it('no transportAsync configured: commands stay synchronous (ExecResult returned, sync transport used)', () => {
