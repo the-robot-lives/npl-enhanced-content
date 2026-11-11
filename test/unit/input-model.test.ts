@@ -23,7 +23,7 @@
 // Feature: copySelection
 //   Scenario: extracts through the host's line source and copies
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { InputModel, type InputHost } from '../../src/terminal/input/input-model.js';
 import { InputSpecError } from '../../src/terminal/input/keys.js';
 import type { CellMetrics, KeyEvent, Mods, MouseEventInfo } from '../../src/terminal/input/types.js';
@@ -328,5 +328,30 @@ describe('copySelection', () => {
     });
     expect(ok).toBe(true);
     expect(written).toEqual(['line-100'.slice(0, 5)]);
+  });
+});
+
+describe('wheel passthrough + keyboard copy', () => {
+  it('handleWheel reports not-consumed at a scroll limit so the page can scroll', () => {
+    const host = fakeHost({ onWheelScroll: () => false });
+    const model = new InputModel(host);
+    expect(model.handleWheel(0, 40, noMods)).toBe(false);
+    const app = fakeHost({ onWheelScroll: () => false });
+    app.alt = true;
+    expect(new InputModel(app).handleWheel(0, 40, noMods)).toBe(true); // app surface always consumes
+  });
+
+  it('Ctrl+Shift+C always copies; Ctrl/Cmd+C copies only with a selection', () => {
+    const model = new InputModel(fakeHost());
+    const copy = vi.spyOn(model, 'copySelection').mockResolvedValue(true);
+    expect(model.handleKey(ev('C', { ctrl: true, shift: true }))).toBe(true);
+    expect(copy).toHaveBeenCalledTimes(1);
+    model.handleKey(ev('c', { ctrl: true })); // no selection: stays the interrupt
+    expect(copy).toHaveBeenCalledTimes(1);
+    model.handleMouseDown(0, 0, 0, noMods);
+    model.handleMouseMove(40, 0, noMods);
+    expect(model.handleKey(ev('c', { meta: true }))).toBe(true);
+    model.handleKey(ev('c', { ctrl: true }));
+    expect(copy).toHaveBeenCalledTimes(3);
   });
 });
