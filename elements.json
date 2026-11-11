@@ -22,6 +22,7 @@
     "spec/schema/sem-howto.md",
     "spec/schema/sem-kb.md",
     "spec/schema/sem-md.md",
+    "spec/schema/sem-media-prompt.md",
     "spec/schema/sem-mockup.md",
     "spec/schema/sem-note.md",
     "spec/schema/sem-philosophy.md",
@@ -90,7 +91,7 @@
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 111,
+  "tagCount": 112,
   "tags": [
     {
       "name": "agent-kit-acceptance-criteria",
@@ -3742,6 +3743,139 @@
       ],
       "children": [],
       "example": "<sem-md id=\"m-lifetimes\" label=\"Token lifetimes\" controls=\"toggle,copy\">\n  | Token   | Lifetime | Rotates |\n  | :------ | -------: | :-----: |\n  | access  | 15 min   | no      |\n  | refresh | 30 days  | yes     |\n</sem-md>"
+    },
+    {
+      "name": "sem-media-prompt",
+      "family": "sem",
+      "source": "spec/schema/sem-media-prompt.md",
+      "summary": "An ACTIVE media-generation prompt record: the authored `.media.prompt` YAML is the record, and — unlike its passive cached twin `semext-media-prompt` (livePolicy 'never') — this sem-tier sibling can r",
+      "description": "An ACTIVE media-generation prompt record: the authored `.media.prompt` YAML is the record, and — unlike its passive cached twin `semext-media-prompt` (livePolicy 'never') — this sem-tier sibling can run a generation through an author-controlled `endpoint` proxy, render the returned assets and evals, and edit the prompt in place. It holds no API keys and sets no auth headers: the browser's ambient credentials are all it ever sends, and nothing it sends or receives is persisted by the element. With no endpoint and no fixtures it is authored-only: it never fabricates a generation.",
+      "attributes": [
+        {
+          "name": "aspect",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional aspect token (`1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `21:9`); the fallback when the YAML carries no `aspect`."
+        },
+        {
+          "name": "assets-dir",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": "",
+          "description": "optional directory prefix joined onto relative asset paths returned by the endpoint (absolute URLs pass through untouched);"
+        },
+        {
+          "name": "edit-mode",
+          "required": null,
+          "type": "boolean",
+          "allowedValues": [],
+          "default": null,
+          "description": "renders the editable prompt textarea (see Edit mode); also honored through an ancestor `<sem-editor edit-mode>`."
+        },
+        {
+          "name": "endpoint",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the POST target for Generate; no default — an unset endpoint means authored-only, never a URL invented here."
+        },
+        {
+          "name": "fixtures",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional fixture source: an inline JSON string or a same-origin path fetched once. While set, the element NEVER fetches `endpoint` (see Fixtures)."
+        },
+        {
+          "name": "key",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the record key within the project (reference quartet; display-only for this element)."
+        },
+        {
+          "name": "model",
+          "required": false,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "optional generation model slug; passed through in the request body only when authored (an absent model sends no `model` key, so the server's default routing applies)."
+        },
+        {
+          "name": "org",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the owning organization slug (reference quartet)."
+        },
+        {
+          "name": "project",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the project slug within the organization (reference quartet)."
+        },
+        {
+          "name": "status",
+          "required": null,
+          "type": "",
+          "allowedValues": [
+            "idle",
+            "generating",
+            "generated",
+            "error"
+          ],
+          "default": null,
+          "description": "one of `idle`, `generating`, `generated`, `error` — lifecycle token, reflected; the runtime rewrites it as a run progresses (an authored value survives until the first action)."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [
+        {
+          "name": "sem-media-gallery",
+          "note": ""
+        },
+        {
+          "name": "sem-eval",
+          "note": ""
+        },
+        {
+          "name": "sem-rubric",
+          "note": ""
+        }
+      ],
+      "example": "<sem-media-prompt\n  id=\"hero-banner\"\n  model=\"z-image-turbo\"\n  aspect=\"16:9\"\n  assets-dir=\"assets/\"\n  endpoint=\"/api/media/generate\"\n  org=\"noizu\"\n  project=\"semtext-site\"\n  key=\"hero-banner-16x9\"\n  status=\"idle\"\n>\n  <pre><code class=\"language-yaml\">prompt: SemText vocabulary diagram, flat vector, indigo accent\nnegative: text artifacts\naspect: 16:9\nseed: 42\n</code></pre>\n  <sem-media-gallery items='[{\"src\":\"assets/hero-v1.png\",\"caption\":\"v1\",\"mime\":\"image/png\"}]'></sem-media-gallery>\n  <sem-eval kind=\"recall\" status=\"scored\">\n    <p>Brand palette fidelity — 4 / 5</p>\n  </sem-eval>\n  <script type=\"application/json\">\n    { \"model\": \"z-image-turbo\", \"aspect\": \"16:9\",\n      \"output\": { \"generated\": true,\n                  \"assets\": [ { \"path\": \"assets/hero-v1.png\", \"kind\": \"image\",\n                                \"mime\": \"image/png\", \"caption\": \"v1\" } ],\n                  \"evals\": [ { \"rubric\": \"brand-palette\", \"score\": 4, \"max\": 5 } ] } }\n  </script>\n</sem-media-prompt>"
     },
     {
       "name": "sem-mockup",

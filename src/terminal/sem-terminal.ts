@@ -1,4 +1,4 @@
-import { html, type PropertyValues, type TemplateResult } from 'lit';
+import { html, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { ansiSpans, type AnsiSpan } from './ansi/index.js';
 import { SemElement } from '../lit/base.js';
 import {
@@ -52,7 +52,7 @@ import { DOMMirror } from './render/mirror.js';
 import { screenView, type PaintScreen, type Rgb } from './render/screen-shape.js';
 import type { CanvasRenderer } from './render/canvas.js';
 import type { CellMetrics, ScreenRenderer } from './render/types.js';
-import { renderTabStrip, renderWindowTitlebar } from '../shared/window-chrome.js';
+import { renderTabStrip, renderWindowTitlebar, tabDomId } from '../shared/window-chrome.js';
 import '../shared/sem-scroll.js'; // side-effect: register <sem-scroll> (§10)
 import type { KeyEvent } from './screen/types.js';
 import type { AppSpawnAction } from './terminal-core.js';
@@ -89,6 +89,11 @@ import type { AppSpawnAction } from './terminal-core.js';
  * first connect replaces it once. See web/demo/shell.html, whose build
  * also emits a script-stripped `.nojs.html` proving the fallback.
  */
+/** Per-document prompt-input id sequence: three shells on one page (the
+ * landing tabs) must not share `id="sem-shell-input"` — duplicate ids break
+ * label/for association and every getElementById-style lookup. */
+let promptInputSeq = 0;
+
 export class SemTerminal extends SemElement {
   static properties = {
     cwd: { type: String, state: true },
@@ -99,6 +104,8 @@ export class SemTerminal extends SemElement {
     /** The playback steps as an array — the property form of `script`. */
     playback: { type: Array },
     playing: { type: Boolean, state: true },
+    /** A subclass-driven demo (start-script autostart) owns the input (§2.5). */
+    demoRunning: { type: Boolean, state: true },
     tui: { type: Object, state: true },
     /** A full-screen app owns the screen (§6.2) — prompt hidden, keys raw. */
     appLive: { type: Boolean, state: true },
@@ -116,6 +123,8 @@ export class SemTerminal extends SemElement {
   declare script: string;
   declare playback: PlaybackStep[] | null;
   declare playing: boolean;
+  /** A subclass-driven demo (start-script autostart) owns the input (§2.5). */
+  declare demoRunning: boolean;
   declare tui: TuiState | null;
   declare appLive: boolean;
   declare tabs: boolean;
@@ -125,6 +134,9 @@ export class SemTerminal extends SemElement {
   readonly #vfs = new Vfs();
   /** Every live session, oldest first (strip order mirrors the TabModel). */
   readonly #sessions: TerminalSession[] = [];
+  /** This element's prompt input id — unique per instance (§2.3). */
+  readonly #panelId = `sem-shell-panel-${promptInputSeq + 1}`;
+  readonly #inputId = `sem-shell-input-${++promptInputSeq}`;
   /** The session the strip points at — the source of every active-path read. */
   #session: TerminalSession;
   /** The session whose execLine is on the stack (direnv TAB_TITLE attribution). */
@@ -157,6 +169,9 @@ export class SemTerminal extends SemElement {
   }
 
   #booted = false;
+  #readyFired = false;
+  /** localStorage key for persisted command history (set by the `local-storage` attribute). */
+  #historyKey: string | null = null;
   #playbackHandle: PlaybackHandle | null = null;
   #playbackStopped = false;
   #hasScript = false;
@@ -200,6 +215,7 @@ export class SemTerminal extends SemElement {
    */
   readonly #input = new InputModel({
     dispatchKey: (ev) => this.#routeKey(ev),
+    exitApp: () => this.#exitActiveApp(),
     isRawMode: () => this.appLive,
     isAltScreen: () => this.screen.altScreen,
     insertCooked: (text) => this.#insertCooked(text),
@@ -210,7 +226,10 @@ export class SemTerminal extends SemElement {
       this.#session.runner.mouse(info);
     },
     onWheelScroll: (dy) => {
+      // Consumed only when the viewport really moved — at a limit the page scrolls.
+      const before = this.screen.viewportTop();
       this.screen.scrollBy(dy);
+      if (this.screen.viewportTop() === before) return false;
       this.requestUpdate();
       return true;
     },
@@ -253,6 +272,7 @@ export class SemTerminal extends SemElement {
     this.script = '';
     this.playback = null;
     this.playing = false;
+    this.demoRunning = false;
     this.tui = null;
     this.appLive = false;
     this.tabs = false;
@@ -275,6 +295,7 @@ export class SemTerminal extends SemElement {
     session.tabId = tab.id;
     this.#setupCoreBase(session);
     this.#sessions.push(session);
+    this.#bindHistory(session);
     return session;
   }
 
@@ -334,12 +355,36 @@ export class SemTerminal extends SemElement {
       session.feed.write(`${line.text}\r\n`);
     }
     session.lines = [...session.lines, ...newLines];
+    if (session.lines.length > MAX_TRANSCRIPT_LINES) session.lines = session.lines.slice(-MAX_TRANSCRIPT_LINES);
     if (session === this.#session) this.lines = session.lines;
+  }
+
+  /** Default accessible name/role when the author gave none (WCAG). The
+   * subclass overrides to supply its own default label. */
+  protected applyAccessibleDefaults(): void {
+    if (!this.hasAttribute('aria-label')) this.setAttribute('aria-label', 'Terminal');
+    if (!this.hasAttribute('role')) this.setAttribute('role', 'region');
+  }
+
+  /**
+   * THE single paint-state write (§8.5): records `data-paint` AND toggles
+   * the transcript's `aria-hidden`. Once JS paint is up, the mirror is the
+   * one accessible log (exactly one `role=log` in the a11y tree — WCAG);
+   * with no paint (no JS) the authored transcript stays the readable view.
+   */
+  #setPaint(paint: 'canvas' | 'dom'): void {
+    this.dataset.paint = paint;
+    const transcript = this.querySelector('.sem-shell-transcript');
+    transcript?.setAttribute('aria-hidden', 'true');
   }
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.setAttribute('aria-label', 'Terminal');
+    // Accessible surface (WCAG): an author-supplied name/role wins; the
+    // defaults only fill the gap so the region is exposed with a name.
+    // SemShell overrides this hook with its own default — the base must
+    // NOT write first, or the subclass guard never sees the gap.
+    this.applyAccessibleDefaults();
     // .envrc chrome feeds — TAB_TITLE titles the tab whose cd loaded it
     // (attributed through #executing), TAB_THEME the tab strip (§11.3/§12).
     this.#offEnv?.();
@@ -361,15 +406,48 @@ export class SemTerminal extends SemElement {
     }
     // The canvas surface needs a rendered frame first; reconnects re-run
     // this and the guard makes it idempotent (§8 attach).
-    void this.updateComplete.then(() => this.#ensureRenderer());
+    void this.updateComplete.then(() => {
+      this.#ensureRenderer();
+      if (!this.#readyFired) {
+        this.#readyFired = true;
+        this.dispatchEvent(new CustomEvent('sem-shell-ready', { bubbles: true, composed: true, detail: { element: this } }));
+      }
+    });
+    this.#watchForcedColors();
     this.#applyTabTheme();
     this.#menu.attach();
     this.#injectMenuCss();
   }
 
+  /** Forced-colors can flip while mounted (OS high-contrast toggle): re-check, swap renderer. */
+  #forcedMq: MediaQueryList | null = null;
+  #onForcedChange = (event: { matches: boolean }): void => {
+    // Already on the right paint path? (mirror-only ⇔ forced.)
+    if (event.matches === (this.#mirrorOnly !== null)) return;
+    this.#renderer?.detach();
+    this.#renderer = null;
+    this.#mirrorOnly?.detach();
+    this.#mirrorOnly = null;
+    this.#domView = false;
+    this.#ensureRenderer();
+    this.requestUpdate();
+  };
+
+  #watchForcedColors(): void {
+    if (this.#forcedMq !== null) return;
+    const view = this.ownerDocument?.defaultView;
+    if (!view || typeof view.matchMedia !== 'function') return;
+    const mq = view.matchMedia('(forced-colors: active)');
+    if (typeof mq?.addEventListener !== 'function') return;
+    mq.addEventListener('change', this.#onForcedChange);
+    this.#forcedMq = mq;
+  }
+
   disconnectedCallback(): void {
     this.#stopPlayback(false);
     this.#menu.detach();
+    this.#forcedMq?.removeEventListener('change', this.#onForcedChange);
+    this.#forcedMq = null;
     this.#input.detach();
     this.#inputSurface = null;
     this.#offEnv?.();
@@ -412,6 +490,8 @@ export class SemTerminal extends SemElement {
       ]);
       return;
     }
+    this.#historyKey = `semtext:shell:history:v1:${key}`;
+    for (const session of this.#sessions) this.#bindHistory(session);
     const backend = attachLocalStorage(this.core.vfs, { key });
     // Boot mounts re-seed storage (their flushes write the fresh tree);
     // peek NOW, before any of that, so a reload restores the user's tree
@@ -423,6 +503,35 @@ export class SemTerminal extends SemElement {
         this.appendLines([{ kind: 'stderr', text: 'local-storage: stored state was unreadable — re-seeded' }]);
       }
     });
+  }
+
+  /** Restore persisted command history into a session and persist on change. */
+  #bindHistory(session: TerminalSession): void {
+    const key = this.#historyKey;
+    if (key === null) return;
+    const store = (): Storage | null => {
+      try {
+        return (this.ownerDocument?.defaultView ?? window).localStorage;
+      } catch {
+        return null;
+      }
+    };
+    try {
+      const raw = store()?.getItem(key);
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (Array.isArray(parsed)) session.cooked.loadHistory(parsed as string[]);
+      }
+    } catch {
+      // unreadable history is dropped silently — it is a convenience, not state
+    }
+    session.cooked.onHistory = (history) => {
+      try {
+        store()?.setItem(key, JSON.stringify(history));
+      } catch {
+        // quota / privacy mode — history just stops persisting
+      }
+    };
   }
 
   /* ---------------------------------------------------------------- *
@@ -488,9 +597,29 @@ export class SemTerminal extends SemElement {
     if (input) {
       input.value = '';
       input.readOnly = false;
-      input.focus();
+      this.refocusIfEngaged();
     }
     if (announce) this.appendLines([{ kind: 'comment', text: 'playback stopped — the terminal is yours.' }]);
+  }
+
+  /**
+   * Re-focus the prompt ONLY when the reader is already inside the shell
+   * (§2.5, WCAG 2.4.3 / 3.2.1): a demo that ends while the reader has
+   * scrolled on must not yank the page back or pop a soft keyboard.
+   */
+  protected refocusIfEngaged(): void {
+    const doc = this.ownerDocument;
+    if (doc !== null && this.contains(doc.activeElement)) this.#inputEl()?.focus();
+  }
+
+  /**
+   * Stop whatever demo is running and hand the terminal back. The base
+   * stops boot playback; SemShell overrides to stop its start-script
+   * autostart first. Public so the visible "stop demo" control can call it.
+   */
+  stopDemo(): void {
+    this.demoRunning = false;
+    this.#stopPlayback(true);
   }
 
   #driver(): PlaybackDriver {
@@ -522,20 +651,29 @@ export class SemTerminal extends SemElement {
     this.#input.sendKeys(spec);
   }
 
-  /** The InputHost dispatch seam: raw → the active app, cooked → its discipline. */
-  #routeKey(ev: KeyEvent): void {
+  /** The InputHost dispatch seam: raw → the active app (it claims every
+   * key), cooked → its discipline (which may leave Tab unclaimed so the
+   * browser keeps its focus meaning). */
+  #routeKey(ev: KeyEvent): boolean {
     if (this.appLive) {
       this.#session.runner.key(ev);
       this.#touchApp();
-      return;
+      return true;
     }
     const input = this.#inputEl();
     if (input) {
       const caret = input.selectionStart ?? input.value.length;
       this.#session.cooked.syncFrom(input.value, caret);
     }
-    this.#session.cooked.key(ev);
+    const claimed = this.#session.cooked.key(ev);
     this.#mirrorInput(this.#session.cooked.buffer, this.#session.cooked.caret);
+    return claimed;
+  }
+
+  /** F6 while an app is live: exit cleanly (§7.1) — the app's own teardown
+   * path, not the interrupt ladder. */
+  #exitActiveApp(): void {
+    if (this.appLive) this.#session.runner.requestExit();
   }
 
   /** Cooked paste/composition insert: one key event per code point. */
@@ -584,13 +722,32 @@ export class SemTerminal extends SemElement {
    * render
    * ---------------------------------------------------------------- */
 
+  /** Replay / stop control — lives in the title bar's actions slot (never over the tab strip). */
+  #scriptActions(): TemplateResult | null {
+    if (!this.#hasScript) return null;
+    return this.playing || this.demoRunning
+      ? html`<span class="sem-shell-demo-hint">Esc to take over</span
+          ><button type="button" class="sem-shell-stop" aria-label="Stop the scripted demo" @click=${() => this.stopDemo()}>
+            stop demo
+          </button>`
+      : html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
+          replay
+        </button>`;
+  }
+
   render(): TemplateResult {
     const tabs = this.tabModel.tabs;
+    const tabbed = tabs.length > 1 || this.tabs;
+    const activeTab = tabs.find((tab) => tab.id === this.tabModel.activeId);
     // Alt screen: no scrollback — total==visible hides the scrollbar (§10).
     const total = this.screen.altScreen ? this.screen.rows : this.screen.totalLines();
     return html`
       <div class="sem-shell-frame" @click=${this.#focusInput} @keydown=${this.#onFrameKeydown}>
-        ${renderWindowTitlebar({ title: this.titleFeed.title || 'sem shell', tone: this.titleFeed.status.tone })}
+        ${renderWindowTitlebar({
+          title: this.titleFeed.title || 'sem shell',
+          tone: this.titleFeed.status.tone,
+          actions: this.#scriptActions(),
+        })}
         ${tabs.length > 1 || this.tabs
           ? html`<div class="sem-term-tabs" @click=${this.#onTabStripClick} @keydown=${this.#onTabStripKeydown}>
               ${renderTabStrip({
@@ -601,6 +758,8 @@ export class SemTerminal extends SemElement {
                 })),
                 label: 'Shell tabs',
                 closable: true,
+                idPrefix: this.#inputId,
+                panelId: this.#panelId,
               })}
               <button
                 type="button"
@@ -613,11 +772,13 @@ export class SemTerminal extends SemElement {
               </button>
             </div>`
           : null}
-        ${this.#hasScript
-          ? html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
-              replay
-            </button>`
-          : null}
+        <div
+          class="sem-shell-panel"
+          style="display: contents"
+          id=${this.#panelId}
+          role=${tabbed ? 'tabpanel' : nothing}
+          aria-labelledby=${tabbed && activeTab !== undefined ? tabDomId(this.#inputId, String(activeTab.id)) : nothing}
+        >
         <div class="sem-term-surface">
           <sem-scroll
             class="sem-term-scrollbar"
@@ -630,6 +791,7 @@ export class SemTerminal extends SemElement {
         <div class="sem-shell-transcript" role="log" aria-live="polite" aria-label="Shell transcript">
           ${this.lines.map((line) => this.#renderLine(line))}
         </div>
+        </div>
         ${this.appLive ? null : this.tui ? this.#renderTui() : this.#renderPrompt()}
       </div>
     `;
@@ -638,9 +800,9 @@ export class SemTerminal extends SemElement {
   #renderPrompt(): TemplateResult {
     return html`
       <form class="sem-shell-prompt" @submit=${this.#onSubmit}>
-        <label class="sem-shell-ps1" for="sem-shell-input">${this.cwd} $</label>
+        <label class="sem-shell-ps1" for=${this.#inputId}>${this.cwd} $</label>
         <input
-          id="sem-shell-input"
+          id=${this.#inputId}
           class="sem-shell-input"
           type="text"
           spellcheck="false"
@@ -658,7 +820,7 @@ export class SemTerminal extends SemElement {
     const state = this.tui!;
     const card = state.cards[state.index] ?? null;
     return html`
-      <div class="sem-tui" role="dialog" aria-label="SemText cards — read-only view" tabindex="0" @keydown=${this.#onTuiOverlayKeydown}>
+      <div class="sem-tui" role="group" aria-label="SemText cards — read-only view" tabindex="0" @keydown=${this.#onTuiOverlayKeydown}>
         <div class="sem-tui-head">
           tui — ${state.title} · ${tuiPosition(state)}${state.filter !== '' ? ` · filter: ${state.filter}` : ''}
         </div>
@@ -736,7 +898,7 @@ export class SemTerminal extends SemElement {
         // renderer mounts its own mirror at attach, so useDomView is all.
         this.#domView = true;
         this.#renderer?.useDomView();
-        this.dataset.paint = 'dom';
+        this.#setPaint('dom');
         this.#markCanvasUnavailable();
       },
       onMetricsChange: (metrics) => this.#onMetrics(metrics),
@@ -758,16 +920,16 @@ export class SemTerminal extends SemElement {
       shell.viewDelegate = (choice) => {
         if (choice === 'dom') {
           renderer.useDomView();
-          this.dataset.paint = 'dom';
+          this.#setPaint('dom');
         } else {
           renderer.useCanvasView();
-          this.dataset.paint = 'canvas';
+          this.#setPaint('canvas');
         }
       };
     }
     this.#renderer = renderer;
     renderer.attach(this.#paintScreenFor(this.#session), surface);
-    this.dataset.paint = 'canvas';
+    this.#setPaint('canvas');
     shell.markCanvasAvailable?.();
     // The paint path owns the input surface from here on (bat lane's
     // required flip — core-screen deviation 2): hidden input (IME/paste),
@@ -807,7 +969,7 @@ export class SemTerminal extends SemElement {
     mirror.setVisible(true);
     this.#mirrorOnly = mirror;
     this.#domView = true;
-    this.dataset.paint = 'dom';
+    this.#setPaint('dom');
     // The mirror-only fallback paints the same surface — the input rides it
     // there too (wheel, selection, context menu have no canvas to lean on).
     this.#ensureInputAttached(surface);
@@ -868,14 +1030,14 @@ export class SemTerminal extends SemElement {
     else this.#mirrorOnly?.drain(damage);
   }
 
-  /** Theme ANSI-16 from the --sem-ansi-N tokens, cached until metrics move. */
+  /** Theme ANSI-16 from the --sem-term-ansi-N tokens, cached until metrics move. */
   #themeAnsi(index: number): Rgb | null {
     const cached = this.#ansiCache[index];
     if (cached !== undefined) return cached;
     const view = this.ownerDocument?.defaultView;
     let rgb: Rgb | null = null;
     if (view !== null && view !== undefined && typeof view.getComputedStyle === 'function') {
-      rgb = parseRgbToken(view.getComputedStyle(this).getPropertyValue(`--sem-ansi-${index}`).trim());
+      rgb = parseRgbToken(view.getComputedStyle(this).getPropertyValue(`--sem-term-ansi-${index}`).trim());
     }
     this.#ansiCache[index] = rgb;
     return rgb;
@@ -935,6 +1097,16 @@ export class SemTerminal extends SemElement {
         self.#browserPassthroughArmed = true;
       },
       surface: () => self,
+      focusReturnTarget: () => {
+        // The host element is not focusable — land on the prompt input, else
+        // the canvas lane's hidden input, else the host (tabindex fallback).
+        const target =
+          self.querySelector<HTMLElement>('.sem-shell-input') ??
+          self.querySelector<HTMLElement>('.sem-shell-hidden-input');
+        if (target !== null) return target;
+        if (!self.hasAttribute('tabindex')) self.setAttribute('tabindex', '-1');
+        return self;
+      },
     };
   }
 
@@ -1147,6 +1319,12 @@ export class SemTerminal extends SemElement {
 
   #focusInput(): void {
     if (this.tui) return;
+    // An app owns the screen: the visible prompt is gone, so a click on the
+    // surface must land on the hidden input (the canvas has no focus of its own).
+    if (this.appLive) {
+      this.#input.focus();
+      return;
+    }
     this.#inputEl()?.focus();
   }
 
@@ -1188,13 +1366,30 @@ export class SemTerminal extends SemElement {
     // bracket above covers only the synchronous prefix — side channels
     // fired inside the continuation attribute to whoever runs then.
     if (outcome instanceof Promise) {
-      void outcome.then((result) => this.#applyExecResult(session, result));
+      void outcome.then((result) => this.#applyExecResult(session, result, value));
       return;
     }
-    this.#applyExecResult(session, outcome);
+    this.#applyExecResult(session, outcome, value);
   }
 
-  #applyExecResult(session: TerminalSession, result: ExecResult): void {
+  /**
+   * Embedder surface: run one command line in the active tab, exactly as if
+   * typed and submitted (the transcript echoes it). Fires `sem-shell-command`.
+   */
+  run(line: string): void {
+    this.#execLine(this.#session, String(line));
+  }
+
+  #applyExecResult(session: TerminalSession, result: ExecResult, line?: string): void {
+    if (line !== undefined) {
+      this.dispatchEvent(
+        new CustomEvent('sem-shell-command', {
+          bubbles: true,
+          composed: true,
+          detail: { line, tab: session.label, status: session.core.state.lastStatus },
+        }),
+      );
+    }
     if (session === this.#session) this.cwd = result.state.cwd;
     if (result.clear) {
       this.#clearTranscript(session);
@@ -1226,14 +1421,19 @@ export class SemTerminal extends SemElement {
 
   /**
    * The only side effects the core can request. `window`: content into a
-   * new window — the blob carries exactly the bytes the command emitted (a
-   * stored virtual file, verbatim — nothing built from user input);
+   * new window. The content is a stored virtual file — user-authored, so
+   * UNTRUSTED. A blob: URL is same-origin with the page (its scripts could
+   * read localStorage), so HTML is never opened directly: it is wrapped in a
+   * document holding an `<iframe sandbox="allow-scripts">` (no
+   * allow-same-origin → opaque origin, no storage/cookie/parent access).
    * `noopener,noreferrer` cuts the window-opener channel both ways.
    * `tui`: the read-only flashcard view over extracted records.
    */
   #openWindow(action: WindowAction): void {
     const view = this.ownerDocument?.defaultView ?? window;
-    const url = view.URL.createObjectURL(new view.Blob([action.blob], { type: action.contentType }));
+    const html = action.contentType.toLowerCase().startsWith('text/html');
+    const body = html ? sandboxedHtmlDocument(action.blob, action.filename) : action.blob;
+    const url = view.URL.createObjectURL(new view.Blob([body], { type: action.contentType }));
     const win = view.open(url, '_blank', 'noopener,noreferrer');
     if (!win) {
       this.appendLines([{ kind: 'stderr', text: `open: ${action.filename}: the browser blocked the pop-up window` }]);
@@ -1277,7 +1477,8 @@ export class SemTerminal extends SemElement {
       }
     }
     // Ctrl+PgUp/PgDn cycle, Alt+1..9 jump. Only meaningful past one tab.
-    if (this.tabModel.count > 1) {
+    // Not on macOS: Option+digit types symbols there — Alt+1..9 would hijack it.
+    if (this.tabModel.count > 1 && !(event.altKey && isMacPlatform())) {
       const target = this.tabModel.keyToTarget({
         key: event.key,
         ctrlKey: event.ctrlKey,
@@ -1292,7 +1493,7 @@ export class SemTerminal extends SemElement {
       }
     }
     if (this.appLive) {
-      if (event.key === 'c' && event.ctrlKey && !event.altKey && !event.metaKey) {
+      if (event.key === 'c' && event.ctrlKey && !event.altKey && !event.metaKey && this.#input.selection.isEmpty()) {
         event.preventDefault();
         this.#session.runner.requestInterrupt();
         return;
@@ -1376,7 +1577,7 @@ export class SemTerminal extends SemElement {
     this.#pushLines(session, lines);
     if (session === this.#session) {
       this.appLive = false;
-      void this.updateComplete.then(() => this.#inputEl()?.focus());
+      void this.updateComplete.then(() => this.refocusIfEngaged());
     }
   }
 
@@ -1435,7 +1636,7 @@ export class SemTerminal extends SemElement {
   #closeTui(userInitiated: boolean): void {
     this.tui = null;
     if (userInitiated && this.playing) this.#stopPlayback(true);
-    this.#inputEl()?.focus();
+    this.refocusIfEngaged();
   }
 
   #onTuiFilterInput(event: Event): void {
@@ -1474,6 +1675,34 @@ export class SemTerminal extends SemElement {
 SemElement.register('sem-terminal', SemTerminal);
 
 /** DOM KeyboardEvent → the normalized KeyEvent the discipline/app take (§7.1). */
+const escapeAttr = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * Wrapper document for untrusted VFS HTML: the content lives in a srcdoc
+ * iframe sandboxed with allow-scripts ONLY (never allow-same-origin), so its
+ * scripts run in an opaque origin and cannot reach the host page's storage.
+ */
+export function sandboxedHtmlDocument(content: string, title: string): string {
+  return (
+    '<!doctype html><html><head><meta charset="utf-8">' +
+    `<title>${escapeAttr(title)}</title>` +
+    '<style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100%}</style></head><body>' +
+    `<iframe sandbox="allow-scripts" title="${escapeAttr(title)}" srcdoc="${escapeAttr(content)}"></iframe>` +
+    '</body></html>'
+  );
+}
+
+/** Option+digit types symbols on macOS; Alt+1..9 tab jumps stay off there. */
+export function isMacPlatform(): boolean {
+  const nav = typeof navigator === 'undefined' ? null : navigator;
+  if (nav === null) return false;
+  return /mac|iphone|ipad/i.test(nav.platform || nav.userAgent || '');
+}
+
+/** Transcript cap per session — older lines scroll off the DOM list. */
+export const MAX_TRANSCRIPT_LINES = 5000;
+
 function toKeyEvent(event: KeyboardEvent): KeyEvent {
   return { key: event.key, ctrl: event.ctrlKey, alt: event.altKey, shift: event.shiftKey, meta: event.metaKey };
 }

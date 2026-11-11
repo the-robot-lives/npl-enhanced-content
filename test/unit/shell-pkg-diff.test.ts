@@ -35,8 +35,9 @@
 //   Scenario: -l octal listing; -s silent; stdin operand; missing exit 2
 // Feature: package contract
 //   Scenario: stub entries match the chunk 1:1 (names + usage), manPages cover all
-//   Scenario: --help before load from the stub; retry hint; failed load names
-//             the chunk; delegation once resident; kick at creation; man swap
+//   Scenario: --help before load from the stub (kicks no load); cold
+//             invocation loads and runs in one awaited call; failed load
+//             names the chunk; delegation once resident; man swap
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TerminalCore, type ExecResult } from '../../src/terminal/terminal-core.js';
@@ -753,13 +754,22 @@ describe('diff package contract', () => {
     expect(pkg.loaded()).toBe(false);
   });
 
-  it('an invocation that beats the fetch gets the retry hint, exit 1', () => {
-    const pkg = createLazyPackage(diffStub, () => new Promise(() => {}));
+  it('a cold invocation waits on the in-flight load and then runs the real command — no retry hint', async () => {
+    let release!: (mod: PackageModule) => void;
+    const gate = new Promise<PackageModule>((resolve) => {
+      release = resolve;
+    });
+    const pkg = createLazyPackage(diffStub, () => gate); // the chunk is "in flight"
     const fresh = new TerminalCore();
     for (const spec of pkg.commands) fresh.commands.set(spec.name, spec);
-    const r = fresh.execLine('diff /a.txt /b.txt');
-    expect(r.lines.filter((l) => l.kind === 'stderr').map((l) => l.text)).toEqual(['diff: chunk still loading — try again']);
-    expect(r.state.lastStatus).toBe(1);
+    fresh.vfs.mountFile('/a.txt', A);
+    fresh.vfs.mountFile('/b.txt', B);
+    const line = fresh.execLine('diff /a.txt /b.txt'); // kicks the load; the stage suspends
+    release(await import('../../src/terminal/packages/diff/index.js'));
+    const r = (await line) as ExecResult;
+    expect(r.lines.filter((l) => l.kind === 'stderr').map((l) => l.text)).toEqual([]); // no "try again"
+    expect(r.lines.filter((l) => l.kind === 'stdout').map((l) => l.text)).toEqual(['2c2', '< beta', '---', '> delta']);
+    expect(r.state.lastStatus).toBe(1); // diff found differences — real exit semantics
   });
 
   it('a failed load names the chunk and exits 1; help still works', async () => {
@@ -770,20 +780,21 @@ describe('diff package contract', () => {
     await pkg.ensure();
     const fresh = new TerminalCore();
     for (const spec of pkg.commands) fresh.commands.set(spec.name, spec);
-    const r = fresh.execLine('patch /a.txt /fix.diff');
+    const r = await fresh.execLine('patch /a.txt /fix.diff');
     expect(r.lines.filter((l) => l.kind === 'stderr').map((l) => l.text)).toEqual([
       'patch: package chunk failed to load (semtext-pkg-diff.js)',
     ]);
     expect(r.state.lastStatus).toBe(1);
-    const h = fresh.execLine('cmp --help');
+    const h = await fresh.execLine('cmp --help');
     expect(h.state.lastStatus).toBe(0);
   });
 
-  it('delegates to the chunk once resident and kicks the loader at creation', () => {
+  it('delegates to the chunk once resident; nothing loads before first use', () => {
     const loader = vi.fn(chunkLoader);
     const pkg = createLazyPackage(diffStub, loader);
-    expect(loader).toHaveBeenCalledTimes(1); // boot-parallel preload
+    expect(loader).toHaveBeenCalledTimes(0); // first-use loading — no boot kick
     return pkg.ensure().then((ok) => {
+      expect(loader).toHaveBeenCalledTimes(1); // exactly one kick
       expect(ok).toBe(true);
       expect(pkg.loaded()).toBe(true);
       const fresh = new TerminalCore();

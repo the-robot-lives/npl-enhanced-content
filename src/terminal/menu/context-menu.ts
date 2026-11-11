@@ -158,7 +158,7 @@ export class ContextMenuController {
     this.#items = [];
     this.#buttons = [];
     this.#focusIndex = -1;
-    if (refocus) this.#host.surface().focus();
+    if (refocus) (this.#host.focusReturnTarget?.() ?? this.#host.surface()).focus();
   }
 
   /* ------------------------------------------------------------------ *

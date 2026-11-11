@@ -17,6 +17,7 @@
  */
 
 import { ansiIndexedRgb } from '../ansi/index.js';
+import { TERM_PALETTE } from '../screen/palette.js';
 import {
   ATTR_MASK,
   COLOR_DEFAULT,
@@ -100,18 +101,17 @@ export interface PaintScreen {
  * `screenView` options when the theme tokens are resolvable)
  * ------------------------------------------------------------------ */
 
-/** The 16 ANSI slots, dark-theme fallbacks (palette.ts keeps the themed ones). */
-export const DEFAULT_ANSI16: readonly Rgb[] = Object.freeze([
-  { r: 0x1c, g: 0x20, b: 0x26 }, { r: 0xe5, g: 0x53, b: 0x4e }, { r: 0x7d, g: 0xc4, b: 0x75 },
-  { r: 0xdd, g: 0xb2, b: 0x67 }, { r: 0x61, g: 0xaf, b: 0xef }, { r: 0xc6, g: 0x78, b: 0xdd },
-  { r: 0x56, g: 0xb6, b: 0xc2 }, { r: 0xab, g: 0xb2, b: 0xbf }, { r: 0x5c, g: 0x63, b: 0x70 },
-  { r: 0xf0, g: 0x6c, b: 0x74 }, { r: 0x98, g: 0xc3, b: 0x79 }, { r: 0xe5, g: 0xc0, b: 0x7b },
-  { r: 0x61, g: 0xaf, b: 0xef }, { r: 0xc6, g: 0x78, b: 0xdd }, { r: 0x56, g: 0xb6, b: 0xc2 },
-  { r: 0xd7, g: 0xde, b: 0xe7 },
-]) as readonly Rgb[];
+const hexRgb = (hex: string): Rgb => ({
+  r: parseInt(hex.slice(1, 3), 16),
+  g: parseInt(hex.slice(3, 5), 16),
+  b: parseInt(hex.slice(5, 7), 16),
+});
 
-export const DEFAULT_FG: Rgb = { r: 0xd7, g: 0xde, b: 0xe7 };
-export const DEFAULT_BG: Rgb = { r: 0x0f, g: 0x12, b: 0x16 };
+/** The 16 ANSI slots — derived from the ONE shared palette (screen/palette.ts TERM_PALETTE). */
+export const DEFAULT_ANSI16: readonly Rgb[] = Object.freeze(TERM_PALETTE.ansi.map(hexRgb)) as readonly Rgb[];
+
+export const DEFAULT_FG: Rgb = hexRgb(TERM_PALETTE.fg);
+export const DEFAULT_BG: Rgb = hexRgb(TERM_PALETTE.bg);
 
 /** Palette index 16–255 → RGB (the xterm cube; the ansi lane's table). */
 export function defaultRgb(ref: number): Rgb | null {

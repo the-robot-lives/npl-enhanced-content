@@ -355,10 +355,16 @@ export class S3SessionStore {
   }
 }
 
+/** BroadcastChannel the redirect page posts the auth code on. */
+export const AUTH_CHANNEL_NAME = 'semtext-s3-auth';
+
 /**
- * Wait for the redirect page's postMessage code. Resolves with the code
- * once a message from OUR origin carries the expected `state`; rejects
- * on timeout. The listener removes itself on either outcome.
+ * Wait for the redirect page's code. The popup is opened `noopener`
+ * (no window.opener), so the primary path is a same-origin
+ * BroadcastChannel (`AUTH_CHANNEL_NAME`); window `message` events on
+ * `target` are also honoured (injected test seam / opener-based pages).
+ * Resolves once a payload carrying the expected `state` arrives; rejects
+ * on timeout. All listeners are removed on either outcome.
  */
 export function waitForAuthCode(
   state: string,
@@ -366,14 +372,18 @@ export function waitForAuthCode(
   target: { addEventListener: typeof window.addEventListener; removeEventListener: typeof window.removeEventListener } = window,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
+    let channel: BroadcastChannel | null = null;
     const done = (fn: () => void) => {
       target.removeEventListener('message', onMessage);
+      if (channel) {
+        channel.onmessage = null;
+        channel.close();
+      }
       clearTimeout(timer);
       fn();
     };
-    const onMessage = (event: MessageEvent): void => {
-      if (event.origin !== globalThis.location.origin) return;
-      const data = event.data as { source?: unknown; state?: unknown; code?: unknown; error?: unknown } | null;
+    const accept = (raw: unknown): void => {
+      const data = raw as { source?: unknown; state?: unknown; code?: unknown; error?: unknown } | null;
       if (!data || data.source !== AUTH_MESSAGE_SOURCE) return;
       if (data.state !== state) return; // not our flow (or a stale popup)
       if (typeof data.code === 'string' && data.code !== '') {
@@ -382,7 +392,15 @@ export function waitForAuthCode(
         done(() => reject(new Error(`s3: sign-in failed: ${data.error as string}`)));
       }
     };
+    const onMessage = (event: MessageEvent): void => {
+      if (event.origin !== globalThis.location.origin) return;
+      accept(event.data);
+    };
     const timer = setTimeout(() => done(() => reject(new Error('s3: sign-in timed out'))), timeoutMs);
     target.addEventListener('message', onMessage);
+    if (typeof BroadcastChannel !== 'undefined') {
+      channel = new BroadcastChannel(AUTH_CHANNEL_NAME); // same-origin by construction
+      channel.onmessage = (event: MessageEvent) => accept(event.data);
+    }
   });
 }

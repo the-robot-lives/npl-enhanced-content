@@ -23,6 +23,10 @@ import { BUILTINS } from './awk-parse.js';
 /** Fatal runtime error — printed as `awk: <message>`, exit status 2. */
 export class AwkFatal extends Error {}
 
+/** Per-loop iteration cap: a runaway `while(1){}` fails instead of hanging the shell. */
+export const AWK_LOOP_LIMIT = 1_000_000;
+const loopLimitError = (): AwkFatal => new AwkFatal(`loop iteration limit exceeded (over ${AWK_LOOP_LIMIT} iterations of one loop)`);
+
 class BreakSig {}
 class ContinueSig {}
 class NextSig {}
@@ -1055,8 +1059,10 @@ class Interp {
         if (truthy(this.eval(stmt.c))) this.execStmt(stmt.a);
         else if (stmt.b !== null) this.execStmt(stmt.b);
         return;
-      case 'while':
+      case 'while': {
+        let n = 0;
         while (truthy(this.eval(stmt.c))) {
+          if (++n > AWK_LOOP_LIMIT) throw loopLimitError();
           try {
             this.execStmt(stmt.body);
           } catch (signal) {
@@ -1065,8 +1071,11 @@ class Interp {
           }
         }
         return;
-      case 'do':
+      }
+      case 'do': {
+        let n = 0;
         for (;;) {
+          if (++n > AWK_LOOP_LIMIT) throw loopLimitError();
           try {
             this.execStmt(stmt.body);
           } catch (signal) {
@@ -1076,9 +1085,12 @@ class Interp {
           if (!truthy(this.eval(stmt.c))) break;
         }
         return;
+      }
       case 'forC': {
         if (stmt.init !== null) this.eval(stmt.init);
+        let n = 0;
         for (;;) {
+          if (++n > AWK_LOOP_LIMIT) throw loopLimitError();
           if (stmt.cond !== null && !truthy(this.eval(stmt.cond))) break;
           try {
             this.execStmt(stmt.body);

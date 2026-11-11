@@ -13,7 +13,8 @@ shell) from the same one-command build:
 | `dist/agent-kit.js` | `AgentKit` | The `agent-kit-*` namespace bundle — own chunk lane. |
 | `dist/semtext-lazy.js` / `dist/npl-lazy.js` / `dist/semext-lazy.js` / `dist/agent-kit-lazy.js` | — | Opt-in loaders that fetch their bundle + code-split chunks on demand (manifests: `dist/*-manifest.json`). http(s) only — saved single files use the full bundles. |
 | `dist/semtext-agent.js` | `SemTextAgent` | Browser build of the semtext-agent CLI core (the node CLI itself runs from `bin/semtext-agent.mjs`). |
-| `dist/semtext-js-shell.js` | `SemTextShell` | The js-shell evaluator bundle (interactive terminal; opt-in tool). |
+| `dist/semtext-js-shell.js` | `SemTextShell` (scripts/build.mjs:215 — not `SemTextJSShell`) | The js-shell evaluator bundle (interactive terminal; opt-in tool). Size is report-only (~290 KB raw). |
+| `dist/semtext-pkg-<name>.js` + `dist/worker-wasm.js` | — | ES module chunks: the lazy shell command packages (text, jq, net, fs, archive, git, diff, awk, hello, wasm — `src/terminal/packages/manifest.ts`) and the wasm worker. Dynamically imported on FIRST USE by each package's stub (`src/terminal/packages/lazy.ts:43-47`), never at boot; must be served beside `semtext-js-shell.js` (they do not load from `file://`; the base shell does). |
 | `dist/nano-app.js` | — | ES module chunk: the nano editor body, dynamically imported on first use by the shell's LazyNano stub (the stub reads its `NanoEditor` export). |
 | `dist/semtext-editor.js` | `SemTextEditor` | The editor surface: shell + controller + insert/dnd/io (opt-in tool). |
 | `dist/semtext.css` | — | The vocabulary base (built from `themes/_vocabulary.css`): every `sem-*` element gets its box before any definition; all hide rules, gated on `[data-sem-upgraded]`. |

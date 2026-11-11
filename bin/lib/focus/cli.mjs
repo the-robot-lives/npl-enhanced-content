@@ -46,6 +46,18 @@ export class FocusDomain extends Error {
 
 export const FOCUS_FORMATS = ['md', 'html', 'text', 'json'];
 
+/**
+ * Raw source slice of a section's OWN span (heading + owned body, nested
+ * sections excluded). `MdSection.raw` spans the whole subtree; focus
+ * flattens every section into its own entry, so a parent must stop at its
+ * first child heading or the renderer emits each nested section twice.
+ */
+function ownRaw(s) {
+  if (!s.children || !s.children.length) return s.raw;
+  const cut = s.children[0].line - s.line; // lines from own heading to first child heading
+  return s.raw.split('\n').slice(0, cut).join('\n');
+}
+
 export const FOCUS_HELP = `focus <file|-> --purpose "<text>" [options]
 
 Purpose-driven collapse: sections that serve the purpose stay verbatim,
@@ -162,7 +174,10 @@ export async function runFocus({ core, parseRoot = null, opts, env = process.env
         // sections (they carry their own summaries) — the heading travels
         // separately (prompts, rendering) and must not pollute TL;DRs.
         text: s.ownText,
-        raw: s.raw
+        // Own-span raw only: `s.raw` covers the WHOLE subtree, and every
+        // nested section is also a flattened entry of its own — rendering
+        // the parent's full span would emit each child twice.
+        raw: ownRaw(s)
       }))
     };
   } else {

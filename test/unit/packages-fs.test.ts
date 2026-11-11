@@ -153,11 +153,11 @@ describe('the fs package contract', () => {
     expect(deadCore.mountPlugin({ name: 'fs-dead', version: '0', commands: dead.commands, files: [] }).ok).toBe(true);
     await dead.ensure();
     expect(await dead.ensure()).toBe(false);
-    const r = deadCore.execLine('date');
+    const r = await deadCore.execLine('date');
     expect(errs(r)).toEqual(['date: package chunk failed to load (semtext-pkg-fs.js)']);
     expect(status(r)).toBe(1);
-    expect(out(deadCore.execLine('date --help'))).toEqual(['date [-u] [-d DATE] [+FORMAT]']);
-    const man = out(deadCore.execLine('man chmod')).join('\n');
+    expect(out(await deadCore.execLine('date --help'))).toEqual(['date [-u] [-d DATE] [+FORMAT]']);
+    const man = out(await deadCore.execLine('man chmod')).join('\n');
     expect(man).toContain('CHMOD(1)');
     expect(man).toContain('session-scoped map');
   });

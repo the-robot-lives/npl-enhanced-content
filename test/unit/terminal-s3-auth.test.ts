@@ -17,6 +17,7 @@ import {
   parseIdToken,
   randomToken,
   waitForAuthCode,
+  AUTH_CHANNEL_NAME,
 } from '../../src/terminal/backends/s3-auth.js';
 
 const ISSUER = 'https://idp.test.invalid/application/o/semtext-test/';
@@ -200,5 +201,24 @@ describe('the redirect message contract', () => {
     window.dispatchEvent(new MessageEvent('message', { origin: 'https://evil.test.invalid', data: { source: AUTH_MESSAGE_SOURCE, state: 'state-2', code: 'evil' } }));
     window.dispatchEvent(new MessageEvent('message', { origin: location.origin, data: { source: AUTH_MESSAGE_SOURCE, state: 'state-2', error: 'access_denied' } }));
     await expect(pending).rejects.toThrow(/access_denied/);
+  });
+});
+
+describe('the BroadcastChannel handoff (noopener popup)', () => {
+  it('the code arrives over the channel with no injected window target', async () => {
+    const pending = waitForAuthCode('state-bc', 5000);
+    const sender = new BroadcastChannel(AUTH_CHANNEL_NAME);
+    sender.postMessage({ source: AUTH_MESSAGE_SOURCE, state: 'stale', code: 'no' });
+    sender.postMessage({ source: AUTH_MESSAGE_SOURCE, state: 'state-bc', code: 'code-bc' });
+    expect(await pending).toBe('code-bc');
+    sender.close();
+  });
+
+  it('an error payload on the channel rejects', async () => {
+    const pending = waitForAuthCode('state-bc2', 5000);
+    const sender = new BroadcastChannel(AUTH_CHANNEL_NAME);
+    sender.postMessage({ source: AUTH_MESSAGE_SOURCE, state: 'state-bc2', error: 'access_denied' });
+    await expect(pending).rejects.toThrow(/access_denied/);
+    sender.close();
   });
 });

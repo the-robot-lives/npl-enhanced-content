@@ -167,3 +167,127 @@ describe('CDN rules — refusals happen BEFORE any network request', () => {
     expect(core.plugins).toHaveLength(0);
   });
 });
+
+describe('help grouping + did-you-mean', () => {
+  const gitLike = {
+    name: 'gitish',
+    version: '1.0.0',
+    commands: [{ name: 'git', usage: 'git <sub> — vcs', run: () => {} }],
+    files: [],
+  };
+
+  it('groups commands under their plugin header; help <cmd> shows one', () => {
+    const core = new TerminalCore();
+    expect(core.mountPlugin(gitLike).ok).toBe(true);
+    const text = (core.execLine('help') as { lines: { text: string }[] }).lines.map((l) => l.text);
+    expect(text.indexOf('(builtin):')).toBeGreaterThan(-1);
+    const header = text.indexOf('gitish:');
+    expect(header).toBeGreaterThan(text.indexOf('(builtin):'));
+    expect(text[header + 1]).toBe('  git <sub> — vcs');
+    const one = (core.execLine('help git') as { lines: { kind: string; text: string }[] }).lines.filter((l) => l.kind === 'stdout').map((l) => l.text);
+    expect(one).toEqual(['git <sub> — vcs', '  provided by gitish']);
+  });
+
+  it('suggests the closest command for unknown ones (exit 127)', () => {
+    const core = new TerminalCore();
+    core.mountPlugin(gitLike);
+    const res = core.execLine('gti status') as { lines: { kind: string; text: string }[] };
+    const errs = res.lines.filter((l) => l.kind === 'stderr').map((l) => l.text);
+    expect(errs).toContain('sh: command not found: gti');
+    expect(errs).toContain("sh: did you mean 'git'?");
+    expect(core.state.lastStatus).toBe(127);
+    const far = core.execLine('zzzzzzzz') as { lines: { kind: string; text: string }[] };
+    expect(far.lines.some((l) => l.text.includes('did you mean'))).toBe(false);
+  });
+});
+
+describe('mountPlugin atomicity + guards', () => {
+  it('a failing file leaves no files and no commands behind', () => {
+    const core = new TerminalCore();
+    core.vfs.mountFile('/taken', 'file');
+    const result = core.mountPlugin({
+      name: 'half',
+      version: '1.0.0',
+      commands: [{ name: 'halfcmd', usage: 'halfcmd', run: () => {} }],
+      files: [
+        { path: '/good.txt', content: 'ok' },
+        { path: '/taken/inside.txt', content: 'bad' },
+      ],
+    });
+    expect(result.ok).toBe(false);
+    expect(core.vfs.read('/good.txt')).toBeNull();
+    expect(core.hasCommand('halfcmd')).toBe(false);
+    expect(core.plugins).toHaveLength(0);
+  });
+
+  it('ctx.commands is a read-only view', () => {
+    const core = new TerminalCore();
+    let view: ReadonlyMap<string, unknown> | null = null;
+    core.mountPlugin({
+      name: 'peek',
+      version: '1.0.0',
+      commands: [{ name: 'peek', usage: 'peek', run: (ctx) => { view = ctx.commands; } }],
+      files: [],
+    });
+    core.execLine('peek');
+    expect(view!.has('peek')).toBe(true);
+    expect(view!.size).toBe(core.commands.size);
+    expect((view as unknown as { set?: unknown }).set).toBeUndefined();
+    expect((view as unknown as { delete?: unknown }).delete).toBeUndefined();
+  });
+});
+
+describe('mount builtin + backend lifecycle', () => {
+  function fakeKind(core: TerminalCore) {
+    const log: string[] = [];
+    let disposed = 0;
+    core.mountKinds.set('fake', {
+      id: 'fake',
+      help: 'fake',
+      create: (args) => ({
+        id: 'fake',
+        writable: true,
+        mountpoint: args[0] ?? '/fake',
+        stat: async () => null,
+        read: async () => null,
+        write: async (path: string) => { log.push('write ' + path); },
+        mkdirp: async () => {},
+        rm: async () => {},
+        rename: async () => {},
+        list: async () => [],
+        dispose: () => { disposed++; },
+        hydrate: async (put: (p: string, c: string) => void) => { put('seeded.txt', 'S'); },
+      }),
+    });
+    return { log, disposed: () => disposed };
+  }
+  const settle = () => new Promise((r) => setTimeout(r, 0));
+
+  it('mount attaches (writes flush), hydration does not PUT, umount disposes', async () => {
+    const core = new TerminalCore();
+    const probe = fakeKind(core);
+    await core.execLine('mount fake /fake');
+    await settle();
+    expect(core.vfs.mounts.has('/fake')).toBe(true);
+    expect(core.vfs.read('/fake/seeded.txt')).toBe('S');
+    expect(probe.log).toEqual([]); // hydration seeded without uploading
+    core.vfs.mountFile('/fake/new.txt', 'N');
+    await settle();
+    expect(probe.log).toEqual(['write /fake/new.txt']);
+    await core.execLine('umount /fake');
+    expect(core.vfs.mounts.has('/fake')).toBe(false);
+    expect(probe.disposed()).toBe(1);
+  });
+
+  it('refuses an occupied mountpoint and a mount at /', async () => {
+    const core = new TerminalCore();
+    const probe = fakeKind(core);
+    await core.execLine('mount fake /fake');
+    const again = (await core.execLine('mount fake /fake')) as { lines: { kind: string; text: string }[] };
+    expect(again.lines.some((l) => l.kind === 'stderr' && /already a mountpoint/.test(l.text))).toBe(true);
+    const root = (await core.execLine('mount fake /')) as { lines: { kind: string; text: string }[] };
+    expect(root.lines.some((l) => l.kind === 'stderr' && /refusing to mount over \//.test(l.text))).toBe(true);
+    expect(core.vfs.mounts.has('/')).toBe(false);
+    expect(probe.disposed()).toBe(2);
+  });
+});
