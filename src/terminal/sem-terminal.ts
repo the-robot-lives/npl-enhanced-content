@@ -89,6 +89,11 @@ import type { AppSpawnAction } from './terminal-core.js';
  * first connect replaces it once. See web/demo/shell.html, whose build
  * also emits a script-stripped `.nojs.html` proving the fallback.
  */
+/** Per-document prompt-input id sequence: three shells on one page (the
+ * landing tabs) must not share `id="sem-shell-input"` — duplicate ids break
+ * label/for association and every getElementById-style lookup. */
+let promptInputSeq = 0;
+
 export class SemTerminal extends SemElement {
   static properties = {
     cwd: { type: String, state: true },
@@ -125,6 +130,8 @@ export class SemTerminal extends SemElement {
   readonly #vfs = new Vfs();
   /** Every live session, oldest first (strip order mirrors the TabModel). */
   readonly #sessions: TerminalSession[] = [];
+  /** This element's prompt input id — unique per instance (§2.3). */
+  readonly #inputId = `sem-shell-input-${++promptInputSeq}`;
   /** The session the strip points at — the source of every active-path read. */
   #session: TerminalSession;
   /** The session whose execLine is on the stack (direnv TAB_TITLE attribution). */
@@ -671,9 +678,9 @@ export class SemTerminal extends SemElement {
   #renderPrompt(): TemplateResult {
     return html`
       <form class="sem-shell-prompt" @submit=${this.#onSubmit}>
-        <label class="sem-shell-ps1" for="sem-shell-input">${this.cwd} $</label>
+        <label class="sem-shell-ps1" for=${this.#inputId}>${this.cwd} $</label>
         <input
-          id="sem-shell-input"
+          id=${this.#inputId}
           class="sem-shell-input"
           type="text"
           spellcheck="false"
