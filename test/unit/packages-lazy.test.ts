@@ -113,7 +113,8 @@ describe('createLazyPackage — the stub answers without the chunk', () => {
     await p;
     expect(realRun).toHaveBeenCalledWith(ctx); // the same cold call ran the real spec
     expect(ctx.__outs).toEqual(['REAL OUT']);
-    expect(ctx.__errs).toEqual([]); // no "still loading — try again" anywhere
+    expect(ctx.__errs).toEqual(['loading hello…']); // status only — no "try again" anywhere
+    expect(ctx.__code()).toBe(0); // the status line does not turn a success into exit 1
     expect(pkg.loaded()).toBe(true);
   });
 
@@ -142,7 +143,7 @@ describe('createLazyPackage — the stub answers without the chunk', () => {
     expect(await pkg.ensure()).toBe(false);
     const ctx = mkCtx([]);
     await pkg.commands[0]!.run(ctx);
-    expect(ctx.__errs).toEqual(['hello: package chunk failed to load (semtext-pkg-hello.js)']);
+    expect(ctx.__errs).toEqual(['loading hello…', 'hello: package chunk failed to load (semtext-pkg-hello.js)']);
     expect(ctx.__code()).toBe(1);
   });
 
@@ -155,12 +156,39 @@ describe('createLazyPackage — the stub answers without the chunk', () => {
     const ctx = mkCtx([]);
     await pkg.commands[0]!.run(ctx); // no preload: the invocation awaited the failed load
     expect(loads).toBe(1);
-    expect(ctx.__errs).toEqual(['hello: package chunk failed to load (semtext-pkg-hello.js)']);
+    expect(ctx.__errs).toEqual(['loading hello…', 'hello: package chunk failed to load (semtext-pkg-hello.js)']);
     expect(ctx.__code()).toBe(1);
     const again = mkCtx([]);
     await pkg.commands[0]!.run(again);
     expect(loads).toBe(1); // no retry loop
-    expect(again.__errs).toEqual(['hello: package chunk failed to load (semtext-pkg-hello.js)']);
+    expect(again.__errs).toEqual(['loading hello…', 'hello: package chunk failed to load (semtext-pkg-hello.js)']);
+  });
+});
+
+describe('createLazyPackage — first-use load status (3.4)', () => {
+  it('emits `loading <pkg>…` while a delayed chunk loads, before the real command runs', async () => {
+    let release!: (m: PackageModule) => void;
+    const pkg = createLazyPackage(stubOnly(), () => new Promise<PackageModule>((res) => (release = res)));
+    const ctx = mkCtx(['Ada']);
+    const p = pkg.commands[0]!.run(ctx) as Promise<void>;
+    expect(ctx.__errs).toEqual(['loading hello…']); // visible while the load is still in flight
+    expect(ctx.__outs).toEqual([]);
+    release({ commands: [{ name: 'hello', usage: 'u', run: (c: CommandContext) => c.out('hi') }] });
+    await p;
+    expect(ctx.__outs).toEqual(['hi']);
+    expect(ctx.__code()).toBe(0);
+  });
+  it('a real command that errors still ends exit 1, and resident calls emit no status', async () => {
+    const pkg = createLazyPackage(stubOnly(), () =>
+      Promise.resolve({ commands: [{ name: 'hello', usage: 'u', run: (c: CommandContext) => c.err('boom') }] }),
+    );
+    const cold = mkCtx([]);
+    await pkg.commands[0]!.run(cold);
+    expect(cold.__errs).toEqual(['loading hello…', 'boom']);
+    expect(cold.__code()).toBe(1);
+    const warm = mkCtx([]);
+    await pkg.commands[0]!.run(warm);
+    expect(warm.__errs).toEqual(['boom']);
   });
 });
 
@@ -197,7 +225,7 @@ describe('createLazyPackage — read-through delegation', () => {
     await pkg.ensure();
     const ctx = mkCtx([]);
     await pkg.commands[0]!.run(ctx);
-    expect(ctx.__errs).toEqual(['hello: package chunk semtext-pkg-hello.js does not provide it']);
+    expect(ctx.__errs).toEqual(['loading hello…', 'hello: package chunk semtext-pkg-hello.js does not provide it']);
     expect(ctx.__code()).toBe(70);
   });
 
@@ -269,7 +297,8 @@ describe('cold pipeline — first use loads the chunk mid-line', () => {
     expect(jqPkg.state()).toBe('loading'); // nothing loaded at mount — no boot bytes
     const r = (await core.execLine("echo '{}' | jq .")) as ExecResult;
     expect(out(r)).toEqual(['{}']); // real jq output, cold, one awaited line
-    expect(errs(r)).toEqual([]); // no failure note
+    expect(errs(r)).toEqual(['loading jq…']); // status line only, no failure note
+    expect(r.state.lastStatus).toBe(0);
     expect(r.lines.map((l) => l.text).join('\n')).not.toContain('try again'); // the old hint is gone
     expect(jqPkg.state()).toBe('resident');
   });
@@ -397,7 +426,7 @@ describe('the mounted shell', () => {
       expect(await pkg.ensure()).toBe(false); // the built chunk does not exist in the source tree
     }
     const r = await core.execLine('hello');
-    expect(errs(r)).toEqual(['hello: package chunk failed to load (semtext-pkg-hello.js)']);
+    expect(errs(r)).toEqual(['loading hello…', 'hello: package chunk failed to load (semtext-pkg-hello.js)']);
     expect(r.state.lastStatus).toBe(1);
     expect(out(core.execLine('hello --help'))).toEqual([HELLO_USAGE]); // resilience: help survives a dead chunk
   });
