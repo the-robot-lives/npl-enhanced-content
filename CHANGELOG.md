@@ -2,6 +2,18 @@
 
 ## 2026-11-11
 
+- **focus: nested markdown renders once.** `semtext focus --format md` on a
+  document with nested headings emitted every child section twice — the
+  flattened parent entry rendered its whole-subtree `raw` span, then each
+  child rendered again (a 13-section playbook doc came out ≈522 lines, two
+  byte-identical copies). The focus doc assembly now slices each section's
+  raw to its OWN span (stops at the first child heading); json contract
+  unchanged (14 sections stay 14). `outline` text also miscounted markdown
+  nesting ("12 nested" for 13 children): markdown `blocks` is self-excluded
+  while the shared renderer assumed the XHTML self-included convention —
+  both CLIs now pass the convention through. (+6 regression tests; full
+  unit suite green.)
+
 - **visible demo stop control + no focus theft (WCAG 2.2.2 / 2.4.3).**
   While a scripted demo runs, the top-right slot shows a `stop demo`
   button and an "Esc to take over" hint (new `demoRunning` state drives

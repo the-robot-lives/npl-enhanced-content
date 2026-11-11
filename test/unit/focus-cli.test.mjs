@@ -165,6 +165,89 @@ describe('focus — no-llm + dry-run (no credentials needed)', () => {
   });
 });
 
+describe('focus — nested markdown renders once (regression)', () => {
+  // A root with its own body + direct children: the parent's raw span
+  // INCLUDES the children, so rendering every flattened entry's raw emits
+  // each nested section twice (parent span, then its own entry).
+  const NESTED_DOC = [
+    '# Playbooks',
+    '',
+    'Root routing bullets live here.',
+    '- pick every matching playbook',
+    '',
+    '## Landing page',
+    'Build the landing page.',
+    '',
+    '## Feature fix',
+    'Fix the feature.',
+    '',
+    '## Verify',
+    'Verify the thing.'
+  ].join('\n');
+
+  const count = (hay, needle) => hay.split(needle).length - 1;
+
+  it('md render emits every nested section exactly once (pipe)', () => {
+    writeFileSync(join(root, 'nested.md'), NESTED_DOC);
+    const r = run(PIPE, ['focus', join(root, 'nested.md'), '--purpose', 'x', '--no-llm', '--format', 'md']);
+    expect(r.code).toBe(0);
+    for (const h of ['# Playbooks', '## Landing page', '## Feature fix', '## Verify']) {
+      expect(count(r.stdout, h + '\n')).toBe(1);
+    }
+    for (const body of ['Root routing bullets live here.', 'Build the landing page.', 'Fix the feature.', 'Verify the thing.']) {
+      expect(count(r.stdout, body)).toBe(1);
+    }
+  });
+
+  it('md render keeps deep nesting single-copy (pipe)', () => {
+    const r = run(PIPE, ['focus', join(root, 'doc.md'), '--purpose', 'x', '--no-llm', '--format', 'md']);
+    expect(r.code).toBe(0);
+    expect(count(r.stdout, '## Deploy')).toBe(1);
+    expect(count(r.stdout, '### Rollback')).toBe(1);
+    expect(count(r.stdout, 'Roll back to the previous chart tag.')).toBe(1);
+  });
+
+  it('md render emits every nested section exactly once (agent)', () => {
+    writeFileSync(join(root, 'nested.md'), NESTED_DOC);
+    const r = run(AGENT, ['focus', join(root, 'nested.md'), '--purpose', 'x', '--no-llm', '--format', 'md']);
+    expect(r.code).toBe(0);
+    for (const h of ['# Playbooks', '## Landing page', '## Feature fix', '## Verify']) {
+      expect(count(r.stdout, h + '\n')).toBe(1);
+    }
+    expect(count(r.stdout, 'Build the landing page.')).toBe(1);
+  });
+
+  it('outline nested counts include every descendant (pipe)', () => {
+    const r = run(PIPE, ['outline', join(root, 'doc.md')]);
+    expect(r.code).toBe(0);
+    const lines = r.stdout.split('\n');
+    // blocks is self-EXCLUDED for markdown: Guide → Deploy+Rollback+Tail = 3.
+    expect(lines.find((l) => l.includes('[x-sec-guide]'))).toContain('(3 nested)');
+    expect(lines.find((l) => l.includes('[x-sec-deploy]'))).toContain('(1 nested)');
+    expect(lines.find((l) => l.includes('[x-sec-tail]'))).not.toContain('nested');
+  });
+
+  it('outline nested counts include every descendant (agent)', () => {
+    const r = run(AGENT, ['outline', join(root, 'doc.md')]);
+    expect(r.code).toBe(0);
+    const lines = r.stdout.split('\n');
+    expect(lines.find((l) => l.includes('[x-sec-guide]'))).toContain('(3 nested)');
+    expect(lines.find((l) => l.includes('[x-sec-deploy]'))).toContain('(1 nested)');
+  });
+
+  it('json contract is unchanged by the render fix', () => {
+    writeFileSync(join(root, 'nested.md'), NESTED_DOC);
+    const r = run(PIPE, ['focus', join(root, 'nested.md'), '--purpose', 'x', '--no-llm', '--format', 'json']);
+    expect(r.code).toBe(0);
+    const payload = JSON.parse(r.stdout);
+    expect(payload.sections.map((s) => s.id)).toEqual([
+      'x-sec-playbooks', 'x-sec-landing-page', 'x-sec-feature-fix', 'x-sec-verify'
+    ]);
+    expect(payload.stats.classifier_calls).toBe(0);
+    expect(payload.stats.summarizer_calls).toBe(0);
+  });
+});
+
 describe('focus — credentials (env var NAMES in errors, never values)', () => {
   it('missing alibaba creds error names the env vars and suggests --no-llm', () => {
     const r = run(PIPE, ['focus', join(root, 'doc.md'), '--purpose', 'ship it']);

@@ -147,12 +147,14 @@ function emit(value, json) {
   process.stdout.write(typeof value === 'string' ? value : JSON.stringify(value, null, 2) + '\n');
 }
 
-function outlineText(nodes, indent = '') {
+function outlineText(nodes, indent = '', blocksExcludeSelf = false) {
   const lines = [];
   for (const n of nodes) {
-    const meta = n.blocks > 1 ? ` (${n.blocks - 1} nested)` : '';
+    // XHTML blocks count the node itself; markdown blocks are self-excluded.
+    const nested = blocksExcludeSelf ? n.blocks : n.blocks - 1;
+    const meta = nested > 0 ? ` (${nested} nested)` : '';
     lines.push(`${indent}- [${n.id}] ${n.type}: ${n.summary}${meta}`);
-    lines.push(...outlineText(n.children, indent + '  '));
+    lines.push(...outlineText(n.children, indent + '  ', blocksExcludeSelf));
   }
   return lines;
 }
@@ -233,7 +235,7 @@ function commandOutline(core, opts) {
     const nodes = core.mdOutline(source, depth);
     if (opts.json) return emit(nodes, true);
     if (!nodes.length) throw new NoMatches('no headings in markdown document');
-    return emit(outlineText(nodes).join('\n'), false);
+    return emit(outlineText(nodes, '', true).join('\n'), false);
   }
   const root = documentRoot(source);
   let depth = Infinity;
