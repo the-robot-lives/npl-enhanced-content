@@ -100,6 +100,19 @@
       "aria-valuetext"
     ],
     "globalAttributes": {
+      "render-mode": {
+        "type": "token",
+        "values": [
+          "tui",
+          "rich"
+        ],
+        "elementDefined": true,
+        "source": "spec/schema/sem-tui.md"
+      },
+      "tui": {
+        "type": "flag",
+        "source": "spec/schema/sem-tui.md"
+      },
       "kind": {
         "type": "token"
       },
@@ -387,6 +400,29 @@
       "source": "spec/schema/sem-tldr.md",
       "record": true,
       "attributes": {}
+    },
+    "sem-tui": {
+      "source": "spec/schema/sem-tui.md",
+      "record": false,
+      "attributes": {
+        "cols": {
+          "type": "number",
+          "default": "80"
+        },
+        "theme": {
+          "type": "token",
+          "values": [
+            "dark",
+            "light",
+            "amber",
+            "green"
+          ],
+          "default": "dark"
+        },
+        "toggle": {
+          "type": "flag"
+        }
+      }
     },
     "sem-facts": {
       "source": "spec/schema/sem-facts.md",
