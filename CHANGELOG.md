@@ -2,7 +2,7 @@
 
 ## 2026-11-11
 
-- **shell 2.4 — menu focus return, tab/tabpanel ARIA, flashcard role.**
+- **shell 2.4 — menu focus return, tab/tabpanel ARIA, flashcard role (#102).**
   Closing the context menu now focuses the prompt input (else the
   hidden canvas input, else the host with a tabindex fallback) instead
   of dropping to `<body>`; tab close buttons are siblings of the
