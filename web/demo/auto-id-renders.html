@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · Reference auto-id &amp; procedure / callout renders</title>
+<!-- sem:inline theme minimal-tech-light -->
+<!-- sem:inline vocabulary -->
+<!-- sem:inline bundle -->
+</head>
+
+<body>
+<sem-enhanced-document id="doc-root">
+
+  <h1>Reference auto-id &amp; graduated renders</h1>
+  <p>Demo fixture (0.9.6) for the <code>sem-reference</code> AUTO-ID rule
+  and the <code>sem-procedure</code> / <code>sem-step</code> /
+  <code>sem-tldr</code> / <code>sem-summary</code> enhanced renders.</p>
+
+  <sem-tldr id="gist"><p>Id-less references derive <code>&lt;block&gt;-&lt;slug(cite)&gt;</code>.</p></sem-tldr>
+
+  <p>Rotate refresh tokens per use<a id="cite-auto-1" href="#refs-rfc-6749">[1]</a>;
+  watch long runs with gh-wait<a href="#refs-projects-github-tools-docs-gh-wait-md">[2]</a>;
+  PKCE is mandatory<a href="#r-pkce">[3]</a>; again, rotation<a href="#refs-rfc-6749">[1]</a>.</p>
+
+  <sem-procedure id="deploy" kind="runbook" role="list">
+    <sem-step role="listitem" status="done">provision Infisical path</sem-step>
+    <sem-step role="listitem" status="current">port-forward MinIO</sem-step>
+    <sem-step role="listitem">run migrations</sem-step>
+    <sem-step role="listitem" status="blocked">cut release — waiting on CI</sem-step>
+  </sem-procedure>
+
+  <sem-summary id="sum" kind="executive"><p>Three references, one blocked step.</p></sem-summary>
+
+  <sem-references id="refs" kind="bibliography" role="list">
+    <sem-reference role="listitem" cite="RFC 6749" href="https://www.rfc-editor.org/rfc/rfc6749">
+      The OAuth 2.0 Authorization Framework, §10.4.
+    </sem-reference>
+    <sem-reference role="listitem" cite="Projects/github-tools/docs/gh-wait.md">
+      gh-wait reference.
+    </sem-reference>
+    <sem-reference id="r-pkce" role="listitem" cite="RFC 7636">
+      Proof Key for Code Exchange.
+    </sem-reference>
+  </sem-references>
+
+</sem-enhanced-document>
+</body>
+</html>

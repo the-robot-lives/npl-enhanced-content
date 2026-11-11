@@ -1,3 +1,4 @@
+// 〚📦:𓯾𐦅𔔀𓥉〛 semext bundle :: semext-* component namespace as its own bundle (dist/semext.js, global SemTextExt); loaded on top of the core bundle only by semext documents.
 /**
  * semext.js — the `semext-*` component namespace as its own bundle
  * (dist/semext.js, classic IIFE, global `SemTextExt`).

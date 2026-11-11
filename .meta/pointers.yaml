@@ -1,0 +1,110 @@
+---
+pointers:
+  4c5cd5b7-ff99-518d-8a32-ca1fecc779b6:
+    created_at: 2026-10-26T12:43:05.005180Z
+    description: npl-* component namespace as its own bundle (dist/npl.js, global NPL); loaded on top of the core bundle only by NPL documents.
+    file_path: src/npl.ts
+    function: npl bundle
+    kind: module
+    line: 1
+    locations:
+      - file_path: src/npl.ts
+        line: 1
+    token: 𓅯𓼓𓪽𓴖
+    updated_at: 2026-10-26T12:45:38.640147Z
+  58efd97f-011d-58a1-9fd1-053f2135094a:
+    created_at: 2026-10-26T12:41:23.794631Z
+    description: 'Repo-root entry: what SemText is, the one-bundle surface, install/build/test quickstart, spec and docs links.'
+    file_path: README.md
+    function: README
+    kind: file
+    line: 1
+    locations:
+      - file_path: README.md
+        line: 1
+    token: 𓖞𓑢𔅌𓔚
+    updated_at: 2026-10-26T12:45:38.640166Z
+  660b6261-7b96-521e-8630-aafd9a3d97fa:
+    created_at: 2026-10-26T12:42:10.055893Z
+    description: 'User-facing semtext CLI: pipes first, terminal browser second; grep-style exit contract (0 ok / 1 usage/parse / 2 no matches).'
+    file_path: bin/semtext.mjs
+    function: semtext CLI
+    kind: file
+    line: 2
+    locations:
+      - file_path: bin/semtext.mjs
+        line: 2
+    token: 𓀝𓜖𓌁𓶚
+    updated_at: 2026-10-26T12:45:38.640142Z
+  6ba73b87-40a1-550f-992c-3b52e1b6db8f:
+    created_at: 2026-10-26T12:41:35.858754Z
+    description: 'Core one-bundle entry (dist/semtext.js, global SemText): defines the sem-* custom elements, re-exports extraction and the shared foundation, runs the vanilla handlers on DOMContentLoaded.'
+    file_path: src/index.ts
+    function: core bundle
+    kind: module
+    line: 1
+    locations:
+      - file_path: src/index.ts
+        line: 1
+    token: 𓒢𓐈𔘣𓥏
+    updated_at: 2026-10-26T12:45:38.640155Z
+  6f3e517f-5b35-57e2-96dd-2aa9af3b3b86:
+    created_at: 2026-10-26T12:42:18.950193Z
+    description: Normative format spec and conventions for the SemText XHTML vocabulary (draft v0.7, Lit-only surface, tag form canonical).
+    file_path: spec/conventions.md
+    function: conventions spec
+    kind: file
+    line: 1
+    locations:
+      - file_path: spec/conventions.md
+        line: 1
+    token: 𐦛𔐫𔁥𓵦
+    updated_at: 2026-10-26T12:45:38.640130Z
+  9398bc9c-3815-5cb8-9e81-51c7dd98ac26:
+    created_at: 2026-10-26T12:42:03.233578Z
+    description: Schema-driven validation of SemText documents; every rule reads spec/schema/semtext.schema.json, nothing hardcodes a parallel rule set.
+    file_path: src/validate/validate.js
+    function: validate
+    kind: module
+    line: 1
+    locations:
+      - file_path: src/validate/validate.js
+        line: 1
+    token: 𓮦𓕄𓚩𓽆
+    updated_at: 2026-10-26T12:45:38.640171Z
+  96fb6581-5f64-51e4-8b5b-c7ff4423f0b4:
+    created_at: 2026-10-26T12:41:54.075346Z
+    description: 'Extraction entry point: structural/plain-text reduction contract (SemText.extractRecords / SemText.extractText); normative contract spec/extraction.md.'
+    file_path: src/extract/index.ts
+    function: extract
+    kind: module
+    line: 1
+    locations:
+      - file_path: src/extract/index.ts
+        line: 1
+    token: 𔕱𓯩𓲞𓖤
+    updated_at: 2026-10-26T12:45:38.640180Z
+  a9c11d97-8eee-5a15-8886-3cf641102739:
+    created_at: 2026-10-26T12:42:35.613639Z
+    description: semext-* component namespace as its own bundle (dist/semext.js, global SemTextExt); loaded on top of the core bundle only by semext documents.
+    file_path: src/semext.ts
+    function: semext bundle
+    kind: module
+    line: 1
+    locations:
+      - file_path: src/semext.ts
+        line: 1
+    token: 𓯾𐦅𔔀𓥉
+    updated_at: 2026-10-26T12:45:38.640175Z
+  e9d881bb-dbde-588f-bf04-6c4394783718:
+    created_at: 2026-10-26T12:41:46.146249Z
+    description: 'Core vanilla handlers: progressive enhancement with zero Lit dependency; ships only inside dist/semtext.js.'
+    file_path: src/vanilla/index.ts
+    function: vanilla handlers
+    kind: module
+    line: 1
+    locations:
+      - file_path: src/vanilla/index.ts
+        line: 1
+    token: 𓉈𔖒𓯮𔀈
+    updated_at: 2026-10-26T12:45:38.640151Z

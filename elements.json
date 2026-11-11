@@ -8,6 +8,7 @@
     "spec/schema/sem-changelogs.md",
     "spec/schema/sem-chronology.md",
     "spec/schema/sem-code.md",
+    "spec/schema/sem-component.md",
     "spec/schema/sem-data-join.md",
     "spec/schema/sem-data-query.md",
     "spec/schema/sem-data-source.md",
@@ -34,6 +35,7 @@
     "spec/schema/sem-reveal.md",
     "spec/schema/sem-rubric.md",
     "spec/schema/sem-runbook.md",
+    "spec/schema/sem-see-also.md",
     "spec/schema/sem-site-tree.md",
     "spec/schema/sem-source.md",
     "spec/schema/sem-summary.md",
@@ -42,6 +44,7 @@
     "spec/schema/sem-threat-model.md",
     "spec/schema/sem-tldr.md",
     "spec/schema/sem-tsgs.md",
+    "spec/schema/sem-tui.md",
     "spec/schema/sem-views.md",
     "spec/schema/sem-workflow.md",
     "spec/schema/npl/cot.md",
@@ -87,7 +90,7 @@
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 108,
+  "tagCount": 111,
   "tags": [
     {
       "name": "agent-kit-acceptance-criteria",
@@ -2981,6 +2984,41 @@
       "example": "<sem-code id=\"c-rotate\" lang=\"ts\" filename=\"src/rotate.ts\" mark=\"2,4-5\" controls=\"copy,wrap\">export function rotate(pair: Pair): Pair {\n  const next = mint();\n  retire(pair.refresh);\n  return next;\n}</sem-code>"
     },
     {
+      "name": "sem-component",
+      "family": "sem",
+      "source": "spec/schema/sem-component.md",
+      "summary": "A component-inventory card: one component-registry entry (the `components/manifest.yaml` vocabulary — tag, name, source, type, status, labels) as a SemText card the visualizer and graders can read lik",
+      "description": "A component-inventory card: one component-registry entry (the `components/manifest.yaml` vocabulary — tag, name, source, type, status, labels) as a SemText card the visualizer and graders can read like any other record. Component inventory was a recorded M1 vocabulary gap: the evaluator rubric described a component table with no element to carry it.",
+      "attributes": [],
+      "children": [
+        {
+          "name": "tag",
+          "note": "REQUIRED token. The component's registered tag name, verbatim from the manifest (`noizu-waitlist`). Doubles as the `sem-see-also` `reference=\"component\"` lookup key and lands in `data-sem-component-tag` for class-form parity."
+        },
+        {
+          "name": "name",
+          "note": "human name (\"Waitlist\"). Falls back to `tag` in the header when omitted."
+        },
+        {
+          "name": "source",
+          "note": "the component's source path in its repo. Rendered as code in the meta footer."
+        },
+        {
+          "name": "type",
+          "note": "free token describing the artifact kind (`web-component`, `liveview`, `service`, …). No closed vocabulary: inventories mix stacks."
+        },
+        {
+          "name": "status",
+          "note": "token `planned | wip | live | deprecated` (default none: unstatused cards render no status chip). The chip colour maps status → `--sem-component-status-*` variables; the value itself is text, never colour-only."
+        },
+        {
+          "name": "labels",
+          "note": "flaglist of inventory labels (comma- or space-separated tokens). Rendered as an unordered list in the meta footer."
+        }
+      ],
+      "example": "<sem-component id=\"c-waitlist\" tag=\"noizu-waitlist\" name=\"Waitlist\"\n  source=\"src/components/waitlist/noizu-waitlist.ts\"\n  type=\"web-component\" status=\"live\" labels=\"form telemetry\">\n  Lightweight waitlist form: email capture, Infisical-backed\n  provisioning, ArgoCD deploy hook.\n</sem-component>"
+    },
+    {
       "name": "sem-data-join",
       "family": "sem",
       "source": "spec/schema/sem-data-join.md",
@@ -4166,11 +4204,11 @@
         },
         {
           "name": "id",
-          "required": true,
+          "required": false,
           "type": "",
           "allowedValues": [],
           "default": null,
-          "description": "(required; on each `sem-reference`): the citation target — the global `id`."
+          "description": "(optional; on each `sem-reference`): the citation target — the global `id`. Absent ⇒ the **AUTO-ID** below. An authored `id` always wins and is never overwritten."
         },
         {
           "name": "href",
@@ -4182,11 +4220,11 @@
         },
         {
           "name": "cite",
-          "required": false,
+          "required": null,
           "type": "",
           "allowedValues": [],
           "default": null,
-          "description": "(optional; on each `sem-reference`): short citation label (`RFC 6749`)."
+          "description": "(on each `sem-reference`): the locator / short citation label (`RFC 6749`, a path, a URL). It is the AUTO-ID source; a `cite` that is an `http(s)` URL also gets the external link when no `href` is given. `href` is the pre-v0.6 compat alias (cite wins for the auto-id)."
         }
       ],
       "children": [],
@@ -4395,6 +4433,37 @@
       ],
       "children": [],
       "example": "<sem-runbook id=\"rb-rotate\" kind=\"ops\" audience=\"on-call\">\n  <p><strong>Preconditions:</strong> port-forward to the admin DB.</p>\n  <sem-procedure>\n    <sem-step>Snapshot the current chart tag.</sem-step>\n    <sem-step>Bump and deploy.</sem-step>\n  </sem-procedure>\n  <sem-references></sem-references>\n</sem-runbook>"
+    },
+    {
+      "name": "sem-see-also",
+      "family": "sem",
+      "source": "spec/schema/sem-see-also.md",
+      "summary": "A related-reference affordance: names ONE related target — a section of this document, a component card, or a file — and renders a link with three affordances on the shared reading surfaces: hover/foc",
+      "description": "A related-reference affordance: names ONE related target — a section of this document, a component card, or a file — and renders a link with three affordances on the shared reading surfaces: hover/focus preview (the shared popover, the glossary surface), click-to-modal (the shared modal shell factored out of sem-data-visualizer in 0.9.5), and a \"View all\" affordance opening the target in a new tab.",
+      "attributes": [],
+      "children": [
+        {
+          "name": "reference",
+          "note": "token `section | component | file` (default `section`). What kind of thing `target` names, and therefore how the link resolves: `section` → `getElementById` (leading `#` optional), `component` → `sem-component[tag=target]` then id lookup, `file` → never resolved in-document; `href` becomes the target path itself."
+        },
+        {
+          "name": "target",
+          "note": "REQUIRED text. The id/`#id`, component tag, or file path. Validator cross-checks section/component targets against ids present in the same document (id-drift check, warning severity)."
+        },
+        {
+          "name": "preview",
+          "note": "token `tldr | file` (default `tldr`). Hover content: `tldr` clones the target's `sem-tldr`, else its heading + first paragraph (a component card's head); `file` shows the authored label text plus the target path."
+        },
+        {
+          "name": "insert-as",
+          "note": "token `link | inline` (default `link`). `inline` embeds a CLONE of the target in place (label stays as the heading); skip the link chrome entirely."
+        },
+        {
+          "name": "href",
+          "note": "optional explicit URL overriding the resolved one (external docs, a path the validator can't check). §8 safety rule applies; the View-all affordance and the modal's deep target use it."
+        }
+      ],
+      "example": "<!-- section of this document -->\n<sem-see-also reference=\"section\" target=\"#bands\">\n  Score-to-grade bands — the table the total maps through.\n</sem-see-also>\n\n<!-- component card by manifest tag -->\n<sem-see-also reference=\"component\" target=\"noizu-waitlist\"\n  preview=\"tldr\">Waitlist intake flow</sem-see-also>\n\n<!-- file, described by the authored text -->\n<sem-see-also reference=\"file\" target=\"src/reading/see-also.ts\"\n  preview=\"file\">The wiring for this element.</sem-see-also>\n\n<!-- embedded in place instead of link chrome -->\n<sem-see-also reference=\"section\" target=\"#dv-review-store\"\n  insert-as=\"inline\">Full component inventory</sem-see-also>"
     },
     {
       "name": "sem-site-tree",
@@ -4764,6 +4833,83 @@
       ],
       "children": [],
       "example": "<sem-tsgs id=\"tsg-deploy\" kind=\"deploys\">\n  <sem-tsg>\n    <name>stale-image</name>\n    <title>Pod serves the old image after a green sync</title>\n    <description>ArgoCD reports Synced/Healthy but the rollout\n    did not change.</description>\n    <tags>deploy, argocd</tags>\n    <when>right after a release merge</when>\n    Confirm the pod image spec per container — Synced/Healthy alone\n    can serve a stale image.\n  </sem-tsg>\n  <sem-tsg>\n    <name>port-forward</name>\n    <title>Admin MinIO unreachable for terragrunt</title>\n    Port-forward 127.0.0.1:9000 before any --all run.\n  </sem-tsg>\n</sem-tsgs>"
+    },
+    {
+      "name": "sem-tui",
+      "family": "sem",
+      "source": "spec/schema/sem-tui.md",
+      "summary": "A subtree wrapper that switches every SemText element below it to the terminal text view: the same content `semtext format --text` prints, framed with unicode box-drawing.",
+      "description": "A subtree wrapper that switches every SemText element below it to the terminal text view: the same content `semtext format --text` prints, framed with unicode box-drawing. sem-tui is the render-mode context provider — it changes how the subtree is PRESENTED, never what it means; extraction is byte-identical with the wrapper present, in either mode.",
+      "attributes": [
+        {
+          "name": "cols",
+          "required": null,
+          "type": "integer",
+          "allowedValues": [],
+          "default": "80",
+          "description": "wrap width for the text renderers, in columns; Clamped to 20–500."
+        },
+        {
+          "name": "theme",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "dark",
+            "light",
+            "amber",
+            "green"
+          ],
+          "default": "dark",
+          "description": "one of `dark`, `light`, `amber`, `green`; selects the terminal palette (CSS custom properties `--sem-tui-bg`, `--sem-tui-fg`, `--sem-tui-accent`, `--sem-tui-dim`); Invalid values fall back to the default."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "render-mode",
+          "required": null,
+          "type": "string",
+          "allowedValues": [
+            "tui",
+            "rich",
+            "sem-tui"
+          ],
+          "default": null,
+          "description": "one of `tui`, `rich`; forces that element's presentation regardless of any enclosing `sem-tui`."
+        }
+      ],
+      "children": [
+        {
+          "name": "toggle",
+          "note": "boolean flag; renders the Rich/Terminal switch in the frame header. Without it the subtree is statically terminal."
+        },
+        {
+          "name": "tui",
+          "note": "boolean flag spelling of `render-mode=\"tui\"`; `tui=\"rich\"` opts back out."
+        }
+      ],
+      "example": "<sem-tui id=\"tui-auth\" cols=\"72\" theme=\"amber\" toggle>\n  <sem-note variant=\"tip\" id=\"n-rotate\">\n    Rotate JWTs per session; keep refresh tokens server-side.\n  </sem-note>\n  <sem-table id=\"tbl-auth\">…</sem-table>\n</sem-tui>"
     },
     {
       "name": "sem-view",
@@ -5344,5 +5490,18 @@
       "optionsIn": "semext-styleguide-theme"
     }
   ],
-  "gaps": []
+  "gaps": [
+    {
+      "tag": "sem-component",
+      "missing": [
+        "attributes"
+      ]
+    },
+    {
+      "tag": "sem-see-also",
+      "missing": [
+        "attributes"
+      ]
+    }
+  ]
 }

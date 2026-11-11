@@ -47,11 +47,13 @@ Usage: semtext-agent <command> [args] [options] [--json]
 
 Commands:
   outline <file> [--depth N]            compact outline; one stable id per block
+                                        (.md/.sem.md documents supported)
   expand  <file> <id> [--format f]      full content of one block, on demand
   filter  <file> [criteria]             records by type/id/kind/tag/audience/attr/selector
   search  <file> <query> [options]      full-text or attribute search with context
   write   [options] [infile|-]          Markdown or SemText fragment in, SemText XHTML out
   edit    <file> --id ID [options]      surgical replace of one block, by id
+  focus   <file|-> --purpose TEXT       purpose-driven collapse (see below)
   xslt    <file> <stylesheet>           run an XSLT stylesheet; --out FILE writes the result
 
 Criteria (filter): --type T --id ID --kind K --tag T --audience A
@@ -61,6 +63,12 @@ Write:  --format md|semtext --id ID --label L --kind K --tags T --audience A
         --class-form --wrap auto|always|never
 Edit:   --mode inner|outer --content-file F | --content TEXT (else stdin)
         (--content-file must resolve inside the working directory)
+Focus:  --purpose TEXT (required) --threshold N --match-threshold N
+        --format md|html|text|json --keep IDS --notes --track-refs
+        --write-back --write-notes --classifier alibaba|jev --model M
+        --cache-dir DIR --config FILE --no-llm --refresh --dry-run --verbose
+        (--json is the default output for focus; --write-back targets stay
+        inside the working directory)
 IO:     edit --in-place | --out FILE · write/xslt --out FILE (else stdout)
         output paths must stay inside the working directory; symlinks are
         followed and the real target must sit inside it too, or the path is
@@ -68,7 +76,7 @@ IO:     edit --in-place | --out FILE · write/xslt --out FILE (else stdout)
 Global: --json compact machine output · -h this help
 
 Exit codes: 0 ok · 1 domain error (incl. refused path) · 2 usage error
-Docs: README.md ("Agent toolkit") · spec/conventions.md §8`;
+Docs: README.md ("Agent toolkit") · spec/conventions.md §8 · docs/focus.md`;
 
 class UsageError extends Error {}
 
@@ -244,6 +252,18 @@ function outlineText(nodes, indent = '') {
 
 function parseArgs(argv) {
   const opts = { _: [], json: false };
+  // Focus flags are focus-only so every other command keeps its strict
+  // unknown-option contract.
+  const command = argv.find((a) => !a.startsWith('-'));
+  const isFocus = command === 'focus';
+  const focusBooleans = new Set([
+    '--no-llm', '--refresh', '--dry-run', '--verbose', '--track-refs',
+    '--notes', '--write-back', '--write-notes'
+  ]);
+  const focusFlagWith = new Set([
+    '--purpose', '--threshold', '--match-threshold', '--keep',
+    '--cache-dir', '--config', '--classifier', '--model'
+  ]);
   const flagWith = new Set([
     '--depth', '--format', '--type', '--id', '--kind', '--tag', '--audience',
     '--attr', '--selector', '--context', '--label', '--tags', '--wrap',
@@ -253,7 +273,12 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === '--json') opts.json = true;
     else if (a === '-h' || a === '--help') opts.help = true;
-    else if (a === '--in-place') opts.inPlace = true;
+    else if (isFocus && focusBooleans.has(a)) opts[a.slice(2)] = true;
+    else if (isFocus && focusFlagWith.has(a)) {
+      const v = argv[++i];
+      if (v === undefined) throw new UsageError(`${a} expects a value`);
+      opts[a.slice(2)] = v;
+    } else if (a === '--in-place') opts.inPlace = true;
     else if (a === '--regex') opts.regex = true;
     else if (a === '--attrs') opts.attrs = true;
     else if (a === '--class-form') opts.classForm = true;
@@ -360,7 +385,16 @@ function writeFileOutput(path, content, opts) {
 function commandOutline(core, opts) {
   const [file] = opts._;
   if (!file) throw new UsageError('outline needs a file');
-  const root = documentRoot(readInput(file));
+  const source = readInput(file);
+  if (core.isMarkdownSource(source, file)) {
+    const depth = opts.depth ? Number(opts.depth) : Infinity;
+    if (!Number.isFinite(depth) && opts.depth !== undefined) throw new UsageError('--depth expects a number');
+    const nodes = core.mdOutline(source, depth);
+    if (opts.json) return emit(nodes, true);
+    emit(['# outline ' + file, ...outlineText(nodes)].join('\n'), false);
+    return;
+  }
+  const root = documentRoot(source);
   const depth = opts.depth ? Number(opts.depth) : Infinity;
   if (!Number.isFinite(depth) && opts.depth !== undefined) throw new UsageError('--depth expects a number');
   const nodes = core.outline(root, depth);
@@ -373,8 +407,23 @@ function commandExpand(core, opts) {
   if (!file || !id) throw new UsageError('expand needs a file and a block id');
   const format = opts.format || 'text';
   if (format !== 'text' && format !== 'xhtml') throw new UsageError('--format must be "text" or "xhtml"');
-  const root = documentRoot(readInput(file));
+  const source = readInput(file);
   let content;
+  if (core.isMarkdownSource(source, file)) {
+    // 'xhtml' on markdown returns the section's raw source slice.
+    try {
+      content = core.mdExpand(source, id, format);
+    } catch (e) {
+      throw new DomainError(e.message);
+    }
+    if (opts.json) {
+      emit({ id, format, content }, true);
+      return;
+    }
+    emit(content, false);
+    return;
+  }
+  const root = documentRoot(source);
   try {
     content = core.expand(root, id, format);
   } catch (e) {
@@ -390,7 +439,34 @@ function commandExpand(core, opts) {
 function commandFilter(core, opts) {
   const [file] = opts._;
   if (!file) throw new UsageError('filter needs a file');
-  const root = documentRoot(readInput(file));
+  const source = readInput(file);
+  if (core.isMarkdownSource(source, file)) {
+    if (opts.audience || opts.attr || opts.selector) {
+      throw new UsageError('--audience/--attr/--selector are XHTML-only — markdown documents have sections only');
+    }
+    let hits;
+    try {
+      hits = core.mdFilter(source, {
+        type: opts.type,
+        id: opts.id,
+        kind: opts.kind,
+        tag: opts.tag
+      });
+    } catch (e) {
+      throw new UsageError(e.message);
+    }
+    if (opts.json) {
+      emit(hits, true);
+      return;
+    }
+    if (!hits.length) {
+      process.stdout.write('no matching sections\n');
+      return;
+    }
+    emit(hits.map((h) => h.text).join('\n\n'), false);
+    return;
+  }
+  const root = documentRoot(source);
   const blocks = core.filterBlocks(root, {
     type: opts.type,
     id: opts.id,
@@ -540,6 +616,24 @@ async function commandXslt(core, opts) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Focus — purpose-driven collapse (decisions live in bin/lib/focus/)
+ * ------------------------------------------------------------------ */
+
+async function commandFocus(core, opts) {
+  const { runFocus } = await import('./lib/focus/cli.mjs');
+  if (opts.format === undefined) opts.json = true; // agent contract: JSON first
+  const r = await runFocus({
+    core,
+    parseRoot: (source) => documentRoot(source),
+    opts,
+    stderr: (line) => process.stderr.write(line + '\n'),
+    guardPath: (p, what) => guardWorkspacePath(p, what)
+  });
+  emit(r.payload, r.json);
+  if (r.wrote) process.stderr.write(`semtext-agent: focus — wrote ${r.wrote}\n`);
+}
+
+/* ------------------------------------------------------------------ *
  * Main
  * ------------------------------------------------------------------ */
 
@@ -585,6 +679,9 @@ export async function main(argv = process.argv.slice(2)) {
       case 'xslt':
         await commandXslt(core, opts);
         return 0;
+      case 'focus':
+        await commandFocus(core, opts);
+        return 0;
       default:
         process.stderr.write(`semtext-agent: unknown command "${command}"\n`);
         return 2;
@@ -595,6 +692,14 @@ export async function main(argv = process.argv.slice(2)) {
       return 2;
     }
     if (e instanceof DomainError) {
+      process.stderr.write(`semtext-agent: ${e.message}\n`);
+      return 1;
+    }
+    if (e && e.focusKind === 'usage') {
+      process.stderr.write(`semtext-agent: ${e.message}\n`);
+      return 2;
+    }
+    if (e && e.focusKind === 'domain') {
       process.stderr.write(`semtext-agent: ${e.message}\n`);
       return 1;
     }

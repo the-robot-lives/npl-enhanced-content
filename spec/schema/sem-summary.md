@@ -45,6 +45,12 @@ invariant holds in both tiers.
 
 None.
 
+## A11y contract
+
+Enhanced tier: after the parse the component labels the callout —
+`role="note"` and `aria-label="Summary" (`"Summary · <kind>"` with a kind)` (an authored `role` / `aria-label`
+wins). JS-off: plain flow content, no role.
+
 ## Machine contract
 
 `record: true`: extraction returns the authored inner content. Label

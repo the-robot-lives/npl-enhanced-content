@@ -215,6 +215,9 @@ sem-agent > :is(name, bio, instructions), sem-fact > :is(statement, conclusion, 
 :is(sem-step, .sem-step):not([data-status]):not([status])::after {
   content: " ○"; color: var(--sem-muted);
 }
+/* enhanced progress line (sem-procedure component; extraction chrome) */
+.sem-procedure-meta { font-size: .75rem; color: var(--sem-muted); margin: 0 0 .35rem; letter-spacing: .02em; }
+:is(sem-procedure, .sem-procedure)[data-blocked] > .sem-procedure-meta { color: var(--sem-wrong); }
 /* ── end sem-procedure ── */
 
 /* ── sem-step ── */
@@ -227,6 +230,37 @@ sem-agent > :is(name, bio, instructions), sem-fact > :is(statement, conclusion, 
    a step that cannot fit wraps its last word and glyph together. */
 :is(sem-step, .sem-step)::after { white-space: nowrap; }
 /* ── end sem-step ── */
+
+/* ── sem-bind hydration chrome ── */
+/* The sem-bind runtime writes per-step status as `data-sem-bind-status`
+   (the payload's exact spelling: complete|pending|error|skipped|none)
+   PLUS the mapped catalog attribute (done|todo|blocked) so the glyphs
+   above keep rendering. `skipped` and `none` have no catalog spelling —
+   skipped gets its own muted marker; none clears both attributes. */
+:is(sem-step, .sem-step)[data-sem-bind-status="skipped"] {
+  border-left-style: dotted; color: var(--sem-muted);
+}
+:is(sem-step, .sem-step)[data-sem-bind-status="skipped"]::after {
+  content: " ↷"; color: var(--sem-muted);
+}
+/* Bind payload chrome — comment line under a step, the taken fork(s),
+   and the never-blank state line a bound element renders while loading,
+   on error or when a payload comes back empty. */
+.sem-bind-comment { color: var(--sem-muted); font-size: .85em; margin-top: .25rem; }
+.sem-bind-choice { margin-top: .3rem; font-size: .9em; }
+.sem-bind-choice-label { font-variant-caps: all-small-caps; color: var(--sem-muted); margin-right: .35em; }
+.sem-bind-choice-option { font-weight: 600; }
+.sem-bind-choice-reason { color: var(--sem-muted); }
+.sem-bind-choice-walk { margin: .3rem 0 0; padding-left: 1.25rem; }
+.sem-bind-choice-walk li { margin: .15rem 0; }
+.sem-bind-state { font-size: .85em; margin-top: .25rem; }
+.sem-bind-state:is(.sem-bind-error) { color: var(--sem-wrong); }
+.sem-bind-state:is(.sem-bind-pending) { color: var(--sem-muted); }
+.sem-bind-state:is(.sem-bind-empty) { color: var(--sem-muted); font-style: italic; }
+/* sem-progress payload meter rides the same track/fill chrome the
+   vanilla handler builds; only the caption row is its own. */
+.sem-bind-progress-label { display: block; font-size: .85em; color: var(--sem-muted); }
+/* ── end sem-bind ── */
 
 /* properties */
 :is(sem-properties, .sem-properties) { margin: 1rem 0; border: 1px solid var(--sem-border);
@@ -392,6 +426,13 @@ mark.sem-code-line { display: inline-block; width: 100%; color: inherit;
 .sem-references-backlinks { margin-left: .4rem; }
 .sem-references-backlinks a, .sem-references-link { text-decoration: none; margin-left: .3rem; color: var(--sem-accent); }
 .sem-references-ref { text-decoration: none; border-bottom: 1px dotted var(--sem-accent); }
+/* sem-reference enhanced chrome: once the component stamps data-ordinal the
+   counter is drawn as a footnote number badge (JS-off: the plain "1." above).
+   The number stays the CSS counter in every tier; data-ordinal is the hook. */
+:is(sem-reference, .sem-reference)[data-ordinal]::before { content: counter(sem-reference); top: .25rem;
+  min-width: 1.35rem; padding: 0 .3rem; border-radius: 999px; text-align: center; font-size: .7rem; line-height: 1.35rem;
+  background: color-mix(in srgb, var(--sem-accent) 14%, transparent); color: var(--sem-accent); }
+:is(sem-reference, .sem-reference)[data-ordinal][title] { cursor: help; }
 
 /* popover — one preview surface per document (src/shared/popover.ts);
    native `popover` where supported, fixed div otherwise. Author rules
@@ -3968,3 +4009,167 @@ agent-kit-ticket-ref[data-sem-upgraded], .agent-kit-ticket-ref[data-sem-upgraded
   font-size: 0.8em;
 }
 /* ── end agent-kit testing ── */
+
+/* phase 7 — component inventory + related references (spec/sem-component.md,
+   spec/sem-see-also.md, 0.9.5). Headless: every knob is a --sem-* variable
+   (defaults here; a page or theme may override any of them). */
+:where(html) {
+  --sem-component-gap: .55rem;
+  --sem-component-pad: .8rem 1rem;
+  --sem-component-border: var(--sem-border);
+  --sem-component-radius: 12px;
+  --sem-component-status-live: var(--sem-correct);
+  --sem-component-status-wip: var(--sem-note-warning);
+  --sem-component-status-deprecated: var(--sem-note-danger);
+  --sem-component-status-planned: var(--sem-muted);
+  --sem-see-also-accent: var(--sem-accent);
+  --sem-see-also-radius: 999px;
+}
+
+:is(sem-component, .sem-component) {
+  display: block;
+  margin: 1rem 0;
+  padding: var(--sem-component-pad);
+  border: 1px solid var(--sem-component-border);
+  border-radius: var(--sem-component-radius);
+}
+.sem-component-head { display: flex; align-items: baseline; gap: var(--sem-component-gap);
+  flex-wrap: wrap; margin-bottom: .45rem; }
+.sem-component-tag { font-family: ui-monospace, monospace; font-size: .9em; }
+.sem-component-name { font-weight: 600; }
+.sem-component-status { font-size: .78rem; font-variant-caps: all-small-caps;
+  letter-spacing: .05em; padding: .05rem .6rem; border: 1px solid var(--sem-component-border);
+  border-radius: var(--sem-see-also-radius); color: var(--sem-muted); }
+.sem-component-status[data-status="live"] { color: var(--sem-component-status-live); }
+.sem-component-status[data-status="wip"] { color: var(--sem-component-status-wip); }
+.sem-component-status[data-status="deprecated"] { color: var(--sem-component-status-deprecated); }
+.sem-component-status[data-status="planned"] { color: var(--sem-component-status-planned); }
+.sem-component-body { display: block; }
+.sem-component-meta { display: flex; align-items: baseline; gap: var(--sem-component-gap);
+  flex-wrap: wrap; margin-top: .55rem; font-size: .82rem; color: var(--sem-muted); }
+.sem-component-source { font-family: ui-monospace, monospace; font-size: .85em; }
+.sem-component-labels { display: inline-flex; gap: .35rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+.sem-component-labels li { padding: 0 .55rem; border: 1px solid var(--sem-component-border);
+  border-radius: var(--sem-see-also-radius); }
+
+:is(sem-see-also, .sem-see-also) { display: inline; }
+/* The authored children are the JS-off record; once wired they move into the
+   link's label clone, so hide the originals (glossary hide-rule pattern). */
+:is(sem-see-also, .sem-see-also)[data-sem-upgraded] > :where(:not([data-sem-chrome])) { display: none; }
+.sem-see-also-link { color: var(--sem-see-also-accent); text-decoration: underline dotted;
+  text-underline-offset: .2em; cursor: pointer; }
+.sem-see-also-link:focus-visible { outline: 2px solid var(--sem-see-also-accent); outline-offset: 2px; }
+.sem-see-also-view { font-size: .8rem; color: var(--sem-muted); margin-left: .4rem;
+  text-decoration: none; border-bottom: 1px dotted var(--sem-muted); }
+.sem-see-also-inline { display: block; margin: .5rem 0; padding: .6rem .9rem;
+  border: 1px dashed var(--sem-component-border); border-radius: var(--sem-component-radius); }
+.sem-see-also-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center;
+  justify-content: center; padding: 1.5rem; background: rgb(0 0 0 / .45); }
+.sem-see-also-modal-panel { background: var(--sem-surface); color: inherit; box-sizing: border-box;
+  border: 1px solid var(--sem-border); border-radius: 16px; width: min(48rem, 100%); max-height: 100%;
+  overflow: auto; padding: 1rem; }
+.sem-see-also-modal-close { all: unset; font: inherit; font-size: .8rem; cursor: pointer; margin-bottom: .5rem;
+  padding: .15rem .9rem; border: 1px solid var(--sem-border); border-radius: var(--sem-see-also-radius); }
+.sem-see-also-modal-close:focus-visible { outline: 2px solid var(--sem-see-also-accent); outline-offset: 2px; }
+.sem-see-also-path { font-family: ui-monospace, monospace; font-size: .85em; }
+
+@media print {
+  .sem-see-also-modal, .sem-see-also-view { display: none !important; }
+  :is(sem-see-also, .sem-see-also)[data-sem-upgraded] > :where(:not([data-sem-chrome])) { display: inline !important; }
+}
+/* ── end component inventory / see-also ── */
+
+/* ── sem-tui — the terminal text view (render mode "tui") ──
+   The `<sem-tui>` wrapper (src/lit/sem-tui.ts) and the document driver
+   (src/lit/shared/render-mode.ts) switch sem-* elements to a terminal
+   text rendering: the authored children are hidden while the driver's
+   marker is present and a `<pre class="sem-tui">` text block (the pure
+   renderers in src/shared/text-render) shows instead. HIDE-RULE GATE:
+   `data-sem-tui-active` is written only by the script — with no script
+   the attribute never appears and every authored child renders as the
+   ordinary rich document (D12). The palette keys on the `data-theme`
+   attribute the component reflects (and authors may write directly), so
+   the frame styles a not-yet-upgraded lazy chunk too. */
+sem-tui {
+  display: block;
+  margin: 1.25rem 0;
+  padding: .75rem 1rem 1rem;
+  border: 1px solid var(--sem-tui-border, #334155);
+  border-radius: 10px;
+  background: var(--sem-tui-bg);
+  color: var(--sem-tui-fg);
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  font-size: .85em;
+  line-height: 1.45;
+  --sem-tui-bg: #0f172a;
+  --sem-tui-fg: #e2e8f0;
+  --sem-tui-accent: #38bdf8;
+  --sem-tui-dim: #94a3b8;
+  --sem-tui-border: #334155;
+}
+sem-tui[data-theme="dark"] {
+  --sem-tui-bg: #0f172a; --sem-tui-fg: #e2e8f0; --sem-tui-accent: #38bdf8;
+  --sem-tui-dim: #94a3b8; --sem-tui-border: #334155;
+}
+sem-tui[data-theme="light"] {
+  --sem-tui-bg: #f8fafc; --sem-tui-fg: #0f172a; --sem-tui-accent: #2563eb;
+  --sem-tui-dim: #64748b; --sem-tui-border: #cbd5e1;
+}
+sem-tui[data-theme="amber"] {
+  --sem-tui-bg: #1c1917; --sem-tui-fg: #fcd34d; --sem-tui-accent: #f59e0b;
+  --sem-tui-dim: #a8a29e; --sem-tui-border: #78716c;
+}
+sem-tui[data-theme="green"] {
+  --sem-tui-bg: #052e16; --sem-tui-fg: #bbf7d0; --sem-tui-accent: #4ade80;
+  --sem-tui-dim: #86efac; --sem-tui-border: #166534;
+}
+/* The mounted text view: one scrollable pre per rendered element. */
+pre.sem-tui {
+  display: block;
+  margin: 0;
+  padding: .6rem .7rem;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 2;
+  font: inherit;
+  color: inherit;
+  background: color-mix(in srgb, var(--sem-tui-bg) 70%, #000 12%);
+  border-radius: 6px;
+}
+/* Nested frames (sem-tui inside sem-tui) indent like the rich document. */
+sem-tui sem-tui { margin: .75rem 0; }
+/* The optional Rich/Terminal switch — a real button (the component wires
+   it; without JS no header renders at all). */
+.sem-tui-header { display: flex; justify-content: flex-end; margin: 0 0 .5rem; }
+.sem-tui-toggle {
+  all: unset;
+  font: inherit;
+  font-size: .75rem;
+  letter-spacing: .05em;
+  cursor: pointer;
+  padding: .15rem .7rem;
+  border: 1px solid var(--sem-tui-border);
+  border-radius: 999px;
+  color: var(--sem-tui-accent);
+  background: transparent;
+}
+.sem-tui-toggle:hover { border-color: var(--sem-tui-accent); }
+.sem-tui-toggle:focus-visible { outline: 2px solid var(--sem-tui-accent); outline-offset: 2px; }
+.sem-tui-toggle[aria-pressed="true"] {
+  background: var(--sem-tui-accent);
+  color: var(--sem-tui-bg);
+  border-color: var(--sem-tui-accent);
+}
+/* THE hide rule for the authored children of a tui-rendered element. The
+   !important mirrors the [hidden] rule above: theme display rules must
+   not out-shout the terminal view while it is mounted. */
+[data-sem-tui-active] > :not(pre.sem-tui) { display: none !important; }
+/* Reduced motion: the switch flips instantly (no transition exists; kept
+   explicit so a future animation inherits the opt-out). */
+@media (prefers-reduced-motion: reduce) {
+  .sem-tui-toggle { transition: none !important; animation: none !important; }
+}
+@media print {
+  sem-tui { border-color: #94a3b8; background: transparent; color: #000; }
+}
+/* ── end sem-tui ── */

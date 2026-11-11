@@ -92,7 +92,18 @@ class LazyNano implements App {
 
   constructor(options: NanoOptions) {
     this.#inner = import('./nano-app.js').then(
-      (mod) => new mod.NanoEditor(options),
+      (mod) => {
+        // Both failure modes map to the same `null` editor as a rejected
+        // import: (a) the chunk resolves but carries no usable `NanoEditor`
+        // export (e.g. built as IIFE — no exports), (b) the constructor
+        // itself throws. Either way start() reports the load failure and
+        // exits 1; nothing escapes as an unhandled rejection.
+        try {
+          return typeof mod.NanoEditor === 'function' ? new mod.NanoEditor(options) : null;
+        } catch {
+          return null;
+        }
+      },
       () => null,
     );
   }

@@ -91,7 +91,7 @@ export function main(argv = process.argv.slice(2), out = process.stdout, err = p
     }
     for (const d of r.diagnostics) {
       if (d.severity === 'error') errors++;
-      else warnings++;
+      else if (d.severity !== 'info') warnings++;
     }
   }
 

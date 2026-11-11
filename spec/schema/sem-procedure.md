@@ -53,7 +53,16 @@ Class-form alias (conventions Appendix A): `div.sem-procedure[data-kind]` › `d
   `role="listitem"`, ordinal via CSS counter, status glyph via
   `[status]` / `[data-status]` `::after` (✓ done · → current · ⛔ blocked · ○ todo).
 - `status="current"` step gets accent border; `blocked` muted-red.
-- Lit milestone may add click-to-toggle status; not yet.
+- Enhanced tier (components; attributes + one chrome line, nothing
+  authored is moved):
+  - `sem-procedure` prepends `.sem-procedure-meta` — `"<done> of <n>
+    done"` plus `" · <k> blocked"` when any — (`aria-live="polite"`,
+    extraction chrome) and sets `data-blocked` while any step is blocked;
+    both recompute when a step's `status`/`data-status` changes (sem-bind
+    hydration included) or steps arrive.
+  - `sem-step` (inside a procedure) stamps `data-ordinal` (1-based) and
+    `aria-current="step"` on the `current` step.
+- Click-to-toggle status: not yet.
 
 ## Events
 

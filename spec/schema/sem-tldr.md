@@ -42,13 +42,16 @@ already visible — the §8 extraction invariant holds in both tiers.
 
 ## Events
 
-None. The component has no behaviour and emits nothing.
+None — the component emits nothing.
 
 ## A11y contract
 
-The block is ordinary flow content — no roles, no focus stops, nothing
-hidden from assistive tech. The label is decorative CSS and deliberately
-not an heading; authors who need a heading place one inside the block.
+The block is ordinary flow content — no focus stops, nothing hidden from
+assistive tech. The visual label is decorative CSS and deliberately not a
+heading; authors who need a heading place one inside the block. Enhanced
+tier: after the parse the component labels the callout — `role="note"`
+and `aria-label="TL;DR"` (an authored `role` / `aria-label` wins) — so the
+label CSS draws is also announced. JS-off: no role (plain flow content).
 
 ## Machine contract
 

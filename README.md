@@ -1,3 +1,4 @@
+<!-- 〚📁:𓖞𓑢𔅌𓔚〛 README :: Repo-root entry: what SemText is, the one-bundle surface, install/build/test quickstart, spec and docs links. -->
 # npl-enhanced-content (SemText)
 
 **Repo:** https://github.com/noizu-labs-ml/npl-enhanced-content

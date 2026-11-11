@@ -68,12 +68,19 @@ beforeEach(() => {
 describe('parseDataDeepLink', () => {
   it('parses the full form and leaves foreign segments alone', () => {
     const link = parseDataDeepLink('#deploy/argocd&sem-audience=operator&dv=ops&view=ops&q=SELECT%20x&modal=1');
-    expect(link).toEqual({ dv: 'ops', bucket: null, view: 'ops', q: 'SELECT x', modal: true });
+    expect(link).toEqual({ dv: 'ops', bucket: null, view: 'ops', q: 'SELECT x', modal: true, ref: null });
   });
 
   it('parses the source-scoped form', () => {
     const link = parseDataDeepLink('#view=ops&bucket=Fleet%20status');
-    expect(link).toEqual({ dv: null, bucket: 'Fleet status', view: 'ops', q: null, modal: false });
+    expect(link).toEqual({ dv: null, bucket: 'Fleet status', view: 'ops', q: null, modal: false, ref: null });
+  });
+
+  it('parses ref alongside the dv segments (see-also deep link, 0.9.5)', () => {
+    const link = parseDataDeepLink('#dv=store&ref=sa-1');
+    expect(link).not.toBeNull();
+    expect(link!.dv).toBe('store');
+    expect(link!.ref).toBe('sa-1');
   });
 
   it('is null without any data-viz segment', () => {
@@ -91,19 +98,24 @@ describe('parseDataDeepLink', () => {
 
   it('reads broken percent-encoding literally and drops empty values', () => {
     const link = parseDataDeepLink('#dv=x&q=%zz&view=');
-    expect(link).toEqual({ dv: 'x', bucket: null, view: null, q: '%zz', modal: false });
+    expect(link).toEqual({ dv: 'x', bucket: null, view: null, q: '%zz', modal: false, ref: null });
   });
 });
 
 describe('serializeDataDeepLink', () => {
   it('round-trips and encodes', () => {
-    const link = { dv: 'ops', bucket: null, view: 'ops', q: 'SELECT name FROM "x"', modal: true };
+    const link = { dv: 'ops', bucket: null, view: 'ops', q: 'SELECT name FROM "x"', modal: true, ref: null };
     expect(serializeDataDeepLink(link)).toBe('dv=ops&view=ops&q=SELECT%20name%20FROM%20%22x%22&modal=1');
     expect(parseDataDeepLink(serializeDataDeepLink(link))).toEqual(link);
   });
 
+  it('round-trips ref', () => {
+    const out = serializeDataDeepLink({ dv: null, bucket: null, view: null, q: null, modal: null, ref: 'sa-2' });
+    expect(out).toBe('ref=sa-2'); // the '#' belongs to the location hash, not the grammar
+  });
+
   it('drops empty parts', () => {
-    expect(serializeDataDeepLink({ dv: null, bucket: 'f', view: null, q: null, modal: false })).toBe('bucket=f');
+    expect(serializeDataDeepLink({ dv: null, bucket: 'f', view: null, q: null, modal: false, ref: null })).toBe('bucket=f');
   });
 });
 

@@ -1,3 +1,4 @@
+// 〚📦:𔕱𓯩𓲞𓖤〛 extract :: Extraction entry point: structural/plain-text reduction contract (SemText.extractRecords / SemText.extractText); normative contract spec/extraction.md.
 /**
  * SemText — extraction entry point.
  *

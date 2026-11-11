@@ -6,163 +6,103 @@ implements it, `themes/` styles it, `web/` publishes it, `test/` proves it.
 ```
 semtext/
 ├── spec/                          # Canonical SemText format specifications (normative)
-│   ├── conventions.md               # Authoring conventions — source of truth
+│   ├── conventions.md               # Authoring conventions — source of truth (draft v0.7)
 │   ├── conventions.html             # The same spec rendered in the format it specifies
 │   ├── extraction.md                # DOM → records → annotated text contract
-│   └── schema/                      # Per-element semantic contracts (BDD source of truth)
-│       ├── sem-audiences.md
-│       ├── sem-chronology.md
-│       ├── sem-code.md
-│       ├── sem-details.md
-│       ├── sem-facts.md
-│       ├── sem-md.md
-│       ├── sem-note.md
-│       ├── sem-procedure.md
-│       ├── sem-progress.md
-│       ├── sem-properties.md
-│       ├── sem-reader.md
-│       ├── sem-references.md
-│       ├── sem-reveal.md
-│       ├── sem-source.md
-│       ├── sem-table.md
-│       └── sem-views.md
-├── src/
-│   ├── index.ts                     # Lit-tier entry → dist/semtext.js
-│   ├── lit/                         # Lit 3 light-DOM elements + SemElement base
-│   │   ├── base.ts
-│   │   ├── sem-code.ts                # thin wrappers over src/reading/* (R/W1)
-│   │   ├── sem-details.ts
-│   │   ├── sem-facts.ts
-│   │   ├── sem-md.ts                  # thin wrapper over src/md/* (R/W2.2)
-│   │   ├── sem-note.ts
-│   │   ├── sem-properties.ts
-│   │   ├── sem-reader.ts              # thin wrappers over src/reading/* (R/W2)
-│   │   ├── sem-references.ts
-│   │   ├── sem-source.ts              # rendered/source wrapper (W2.1)
-│   │   └── sem-table.ts
-│   ├── vanilla/                     # Vanilla core handlers — NO Lit dependency → bundled into dist/semtext.js (renamed from fallback/ 0.9.0)
-│   │   ├── index.ts                   # handler registry + enhance() (core runs FIRST in the bundle)
-│   │   ├── audience.ts                # profile-gated visibility (native `hidden`)
-│   │   ├── details.ts
-│   │   ├── facts.ts
-│   │   ├── note.ts
-│   │   ├── progress.ts
-│   │   ├── properties.ts
-│   │   ├── reveal.ts
-│   │   ├── source.ts                  # sem-source markup snapshot (runs FIRST)
-│   │   ├── target.ts                  # deep-link resolver + print disclosure (runs last)
-│   │   └── views.ts
-│   ├── reading/                     # Prose-reading handlers — NO Lit → bundled into dist/semtext.js (R/W1+W2)
-│   │   ├── index.ts                   # document scan; skips [data-sem-upgraded]; reader runs last
-│   │   ├── code.ts                    # sem-code chrome, marks, copy, wrap
-│   │   ├── glossary.ts                # sem-properties view-as=glossary previews
-│   │   ├── reader.ts                  # sem-reader outline/progress/focus/type/colour/print/audience (R/W2)
-│   │   ├── references.ts              # citation previews, backlinks
-│   │   ├── source.ts                  # sem-source chrome + sem-code fence (W2.1)
-│   │   └── table.ts                   # sem-table sort/filter, source-index stamp (R/W2)
-│   ├── md/                          # Markdown renderer — NO Lit → bundled into dist/semtext.js (R/W2.2)
-│   │   ├── index.ts                   # document scan; shares sem-code's fence chrome
-│   │   ├── element.ts                 # sem-md chrome, rendered body, raw fence, toggle, copy
-│   │   └── parse.ts                   # hand-written GFM subset → DOM (createElement/textContent only)
-│   ├── extract/                     # Record extraction → exported from dist/semtext.js
-│   │   ├── index.ts
-│   │   └── records.ts
-│   └── shared/                      # Tier-agnostic helpers used by both tiers
-│       ├── audience.ts
-│       ├── attr.ts                    # param(): data-<name> then bare <name>
-│       ├── clipboard.ts               # copyText()/canCopy() shared by sem-code and sem-md
-│       ├── marks.ts                   # sem-code `mark` grammar (render + extraction)
-│       ├── mdsource.ts                # the one sem-md normalisation rule (render + extraction)
-│       ├── popover.ts                 # one preview surface per document
-│       ├── rng.ts
-│       ├── state.ts
-│       ├── summary.ts                 # the one derived-summary rule (render + extraction)
-│       └── tokens.ts
-├── themes/                          # Theme CSS — top-level on purpose (see note below)
-│   ├── _vocabulary.css
-│   └── minimal-tech-light.css
+│   ├── data-visualizer.md           # sem-data-* visualizer family spec
+│   └── schema/                      # Per-element machine contracts (BDD source of truth)
+│       ├── semtext.schema.json        # JSON schema the validator READS (no parallel rules)
+│       ├── sem-*.md (43)              # sem-* element contracts
+│       ├── npl/ (21)                  # npl-* element contracts
+│       ├── agent-kit/ (15)            # agent-kit-* element contracts
+│       └── semext/ (9)                # semext-* element contracts
+├── src/                           # Implementation → dist/ → [layout/src.md](layout/src.md)
+│   ├── index.ts                     # Core bundle entry (dist/semtext.js, global SemText)
+│   ├── npl.ts · semext.ts · agent-kit.ts · js-shell.ts   # namespace/standalone bundle entries
+│   └── (13 subdomains: lit, terminal, editor, vanilla, reading, md, extract, shared, data, lazy, tools, validate, shell, agent, browser)
+├── themes/                          # Theme CSS — top-level on purpose (subpath export + CDN asset)
+│   ├── _vocabulary.css                # base vocabulary styles (→ dist/semtext.css)
+│   └── minimal-tech-light.css         # one shipped theme (--sem-* tokens)
+├── bin/                             # Node CLIs (package.json bin)
+│   ├── semtext.mjs                   # user CLI: pipes first, terminal browser second
+│   ├── semtext-validate.mjs          # schema-driven document validator
+│   ├── semtext-agent.mjs             # agent toolkit CLI (also importable: semtext/agent)
+│   └── semtext-refresh.mjs           # spec/element refresh helper (npm run refresh)
 ├── web/
-│   ├── demo/                        # Showcase + reference documents (marker sources)
+│   ├── demo/                        # Showcase + reference documents (marker sources; cypress fixtures)
 │   │   ├── index.html                 # v0.4 class-based baseline
-│   │   ├── reading.html               # R/W1+W2(+W2.2 sem-md) reading elements, class form
-│   │   ├── reading-lit.html           # same document, element form (+ Lit bundle)
-│   │   ├── md-only.html               # sem-md with ONLY the Markdown bundle (no core, no reading) — root stays unmarked
-│   │   └── standalone-lit.html        # Lit-tier upgrade page
+│   │   ├── reading.html · reading-lit.html · md-only.html · standalone-lit.html
+│   │   ├── sem-bind.html · semext.html · agent-kit.html · editor.html
+│   │   ├── shell.html · shell-storage.html · containers.html · workflows-trees.html · …
+│   │   └── data/                      # bind/live-data fixtures (JSON/YAML/CSV)
 │   └── site/
 │       └── index.html                 # semtext.dev marketing page (PLACEHOLDER)
-├── test/                            # Cypress e2e — 23 specs
-│   ├── e2e/
-│   │   ├── deep-links.cy.js
-│   │   ├── extraction-reading.cy.js
-│   │   ├── extraction.cy.js
-│   │   ├── nojs-artifact.cy.js
-│   │   ├── print-and-motion.cy.js
-│   │   ├── sem-audiences.cy.js
-│   │   ├── sem-chronology.cy.js
-│   │   ├── sem-code.cy.js
-│   │   ├── sem-details.cy.js
-│   │   ├── sem-facts.cy.js
-│   │   ├── sem-glossary.cy.js
-│   │   ├── sem-md.cy.js
-│   │   ├── sem-note.cy.js
-│   │   ├── sem-procedure.cy.js
-│   │   ├── sem-progress.cy.js
-│   │   ├── sem-properties.cy.js
-│   │   ├── sem-reader.cy.js
-│   │   ├── sem-references.cy.js
-│   │   ├── sem-reveal.cy.js
-│   │   ├── sem-source.cy.js
-│   │   ├── sem-table.cy.js
-│   │   ├── sem-views.cy.js
-│   │   └── standalone-lit.cy.js
+├── test/                            # Cypress e2e (46 specs) + vitest unit tier
+│   ├── e2e/*.cy.js                   # per-element BDD, runs against BUILT dist/demo/
 │   └── support/e2e.js
-├── scripts/
-│   ├── build.mjs                    # Five IIFE artifacts + size budgets
-│   └── build-standalone.mjs         # Marker expansion → dist/demo/ and dist/site/
-├── docs/                            # Maintained project docs (+ .summary.md pairs)
-│   ├── PROJ-ARCH.md
-│   ├── PROJ-LAYOUT.md               # This file
-│   └── PROJ-SCHEMA.md
+├── scripts/                         # The real build (vite.config.ts is dev/preview only)
+│   ├── build.mjs                      # bundles + size budgets (strict fails CI)
+│   ├── build-standalone.mjs           # marker expansion → dist/demo/, dist/site/
+│   ├── build-extension.mjs            # browser-extension assets
+│   ├── build-elements-index.mjs       # → elements.json (generated element index)
+│   ├── build-prompts.mjs              # agent prompt artifacts
+│   ├── gen-conventions-html.mjs       # conventions.md → conventions.html (checked in CI)
+│   └── stamp-version.mjs · cypress-shard.mjs · standalone-lib.mjs
+├── extension/                       # Browser extension (manifest v3: background, content, viewer jail)
+├── viewer/                          # Jail-viewer harness (iframe jail boot/strip + samples)
+├── poc/wasm/                        # WASM evaluator proof-of-concept (terminal shell path)
+├── helm/semtext/                    # Helm chart (deployment/service/ingress/tls) — CI bumps tags
+├── docker/ · Dockerfile · nginx.conf # Image build + static serving config
+├── project-management/              # Personas, user stories, PM artifacts
+├── docs/                            # Maintained docs (+ .summary.md pairs)
+│   ├── PROJ-ARCH.md · PROJ-LAYOUT.md · PROJ-SCHEMA.md · THREAT-MODEL.md
+│   ├── arch/ · layout/ · threats/     # per-doc section files
+│   ├── authoring-guide.md · integration-quickstart.md · TEST-HEALTH.md
+│   ├── editor/EDITOR.md · terminal/   # component sub-docs
+├── elements.json                    # GENERATED element index (build:elements-index)
+├── .github/workflows/               # ci.yml (unit→test→build-push→bump-chart→publish-cdn) · nightly.yml
 ├── cypress.config.js                # Spec pattern test/e2e/, support test/support/
 ├── vite.config.ts                   # Dev/preview only — the build lives in scripts/
 ├── tsconfig.json
-├── package.json                     # Subpath exports: ./lit ./lazy ./npl ./npl-lazy ./agent ./themes/*
-├── PRD.md
-├── ROADMAP.md
+├── package.json                     # Subpath exports + bin entries; no `.` export (ROADMAP D9)
+├── PRD.md · ROADMAP.md · CHANGELOG.md · CONTRIBUTING.md
 ├── CLAUDE.md · AGENTS.md · AGENT.md
-└── README.md                        # (absent — PRD.md serves as entry point)
+└── README.md                        # Repo entry point
 ```
 
 ## Directory Notes
 
 | Directory | Purpose |
 |-----------|---------|
-| `spec/` | Tier-0 normative documents. This repo is spec-first: schema change precedes conventions change precedes code precedes e2e. |
-| `src/lit/` | Lit 3 elements, light DOM so content stays searchable and extractable. Bundled with Lit into `dist/semtext.js`. |
-| `src/vanilla/` | The vanilla core handlers (renamed from `src/fallback/` in 0.9.0 — the standalone fallback tier is retired, the handlers are core). It must run in a document that never loads Lit, so it may not import from `src/lit/` — the separation is load-bearing, not stylistic. |
-| `src/reading/` | Second vanilla tier (R/W1+W2): prose-reading behaviours and reading chrome (reader, table). Same Lit-free rules as `vanilla/`; the Lit wrappers in `src/lit/` import its per-element enhance functions so there is one behaviour implementation. |
-| `src/md/` | Third vanilla tier (R/W2.2): the `sem-md` Markdown renderer. Same rules as `vanilla/`; the Lit wrapper imports its enhance function; the raw fence's copy / wrap chrome is `sem-code`'s, borrowed from the reading bundle's global at runtime rather than bundled a second time. |
+| `spec/` | Tier-0 normative documents. Spec-first: schema change precedes conventions change precedes code precedes e2e. |
+| `src/lit/` | Lit 3 elements, light DOM so content stays searchable and extractable. Bundled into `dist/semtext.js`; also the `npl/` + `agent-kit/` namespace element trees. |
+| `src/vanilla/` | Core vanilla handlers (renamed from `src/fallback/` 0.9.0). Must run in a document that never loads Lit — the no-`src/lit/`-imports rule is load-bearing. |
+| `src/reading/` · `src/md/` | Prose-reading and Markdown-renderer tiers, same Lit-free rules. |
+| `src/terminal/` | The interactive terminal (js-shell): evaluator, plugins, TUI — ships as its own uncapped bundle. |
+| `src/editor/` | The SemText editor surface (see `docs/editor/EDITOR.md`). |
+| `src/data/` | Live-data plumbing: bind declarations, deeplinks, fetch/hydrate runtime. |
+| `src/validate/` | Schema-driven validator core; every rule reads `spec/schema/semtext.schema.json`. |
 | `src/extract/` | DOM → records → annotated text, per `spec/extraction.md`. |
-| `src/shared/` | Helpers imported by both tiers; must stay Lit-free for the same reason as `vanilla/`. |
-| `themes/` | Deliberately top-level rather than under `web/`: theme CSS is a package subpath export (`semtext/themes/*`) and a CDN asset on cdn.semtext.dev, consumed independently of the marketing site. |
-| `web/demo/` | Double duty by design — showcase pages *and* the cypress fixture source. The suite runs against the BUILT copies in `dist/demo/`, which is the only arrangement where a green suite proves the shipped file works. |
-| `web/site/` | Marketing page for semtext.dev. Currently a placeholder; the design pass is a separate task. |
-| `test/` | Cypress e2e against `dist/demo/`, mirroring the per-element BDD in `spec/schema/`. |
-| `scripts/` | The real build. `vite.config.ts` covers dev/preview only. |
+| `src/shared/` | Tier-agnostic helpers; must stay Lit-free. |
+| `themes/` | Package subpath export (`semtext/themes/*`) + CDN asset on cdn.semtext.dev — not site-owned. |
+| `web/demo/` | Showcase pages AND cypress fixture source; suite runs against BUILT `dist/demo/`, so green proves the shipped file works. |
+| `extension/` · `viewer/` | Browser-extension packaging and the jail-viewer harness it shares. |
+| `helm/` · `docker/` · `nginx.conf` | Deploy path: image serves `dist/{site,demo,spec,themes}` + bundles via nginx; ArgoCD syncs the chart CI bumps. |
 
 ## Build Outputs (gitignored, not documented above)
 
-- `dist/semtext.js` — the one IIFE classic script (Lit elements + vanilla handlers + extraction; global `SemText`); `dist/semtext.css` — the built vocabulary; `dist/themes/semtext-theme-<name>.css` — the themes
-- `dist/demo/<name>.html` and `dist/demo/<name>.nojs.html` — inlined single-file documents
-- `dist/site/index.html` — the marketing page
-- `test/screenshots/` · `test/videos/` — cypress artifacts, generated at test time
-- `node_modules/`
+- `dist/semtext.js` — the one core IIFE (global `SemText`); `dist/npl.js`, `dist/semext.js`, `dist/agent-kit.js` (namespace bundles); `dist/semtext-js-shell.js`, `dist/editor` bundles; `dist/semtext-agent.js` (browser agent core); `dist/*-lazy.js` loaders + code-split chunks
+- `dist/semtext.css` + `dist/themes/semtext-theme-<name>.css`
+- `dist/demo/<name>.html` (and `.nojs.html`) · `dist/site/index.html` · `dist/spec/`
+- `test/screenshots/` · `test/videos/` — cypress artifacts · `node_modules/`
 
 ## Commands
 
 | Command | Action |
 |---------|--------|
-| `npm run build` | `scripts/build.mjs` then `scripts/build-standalone.mjs` → `dist/` |
+| `npm run build` | `build.mjs` + `build-standalone.mjs` + `build-extension.mjs` + `stamp-version.mjs` → `dist/` |
 | `npm run build:strict` | Same, but a size-budget overrun fails the build |
-| `npm test` | Cypress e2e run (requires `npm run serve` on port 4173) |
-| `npm run serve` | Vite preview of `dist/` on port 4173 |
+| `npm run test:unit` | vitest unit tier |
+| `npm test` | Cypress e2e (run AFTER `npm run build` — tests run against `dist/demo/`) |
+| `npm run validate` | Vocabulary gate over `web/site/**` + `spec/*.html` |
+| `npm run serve` | Vite preview of `dist/` on :4173 |

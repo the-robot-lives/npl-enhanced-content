@@ -127,7 +127,25 @@ const targets = [
     // the single bundle; measured 153.5 raw / 47.7 gzipped on main 9863d23
     // — the first train to cross the 152 line, failing --strict-budget on
     // main CI). Recorded in ROADMAP "Size budgets".
-    budgetKb: 154,
+    // 154 → 165 KB (2026-10-18, sem-bind port from semtext.dev #182/#184:
+    // the live-data runtime + the hydrated sem-progress / sem-procedure
+    // intake joined the single bundle; measured 164.5 raw / 51.2 gzipped).
+    // Recorded in ROADMAP "Size budgets".
+    // 165 → 172 KB (2026-10-21, 0.9.5: the shared modal shell factored out
+    // of the data-visualizer modal + sem-component / sem-see-also (the
+    // component-inventory pair, element 9 of the component-eval platform)
+    // joined the single bundle; measured 171.2 raw / 52.9 gzipped).
+    // Recorded in ROADMAP "Size budgets".
+    // 172 → 173 KB (2026-10-21, same train: the Oct-18 baseline CI fixes
+    // (#87 — deep-link settle + audience apply-time derivation) merged in
+    // via update-branch added ~0.9 KB on top of the feature's 171.2;
+    // measured 172.1 raw / 53.2 gzipped — 0.1 over the 172 line, failing
+    // --strict-budget on the PR). Recorded in ROADMAP "Size budgets".
+    // 173 → 175 KB (2026-11-11, 0.9.6: sem-reference graduates from the
+    // claim stubs — auto-id + footnote chrome — and sem-procedure /
+    // sem-step / sem-tldr / sem-summary grow real renders; measured
+    // 174.8 raw / 54.0 gzipped). Recorded in ROADMAP "Size budgets".
+    budgetKb: 175,
     required: true,
   },
   {
@@ -215,14 +233,23 @@ const targets = [
     rollupExternal: [/nano-app\.js$/],
   },
   {
-    // The nano editor body as its own IIFE chunk, loaded on first `nano`
-    // invocation (see the shell target's rollupExternal note). The file
-    // name MUST stay `nano-app.js` — the stub's relative specifier resolves
-    // against it with zero runtime changes.
+    // The nano editor body as its own ES module chunk, loaded on first
+    // `nano` invocation (see the shell target's rollupExternal note). ES is
+    // required — not IIFE: the stub's runtime `import('./nano-app.js')`
+    // reads the chunk's `NanoEditor` export, and an IIFE chunk has no
+    // exports (the constructor call would throw inside the import's
+    // success handler and nano could never start from the built bundle —
+    // fixed 2026-11-11). The file name MUST stay `nano-app.js` — the
+    // stub's relative specifier resolves against it with zero runtime
+    // changes.
     name: 'nano-app.js',
     entry: 'src/terminal/apps/nano/nano-app.ts',
     global: 'SemTextNano',
-    budgetKb: 24,
+    formats: ['es'],
+    // 24 → 32 KB (2026-11-11, ES-module fix): the ES chunk keeps every
+    // export (no IIFE unused-export tree-shaking) — measured 27.3 raw /
+    // 8.0 gzipped against the old IIFE's 17.9. Hard budget retained.
+    budgetKb: 32,
     required: true,
   },
   {
