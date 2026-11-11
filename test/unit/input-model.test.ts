@@ -23,7 +23,7 @@
 // Feature: copySelection
 //   Scenario: extracts through the host's line source and copies
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { InputModel, type InputHost } from '../../src/terminal/input/input-model.js';
 import { InputSpecError } from '../../src/terminal/input/keys.js';
 import type { CellMetrics, KeyEvent, Mods, MouseEventInfo } from '../../src/terminal/input/types.js';
@@ -38,6 +38,8 @@ function fakeHost(over: Partial<InputHost> = {}): InputHost & {
   menus: Array<{ x: number; y: number } | undefined>;
   raw: boolean;
   alt: boolean;
+  exits: number[];
+  claim: (k: KeyEvent) => boolean;
 } {
   const host = {
     keys: [] as KeyEvent[],
@@ -48,8 +50,13 @@ function fakeHost(over: Partial<InputHost> = {}): InputHost & {
     menus: [] as Array<{ x: number; y: number } | undefined>,
     raw: false,
     alt: false,
-    dispatchKey(ev: KeyEvent): void {
+    exits: [] as number[],
+    // Default claims everything (the historical blanket-consume); Tab tests
+    // override this to model the discipline's unclaimed-Tab promise.
+    claim: (_k: KeyEvent): boolean => true,
+    dispatchKey(ev: KeyEvent): boolean {
       host.keys.push(ev);
+      return host.claim(ev);
     },
     isRawMode: () => host.raw,
     isAltScreen: () => host.alt,
@@ -104,6 +111,79 @@ describe('key routing', () => {
     // Plain F10, and every other key, still dispatches.
     model.handleKey(ev('F10'));
     expect(host.keys.map((k) => k.key)).toEqual(['F10']);
+  });
+
+  it('returns the dispatch verdict — an unclaimed Tab escapes, everything else claims', () => {
+    const host = fakeHost();
+    host.claim = (k) => !(k.key === 'Tab'); // the discipline's promise: Shift+Tab / empty-line Tab stay unclaimed
+    const model = new InputModel(host);
+    expect(model.handleKey(ev('Tab'))).toBe(false);
+    expect(model.handleKey(ev('Tab', { shift: true }))).toBe(false);
+    expect(model.handleKey(ev('a'))).toBe(true);
+    expect(model.handleKey(ev('F6'))).toBe(true); // prompt mode: dispatches, claims
+  });
+
+  it('F6 while an app is live exits through the host and never reaches the app', () => {
+    const host = fakeHost({ raw: true, exitApp: () => host.exits.push(1) });
+    const model = new InputModel(host);
+    expect(model.handleKey(ev('F6'))).toBe(true);
+    expect(host.exits).toHaveLength(1);
+    expect(host.keys).toEqual([]); // the app never sees it
+    // Prompt mode: F6 keeps its browser meaning (focus panes) — plain dispatch.
+    host.raw = false;
+    expect(model.handleKey(ev('F6'))).toBe(true);
+    expect(host.keys.map((k) => k.key)).toEqual(['F6']);
+    expect(host.exits).toHaveLength(1);
+  });
+
+  it('the hidden input consumes everything but an unclaimed Tab, and is not a tab stop', () => {
+    const created: Array<Record<string, any>> = [];
+    const makeEl = (): Record<string, any> => {
+      const el: Record<string, any> = {
+        style: {},
+        value: '',
+        tabIndex: 0,
+        listeners: {} as Record<string, (e: unknown) => void>,
+        setAttribute: () => {},
+        addEventListener: (t: string, fn: (e: unknown) => void) => {
+          el.listeners[t] = fn;
+        },
+        removeEventListener: () => {},
+        appendChild: () => {},
+        focus: () => {},
+        remove: () => {},
+      };
+      created.push(el);
+      return el;
+    };
+    const host = fakeHost();
+    host.claim = (k) => !(k.key === 'Tab');
+    const model = new InputModel(host);
+    const surface = makeEl();
+    surface.ownerDocument = {
+      createElement: makeEl,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    };
+    model.attach(surface as unknown as HTMLElement);
+    const hidden = created[1]; // [0] is the surface; [1] the hidden input
+    expect(hidden.tabIndex).toBe(-1); // WCAG 2.1.2: never an invisible tab stop
+    let defaults = 0;
+    const fire = (key: string, shift = false): void =>
+      hidden.listeners.keydown({
+        key,
+        shiftKey: shift,
+        ctrlKey: false,
+        altKey: false,
+        metaKey: false,
+        preventDefault: () => {
+          defaults += 1;
+        },
+      });
+    fire('Tab'); // empty prompt line — unclaimed, escapes
+    fire('Tab', true); // Shift+Tab — unclaimed, escapes
+    fire('a'); // claimed — default prevented
+    expect(defaults).toBe(1);
   });
 });
 
@@ -248,5 +328,30 @@ describe('copySelection', () => {
     });
     expect(ok).toBe(true);
     expect(written).toEqual(['line-100'.slice(0, 5)]);
+  });
+});
+
+describe('wheel passthrough + keyboard copy', () => {
+  it('handleWheel reports not-consumed at a scroll limit so the page can scroll', () => {
+    const host = fakeHost({ onWheelScroll: () => false });
+    const model = new InputModel(host);
+    expect(model.handleWheel(0, 40, noMods)).toBe(false);
+    const app = fakeHost({ onWheelScroll: () => false });
+    app.alt = true;
+    expect(new InputModel(app).handleWheel(0, 40, noMods)).toBe(true); // app surface always consumes
+  });
+
+  it('Ctrl+Shift+C always copies; Ctrl/Cmd+C copies only with a selection', () => {
+    const model = new InputModel(fakeHost());
+    const copy = vi.spyOn(model, 'copySelection').mockResolvedValue(true);
+    expect(model.handleKey(ev('C', { ctrl: true, shift: true }))).toBe(true);
+    expect(copy).toHaveBeenCalledTimes(1);
+    model.handleKey(ev('c', { ctrl: true })); // no selection: stays the interrupt
+    expect(copy).toHaveBeenCalledTimes(1);
+    model.handleMouseDown(0, 0, 0, noMods);
+    model.handleMouseMove(40, 0, noMods);
+    expect(model.handleKey(ev('c', { meta: true }))).toBe(true);
+    model.handleKey(ev('c', { ctrl: true }));
+    expect(copy).toHaveBeenCalledTimes(3);
   });
 });

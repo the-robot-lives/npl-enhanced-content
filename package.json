@@ -36,6 +36,7 @@
     "test": "cypress run --e2e",
     "test:open": "cypress open --e2e",
     "test:unit": "vitest run",
+    "test:fast": "vitest related --run --coverage.enabled=false",
     "test:unit:cover": "vitest run --coverage",
     "test:extension": "node test/e2e/extension-raw-banner.mjs",
     "//validate": "web/demo is excluded: demo pages are frozen historical examples, excluded from vocabulary gating 2026-10-18 (web/ currently holds only demo/ + site/, so site/ + spec/ stay fully gated)",

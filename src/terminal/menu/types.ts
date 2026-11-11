@@ -72,4 +72,10 @@ export interface MenuHost {
   armBrowserPassthrough(): void;
   /** The element surface: aria-haspopup carrier + focus return target. */
   surface(): HTMLElement;
+  /**
+   * Where focus returns when the menu closes — a focusable element inside
+   * the shell (prompt input, hidden canvas input, or the host with a
+   * tabindex fallback). Optional: absent = the surface itself.
+   */
+  focusReturnTarget?(): HTMLElement;
 }

@@ -23,7 +23,7 @@
 //     the view switches to text and back; Escape closes
 
 describe('sem-shell', () => {
-  const prompt = '#sem-shell-input';
+  const prompt = '.sem-shell-input'; // ids are per-instance now (sem-shell-input-<n>); select by class
   const log = '[role="log"]';
 
   const run = (command) => {

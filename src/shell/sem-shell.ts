@@ -112,7 +112,9 @@ export class SemShell extends SemTerminal {
     super.connectedCallback();
     if (this.#shellBooted) return;
     this.#shellBooted = true;
-    this.setAttribute('aria-label', 'SemText shell');
+    // The author's aria-label (e.g. per-tab demo names on the landing)
+    // wins; the default only fills the gap (§2.2: never overwrite it).
+    this.applyAccessibleDefaults();
     // Plugin mounting happens in configureSessionCore — EVERY session core
     // (each tab) needs the bundled command set, and the base class hooks
     // session 1 during its own connectedCallback above.
@@ -169,6 +171,12 @@ export class SemShell extends SemTerminal {
       this.#emitBootHint();
     }
     emit(lines);
+  }
+
+  /** The shell's default accessible name — only when the author gave none. */
+  protected override applyAccessibleDefaults(): void {
+    if (!this.hasAttribute('aria-label')) this.setAttribute('aria-label', 'SemText shell');
+    if (!this.hasAttribute('role')) this.setAttribute('role', 'region');
   }
 
   /**
@@ -344,10 +352,24 @@ export class SemShell extends SemTerminal {
   #autoRunningChanged(running: boolean): void {
     if (running === this.#autoRunning) return;
     this.#autoRunning = running;
+    this.demoRunning = running; // drives the visible stop control (§2.5)
     const input = this.#shellInput();
     if (input === null) return;
     input.readOnly = running;
-    if (!running) input.focus();
+    // Never yank focus back when the demo ends off-focus (§2.5).
+    if (!running) this.refocusIfEngaged();
+  }
+
+  /** The visible "stop demo" control: stop the autostart, else boot playback. */
+  override stopDemo(): void {
+    if (this.#autostart !== null) {
+      this.#autostart.dispose();
+      this.#autostart = null;
+      this.#autoRunningChanged(false);
+      this.appendLines([{ kind: 'comment', text: 'demo stopped — the terminal is yours.' }]);
+      return;
+    }
+    super.stopDemo();
   }
 
   /**

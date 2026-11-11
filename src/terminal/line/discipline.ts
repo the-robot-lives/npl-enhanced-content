@@ -34,12 +34,17 @@ export interface CookedHost {
   clearViewport(): void;
 }
 
+/** Most history entries kept (and persisted). */
+const HISTORY_CAP = 500;
+
 export class CookedLine implements LineDiscipline {
   readonly mode = 'cooked' as const;
 
   #buffer = '';
   #caret = 0;
   readonly #history: string[] = [];
+  /** Called after history changes (persistence hook; the element sets it). */
+  onHistory: ((history: readonly string[]) => void) | null = null;
   #historyIndex = -1;
   #draft = '';
 
@@ -52,6 +57,17 @@ export class CookedLine implements LineDiscipline {
     /** The shell callback: a line was submitted (Enter) — run it. */
     private readonly onLine: (line: string) => void = () => {},
   ) {}
+
+  /** Replace history (restore from storage); newest last, capped. */
+  loadHistory(entries: readonly string[]): void {
+    this.#history.length = 0;
+    this.#history.push(...entries.filter((e) => typeof e === 'string').slice(-HISTORY_CAP));
+    this.#historyIndex = -1;
+  }
+
+  get history(): readonly string[] {
+    return this.#history;
+  }
 
   get buffer(): string {
     return this.#buffer;
@@ -77,6 +93,8 @@ export class CookedLine implements LineDiscipline {
   onSubmit(line: string): void {
     if (line.trim() !== '') {
       this.#history.push(line);
+      if (this.#history.length > HISTORY_CAP) this.#history.splice(0, this.#history.length - HISTORY_CAP);
+      this.onHistory?.(this.#history);
       this.#draft = '';
       this.#historyIndex = -1;
     }
@@ -137,6 +155,7 @@ export class CookedLine implements LineDiscipline {
         break;
       case 'Tab':
         if (ev.shift) return false; // Shift+Tab keeps its focus meaning
+        if (this.#buffer === '') return false; // empty line: Tab keeps its focus meaning too (WCAG 2.1.2)
         this.#complete();
         return true;
       default:
@@ -232,10 +251,14 @@ export class CookedLine implements LineDiscipline {
 
   /** Tab completion — v1 `#complete`: extend, or list capped at 12. */
   #complete(): void {
-    if (this.#buffer === '') return; // empty line: Tab keeps its focus meaning
-    const outcome = completeLine(this.#buffer, this.core());
+    if (this.#buffer === '') return; // unreachable from key(): empty-line Tab never gets here
+    // Complete the text BEFORE the caret; what follows the caret stays put and
+    // the caret lands right after the completion (not forced to end of line).
+    const head = this.#buffer.slice(0, this.#caret);
+    const tail = this.#buffer.slice(this.#caret);
+    const outcome = completeLine(head, this.core());
     if (outcome.kind === 'none') return;
-    this.#buffer = outcome.line;
+    this.#buffer = outcome.line + tail;
     this.#caret = outcome.line.length;
     if (outcome.kind === 'list') {
       // 12 fits the theme gallery (`render-card --themes`) on one line.

@@ -140,3 +140,26 @@ describe('list vs extend', () => {
     }
   });
 });
+
+describe('throwing plugin completer', () => {
+  it('does not break Tab', () => {
+    const result = core.mountPlugin({
+      name: 'boom',
+      version: '1.0.0',
+      commands: [
+        {
+          name: 'boom',
+          usage: 'boom',
+          run: () => {},
+          complete: () => {
+            throw new Error('plugin bug');
+          },
+        },
+      ],
+      files: [],
+    });
+    expect(result.ok).toBe(true);
+    expect(() => completeLine('boom x', core)).not.toThrow();
+    expect(completeLine('boom x', core).kind).toBe('none');
+  });
+});

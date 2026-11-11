@@ -77,23 +77,26 @@ Never build to `dist/` (shared) — private builds only. No `npm install`;
 
 ## Load semantics (what `createLazyPackage` gives you)
 
-- **Boot-parallel preload.** The stub kicks
+- **First-use load, awaited mid-line.** Nothing imports at boot. The
+  first non-help invocation of one of the package's commands kicks
   `import(/* @vite-ignore */ new URL('semtext-pkg-<pkg>.js', import.meta.url).href)`
-  at module-eval (shell boot). `execLine`/`run` are synchronous, so a
-  load-on-first-use would deterministically fail the first pipeline stage
-  — the same reasoning as the find/sed stub (and why bytes-lazy ≠
-  fetch-lazy: chunks load in parallel, off the critical path).
+  — once per package, concurrent first calls share one in-flight promise —
+  and `run` awaits it before executing the real spec. `CommandSpec.run`
+  may return a Promise and the shell awaits it before the next pipeline
+  stage reads stdin (CORE-V2 shell-async), so a cold pipeline like
+  `echo '{}' | jq .` resolves in one `execLine`. Superseded names do not
+  wait (manifest.ts answers the base immediately and kicks the same load
+  in the background).
 - **Delegation is read-through.** Once the chunk resolves, `run`,
   `complete` and `app` delegate to the real specs; nothing mutates after
   registration. `app` claims the screen only when the code is resident
   (CORE-V2 §6.4); otherwise `run` reports.
-- **A first invocation that beats the fetch** gets
-  `<cmd>: chunk still loading — try again` (exit 1) — a hint, never a
-  hang. A failed fetch gets
-  `<cmd>: package chunk failed to load (semtext-pkg-<pkg>.js)`.
+- **A failed fetch** gets
+  `<cmd>: package chunk failed to load (semtext-pkg-<pkg>.js)` (exit 1) —
+  the load is not retried; the error is sticky.
 - **`--help` / `-h` before the chunk** is answered from the stub (usage
-  line, exit 0). Once resident, the real command answers `--help` itself,
-  so chunk-side help can be richer.
+  line, exit 0) and kicks no load. Once resident, the real command
+  answers `--help` itself, so chunk-side help can be richer.
 - **`man <cmd>`** prefers the chunk's page, falls back to the stub's short
   page, then to the base man ("No manual entry"). Works with the chunk
   absent entirely. Completion of command names is free (the registry lists
@@ -122,10 +125,12 @@ const pkg = createLazyPackage(stub, () => import('./index.js')); // source body
 await pkg.ensure();
 ```
 
-Prove per package: help-without-load (never-resolving loader → `--help`
-still answers), retry hint (run before load → one line, no hang), load
-failure message, post-load delegation (output + completion + man page
-swap), and the command body itself (happy path, flags, pipes, errors,
-empty input, unicode, CRLF). End-to-end through a real build belongs in
+Prove per package: help-without-load (`--help` answers and kicks no
+load), first-use kick (no import before a command is invoked; concurrent
+first calls share one load), cold-line resolution (one awaited
+`execLine`, no retry text), load failure message, post-load delegation
+(output + completion + man page swap), and the command body itself
+(happy path, flags, pipes, errors, empty input, unicode, CRLF).
+End-to-end through a real build belongs in
 the lane report: build privately, assert the chunk exists next to the
 bundle, report bytes.

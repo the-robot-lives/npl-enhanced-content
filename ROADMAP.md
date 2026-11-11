@@ -66,7 +66,7 @@ contract). W6 only pays once W4 exists: a playground without a validator is a de
 failures. W3 stays parked behind Track T; E6 slots anywhere and keeps the founding
 degradation claim honest while the bigger waves wait.
 
-## Size budgets (raw minified, enforced by `npm run build:strict`)
+## Size budgets (raw minified, enforced by `npm run build:strict` — except the shell and editor bundles, which are report-only)
 
 Current, after the Lit-only bundle (spec v0.6): one artifact, one budget. The
 per-tier budgets below it are the retired five-artifact history, kept for the
@@ -77,8 +77,8 @@ guardrail discipline they document.
 | `semtext.js` (one bundle) | **175 KB** (raised from 126 — user decision 2026-10-14; 144 → 145 after family A containers, 2026-10-18; 145 → 152 after the interactive containers joined the single bundle the same day; 152 → 154 after the 0.9.1–0.9.3 trains, same day; 154 → 165 for the sem-bind port from semtext.dev #182/#184, same day; 165 → 172 for the 0.9.5 modal-shell factoring + sem-component / sem-see-also, 2026-10-21; 172 → 173 when the Oct-18 baseline CI fixes (#87) merged into the same bundle, 2026-10-21; 173 → 175 for the 0.9.6 sem-reference auto-id handler + procedure/step/tldr/summary renders, 2026-11-11) | 174.8 raw / 54.0 gzipped with the 0.9.6 renders in the bundle |
 | `npl.js` | **52 KB** | 49.0 raw / 15.3 gzipped (2026-10-14) |
 | `semtext-agent.js` | **24 KB** | 20.4 raw / 7.3 gzipped (2026-10-14) |
-| `semtext-js-shell.js` | **256 KB** | 126.5 raw / 43.4 gzipped (2026-10-14) |
-| `semtext-editor.js` (editor, §9) | **256 KB** (raised from the §9.1 estimate of 128 — integrate 2026-10-14; the estimate predated the integrated build, see the budget comment in `scripts/build.mjs`) | 245.1 raw / 69.8 gzipped — in budget |
+| `semtext-js-shell.js` | **256 KB — report-only, NOT a gate** (opt-in tool, uncapped by user decision 2026-10-17; `budgetReportOnly`, scripts/build.mjs:223-226) | ~290 KB raw as shipped (2026-11-11; recorded 126.5 raw / 43.4 gzipped on 2026-10-14 before the packages/apps/tabs rounds — that figure is stale). Command bodies now ship as lazy `semtext-pkg-*.js` chunks beside it, not in it |
+| `semtext-editor.js` (editor, §9) | **256 KB, report-only like the shell (2026-10-17)** (raised from the §9.1 estimate of 128 — integrate 2026-10-14; the estimate predated the integrated build, see the budget comment in `scripts/build.mjs`) | 245.1 raw / 69.8 gzipped — in budget |
 | `semtext-lazy.js` (loader) | **8 KB** | 3.3 raw / 1.6 gzipped (2026-10-14) |
 | `npl-lazy.js` (loader) | **8 KB** | 4.0 raw / 1.8 gzipped (2026-10-14) |
 | `semext.js` (semext-* embeds, feat/semext-embeds) | **48 KB** | 36.3 raw / 12.1 gzipped (2026-10-18) — in budget; the report-only placeholder budget from the empty-barrel lane is now enforced for real (family B's nine service-backed embeds) |
@@ -130,7 +130,7 @@ Shell budget (2026-10-14, docs/terminal/CORE-V2.md) raised the `semtext-js-shell
 budget 96 → 256 KB raw (user decision): Epoch 2 folds the screen model, line
 discipline, input model, app API, and the canvas driver — the one rendering path,
 bundled, no separate chunk (see CORE-V2 §8.2/§8.4) — into the single file://-safe
-IIFE. Measured today: 74.8 raw / 26.2 gzipped.
+IIFE. Measured at the time: 74.8 raw / 26.2 gzipped (stale — see the table row above; the shell budget has been report-only since 2026-10-17).
 
 Core bundle budget (2026-10-14) raised `semtext.js` 126 → 144 KB raw (user
 decision): the docs-overhaul content (spec v0.7 reference/tag review, sem-shell,

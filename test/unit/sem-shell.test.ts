@@ -77,6 +77,63 @@ describe('zero-JS contract', () => {
   });
 });
 
+describe('accessible surface (§2.2)', () => {
+  const exposedLogs = (el: SemTerminal): Element[] =>
+    [...el.querySelectorAll('[role="log"]')].filter((n) => {
+      for (let p: Element | null = n; p; p = p.parentElement) {
+        if (p.getAttribute('aria-hidden') === 'true') return false;
+        if (p === el) break;
+      }
+      return true;
+    });
+
+  it('an author-supplied aria-label and role survive the upgrade', async () => {
+    const el = await attach('sem-shell');
+    el.setAttribute('aria-label', 'CLI demo — watch the render-card sequence');
+    el.setAttribute('role', 'complementary');
+    // re-run the upgrade path: connect is idempotent per element, so a
+    // second attach exercises the guarded writes with the label present.
+    el.remove();
+    document.body.appendChild(el);
+    await el.updateComplete;
+    expect(el.getAttribute('aria-label')).toBe('CLI demo — watch the render-card sequence');
+    expect(el.getAttribute('role')).toBe('complementary');
+  });
+
+  it('defaults fill the gap: region role + a name when the author gave none', async () => {
+    const el = await attach('sem-shell');
+    expect(el.getAttribute('role')).toBe('region');
+    expect(el.getAttribute('aria-label')).toBe('SemText shell');
+  });
+
+  it('exactly one exposed role=log once paint is up — the transcript steps out', async () => {
+    const el = await attach('sem-shell');
+    // happy-dom boots the DOM-paint path: mirror mounted, transcript present.
+    const transcript = el.querySelector('.sem-shell-transcript');
+    expect(transcript).not.toBeNull();
+    expect(transcript!.getAttribute('aria-hidden')).toBe('true');
+    expect(exposedLogs(el)).toHaveLength(1);
+    expect(exposedLogs(el)[0]!.className).toContain('sem-term-mirror');
+  });
+});
+
+describe('prompt input ids (§2.3)', () => {
+  it('three shells on one page get three distinct ids, each label pointing at its own input', async () => {
+    const els = [await attach('sem-shell'), await attach('sem-shell'), await attach('sem-shell')];
+    const ids = els.map((el) => (el.querySelector('.sem-shell-input') as HTMLInputElement).id);
+    expect(new Set(ids).size).toBe(3);
+    for (const el of els) {
+      const input = el.querySelector('.sem-shell-input') as HTMLInputElement;
+      const label = el.querySelector('label.sem-shell-ps1') as HTMLLabelElement;
+      expect(label.htmlFor).toBe(input.id);
+      expect(input.id).not.toBe('sem-shell-input'); // the old shared literal is gone
+    }
+    // document-wide: no duplicate ids among the prompt inputs
+    const all = [...document.querySelectorAll('.sem-shell-input')].map((n) => (n as HTMLInputElement).id);
+    expect(new Set(all).size).toBe(all.length);
+  });
+});
+
 describe('the core stays SemText-free', () => {
   it('a bare <sem-terminal> has no demo commands', async () => {
     const el = await attach('sem-terminal');
@@ -102,7 +159,7 @@ describe('the core stays SemText-free', () => {
     expect(el.lines.some((l) => l.kind === 'stderr' && l.text.includes('one.json'))).toBe(true);
     type(el, 'help');
     await el.updateComplete;
-    expect(el.lines.some((l) => l.kind === 'stdout' && l.text === 'commands:')).toBe(true);
+    expect(el.lines.some((l) => l.kind === 'stdout' && l.text.startsWith('commands'))).toBe(true);
   });
 });
 
@@ -341,6 +398,65 @@ describe('storage + Tab completion', () => {
     expect(note?.kind).toBe('comment'); // candidates listed as one comment line
     expect(note?.text).toContain('token-rotation.html'); // listed inline
     expect(note?.text).not.toContain('more'); // 10 candidates fit under the 12 cap (shell-v3-tabs-ui)
+  });
+});
+
+describe('demo stop control + focus (§2.5)', () => {
+  const runningShell = async (): Promise<SemShell> => {
+    delete (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver;
+    const shell = document.createElement('sem-shell') as SemShell;
+    shell.setAttribute('start-script', '$ echo demo-running\n@sleep 2\n$ echo done');
+    document.body.appendChild(shell);
+    await vi.waitFor(
+      () => {
+        const input = shell.querySelector('.sem-shell-input') as HTMLInputElement | null;
+        expect(input).not.toBeNull();
+        expect(input!.readOnly).toBe(true); // the demo owns the keyboard
+      },
+      { timeout: 3000, interval: 50 },
+    );
+    await shell.updateComplete;
+    return shell;
+  };
+
+  it('a running demo shows a visible stop control and an Esc hint; clicking it hands the terminal back', async () => {
+    const shell = await runningShell();
+    expect(shell.demoRunning).toBe(true);
+    expect(shell.querySelector('.sem-shell-stop')).not.toBeNull();
+    expect(shell.querySelector('.sem-shell-demo-hint')).not.toBeNull();
+    (shell.querySelector('.sem-shell-stop') as HTMLButtonElement).click();
+    await shell.updateComplete;
+    expect(shell.demoRunning).toBe(false);
+    const input = shell.querySelector('.sem-shell-input') as HTMLInputElement;
+    expect(input.readOnly).toBe(false);
+    expect(shell.querySelector('.sem-shell-stop')).toBeNull();
+    expect(shell.querySelector('.sem-shell-replay')).not.toBeNull();
+    shell.remove();
+  }, 10000);
+
+  it('a demo ending while the reader is elsewhere does not steal focus or scroll back', async () => {
+    const shell = await runningShell();
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    outside.focus();
+    expect(document.activeElement).toBe(outside);
+    shell.stopDemo(); // the demo ends with focus outside the shell
+    await shell.updateComplete;
+    expect(shell.demoRunning).toBe(false);
+    expect(document.activeElement).toBe(outside); // no yank back
+    shell.remove();
+    outside.remove();
+  }, 10000);
+
+  it('stopping while the reader is inside the shell returns focus to the prompt', async () => {
+    const el = await attach('sem-shell');
+    const input = el.querySelector('.sem-shell-input') as HTMLInputElement;
+    input.focus();
+    el.playing = true;
+    el.stopDemo();
+    await el.updateComplete;
+    expect(document.activeElement).toBe(input);
+    expect(input.readOnly).toBe(false);
   });
 });
 

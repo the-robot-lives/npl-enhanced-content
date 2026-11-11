@@ -423,7 +423,7 @@ function tocDoc(ctx: CommandContext, html: string, label: string): void {
 
 const open: CommandSpec = {
   name: 'open',
-  usage: 'open <file.html> — open a document in a new window (noopener)',
+  usage: 'open <file.html> — open a document in a new window (sandboxed, noopener)',
   run(ctx) {
     const target = ctx.args[0];
     if (!target) {

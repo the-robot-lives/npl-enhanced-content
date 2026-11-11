@@ -25,6 +25,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import '../../src/shell/sem-shell.js';
 import { SemShell } from '../../src/shell/sem-shell.js';
+import { createTuiState } from '../../src/terminal/tui.js';
 
 async function mount(attributes: Record<string, string> = {}): Promise<SemShell> {
   const el = document.createElement('sem-shell') as SemShell;
@@ -333,9 +334,38 @@ describe('replay in the start-script FETCH flow (r2 follow-up)', () => {
       { timeout: 15_000, interval: 100 },
     );
     const markerCount = () => el.lines.filter((line) => line.text.includes('replay-marker-42')).length;
+    // §2.5: while the demo runs the slot shows a STOP control; replay returns
+    // once it finishes. Wait for the demo to end before clicking replay.
+    await vi.waitFor(() => expect(el.demoRunning).toBe(false), { timeout: 15_000, interval: 100 });
+    await el.updateComplete;
     const first = markerCount();
     (el.querySelector('.sem-shell-replay') as HTMLButtonElement).click();
     await el.updateComplete;
     await vi.waitFor(() => expect(markerCount()).toBeGreaterThan(first), { timeout: 15_000, interval: 100 });
   }, 40_000);
+});
+
+describe('shell chrome a11y (2.4)', () => {
+  it('tabs link to a tabpanel labelled by the active tab; no button inside a tab', async () => {
+    const el = await mount();
+    await run(el, 'tab new');
+    await el.updateComplete;
+    const panel = el.querySelector('[role="tabpanel"]') as HTMLElement;
+    expect(panel).not.toBeNull();
+    const active = el.querySelector('[role="tab"][aria-selected="true"]') as HTMLElement;
+    expect(panel.getAttribute('aria-labelledby')).toBe(active.id);
+    const all = [...el.querySelectorAll('[role="tab"]')] as HTMLElement[];
+    expect(all.every((t) => t.getAttribute('aria-controls') === panel.id)).toBe(true);
+    expect(all.every((t) => t.querySelector('button') === null)).toBe(true);
+  });
+
+  it('the flashcard TUI is an inline group, not a dialog', async () => {
+    const el = await mount();
+    el.tui = createTuiState([{ id: 'c1', title: 'c', body: 'b' } as never], 't');
+    await el.updateComplete;
+    const tui = el.querySelector('.sem-tui') as HTMLElement;
+    expect(tui).not.toBeNull();
+    expect(tui.getAttribute('role')).toBe('group');
+    expect(tui.hasAttribute('aria-modal')).toBe(false);
+  });
 });

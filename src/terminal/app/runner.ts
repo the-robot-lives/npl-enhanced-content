@@ -109,6 +109,14 @@ export class AppRunner {
     return true;
   }
 
+  /** User-initiated clean exit (F6, §7.1) — the app's own teardown path
+   * with exit 0, distinct from Ctrl+C's interrupt/130. */
+  requestExit(code = 0): boolean {
+    if (this.#app === null) return false;
+    this.#teardown(code, null);
+    return true;
+  }
+
   /** Screen resize during an app: redimension alt, then onResize. */
   onScreenResized(cols: number, rows: number): void {
     if (this.#app !== null) this.resize(cols, rows);

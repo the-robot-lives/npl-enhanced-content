@@ -19,8 +19,9 @@ import { flatMods, modsOf, type CellMetrics, type KeyEvent, type Mods, type Mous
 
 /** What the integrating element supplies. All sync. */
 export interface InputHost {
-  /** Route a normalized key: raw → app.key(ev), cooked → discipline.key(ev). */
-  dispatchKey(ev: KeyEvent): void;
+  /** Route a normalized key: raw → app.key(ev), cooked → discipline.key(ev).
+   * True when the key was claimed (consumed by an app or the discipline). */
+  dispatchKey(ev: KeyEvent): boolean;
   /** True while a raw-mode app owns the screen. */
   isRawMode(): boolean;
   /** True while the alternate screen is active (wheel reaches the app even without reporting). */
@@ -31,8 +32,13 @@ export interface InputHost {
   pasteRaw(text: string): void;
   /** Deliver a mouse event to the app that requested reporting. */
   dispatchMouse(info: MouseEventInfo): void;
-  /** Primary-screen wheel: scroll the viewport over the scrollback. True when consumed. */
+  /** Primary-screen wheel: scroll the viewport over the scrollback. True when the
+   * viewport actually moved; false at a scroll limit so the page can scroll. */
   onWheelScroll(dy: number, mods: Mods): boolean;
+  /** Exit the active full-screen app cleanly (F6, the keyboard way out —
+   * §7.1; distinct from Ctrl+C's interrupt/130). Optional: tests' fakes
+   * without it simply never exit. */
+  exitApp?(): void;
   /** Viewport row → absolute line (the scroll offset, folded in here). */
   rowToAbsoluteLine(row: number): number;
   /** Cell metrics from the active renderer (the mouse takes them as a parameter). */
@@ -62,6 +68,8 @@ export class InputModel {
   #lastMouse: { x: number; y: number } | null = null;
   #touchTimer: number | null = null;
   #touchStart: { x: number; y: number } | null = null;
+  #touchY: number | null = null;
+  #touchRem = 0;
 
   constructor(host: InputHost) {
     this.#host = host;
@@ -84,14 +92,33 @@ export class InputModel {
   /**
    * One normalized KeyEvent. Chrome keys are intercepted before any app or
    * the discipline can see them (§7.3: the context menu wins even while
-   * app mouse-reporting is active); everything else dispatches.
+   * app mouse-reporting is active); everything else dispatches. Returns
+   * true when the key was claimed — the DOM layer prevents its default only
+   * then (an unclaimed Tab escapes so keyboard users can always leave).
    */
-  handleKey(ev: KeyEvent): void {
+  handleKey(ev: KeyEvent): boolean {
     if ((ev.key === 'F10' && ev.shift) || ev.key === 'ContextMenu') {
       this.#openMenuAtAnchor();
-      return;
+      return true;
     }
-    this.#host.dispatchKey(ev);
+    // Keyboard copy (the canvas has no native selection): Ctrl+Shift+C always,
+    // Ctrl/Cmd+C only while a selection exists (else Ctrl+C stays the interrupt).
+    if (ev.key.toLowerCase() === 'c' && !ev.alt) {
+      const chord = ev.ctrl && ev.shift && !ev.meta;
+      const plain = (ev.ctrl || ev.meta) && !ev.shift && !this.selection.isEmpty();
+      if (chord || plain) {
+        void this.copySelection();
+        return true;
+      }
+    }
+    // F6 while an app owns the screen is the keyboard way out (owner
+    // decision 2026-11-11): exit cleanly, never reaching the app. In prompt
+    // mode F6 keeps its browser meaning (focus panes) — no interception.
+    if (ev.key === 'F6' && !ev.ctrl && !ev.alt && !ev.shift && !ev.meta && this.#host.isRawMode()) {
+      this.#host.exitApp?.();
+      return true;
+    }
+    return this.#host.dispatchKey(ev);
   }
 
   /** One bare key token — the v1 playback `pressKey` vocabulary plus the full grammar. */
@@ -134,12 +161,14 @@ export class InputModel {
           const el = this.#hidden!.el;
           el.value = text;
           el.select();
-          const ok = document.execCommand('copy');
+          const ok = typeof document.execCommand === 'function' && document.execCommand('copy');
           el.value = '';
           return ok;
         }
       : undefined;
-    return copyText(text, { ...targets, execCommandCopy: exec });
+    const clip = typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
+    const writeText = clip && typeof clip.writeText === 'function' ? (t: string): Promise<void> => clip.writeText(t) : undefined;
+    return copyText(text, { writeText, ...targets, execCommandCopy: exec });
   }
 
   /* ------------------------------------------------------------------ *
@@ -153,8 +182,13 @@ export class InputModel {
     this.#hidden = createHiddenInput(
       {
         onKey: (ev) => {
-          this.handleKey(ev);
-          return true; // the terminal surface consumes every key it sees
+          const claimed = this.handleKey(ev);
+          // Blanket-consume everything EXCEPT an unclaimed Tab: it is the
+          // keyboard's way out of the surface (Shift+Tab, or Tab on an
+          // empty prompt line — WCAG 2.1.2). Every other unclaimed key
+          // stays consumed so browser defaults (Ctrl+R reload, PageUp
+          // scroll, F5) never leak into the page.
+          return ev.key === 'Tab' ? claimed : true;
         },
         onComposition: (kind, text) => this.handleComposition(kind, text),
         onPaste: (text) => {
@@ -255,16 +289,17 @@ export class InputModel {
     this.selection.end();
   }
 
-  /** Wheel: app surface (reporting or alternate screen) → deltas; else viewport scroll. */
-  handleWheel(dx: number, dy: number, mods: Mods): void {
+  /** Wheel: app surface (reporting or alternate screen) → deltas; else viewport scroll.
+   * Returns true when consumed — false lets the page scroll (scroll limit). */
+  handleWheel(dx: number, dy: number, mods: Mods): boolean {
     if (this.#reporting || this.#host.isAltScreen()) {
       // The report carries the cell under the pointer when one is known.
       const last = this.#lastMouse;
       const { col, row } = last !== null ? cellFromPoint(last.x, last.y, this.#host.metrics()) : { col: 0, row: 0 };
       this.#host.dispatchMouse({ kind: 'wheel', button: 0, col, row, dx, dy, ...flatMods(mods) });
-      return;
+      return true;
     }
-    this.#host.onWheelScroll(dy, mods);
+    return this.#host.onWheelScroll(dy, mods);
   }
 
   /** Right-click / ContextMenu surface event. Shift passes through to the native menu. */
@@ -306,8 +341,9 @@ export class InputModel {
   };
 
   #onWheel = (event: WheelEvent): void => {
-    event.preventDefault(); // the terminal is the scroll surface over its output
-    this.handleWheel(event.deltaX, event.deltaY, modsOf(event));
+    // The terminal is the scroll surface over its output — but only while it
+    // can scroll that way; at a limit the page scrolls instead.
+    if (this.handleWheel(event.deltaX, event.deltaY, modsOf(event))) event.preventDefault();
   };
 
   #onContextMenu = (event: DOMMouseEvent): void => {
@@ -317,10 +353,13 @@ export class InputModel {
   #onTouchStart = (event: TouchEvent): void => {
     if (event.touches.length !== 1) {
       this.#clearLongPress();
+      this.#touchY = null;
       return;
     }
     const touch = event.touches[0];
     this.#touchStart = { x: touch.clientX, y: touch.clientY };
+    this.#touchY = touch.clientY;
+    this.#touchRem = 0;
     const doc = this.#surface!.ownerDocument;
     this.#touchTimer = doc.defaultView!.setTimeout(() => {
       this.#touchTimer = null;
@@ -329,7 +368,20 @@ export class InputModel {
     }, LONG_PRESS_MS);
   };
 
+  /** Touch-drag scrolls the scrollback (finger down = older lines). */
+  #dragScroll(clientY: number): void {
+    if (this.#touchY === null || this.#reporting || this.#host.isAltScreen()) return;
+    const cell = this.#host.metrics().cellHeight || 16;
+    this.#touchRem += (this.#touchY - clientY) / cell;
+    this.#touchY = clientY;
+    const rows = Math.trunc(this.#touchRem);
+    if (rows === 0) return;
+    this.#touchRem -= rows;
+    this.#host.onWheelScroll(rows, { ctrl: false, alt: false, shift: false, meta: false });
+  }
+
   #onTouchMove = (event: TouchEvent): void => {
+    if (event.touches.length === 1) this.#dragScroll(event.touches[0].clientY);
     if (this.#touchTimer === null || this.#touchStart === null || event.touches.length !== 1) return;
     const touch = event.touches[0];
     const dx = touch.clientX - this.#touchStart.x;
@@ -340,6 +392,7 @@ export class InputModel {
   };
 
   #onTouchEnd = (): void => {
+    this.#touchY = null;
     this.#clearLongPress();
   };
 
