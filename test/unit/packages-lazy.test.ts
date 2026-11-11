@@ -3,15 +3,20 @@
 // (src/terminal/packages/{lazy,manifest}.ts + hello/wasm stubs)
 //
 // Feature: createLazyPackage — the stub answers without the chunk
-//   Scenario: --help/-h print the stub usage, exit 0, chunk never loaded
-//   Scenario: an invocation that beats the fetch gets a one-line retry
-//             hint, exit 1, and run() returns (never a hang)
-//   Scenario: a failed fetch names the chunk and exits 1
+//   Scenario: --help/-h print the stub usage, exit 0, kick no load
+//   Scenario: no import starts before the first command invocation;
+//             the first non-help invocation kicks exactly one load and
+//             the same cold call runs the real command (no retry hint)
+//   Scenario: concurrent first calls share one in-flight load
+//   Scenario: a failed fetch names the chunk and exits 1 (with or
+//             without an explicit ensure(); the failure is sticky)
 // Feature: createLazyPackage — read-through delegation
 //   Scenario: run/complete/app delegate to the chunk's specs once resident
 //   Scenario: usage/help stay the stub's line (help never waits on the net)
 //   Scenario: a chunk that forgets a stub command is a contract bug (exit 70)
-//   Scenario: the kick happens at creation (boot-parallel preload)
+// Feature: cold pipeline — first use loads mid-line
+//   Scenario: `echo '{}' | jq .` resolves in ONE execLine with real jq
+//             output, no retry text (the shell awaits run's Promise)
 // Feature: man — answered from the stub, upgraded by the chunk
 //   Scenario: stub page pre-load; chunk page replaces it live once resident
 //   Scenario: unknown pages fall through to the base man
@@ -21,6 +26,12 @@
 //   Scenario: `help` lists the packages; `man hello` answers from the stub
 //   Scenario: the production stubs fail honest in vitest (no chunk file)
 //             and still answer --help and man
+// Feature: supersede wrapper — async results cross the pipe
+//   Scenario: resident package spec returning a Promise feeds the next stage
+//   Scenario: a failed-load name runs the ASYNC base through the pipe with a
+//             once-per-name stderr note (base.run's Promise forwarded)
+//   Scenario: a superseded name's first use kicks the background load
+//             without waiting on it; later calls run the package command
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TerminalCore, type CommandContext, type ExecResult, type PluginManifest } from '../../src/terminal/terminal-core.js';
@@ -29,8 +40,10 @@ import { createLazyPackage, withPackageMan, type LazyPackage } from '../../src/t
 import type { PackageModule, PackageStub } from '../../src/terminal/packages/types.js';
 import { PACKAGES, applyPackageMan, mountPackages, packagesPlugin } from '../../src/terminal/packages/manifest.js';
 import { stub as helloStub } from '../../src/terminal/packages/hello/stub.js';
-// Importing the real stubs registers + kicks them (the shell's exact boot);
-// their chunk imports fail honest under vitest — asserted below.
+import { jqStub } from '../../src/terminal/packages/jq/stub.js';
+// Importing the real stubs registers them (the shell's exact boot); with
+// first-use loading nothing imports here — their chunk imports only start
+// if a command is invoked, and fail honest under vitest (asserted below).
 import '../../src/terminal/packages/wasm/stub.js';
 
 vi.setConfig({ testTimeout: 5_000 });
@@ -61,39 +74,93 @@ function mkCtx(args: string[], stdin: string | null = null): CommandContext & {
   } as unknown as CommandContext & { __outs: string[]; __errs: string[]; __code: () => number };
 }
 
-const neverLoader = (): Promise<PackageModule> => new Promise(() => {});
 const stubOnly = (): PackageStub => helloStub;
 
 describe('createLazyPackage — the stub answers without the chunk', () => {
+  const deadLoader = (): Promise<PackageModule> => new Promise(() => {});
+
   it('--help prints the stub usage, exits 0, and never touches the chunk', () => {
-    const pkg = createLazyPackage(stubOnly(), neverLoader);
+    let loads = 0;
+    const pkg = createLazyPackage(stubOnly(), () => {
+      loads++;
+      return Promise.resolve({ commands: [] });
+    });
     const ctx = mkCtx(['--help']);
     pkg.commands[0]!.run(ctx);
     expect(ctx.__outs).toEqual([HELLO_USAGE]);
     expect(ctx.__code()).toBe(0);
     expect(pkg.loaded()).toBe(false);
+    expect(loads).toBe(0); // help answers from the stub and kicks nothing
     const ctxH = mkCtx(['-h']);
     pkg.commands[0]!.run(ctxH);
     expect(ctxH.__outs).toEqual([HELLO_USAGE]);
+    expect(loads).toBe(0);
   });
 
-  it('an invocation that beats the fetch gets one retry line, exit 1, no hang', () => {
-    const pkg = createLazyPackage(stubOnly(), neverLoader);
-    const ctx = mkCtx([]);
-    const started = Date.now();
-    pkg.commands[0]!.run(ctx); // must return synchronously
-    expect(Date.now() - started).toBeLessThan(250);
-    expect(ctx.__errs).toEqual(['hello: chunk still loading — try again']);
-    expect(ctx.__code()).toBe(1);
+  it('no import starts before the first command invocation; the same cold call runs the real command', async () => {
+    let loads = 0;
+    const realRun = vi.fn((ctx: CommandContext) => ctx.out('REAL OUT'));
+    const pkg = createLazyPackage(stubOnly(), () => {
+      loads++;
+      return Promise.resolve({ commands: [{ name: 'hello', usage: 'chunk usage line', run: realRun }] });
+    });
+    expect(loads).toBe(0); // creation kicks nothing — no chunk bytes at boot
+    expect(pkg.state()).toBe('loading');
+    const ctx = mkCtx(['Ada']);
+    const p = pkg.commands[0]!.run(ctx); // the invocation itself is the trigger
+    expect(loads).toBe(1);
+    expect(p).toBeInstanceOf(Promise);
+    await p;
+    expect(realRun).toHaveBeenCalledWith(ctx); // the same cold call ran the real spec
+    expect(ctx.__outs).toEqual(['REAL OUT']);
+    expect(ctx.__errs).toEqual([]); // no "still loading — try again" anywhere
+    expect(pkg.loaded()).toBe(true);
   });
 
-  it('a failed fetch names the chunk and exits 1', async () => {
+  it('concurrent first calls share one in-flight load', async () => {
+    let loads = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const realRun = vi.fn((ctx: CommandContext) => ctx.out('x'));
+    const pkg = createLazyPackage(stubOnly(), () => {
+      loads++;
+      return gate.then(() => ({ commands: [{ name: 'hello', usage: 'chunk usage line', run: realRun }] }));
+    });
+    const first = pkg.commands[0]!.run(mkCtx(['a']));
+    const second = pkg.commands[0]!.run(mkCtx(['b']));
+    expect(loads).toBe(1); // the second call joined the in-flight load
+    release();
+    await Promise.all([first, second]);
+    expect(loads).toBe(1); // still exactly one kick
+    expect(realRun).toHaveBeenCalledTimes(2); // both invocations ran the real spec
+  });
+
+  it('a failed fetch names the chunk and exits 1 — via an explicit ensure', async () => {
     const pkg = createLazyPackage(stubOnly(), () => Promise.reject(new Error('fetch failed')));
     expect(await pkg.ensure()).toBe(false);
     const ctx = mkCtx([]);
-    pkg.commands[0]!.run(ctx);
+    await pkg.commands[0]!.run(ctx);
     expect(ctx.__errs).toEqual(['hello: package chunk failed to load (semtext-pkg-hello.js)']);
     expect(ctx.__code()).toBe(1);
+  });
+
+  it('a cold invocation reports the failed load itself; the failure is sticky', async () => {
+    let loads = 0;
+    const pkg = createLazyPackage(stubOnly(), () => {
+      loads++;
+      return Promise.reject(new Error('fetch failed'));
+    });
+    const ctx = mkCtx([]);
+    await pkg.commands[0]!.run(ctx); // no preload: the invocation awaited the failed load
+    expect(loads).toBe(1);
+    expect(ctx.__errs).toEqual(['hello: package chunk failed to load (semtext-pkg-hello.js)']);
+    expect(ctx.__code()).toBe(1);
+    const again = mkCtx([]);
+    await pkg.commands[0]!.run(again);
+    expect(loads).toBe(1); // no retry loop
+    expect(again.__errs).toEqual(['hello: package chunk failed to load (semtext-pkg-hello.js)']);
   });
 });
 
@@ -129,20 +196,23 @@ describe('createLazyPackage — read-through delegation', () => {
     const pkg = createLazyPackage(stubOnly(), () => Promise.resolve({ commands: [] }));
     await pkg.ensure();
     const ctx = mkCtx([]);
-    pkg.commands[0]!.run(ctx);
+    await pkg.commands[0]!.run(ctx);
     expect(ctx.__errs).toEqual(['hello: package chunk semtext-pkg-hello.js does not provide it']);
     expect(ctx.__code()).toBe(70);
   });
 
-  it('the kick happens at creation — ensure() resolves the already-started load', async () => {
+  it('ensure() kicks explicitly and resolves the shared load — one kick, ever', async () => {
     let loads = 0;
     const pkg = createLazyPackage(stubOnly(), () => {
       loads++;
       return Promise.resolve(real);
     });
-    expect(loads).toBe(1); // boot-parallel preload, not first-use
+    expect(loads).toBe(0); // nothing at creation (first-use loading)
     await pkg.ensure();
-    expect(loads).toBe(1); // one kick, ever
+    expect(loads).toBe(1); // one kick
+    await pkg.ensure();
+    expect(loads).toBe(1); // the memoized promise — never re-fetched
+    expect(pkg.state()).toBe('resident');
   });
 });
 
@@ -182,6 +252,117 @@ describe('man — stub page, chunk upgrade, base fall-through', () => {
   });
 });
 
+describe('cold pipeline — first use loads the chunk mid-line', () => {
+  const out = (r: ExecResult): string[] => r.lines.filter((l) => l.kind === 'stdout').map((l) => l.text);
+  const errs = (r: ExecResult): string[] => r.lines.filter((l) => l.kind === 'stderr').map((l) => l.text);
+
+  it("echo '{}' | jq . resolves in ONE execLine with real jq output and no retry text", async () => {
+    const jqPkg = createLazyPackage(jqStub, async () => {
+      const mod = await import('../../src/terminal/packages/jq/index.js');
+      return { commands: mod.commands, manPages: mod.manPages };
+    });
+    const core = new TerminalCore();
+    expect(core.mountPlugin(posixPlugin).ok).toBe(true);
+    expect(
+      core.mountPlugin({ name: 'pkg-jq-cold', version: '0', description: '', commands: jqPkg.commands, files: [] }).ok,
+    ).toBe(true);
+    expect(jqPkg.state()).toBe('loading'); // nothing loaded at mount — no boot bytes
+    const r = (await core.execLine("echo '{}' | jq .")) as ExecResult;
+    expect(out(r)).toEqual(['{}']); // real jq output, cold, one awaited line
+    expect(errs(r)).toEqual([]); // no failure note
+    expect(r.lines.map((l) => l.text).join('\n')).not.toContain('try again'); // the old hint is gone
+    expect(jqPkg.state()).toBe('resident');
+  });
+});
+
+describe('supersede wrapper — async results cross the pipe (the discarded-Promise fix)', () => {
+  const out = (r: ExecResult): string[] => r.lines.filter((l) => l.kind === 'stdout').map((l) => l.text);
+  const errs = (r: ExecResult): string[] => r.lines.filter((l) => l.kind === 'stderr').map((l) => l.text);
+
+  /** An async tr double: uppercases the piped stdin after a macrotask, tagged so a
+   *  test can tell WHICH spec answered (the wrapper's base vs the package's own). */
+  const asyncTr = (tag: string): CommandSpec => ({
+    name: 'tr',
+    usage: 'tr — test double',
+    run(ctx) {
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          ctx.out(`${tag}:${(ctx.stdin ?? '').trim().toUpperCase()}`);
+          ctx.exit(0);
+          resolve();
+        }, 5);
+      });
+    },
+  });
+
+  const mountTrBase = (core: TerminalCore, tag: string): void => {
+    core.mountPlugin(posixPlugin); // echo + the pipe machinery
+    core.mountPlugin({ name: 'base-tr', version: '0', description: '', commands: [asyncTr(tag)], files: [] }, { supersede: ['tr'] });
+  };
+
+  it('wrapper-async: a RESIDENT package spec returning a Promise feeds the pipe', async () => {
+    const pkg = createLazyPackage(
+      { name: 'asyncpkg', supersedes: ['tr'], commands: [{ name: 'tr', summary: 'async tr', usage: 'tr — test double' }] },
+      async () => ({ commands: [asyncTr('pkg')] }),
+    );
+    await pkg.ensure();
+    const core = new TerminalCore();
+    mountTrBase(core, 'base');
+    mountPackages(core, [pkg]); // the real manifest wrapper (mountPackages with an injected package list)
+    const r = (await core.execLine('echo hi | tr')) as ExecResult;
+    expect(out(r)).toEqual(['pkg:HI']); // the package spec answered… and discarding its Promise would truncate this to []
+    expect(errs(r)).toEqual([]);
+  });
+
+  it('wrapper-failed: a failed-load superseded name runs the ASYNC base, notes once, never hangs', async () => {
+    const pkg = createLazyPackage(
+      { name: 'neverpkg', supersedes: ['tr'], commands: [{ name: 'tr', summary: 'never loads', usage: 'tr — test double' }] },
+      () => Promise.reject(new Error('offline')), // deterministic: ensure() resolves false
+    );
+    const core = new TerminalCore();
+    mountTrBase(core, 'base');
+    mountPackages(core, [pkg]);
+    const first = (await core.execLine('echo hi | tr')) as ExecResult;
+    expect(out(first)).toEqual(['base:HI']); // the base answered through the pipe while the load was failing
+    expect(errs(first)).toEqual([]); // the first call was still 'loading' — no premature note
+    expect(first.state.lastStatus).toBe(0);
+    const second = (await core.execLine('echo hi | tr')) as ExecResult;
+    expect(errs(second)).toEqual(['tr: package chunk failed to load — using the base command']); // the once-note
+    expect(out(second)).toEqual(['base:HI']);
+    const third = (await core.execLine('echo hi | tr')) as ExecResult;
+    expect(errs(third)).toEqual([]); // the note is once per name, not per call
+  });
+
+  it("a superseded name's first use kicks the background load without waiting on it", async () => {
+    let loads = 0;
+    let release!: (mod: PackageModule) => void;
+    const gate = new Promise<PackageModule>((resolve) => {
+      release = resolve;
+    });
+    const pkg = createLazyPackage(
+      { name: 'bgpkg', supersedes: ['tr'], commands: [{ name: 'tr', summary: 'bg', usage: 'tr — test double' }] },
+      () => {
+        loads++;
+        return gate; // held shut: the load CANNOT finish while the base answers
+      },
+    );
+    const core = new TerminalCore();
+    mountTrBase(core, 'base');
+    mountPackages(core, [pkg]);
+    const line = core.execLine('echo hi | tr'); // the base answers; the load kicks in the background
+    expect(loads).toBe(1); // the invocation kicked it
+    expect(pkg.state()).toBe('loading'); // kicked synchronously by the wrapper's first-use branch
+    const r = (await line) as ExecResult; // the base's async tr answered while the load was still gated shut
+    expect(out(r)).toEqual(['base:HI']); // the base ran WITHOUT waiting on the load
+    expect(pkg.state()).toBe('loading'); // still gated — proof the line never awaited the chunk
+    release({ commands: [asyncTr('pkg')] });
+    await pkg.ensure();
+    expect(pkg.state()).toBe('resident');
+    const r2 = (await core.execLine('echo hi | tr')) as ExecResult; // later calls run the package command
+    expect(out(r2)).toEqual(['pkg:HI']);
+  });
+});
+
 describe('the mounted shell', () => {
   let core: TerminalCore;
   const out = (r: ExecResult): string[] => r.lines.filter((l) => l.kind === 'stdout').map((l) => l.text);
@@ -215,7 +396,7 @@ describe('the mounted shell', () => {
     for (const pkg of PACKAGES as readonly LazyPackage[]) {
       expect(await pkg.ensure()).toBe(false); // the built chunk does not exist in the source tree
     }
-    const r = core.execLine('hello');
+    const r = await core.execLine('hello');
     expect(errs(r)).toEqual(['hello: package chunk failed to load (semtext-pkg-hello.js)']);
     expect(r.state.lastStatus).toBe(1);
     expect(out(core.execLine('hello --help'))).toEqual([HELLO_USAGE]); // resilience: help survives a dead chunk

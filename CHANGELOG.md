@@ -2,6 +2,23 @@
 
 ## 2026-11-11
 
+- **shell 1.3 — lazy packages load on first use, not at boot.**
+  `createLazyPackage` no longer starts the `semtext-pkg-<pkg>.js` chunk
+  import at module evaluation: the first non-help invocation of a
+  package command kicks it (one shared in-flight promise per package),
+  awaits it, and runs the real spec in the same call — `echo '{}' | jq .`
+  now resolves cold in one line with real jq output; the
+  "still loading — try again" hint is gone. Superseded names (the
+  mountPackages safety net) run the base command immediately and kick
+  the same load in the background — pipe semantics unchanged; failed
+  loads keep the honest per-chunk error (stub path, exit 1) and a
+  once-per-name note over the base (wrapper path). The supersede
+  wrapper now forwards Promises from both the package spec and the
+  base — the same silent-drop truncation the shell-v3 round fixed in
+  the lazy stub wrapper (CORE-V2 async commands).
+  `mountPackages` takes an injectable package list so tests drive the
+  exact wrapper.
+
 - **0.9.6 — `sem-reference` real handler (AUTO-ID, footnote chrome) +
   `sem-procedure` / `sem-step` / `sem-tldr` / `sem-summary` renders.**
   `sem-reference` and `sem-step` graduate out of `sem-stubs.ts`. An

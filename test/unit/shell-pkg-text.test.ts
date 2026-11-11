@@ -24,8 +24,9 @@
 //   Scenario: the package registers over the posix same-named commands
 //   Scenario: --help is answered from the stub before the chunk arrives;
 //             once resident the chunk's specs own even --help
-//   Scenario: an invocation that beats the fetch gets a retry hint; a
-//             failed load names the chunk and exits 1; man pages swap
+//   Scenario: a cold invocation waits on the in-flight load and then runs
+//             the real command in the same call; a failed load names the
+//             chunk and exits 1; man pages swap
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TerminalCore, type ExecResult } from '../../src/terminal/terminal-core.js';
@@ -602,20 +603,27 @@ describe('text package lazy surfaces', () => {
     expect(out(lazy.execLine('grep --help'))).toEqual(['grep [-EFivnclLowx] [-A|-B|-C N] [--color[=when]] PATTERN [file...]']);
   });
 
-  it('an invocation that beats the fetch gets the retry hint', () => {
-    const pkg = createLazyPackage(textStub, never);
+  it('a cold invocation waits on the in-flight load and then runs the real command — no retry hint', async () => {
+    let release!: (mod: PackageModule) => void;
+    const gate = new Promise<PackageModule>((resolve) => {
+      release = resolve;
+    });
+    const pkg = createLazyPackage(textStub, () => gate); // the chunk is "in flight"
     const lazy = freshCore(pkg);
     lazy.vfs.mountFile('/a.txt', 'b\na\n');
-    const r = lazy.execLine('sort /a.txt');
-    expect(errs(r)).toEqual(['sort: chunk still loading — try again']);
-    expect(status(r)).toBe(1);
+    const line = lazy.execLine('sort /a.txt'); // kicks the load; the stage suspends
+    release(await import('../../src/terminal/packages/text/index.js'));
+    const r = (await line) as ExecResult;
+    expect(errs(r)).toEqual([]); // no "still loading — try again" anywhere
+    expect(out(r)).toEqual(['a', 'b']); // the SAME cold line ran the real sort
+    expect(status(r)).toBe(0);
   });
 
   it('a failed chunk load reports the chunk file and exits 1', async () => {
     const pkg = createLazyPackage(textStub, () => Promise.reject(new Error('404')));
     expect(await pkg.ensure()).toBe(false);
     const lazy = freshCore(pkg);
-    const r = lazy.execLine('grep x /docs/alpha.txt');
+    const r = (await lazy.execLine('grep x /docs/alpha.txt')) as ExecResult;
     expect(errs(r)).toEqual(['grep: package chunk failed to load (semtext-pkg-text.js)']);
     expect(status(r)).toBe(1);
     expect(pkg.loaded()).toBe(false);

@@ -10,8 +10,10 @@
  * `man <cmd>` answers from the packages (chunk page once resident, else
  * the stub's short page — lazy.ts).
  *
- * Chunk loading is not this file's concern: every stub kicks its own
- * `importPackageChunk` at module-eval (= shell boot), and the build globs
+ * Chunk loading is not this file's concern beyond the supersedes safety
+ * net below: every stub's chunk import starts on FIRST USE of one of its
+ * commands (lazy.ts — the cold invocation awaits it; superseded names run
+ * the base and kick the same load in the background), and the build globs
  * `src/terminal/packages/<pkg>/index.ts` into sibling `semtext-pkg-<pkg>.js`
  * chunks (scripts/build.mjs). Full contract: ./README.md.
  */
@@ -82,13 +84,18 @@ export interface PackageMount {
  * the shell everyone had before instead of bricking the four names).
  * Once the chunk is resident the package's own spec answers untouched.
  */
-export function mountPackages(core: {
-  mountPlugin: (m: PluginManifest, o?: { supersede?: readonly string[] }) => unknown;
-  hasCommand: (n: string) => boolean;
-  commandSpec: (n: string) => CommandSpec | undefined;
-}): PackageMount[] {
+export function mountPackages(
+  core: {
+    mountPlugin: (m: PluginManifest, o?: { supersede?: readonly string[] }) => unknown;
+    hasCommand: (n: string) => boolean;
+    commandSpec: (n: string) => CommandSpec | undefined;
+  },
+  // Injectable so tests can drive the exact wrapper below against custom
+  // lazy packages; production always mounts the full registry.
+  packages: readonly LazyPackage[] = PACKAGES,
+): PackageMount[] {
   const out: PackageMount[] = [];
-  for (const pkg of PACKAGES) {
+  for (const pkg of packages) {
     const names = pkg.commands.map((c) => c.name);
     const collisions = names.filter((n) => core.hasCommand(n));
     const undeclared = collisions.filter((n) => !pkg.supersedes.has(n));
@@ -106,17 +113,29 @@ export function mountPackages(core: {
       if (base === undefined) return spec;
       return {
         ...spec,
-        run(ctx: CommandContext) {
+        run(ctx: CommandContext): void | Promise<void> {
           const state = pkg.state();
           if (state === 'resident' || isHelpRequest(ctx.args)) {
-            spec.run(ctx); // the package owns the name (and --help) from the stub
-            return;
+            // The package owns the name (and --help) from the stub. The
+            // Promise is forwarded: an async command (CORE-V2) must reach
+            // the shell so the pipeline awaits the body before the next
+            // stage reads — discarding it silently truncates the pipe.
+            return spec.run(ctx);
           }
-          if (state === 'failed' && !failedNoted.has(spec.name)) {
+          if (state === 'loading') {
+            // First use of a superseded name kicks the chunk load in the
+            // BACKGROUND (the shared pending promise dedupes) but this
+            // invocation is answered by the base — waiting on the load
+            // here would change pipe semantics for a name the shell
+            // already answered. Once resident, later calls run the
+            // package command.
+            void pkg.ensure();
+          } else if (state === 'failed' && !failedNoted.has(spec.name)) {
             failedNoted.add(spec.name);
             ctx.err(`${spec.name}: package chunk failed to load — using the base command`);
           }
-          base.run(ctx);
+          // Forward the base's Promise too — same through-the-pipe reason.
+          return base.run(ctx);
         },
       };
     });

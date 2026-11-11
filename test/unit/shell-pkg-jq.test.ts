@@ -578,7 +578,7 @@ describe('jq — package contract (lazy stub)', () => {
     const spec = failing.commands.find((c) => c.name === 'json')!;
     const errsOut: string[] = [];
     let code: number | null = null;
-    spec.run({
+    await spec.run({
       args: [],
       out: () => {},
       err: (t: string) => errsOut.push(t),

@@ -9,14 +9,20 @@
  *
  * The contract in one paragraph: a stub registers real `CommandSpec`
  * objects immediately (so `help`, completion and `man` never wait on the
- * network), kicks the chunk's dynamic import at boot in parallel with the
- * shell's own startup — `CommandSpec.run` and `execLine` are synchronous,
- * so a load on first use would deterministically fail the first pipeline
- * stage (see find-sed.ts) — and every surface delegates to the chunk's
- * specs once they are resident. An invocation that still beats the fetch
- * gets a one-line retry hint, never a hang; a failed fetch gets a load
- * error naming the chunk. `--help` and `man` are answered from the stub
- * without the chunk, so docs survive even a failed download.
+ * network) and every surface delegates to the chunk's specs once they are
+ * resident. The chunk's dynamic import starts on FIRST USE, not at boot:
+ * the first non-help invocation of one of the package's commands kicks it
+ * (once — concurrent first calls share one in-flight promise) and `run`
+ * AWAITS the load before handing `ctx` to the real spec, so a cold
+ * pipeline resolves in one `execLine`: `CommandSpec.run` may return a
+ * Promise and the shell awaits it before the next stage reads stdin
+ * (CORE-V2 shell-async; test/unit/shell-async.test.ts). No `import()`
+ * fires before a command in the package is invoked. Superseded names do
+ * not wait — manifest.ts answers them from the replaced base command
+ * immediately and lets the same shared load finish in the background. A
+ * failed fetch gets a load error naming the chunk. `--help` and `man`
+ * are answered from the stub without the chunk (and kick nothing), so
+ * docs survive even a failed download.
  *
  * Chunk resolution uses the repo's established runtime-specifier pattern
  * (src/lazy/boot.ts#defaultImportChunk): `@vite-ignore` + a URL resolved
@@ -72,9 +78,13 @@ export function isHelpRequest(args: readonly string[]): boolean {
 }
 
 /**
- * Build one lazy package from its stub + a chunk loader. Kicks the import
- * immediately (boot-parallel preload — see the header note); every spec
- * delegates read-through, so nothing mutates after registration.
+ * Build one lazy package from its stub + a chunk loader. Nothing loads at
+ * creation: the first non-help invocation of one of the package's
+ * commands kicks the import (deduped — one shared in-flight promise per
+ * package) and awaits it before executing the real spec (see run below);
+ * `ensure()` kicks/awaits explicitly for callers that want the load
+ * without an invocation. Every spec delegates read-through, so nothing
+ * mutates after registration.
  */
 export function createLazyPackage(stub: PackageStub, load: () => Promise<PackageModule>): LazyPackage {
   const chunkFile = packageChunkFile(stub.name);
@@ -103,7 +113,6 @@ export function createLazyPackage(stub: PackageStub, load: () => Promise<Package
     );
     return pending;
   };
-  void ensure(); // boot-parallel preload; sync pipelines cannot await first use
 
   const specFor = (cmd: PackageStub['commands'][number]): CommandSpec => {
     const loadedSpec = (): CommandSpec | undefined => real.get(cmd.name);
@@ -120,22 +129,28 @@ export function createLazyPackage(stub: PackageStub, load: () => Promise<Package
           return spec.run(ctx);
         }
         if (isHelpRequest(ctx.args)) {
-          ctx.out(cmd.usage); // answered from the stub, chunk or no chunk
+          ctx.out(cmd.usage); // answered from the stub, chunk or no chunk — kicks nothing
           return;
         }
-        if (failed) {
-          ctx.err(`${cmd.name}: package chunk failed to load (${chunkFile})`);
-          ctx.exit(1);
-          return;
-        }
-        if (resident) {
-          // The chunk is resident but forgot this command — a contract bug.
-          ctx.err(`${cmd.name}: package chunk ${chunkFile} does not provide it`);
-          ctx.exit(70);
-          return;
-        }
-        ctx.err(`${cmd.name}: chunk still loading — try again`);
-        ctx.exit(1);
+        // First use IS the load trigger: kick (the shared pending promise
+        // dedupes concurrent first calls), await it, then hand ctx to the
+        // real spec. The returned Promise reaches the shell, so the cold
+        // pipeline suspends until the body ran — no retry hint, no hang.
+        return ensure().then((ok) => {
+          if (!ok) {
+            ctx.err(`${cmd.name}: package chunk failed to load (${chunkFile})`);
+            ctx.exit(1);
+            return;
+          }
+          const realSpec = loadedSpec();
+          if (realSpec === undefined) {
+            // The chunk is resident but forgot this command — a contract bug.
+            ctx.err(`${cmd.name}: package chunk ${chunkFile} does not provide it`);
+            ctx.exit(70);
+            return;
+          }
+          return realSpec.run(ctx);
+        });
       },
       complete(ctx: CompletionContext): string[] {
         return loadedSpec()?.complete?.(ctx) ?? [];
