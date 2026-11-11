@@ -175,15 +175,21 @@ export function completeLine(input: string, core: TerminalCore): Completion {
     const spec = core.commandSpec(commandWord);
     const argsBefore = (lineEndsWithSpace ? stageWords.slice(1) : stageWords.slice(1, -1)).map((w) => w.value);
     if (spec?.complete) {
-      candidates = spec.complete({
-        args: argsBefore,
-        word,
-        commands: core.commandNames(),
-        vfs: core.vfs,
-        cwd: core.state.cwd,
-        home: core.state.env.HOME ?? '/',
-      });
-      candidates = candidates.filter((candidate) => candidate.startsWith(word));
+      try {
+        candidates = spec.complete({
+          args: argsBefore,
+          word,
+          commands: core.commandNames(),
+          vfs: core.vfs,
+          cwd: core.state.cwd,
+          home: core.state.env.HOME ?? '/',
+        });
+        candidates = (Array.isArray(candidates) ? candidates : []).filter(
+          (candidate) => typeof candidate === 'string' && candidate.startsWith(word),
+        );
+      } catch {
+        candidates = []; // a throwing plugin completer must never break Tab
+      }
     } else {
       candidates = pathCandidatesFor(core, argsBefore, word, input);
     }
