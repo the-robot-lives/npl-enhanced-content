@@ -89,6 +89,11 @@ import type { AppSpawnAction } from './terminal-core.js';
  * first connect replaces it once. See web/demo/shell.html, whose build
  * also emits a script-stripped `.nojs.html` proving the fallback.
  */
+/** Per-document prompt-input id sequence: three shells on one page (the
+ * landing tabs) must not share `id="sem-shell-input"` — duplicate ids break
+ * label/for association and every getElementById-style lookup. */
+let promptInputSeq = 0;
+
 export class SemTerminal extends SemElement {
   static properties = {
     cwd: { type: String, state: true },
@@ -99,6 +104,8 @@ export class SemTerminal extends SemElement {
     /** The playback steps as an array — the property form of `script`. */
     playback: { type: Array },
     playing: { type: Boolean, state: true },
+    /** A subclass-driven demo (start-script autostart) owns the input (§2.5). */
+    demoRunning: { type: Boolean, state: true },
     tui: { type: Object, state: true },
     /** A full-screen app owns the screen (§6.2) — prompt hidden, keys raw. */
     appLive: { type: Boolean, state: true },
@@ -116,6 +123,8 @@ export class SemTerminal extends SemElement {
   declare script: string;
   declare playback: PlaybackStep[] | null;
   declare playing: boolean;
+  /** A subclass-driven demo (start-script autostart) owns the input (§2.5). */
+  declare demoRunning: boolean;
   declare tui: TuiState | null;
   declare appLive: boolean;
   declare tabs: boolean;
@@ -125,6 +134,8 @@ export class SemTerminal extends SemElement {
   readonly #vfs = new Vfs();
   /** Every live session, oldest first (strip order mirrors the TabModel). */
   readonly #sessions: TerminalSession[] = [];
+  /** This element's prompt input id — unique per instance (§2.3). */
+  readonly #inputId = `sem-shell-input-${++promptInputSeq}`;
   /** The session the strip points at — the source of every active-path read. */
   #session: TerminalSession;
   /** The session whose execLine is on the stack (direnv TAB_TITLE attribution). */
@@ -200,6 +211,7 @@ export class SemTerminal extends SemElement {
    */
   readonly #input = new InputModel({
     dispatchKey: (ev) => this.#routeKey(ev),
+    exitApp: () => this.#exitActiveApp(),
     isRawMode: () => this.appLive,
     isAltScreen: () => this.screen.altScreen,
     insertCooked: (text) => this.#insertCooked(text),
@@ -253,6 +265,7 @@ export class SemTerminal extends SemElement {
     this.script = '';
     this.playback = null;
     this.playing = false;
+    this.demoRunning = false;
     this.tui = null;
     this.appLive = false;
     this.tabs = false;
@@ -337,9 +350,32 @@ export class SemTerminal extends SemElement {
     if (session === this.#session) this.lines = session.lines;
   }
 
+  /** Default accessible name/role when the author gave none (WCAG). The
+   * subclass overrides to supply its own default label. */
+  protected applyAccessibleDefaults(): void {
+    if (!this.hasAttribute('aria-label')) this.setAttribute('aria-label', 'Terminal');
+    if (!this.hasAttribute('role')) this.setAttribute('role', 'region');
+  }
+
+  /**
+   * THE single paint-state write (§8.5): records `data-paint` AND toggles
+   * the transcript's `aria-hidden`. Once JS paint is up, the mirror is the
+   * one accessible log (exactly one `role=log` in the a11y tree — WCAG);
+   * with no paint (no JS) the authored transcript stays the readable view.
+   */
+  #setPaint(paint: 'canvas' | 'dom'): void {
+    this.dataset.paint = paint;
+    const transcript = this.querySelector('.sem-shell-transcript');
+    transcript?.setAttribute('aria-hidden', 'true');
+  }
+
   connectedCallback(): void {
     super.connectedCallback();
-    this.setAttribute('aria-label', 'Terminal');
+    // Accessible surface (WCAG): an author-supplied name/role wins; the
+    // defaults only fill the gap so the region is exposed with a name.
+    // SemShell overrides this hook with its own default — the base must
+    // NOT write first, or the subclass guard never sees the gap.
+    this.applyAccessibleDefaults();
     // .envrc chrome feeds — TAB_TITLE titles the tab whose cd loaded it
     // (attributed through #executing), TAB_THEME the tab strip (§11.3/§12).
     this.#offEnv?.();
@@ -488,9 +524,29 @@ export class SemTerminal extends SemElement {
     if (input) {
       input.value = '';
       input.readOnly = false;
-      input.focus();
+      this.refocusIfEngaged();
     }
     if (announce) this.appendLines([{ kind: 'comment', text: 'playback stopped — the terminal is yours.' }]);
+  }
+
+  /**
+   * Re-focus the prompt ONLY when the reader is already inside the shell
+   * (§2.5, WCAG 2.4.3 / 3.2.1): a demo that ends while the reader has
+   * scrolled on must not yank the page back or pop a soft keyboard.
+   */
+  protected refocusIfEngaged(): void {
+    const doc = this.ownerDocument;
+    if (doc !== null && this.contains(doc.activeElement)) this.#inputEl()?.focus();
+  }
+
+  /**
+   * Stop whatever demo is running and hand the terminal back. The base
+   * stops boot playback; SemShell overrides to stop its start-script
+   * autostart first. Public so the visible "stop demo" control can call it.
+   */
+  stopDemo(): void {
+    this.demoRunning = false;
+    this.#stopPlayback(true);
   }
 
   #driver(): PlaybackDriver {
@@ -522,20 +578,29 @@ export class SemTerminal extends SemElement {
     this.#input.sendKeys(spec);
   }
 
-  /** The InputHost dispatch seam: raw → the active app, cooked → its discipline. */
-  #routeKey(ev: KeyEvent): void {
+  /** The InputHost dispatch seam: raw → the active app (it claims every
+   * key), cooked → its discipline (which may leave Tab unclaimed so the
+   * browser keeps its focus meaning). */
+  #routeKey(ev: KeyEvent): boolean {
     if (this.appLive) {
       this.#session.runner.key(ev);
       this.#touchApp();
-      return;
+      return true;
     }
     const input = this.#inputEl();
     if (input) {
       const caret = input.selectionStart ?? input.value.length;
       this.#session.cooked.syncFrom(input.value, caret);
     }
-    this.#session.cooked.key(ev);
+    const claimed = this.#session.cooked.key(ev);
     this.#mirrorInput(this.#session.cooked.buffer, this.#session.cooked.caret);
+    return claimed;
+  }
+
+  /** F6 while an app is live: exit cleanly (§7.1) — the app's own teardown
+   * path, not the interrupt ladder. */
+  #exitActiveApp(): void {
+    if (this.appLive) this.#session.runner.requestExit();
   }
 
   /** Cooked paste/composition insert: one key event per code point. */
@@ -575,6 +640,11 @@ export class SemTerminal extends SemElement {
     }
   }
 
+  /** Whether a replayable script is attached — the replay button's state. */
+  protected get replayable(): boolean {
+    return this.#hasScript;
+  }
+
   /* ---------------------------------------------------------------- *
    * render
    * ---------------------------------------------------------------- */
@@ -609,9 +679,14 @@ export class SemTerminal extends SemElement {
             </div>`
           : null}
         ${this.#hasScript
-          ? html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
-              replay
-            </button>`
+          ? this.playing || this.demoRunning
+            ? html`<button type="button" class="sem-shell-stop" aria-label="Stop the scripted demo" @click=${() => this.stopDemo()}>
+                  stop demo
+                </button>
+                <span class="sem-shell-demo-hint">Esc to take over</span>`
+            : html`<button type="button" class="sem-shell-replay" aria-label="Replay the scripted demo" @click=${() => this.replayScript()}>
+                replay
+              </button>`
           : null}
         <div class="sem-term-surface">
           <sem-scroll
@@ -633,9 +708,9 @@ export class SemTerminal extends SemElement {
   #renderPrompt(): TemplateResult {
     return html`
       <form class="sem-shell-prompt" @submit=${this.#onSubmit}>
-        <label class="sem-shell-ps1" for="sem-shell-input">${this.cwd} $</label>
+        <label class="sem-shell-ps1" for=${this.#inputId}>${this.cwd} $</label>
         <input
-          id="sem-shell-input"
+          id=${this.#inputId}
           class="sem-shell-input"
           type="text"
           spellcheck="false"
@@ -731,7 +806,7 @@ export class SemTerminal extends SemElement {
         // renderer mounts its own mirror at attach, so useDomView is all.
         this.#domView = true;
         this.#renderer?.useDomView();
-        this.dataset.paint = 'dom';
+        this.#setPaint('dom');
         this.#markCanvasUnavailable();
       },
       onMetricsChange: (metrics) => this.#onMetrics(metrics),
@@ -753,16 +828,16 @@ export class SemTerminal extends SemElement {
       shell.viewDelegate = (choice) => {
         if (choice === 'dom') {
           renderer.useDomView();
-          this.dataset.paint = 'dom';
+          this.#setPaint('dom');
         } else {
           renderer.useCanvasView();
-          this.dataset.paint = 'canvas';
+          this.#setPaint('canvas');
         }
       };
     }
     this.#renderer = renderer;
     renderer.attach(this.#paintScreenFor(this.#session), surface);
-    this.dataset.paint = 'canvas';
+    this.#setPaint('canvas');
     shell.markCanvasAvailable?.();
     // The paint path owns the input surface from here on (bat lane's
     // required flip — core-screen deviation 2): hidden input (IME/paste),
@@ -802,7 +877,7 @@ export class SemTerminal extends SemElement {
     mirror.setVisible(true);
     this.#mirrorOnly = mirror;
     this.#domView = true;
-    this.dataset.paint = 'dom';
+    this.#setPaint('dom');
     // The mirror-only fallback paints the same surface — the input rides it
     // there too (wheel, selection, context menu have no canvas to lean on).
     this.#ensureInputAttached(surface);
@@ -1371,7 +1446,7 @@ export class SemTerminal extends SemElement {
     this.#pushLines(session, lines);
     if (session === this.#session) {
       this.appLive = false;
-      void this.updateComplete.then(() => this.#inputEl()?.focus());
+      void this.updateComplete.then(() => this.refocusIfEngaged());
     }
   }
 
@@ -1430,7 +1505,7 @@ export class SemTerminal extends SemElement {
   #closeTui(userInitiated: boolean): void {
     this.tui = null;
     if (userInitiated && this.playing) this.#stopPlayback(true);
-    this.#inputEl()?.focus();
+    this.refocusIfEngaged();
   }
 
   #onTuiFilterInput(event: Event): void {

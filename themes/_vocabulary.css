@@ -1346,6 +1346,18 @@ sem-terminal .sem-shell-replay, sem-shell .sem-shell-replay { position: absolute
   border: 1px solid #2c3a37; border-radius: 6px; font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   padding: .25rem .55rem; cursor: pointer; opacity: .8; }
 sem-terminal .sem-shell-replay:hover, sem-shell .sem-shell-replay:hover { opacity: 1; border-color: #7ec8a2; }
+/* §2.5: while a demo runs, the replay button becomes a visible STOP control
+   (WCAG 2.2.2 — moving content needs a visible pause/stop) with a hint that
+   Escape also hands the terminal back. Same top-right slot as replay. */
+sem-terminal .sem-shell-stop, sem-shell .sem-shell-stop { position: absolute; top: .55rem; right: .7rem; background: transparent;
+  color: #e6b450; border: 1px solid #6b5a2e; border-radius: 6px; font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: .25rem .55rem; cursor: pointer; }
+sem-terminal .sem-shell-stop:hover, sem-shell .sem-shell-stop:hover { border-color: #e6b450; }
+sem-terminal .sem-shell-demo-hint, sem-shell .sem-shell-demo-hint { position: absolute; top: .8rem; right: 6.2rem;
+  color: #9aa7b5; font: 400 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; pointer-events: none; }
+@media print {
+  sem-terminal .sem-shell-demo-hint, sem-shell .sem-shell-demo-hint { display: none; }
+}
 sem-terminal .sem-shell-status, sem-shell .sem-shell-status { color: #5b6b64; }
 sem-terminal .sem-shell-comment, sem-shell .sem-shell-comment { color: #9aa7b5; font-style: italic; }
 /* ANSI from commands (ls dir color, bat highlighting): fixed-code whitelist → spans */
@@ -1375,6 +1387,7 @@ sem-terminal .sem-tui-hint, sem-shell .sem-tui-hint { color: #5b6b64; }
   sem-terminal .sem-shell-frame, sem-shell .sem-shell-frame { max-height: none; overflow: visible; background: none; border: 0; color: inherit; }
   sem-terminal .sem-shell-prompt, sem-shell .sem-shell-prompt { display: none; }
   sem-terminal .sem-shell-replay, sem-shell .sem-shell-replay { display: none; }
+  sem-terminal .sem-shell-stop, sem-shell .sem-shell-stop { display: none; }
 }
 
 /* ── npl-hormones ── */
@@ -2201,19 +2214,23 @@ sem-terminal .sem-term-scrollbar, sem-shell .sem-term-scrollbar {
    the r2 sheet hid a .sem-term-transcript class nothing renders, so the
    canvas-mode DOM transcript stayed in flow: a thousands-of-pixels block
    inside the frame that scrolled the painted surface under the titlebar
-   and, with the r2.1 flex frame, squeezed the surface to zero.) */
-sem-terminal .sem-term-transcript,
-sem-terminal .sem-shell-transcript,
-sem-shell .sem-shell-transcript {
+   and, with the r2.1 flex frame, squeezed the surface to zero.)
+   §2.2 (2026-11-11): once ANY JS paint is up ([data-paint] present), the
+   MIRROR is the text view and the one accessible log — the transcript
+   steps out of both the layout and the a11y tree (#setPaint sets
+   aria-hidden). Without JS (no data-paint) the authored transcript stays
+   readable: the zero-JS contract keeps it in flow. */
+sem-terminal:not([data-paint]) .sem-term-transcript,
+sem-terminal:not([data-paint]) .sem-shell-transcript,
+sem-shell:not([data-paint]) .sem-shell-transcript {
   display: block;
 }
-/* Canvas paint stands the round-1 transcript down — visually hidden but
-   still in the log/a11y tree (§9); the promoted mirror is the text view.
-   The attribute is set only on a successful canvas attach, so the DOM
-   fallback (no JS paint, forced-colors, failed 2d) keeps the transcript. */
-sem-terminal[data-paint="canvas"] .sem-term-transcript,
-sem-terminal[data-paint="canvas"] .sem-shell-transcript,
-sem-shell[data-paint="canvas"] .sem-shell-transcript {
+/* Painted mode stands the transcript down — visually hidden AND
+   aria-hidden (set by #setPaint), leaving the promoted/standalone mirror
+   as the single role=log live region (exactly one, both paint values). */
+sem-terminal[data-paint] .sem-term-transcript,
+sem-terminal[data-paint] .sem-shell-transcript,
+sem-shell[data-paint] .sem-shell-transcript {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -4078,3 +4095,98 @@ agent-kit-ticket-ref[data-sem-upgraded], .agent-kit-ticket-ref[data-sem-upgraded
   :is(sem-see-also, .sem-see-also)[data-sem-upgraded] > :where(:not([data-sem-chrome])) { display: inline !important; }
 }
 /* ── end component inventory / see-also ── */
+
+/* ── sem-tui — the terminal text view (render mode "tui") ──
+   The `<sem-tui>` wrapper (src/lit/sem-tui.ts) and the document driver
+   (src/lit/shared/render-mode.ts) switch sem-* elements to a terminal
+   text rendering: the authored children are hidden while the driver's
+   marker is present and a `<pre class="sem-tui">` text block (the pure
+   renderers in src/shared/text-render) shows instead. HIDE-RULE GATE:
+   `data-sem-tui-active` is written only by the script — with no script
+   the attribute never appears and every authored child renders as the
+   ordinary rich document (D12). The palette keys on the `data-theme`
+   attribute the component reflects (and authors may write directly), so
+   the frame styles a not-yet-upgraded lazy chunk too. */
+sem-tui {
+  display: block;
+  margin: 1.25rem 0;
+  padding: .75rem 1rem 1rem;
+  border: 1px solid var(--sem-tui-border, #334155);
+  border-radius: 10px;
+  background: var(--sem-tui-bg);
+  color: var(--sem-tui-fg);
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  font-size: .85em;
+  line-height: 1.45;
+  --sem-tui-bg: #0f172a;
+  --sem-tui-fg: #e2e8f0;
+  --sem-tui-accent: #38bdf8;
+  --sem-tui-dim: #94a3b8;
+  --sem-tui-border: #334155;
+}
+sem-tui[data-theme="dark"] {
+  --sem-tui-bg: #0f172a; --sem-tui-fg: #e2e8f0; --sem-tui-accent: #38bdf8;
+  --sem-tui-dim: #94a3b8; --sem-tui-border: #334155;
+}
+sem-tui[data-theme="light"] {
+  --sem-tui-bg: #f8fafc; --sem-tui-fg: #0f172a; --sem-tui-accent: #2563eb;
+  --sem-tui-dim: #64748b; --sem-tui-border: #cbd5e1;
+}
+sem-tui[data-theme="amber"] {
+  --sem-tui-bg: #1c1917; --sem-tui-fg: #fcd34d; --sem-tui-accent: #f59e0b;
+  --sem-tui-dim: #a8a29e; --sem-tui-border: #78716c;
+}
+sem-tui[data-theme="green"] {
+  --sem-tui-bg: #052e16; --sem-tui-fg: #bbf7d0; --sem-tui-accent: #4ade80;
+  --sem-tui-dim: #86efac; --sem-tui-border: #166534;
+}
+/* The mounted text view: one scrollable pre per rendered element. */
+pre.sem-tui {
+  display: block;
+  margin: 0;
+  padding: .6rem .7rem;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 2;
+  font: inherit;
+  color: inherit;
+  background: color-mix(in srgb, var(--sem-tui-bg) 70%, #000 12%);
+  border-radius: 6px;
+}
+/* Nested frames (sem-tui inside sem-tui) indent like the rich document. */
+sem-tui sem-tui { margin: .75rem 0; }
+/* The optional Rich/Terminal switch — a real button (the component wires
+   it; without JS no header renders at all). */
+.sem-tui-header { display: flex; justify-content: flex-end; margin: 0 0 .5rem; }
+.sem-tui-toggle {
+  all: unset;
+  font: inherit;
+  font-size: .75rem;
+  letter-spacing: .05em;
+  cursor: pointer;
+  padding: .15rem .7rem;
+  border: 1px solid var(--sem-tui-border);
+  border-radius: 999px;
+  color: var(--sem-tui-accent);
+  background: transparent;
+}
+.sem-tui-toggle:hover { border-color: var(--sem-tui-accent); }
+.sem-tui-toggle:focus-visible { outline: 2px solid var(--sem-tui-accent); outline-offset: 2px; }
+.sem-tui-toggle[aria-pressed="true"] {
+  background: var(--sem-tui-accent);
+  color: var(--sem-tui-bg);
+  border-color: var(--sem-tui-accent);
+}
+/* THE hide rule for the authored children of a tui-rendered element. The
+   !important mirrors the [hidden] rule above: theme display rules must
+   not out-shout the terminal view while it is mounted. */
+[data-sem-tui-active] > :not(pre.sem-tui) { display: none !important; }
+/* Reduced motion: the switch flips instantly (no transition exists; kept
+   explicit so a future animation inherits the opt-out). */
+@media (prefers-reduced-motion: reduce) {
+  .sem-tui-toggle { transition: none !important; animation: none !important; }
+}
+@media print {
+  sem-tui { border-color: #94a3b8; background: transparent; color: #000; }
+}
+/* ── end sem-tui ── */

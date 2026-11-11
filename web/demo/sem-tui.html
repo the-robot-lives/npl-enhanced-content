@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" data-sem-theme="minimal-tech-light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemText · terminal render mode (sem-tui)</title>
+<!-- sem:inline theme minimal-tech-light -->
+<!-- sem:inline vocabulary -->
+<style>
+  .sem-enhanced-document { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1rem; }
+  .demo-cols { display: grid; gap: 1.5rem; }
+  @media (min-width: 72rem) { .demo-cols { grid-template-columns: 1fr 1fr; } }
+</style>
+<!-- The one bundle. The right column is the SAME content wrapped in a
+     <sem-tui toggle> frame: the authored children are rendered by the pure
+     text renderers (src/shared/text-render) and hidden while the terminal
+     view is mounted. Flip the switch to compare. -->
+<!-- sem:inline bundle -->
+</head>
+<body>
+<div class="sem-enhanced-document">
+  <h1>Terminal render mode — <code>&lt;sem-tui&gt;</code></h1>
+  <p>One document, two presentations. The left column is the rich
+  vocabulary you know; the right is the same markup inside a
+  <code>&lt;sem-tui toggle&gt;</code> wrapper, rendered as terminal text
+  (box-drawing callouts, tree glyphs, aligned tables, the same content
+  <code>semtext format --text</code> prints). Flip the switch in the frame
+  header to compare.</p>
+
+  <div class="demo-cols">
+    <section>
+      <h2>Rich</h2>
+
+      <sem-note variant="tip" id="rich-rotate">
+        Rotate JWTs per session; keep refresh tokens server-side. The
+        browser only ever sees short-lived access tokens.
+      </sem-note>
+
+      <sem-tldr id="rich-tldr">
+        Rotate JWTs per session; refresh pairs stay server-side; the
+        client mints fresh pairs from the refresh grant.
+      </sem-tldr>
+
+      <sem-properties id="rich-props">
+        <sem-property key="access token ttl">15 minutes</sem-property>
+        <sem-property key="refresh storage">server-side, httpOnly</sem-property>
+        <sem-property key="rotation">per session</sem-property>
+      </sem-properties>
+
+      <sem-facts id="rich-facts" kind="auth">
+        <sem-fact id="rich-f1">
+          <statement>Access tokens live 15 minutes</statement>
+          <conclusion>clients must refresh mid-session</conclusion>
+          <incorrect-statement>tokens live for 24 hours</incorrect-statement>
+        </sem-fact>
+        <sem-fact id="rich-f2">Refresh pairs rotate per session.</sem-fact>
+      </sem-facts>
+
+      <sem-progress value="0.42" label="migration" id="rich-progress"></sem-progress>
+
+      <sem-reveal data-summary="Why not localStorage?" id="rich-reveal">
+        Tokens in localStorage are readable by any script on the page;
+        the refresh grant keeps them out of reach.
+      </sem-reveal>
+
+      <sem-table id="rich-table">
+        <table>
+          <caption>Token surface</caption>
+          <thead><tr><th>token</th><th>where</th><th>ttl</th></tr></thead>
+          <tbody>
+            <tr><td>access</td><td>memory</td><td>15 min</td></tr>
+            <tr><td>refresh</td><td>server</td><td>session</td></tr>
+          </tbody>
+        </table>
+      </sem-table>
+
+      <sem-file-tree id="rich-tree" mode="structured">
+        <node path="app" kind="dir">
+          <node path="server.ts"></node>
+          <node path="routes" kind="dir">
+            <node path="auth.ts" label="OIDC round-trip"></node>
+          </node>
+        </node>
+      </sem-file-tree>
+
+      <sem-code lang="ts" filename="refresh.ts" id="rich-code">const pair = await refresh(grant);
+store(pair.access);</sem-code>
+    </section>
+
+    <section>
+      <h2>Terminal</h2>
+      <sem-tui id="tui-demo" cols="64" theme="amber" toggle>
+        <sem-note variant="tip" id="tui-rotate">
+          Rotate JWTs per session; keep refresh tokens server-side. The
+          browser only ever sees short-lived access tokens.
+        </sem-note>
+
+        <sem-tldr id="tui-tldr">
+          Rotate JWTs per session; refresh pairs stay server-side; the
+          client mints fresh pairs from the refresh grant.
+        </sem-tldr>
+
+        <sem-properties id="tui-props">
+          <sem-property key="access token ttl">15 minutes</sem-property>
+          <sem-property key="refresh storage">server-side, httpOnly</sem-property>
+          <sem-property key="rotation">per session</sem-property>
+        </sem-properties>
+
+        <sem-facts id="tui-facts" kind="auth">
+          <sem-fact id="tui-f1">
+            <statement>Access tokens live 15 minutes</statement>
+            <conclusion>clients must refresh mid-session</conclusion>
+            <incorrect-statement>tokens live for 24 hours</incorrect-statement>
+          </sem-fact>
+          <sem-fact id="tui-f2">Refresh pairs rotate per session.</sem-fact>
+        </sem-facts>
+
+        <sem-progress value="0.42" label="migration" id="tui-progress"></sem-progress>
+
+        <sem-reveal data-summary="Why not localStorage?" id="tui-reveal">
+          Tokens in localStorage are readable by any script on the page;
+          the refresh grant keeps them out of reach.
+        </sem-reveal>
+
+        <sem-table id="tui-table">
+          <table>
+            <caption>Token surface</caption>
+            <thead><tr><th>token</th><th>where</th><th>ttl</th></tr></thead>
+            <tbody>
+              <tr><td>access</td><td>memory</td><td>15 min</td></tr>
+              <tr><td>refresh</td><td>server</td><td>session</td></tr>
+            </tbody>
+          </table>
+        </sem-table>
+
+        <sem-file-tree id="tui-tree" mode="structured">
+          <node path="app" kind="dir">
+            <node path="server.ts"></node>
+            <node path="routes" kind="dir">
+              <node path="auth.ts" label="OIDC round-trip"></node>
+            </node>
+          </node>
+        </sem-file-tree>
+
+        <sem-code lang="ts" filename="refresh.ts" id="tui-code">const pair = await refresh(grant);
+store(pair.access);</sem-code>
+      </sem-tui>
+    </section>
+  </div>
+
+  <h2>A scoped opt-out</h2>
+  <p>An element inside the frame can keep its rich presentation with
+  <code>render-mode="rich"</code> — a rich island in a terminal document:</p>
+  <sem-tui id="tui-optout" cols="72" theme="green">
+    <sem-note variant="info" id="tui-plain">This note renders as terminal text.</sem-note>
+    <sem-note variant="info" id="tui-rich-island" render-mode="rich">
+      This note stays rich inside the frame.
+    </sem-note>
+  </sem-tui>
+</div>
+</body>
+</html>

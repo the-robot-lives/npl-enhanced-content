@@ -333,6 +333,10 @@ describe('replay in the start-script FETCH flow (r2 follow-up)', () => {
       { timeout: 15_000, interval: 100 },
     );
     const markerCount = () => el.lines.filter((line) => line.text.includes('replay-marker-42')).length;
+    // §2.5: while the demo runs the slot shows a STOP control; replay returns
+    // once it finishes. Wait for the demo to end before clicking replay.
+    await vi.waitFor(() => expect(el.demoRunning).toBe(false), { timeout: 15_000, interval: 100 });
+    await el.updateComplete;
     const first = markerCount();
     (el.querySelector('.sem-shell-replay') as HTMLButtonElement).click();
     await el.updateComplete;

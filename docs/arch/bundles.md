@@ -14,7 +14,7 @@ shell) from the same one-command build:
 | `dist/semtext-lazy.js` / `dist/npl-lazy.js` / `dist/semext-lazy.js` / `dist/agent-kit-lazy.js` | — | Opt-in loaders that fetch their bundle + code-split chunks on demand (manifests: `dist/*-manifest.json`). http(s) only — saved single files use the full bundles. |
 | `dist/semtext-agent.js` | `SemTextAgent` | Browser build of the semtext-agent CLI core (the node CLI itself runs from `bin/semtext-agent.mjs`). |
 | `dist/semtext-js-shell.js` | `SemTextShell` | The js-shell evaluator bundle (interactive terminal; opt-in tool). |
-| `dist/semtext-nano.js` | `SemTextNano` | Nano editor body, loaded on first use (opt-in tool). |
+| `dist/nano-app.js` | — | ES module chunk: the nano editor body, dynamically imported on first use by the shell's LazyNano stub (the stub reads its `NanoEditor` export). |
 | `dist/semtext-editor.js` | `SemTextEditor` | The editor surface: shell + controller + insert/dnd/io (opt-in tool). |
 | `dist/semtext.css` | — | The vocabulary base (built from `themes/_vocabulary.css`): every `sem-*` element gets its box before any definition; all hide rules, gated on `[data-sem-upgraded]`. |
 | `dist/themes/semtext-theme-<name>.css` | — | One file per theme, `--sem-*` tokens on `[data-sem-theme]` (built from `themes/<name>.css`). |
@@ -45,7 +45,7 @@ not block.
 | `agent-kit.js` | 48 |
 | `semtext-agent.js` | 24 |
 | `semtext-js-shell.js` / `semtext-editor.js` | 256 each — **report-only** (opt-in tools, deliberately uncapped, user decision 2026-10-17) |
-| `semtext-nano.js` | 24 — report-only (same decision) |
+| `nano-app.js` | 32 (ES module chunk — keeps every export, unlike the IIFE artifacts; measured 27.3 raw / 8.0 gzipped 2026-11-11) |
 | `*-lazy.js` (loaders) | 8 each |
 
 The bundle is the former five artifacts merged (analysis estimate ~89.5 KB

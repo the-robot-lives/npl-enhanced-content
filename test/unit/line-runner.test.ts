@@ -6,10 +6,12 @@
 //   Scenario: Ctrl+C abandons the line; Ctrl+D on empty is a no-op
 //   Scenario: Ctrl+L clears the viewport through the host
 //   Scenario: Enter submits through onLine after history lands
+//   Scenario: Tab on an empty line and Shift+Tab stay unclaimed (keyboard exit)
 // Feature: the runner
 //   Scenario: spawn brackets start; exit tears down in order
 //   Scenario: a crashing stop still restores the primary and reports
 //   Scenario: Ctrl+C exits 130; a second spawn is refused while live
+//   Scenario: requestExit tears down cleanly with exit 0 (F6, not the interrupt ladder)
 
 import { describe, it, expect } from 'vitest';
 import { CookedLine, RawLine, abbreviateHome } from '../../src/terminal/line/discipline.js';
@@ -97,6 +99,21 @@ describe('the cooked editor', () => {
     expect(cooked.buffer).toBe('echo hi');
   });
 
+  it('Tab on an empty line and Shift+Tab stay unclaimed — the keyboard way out', () => {
+    // A real core stub so completion resolves ('hel' matches nothing → none).
+    const cooked = new CookedLine(
+      { emit: () => {}, clearViewport: () => {} },
+      () => ({ commands: new Map(), commandNames: () => [] }) as unknown as TerminalCore,
+      () => '~',
+    );
+    const shiftTab: KeyEvent = { key: 'Tab', ctrl: false, alt: false, shift: true, meta: false };
+    expect(cooked.key(key('Tab'))).toBe(false); // empty line: focus meaning kept
+    expect(cooked.key(shiftTab)).toBe(false);
+    type(cooked, 'hel');
+    expect(cooked.key(shiftTab)).toBe(false); // even mid-line
+    expect(cooked.key(key('Tab'))).toBe(true); // non-empty: completion claims it
+  });
+
   it('abbreviateHome folds $HOME to ~ only at a path boundary', () => {
     expect(abbreviateHome('/home/t/src', '/home/t')).toBe('~/src');
     expect(abbreviateHome('/home/other', '/home/t')).toBe('/home/other');
@@ -168,6 +185,20 @@ describe('the runner', () => {
     expect(exits[0]?.[0]).toBe(3);
     expect(exits[0]?.[1]).toContain('stop blew up');
     expect(screen.altScreen).toBe(false); // restored despite the crash
+  });
+
+  it('requestExit tears down cleanly with exit 0 — F6, not the interrupt ladder', () => {
+    const screen = new Screen({ scrollback: 100 });
+    const exits: Array<[number, string | null]> = [];
+    const runner = new AppRunner(new ScreenFeed(screen), screen, new RawLine(), (code, crash) => exits.push([code, crash]));
+    expect(runner.requestExit()).toBe(false); // nothing live — a no-op
+    const run = makeApp();
+    expect(runner.spawn(run.app)).toBe(true);
+    expect(runner.requestExit()).toBe(true);
+    expect(exits).toEqual([[0, null]]); // clean 0, never the interrupt's 130
+    expect(run.calls).toContain('stop');
+    expect(screen.altScreen).toBe(false);
+    expect(runner.active).toBe(false);
   });
 
   it('Ctrl+C exits 130; a second spawn is refused while live', () => {
