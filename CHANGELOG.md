@@ -10,6 +10,23 @@
   and the shell content region is a `role=tabpanel` labelled by the
   active tab; the inline flashcard widget is `role=group`, not dialog.
 
+- **sem-media-prompt — active media-generation prompt record.** New sem-tier
+  Lit component, the active sibling of the passive `semext-media-prompt`:
+  the authored `.media.prompt` YAML is the record (parsed with the refresh
+  CLI's own `parseMediaPrompt`, extracted to `src/shared/media-prompt.js`),
+  generations display through the existing `sem-media-gallery`, evals
+  through `sem-eval`. An author-pointed `endpoint` enables Generate
+  (POST `{model?,prompt,negative?,aspect?,seed?}` →
+  `{output:{assets,evals}}`, `sem-media-added` per asset, `status` reflected
+  idle→generating→generated|error); `fixtures` make it local-only and never
+  fetch; with neither it is authored-only — no fabricated output. Edit mode
+  adds a YAML textarea emitting `sem-media-prompt-change`; all chrome lives
+  in one extraction-skipped `data-sem-chrome` container, `renderText(opts)`
+  serves the tui driver. Lazy-chunk-only (8172B ≤ 8KB; core gains only the
+  record/chrome registration); spec at `spec/schema/sem-media-prompt.md`,
+  elements.json regenerated; `test:fast` npm script (vitest related,
+  coverage off) for the per-change fast lane.
+
 - **focus: nested markdown renders once.** `semtext focus --format md` on a
   document with nested headings emitted every child section twice — the
   flattened parent entry rendered its whole-subtree `raw` span, then each
