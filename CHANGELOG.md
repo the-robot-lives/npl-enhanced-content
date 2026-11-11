@@ -2,6 +2,8 @@
 
 ## 2026-11-11
 
+- **shell storage — coalesced localStorage, paginated S3, OIDC popup handoff.** localStorage persists coalesce into one microtask per tick and skip subtrees owned by other mounted backends; S3 listings follow continuation tokens (recursive rm/hydrate complete past 1000 keys), reject NaN/non-positive caps, normalise the mountpoint; the `noopener` OIDC popup returns its code over a `semtext-s3-auth` BroadcastChannel (reference `web/demo/shell-oidc-redirect.html`).
+
 - **shell 2.4 — menu focus return, tab/tabpanel ARIA, flashcard role (#102).**
   Closing the context menu now focuses the prompt input (else the
   hidden canvas input, else the host with a tabindex fallback) instead
