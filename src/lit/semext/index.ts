@@ -58,6 +58,8 @@ export { SemextAnnotate } from './semext-annotate.js';
 import './semext-annotate.js';
 export { SemextDocptr } from './semext-docptr.js';
 import './semext-docptr.js';
+export { SemextDraftamoDiagram } from './semext-draftamo-diagram.js';
+import './semext-draftamo-diagram.js';
 export { SemextMediaPrompt } from './semext-media-prompt.js';
 import './semext-media-prompt.js';
 export { SemextSigLogs } from './semext-sig-logs.js';

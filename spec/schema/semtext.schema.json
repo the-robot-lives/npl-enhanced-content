@@ -1370,6 +1370,15 @@
         "file": { "type": "token" }
       }
     },
+    "semext-draftamo-diagram": {
+      "description": "An inline Draftamo diagram: authored <node>/<edge> children are the record (no share link, no fetch). Enhanced, an SVG box-and-arrow layout; JS-off the children read as text (Hello → World).",
+      "source": "spec/schema/semext/draftamo-diagram.md",
+      "record": true,
+      "attributes": {
+        "kind": { "type": "token" },
+        "label": { "type": "text" }
+      }
+    },
     "semext-media-prompt": {
       "description": "An authored .media.prompt YAML record with an output cache region the refresh CLI fills; the component never fetches or generates — it reports the region state (filled asset list or not-generated placeholder chrome).",
       "source": "spec/schema/semext/media-prompt.md",

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-17
+
+- **feat(semext): `semext-draftamo-diagram` — inline Draftamo diagram (THEROB-116).** The diagram XML is the authored children (`<node id label?>text</node>`, `<edge from to label?>`); no share link, no iframe, no fetch. Enhanced: SVG box-and-arrow layout by rank in a `data-sem-chrome` container (`role=img`, name `Diagram (uml-class): Hello → World`), authored children hidden but kept for extraction. JS-off: children read `Hello → World`. New `spec/schema/semext/draftamo-diagram.md`, `semtext.schema.json` entry, `elements.json` regenerated, vocabulary CSS, `web/demo/semext.html` section, `test/unit/semext-draftamo-diagram.test.ts`.
+
 ## 2026-11-11
 
 - **fix(shell): clean prompt — no rule above the input, just a blinking cursor.** The `.sem-shell-input` `border-top` drew a horizontal rule above the command prompt; removed it (and the `:focus` border-colour rule) so the prompt is the `$` label and a blinking accent caret (`caret-color: var(--sem-term-accent)`), terminal-style.

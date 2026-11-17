@@ -70,6 +70,7 @@
     "spec/schema/npl/npl-vos.md",
     "spec/schema/semext/annotate.md",
     "spec/schema/semext/docptr.md",
+    "spec/schema/semext/draftamo-diagram.md",
     "spec/schema/semext/media-prompt.md",
     "spec/schema/semext/sig-logs.md",
     "spec/schema/semext/sig-metrics.md",
@@ -91,7 +92,7 @@
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 112,
+  "tagCount": 113,
   "tags": [
     {
       "name": "agent-kit-acceptance-criteria",
@@ -5268,6 +5269,49 @@
       ],
       "children": [],
       "example": "<semext-docptr\n  id=\"ptr-shared-load\"\n  org=\"noizu\"\n  project=\"npl-enhanced-content\"\n  key=\"npl-enhanced-content:src/data/load.ts#resolveSource\"\n  uuid=\"1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54\"\n  token=\"𓋹𓄿𓇳𓏏\"\n  last-refreshed=\"2026-10-17T09:14:00Z\"\n  status=\"fresh\"\n>\n  <script type=\"application/json\">\n    { \"pointers\": { \"1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54\": {\n        \"uuid\": \"1f0dc4bd-6b29-591d-b8e7-c8c55dd95a54\",\n        \"marker\": \"〚🔧:𓋹𓄿𓇳𓏏〛\",\n        \"file_path\": \"src/data/load.ts\",\n        \"line\": 42,\n        \"kind\": \"function\",\n        \"function_name\": \"resolveSource\",\n        \"description\": \"Resolve an embed source with the shared source policy.\" } } }\n  </script>\n</semext-docptr>"
+    },
+    {
+      "name": "semext-draftamo-diagram",
+      "family": "semext",
+      "source": "spec/schema/semext/draftamo-diagram.md",
+      "summary": "Prose is normative; the BDD source of truth for `test/unit/semext-draftamo-diagram.test.ts`.",
+      "description": "Prose is normative; the BDD source of truth for `test/unit/semext-draftamo-diagram.test.ts`. An **inline** Draftamo diagram. The diagram XML is the authored children of the element, so a document or chat message carries the whole diagram: there is no share link, no iframe and no fetch. The notation is the one Draftamo's studio uses (class diagrams today; sequence and wireframe follow).",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": "uml-class",
+          "description": "`uml-class` — The notation. Only the box-and-arrow form is rendered today; other kinds render the same way until their renderers land."
+        },
+        {
+          "name": "label",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": "Diagram",
+          "description": "The accessible name prefix."
+        },
+        {
+          "name": "id",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<semext-draftamo-diagram kind=\"uml-class\" label=\"Hello world\">\n  <node id=\"a\">Hello</node><edge from=\"a\" to=\"b\"></edge><node id=\"b\">World</node>\n</semext-draftamo-diagram>"
     },
     {
       "name": "semext-media-prompt",

@@ -1,0 +1,51 @@
+# Schema — `semext-draftamo-diagram`
+
+Contract per conventions.md and the namespace recipe in
+`src/lit/semext/index.ts`. Prose is normative; the BDD source of truth for
+`test/unit/semext-draftamo-diagram.test.ts`.
+
+An **inline** Draftamo diagram. The diagram XML is the authored children of
+the element, so a document or chat message carries the whole diagram: there
+is no share link, no iframe and no fetch. The notation is the one Draftamo's
+studio uses (class diagrams today; sequence and wireframe follow).
+
+## Authoring form
+
+```html
+<semext-draftamo-diagram kind="uml-class" label="Hello world">
+  <node id="a">Hello</node><edge from="a" to="b"></edge><node id="b">World</node>
+</semext-draftamo-diagram>
+```
+
+Class-form alias (conventions Appendix A, semext namespace):
+`.semext-draftamo-diagram[data-kind]`; `data-<name>` wins when both
+spellings are present.
+
+- `kind`: `uml-class` — default `uml-class`. The notation. Only the box-and-arrow form is
+  rendered today; other kinds render the same way until their renderers land.
+- `label`: `string` — default `Diagram`. The accessible name prefix.
+- `id`, `tags` per the global attribute catalog — no bullet needed.
+
+## Children
+
+- `<node id label?>text</node>`: one box. The label is the `label`
+  attribute, else the trimmed text, else the `id`. Ids are unique within the
+  element.
+- `<edge from to label?>`: one arrow from node `from` to node `to`. An edge
+  naming an unknown id is ignored.
+
+## Cached content
+
+The authored children ARE the record: extraction reads them, never the
+network. The element never fetches (`livePolicy` never).
+
+## Rendered form
+
+- **Enhanced** (`data-sem-upgraded`): an SVG in a `data-sem-chrome`
+  container, boxes laid out left to right by longest-path rank (cycle-safe),
+  arrows with heads, `role="img"` and an accessible name
+  `<label> (<kind>): Hello → World`. The authored children stay in the DOM
+  but are hidden.
+- **JS-off**: the children read as plain inline text with an arrow between
+  nodes joined by an edge: `Hello → World`. Nothing is generated or hidden.
+  Colour is never the only carrier: edges are arrows, nodes are boxes.
