@@ -5,6 +5,14 @@ import { describe, layout, parseDiagram, type DiagramModel } from './draftamo-di
 import { importViewerModule, toViewerDocument, type ViewerInstance } from './draftamo-diagram-3d-adapter.js';
 
 /**
+ * Where the 3D view comes from when `viewer-src` is unset: the release-published
+ * viewer bundle on the org CDN (immutable per version dir; `latest/` re-publishes
+ * per release with a short proxy TTL). Set `viewer-src=""` to pin the element to
+ * the 2D SVG only, or any absolute URL to pin your own bundle version.
+ */
+export const DEFAULT_VIEWER_SRC = 'https://cdn.derobot.is/draftamo/latest/draftamo-viewer.js';
+
+/**
  * semext-draftamo-diagram — an INLINE Draftamo diagram: the diagram XML is
  * the authored children of the element (no share link, no iframe, no fetch).
  *
@@ -20,7 +28,10 @@ import { importViewerModule, toViewerDocument, type ViewerInstance } from './dra
  * (still in the DOM, so extraction reads them). JS-off, the children read as
  * plain text; the vocabulary rules add the arrow so it reads "Hello → World".
  * `kind` (default `uml-class`) is the notation; only the box-and-arrow form
- * ships today. `livePolicy` is never: the element does not fetch.
+ * ships today. No share link, no iframe, no data fetch; the optional 3D view
+ * lazily `import()`s the viewer bundle from `viewer-src` (default: the org CDN
+ * `draftamo/latest` release — `viewer-src=""` forces 2D-only, a failed or
+ * blocked load warns once and the 2D SVG simply remains).
  */
 export class SemextDraftamoDiagram extends SemElement {
   static override properties = {
@@ -79,9 +90,9 @@ export class SemextDraftamoDiagram extends SemElement {
       this.append(chrome);
     }
     this.#mo?.takeRecords();
-    const src = (semextParam(this, 'viewer-src') ?? '').trim();
+    const src = (semextParam(this, 'viewer-src') ?? DEFAULT_VIEWER_SRC).trim();
     if (!src) {
-      // Default path: exactly the 2D SVG behavior.
+      // Explicit 2D-only (`viewer-src=""`): exactly the pre-3D behavior.
       this.#teardownViewer();
       render(this.#svg(model), this.#chrome);
     } else {

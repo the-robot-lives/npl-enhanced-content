@@ -25,6 +25,11 @@ spellings are present.
 - `kind`: `token` — default `uml-class`. The notation. Only the box-and-arrow form is
   rendered today; other kinds render the same way until their renderers land.
 - `label`: `string` — default `Diagram`. The accessible name prefix.
+- `viewer-src`: `string` — default: the release-published viewer bundle on the org CDN
+  (`https://cdn.derobot.is/draftamo/latest/draftamo-viewer.js`). When non-empty, the
+  element lazily imports that module (`{ createViewer }`) after the 2D SVG renders and
+  mounts the native `GraphDocument` 3D view in its place; a failed or blocked load
+  warns once and the 2D SVG simply remains. `viewer-src=""` forces 2D-only.
 - `id`, `tags` per the global attribute catalog — no bullet needed.
 
 ## Children

@@ -7,12 +7,13 @@
 //   Scenario: the adapter maps nodes/edges onto the GraphDocument schema with only derived fields
 //   Scenario: the element lazily imports viewer-src, calls createViewer(host) + setDocument + start
 //   Scenario: an import/construction failure warns and keeps the 2D SVG fallback
-//   Scenario: no viewer-src attribute = today's 2D behavior, untouched
+//   Scenario: absent viewer-src defaults to the CDN bundle (2D SVG fallback when the load fails); viewer-src="" forces 2D
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { SemextDraftamoDiagram } from '../../src/lit/semext/semext-draftamo-diagram.js';
 import { parseDiagram } from '../../src/lit/semext/draftamo-diagram-model.js';
 import { setViewerImporterForTests, toViewerDocument, type ViewerInstance } from '../../src/lit/semext/draftamo-diagram-3d-adapter.js';
+import { DEFAULT_VIEWER_SRC } from '../../src/lit/semext/semext-draftamo-diagram.js';
 import '../../src/lit/semext/index.js';
 
 const HELLO = '<semext-draftamo-node id="a">Hello</semext-draftamo-node><semext-draftamo-edge from="a" to="b" label="uses"></semext-draftamo-edge><semext-draftamo-node id="b">World</semext-draftamo-node>';
@@ -99,10 +100,23 @@ describe('draftamo-diagram-3d-adapter', () => {
     el.remove();
   });
 
-  it('no viewer-src: 2D SVG unchanged', async () => {
-    const importer = vi.fn();
+  it('absent viewer-src: defaults to the CDN URL; a failed load falls back to 2D', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const importer = vi.fn(() => Promise.reject(new Error('no network in tests')));
     setViewerImporterForTests(importer);
     const el = await mount(HELLO);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(importer).toHaveBeenCalledWith(DEFAULT_VIEWER_SRC);
+    expect(el.querySelector('[data-sem-chrome] svg')).toBeTruthy();
+    expect(el.querySelectorAll('[data-sem-chrome] rect')).toHaveLength(2);
+    expect(el.querySelector('.semext-draftamo-diagram-viewer')).toBeNull();
+    el.remove();
+  });
+
+  it("viewer-src='': explicitly forces the 2D SVG, no import attempted", async () => {
+    const importer = vi.fn();
+    setViewerImporterForTests(importer);
+    const el = await mount(HELLO, { 'viewer-src': '' });
     await new Promise((r) => setTimeout(r, 20));
     expect(importer).not.toHaveBeenCalled();
     expect(el.querySelector('[data-sem-chrome] svg')).toBeTruthy();

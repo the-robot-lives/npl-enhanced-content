@@ -8,9 +8,10 @@
 //   Scenario: hello world renders two boxes and one arrow, named "Hello → World", authored children kept
 //   Scenario: an edit to the authored children re-renders the chrome
 
-import { describe, it, expect } from 'vitest';
+import { beforeEach, afterEach, describe, it, expect } from 'vitest';
 import { SemextDraftamoDiagram } from '../../src/lit/semext/semext-draftamo-diagram.js';
 import { describe as describeModel, layout, parseDiagram } from '../../src/lit/semext/draftamo-diagram-model.js';
+import { setViewerImporterForTests } from '../../src/lit/semext/draftamo-diagram-3d-adapter.js';
 import '../../src/lit/semext/index.js';
 
 const HELLO = '<semext-draftamo-node id="a">Hello</semext-draftamo-node><semext-draftamo-edge from="a" to="b"></semext-draftamo-edge><semext-draftamo-node id="b">World</semext-draftamo-node>';
@@ -24,6 +25,11 @@ async function mount(inner: string): Promise<SemextDraftamoDiagram> {
 }
 
 describe('semext-draftamo-diagram', () => {
+  // `viewer-src` now defaults to the org CDN bundle; stub the importer so unit
+  // tests exercise the graceful 2D fallback instead of attempting a real load.
+  beforeEach(() => setViewerImporterForTests(() => Promise.reject(new Error('offline-test'))));
+  afterEach(() => setViewerImporterForTests(null));
+
   it('registers the tag', () => {
     expect(customElements.get('semext-draftamo-diagram')).toBe(SemextDraftamoDiagram);
   });
