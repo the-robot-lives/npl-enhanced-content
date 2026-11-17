@@ -1,13 +1,12 @@
 # Schema — `semext-draftamo-diagram`
 
+An inline Draftamo diagram whose XML is the authored children of the element, so a document or chat message carries the whole diagram with no share link, iframe or fetch.
+The notation is the one Draftamo's
+studio uses (class diagrams today; sequence and wireframe follow).
+
 Contract per conventions.md and the namespace recipe in
 `src/lit/semext/index.ts`. Prose is normative; the BDD source of truth for
 `test/unit/semext-draftamo-diagram.test.ts`.
-
-An **inline** Draftamo diagram. The diagram XML is the authored children of
-the element, so a document or chat message carries the whole diagram: there
-is no share link, no iframe and no fetch. The notation is the one Draftamo's
-studio uses (class diagrams today; sequence and wireframe follow).
 
 ## Authoring form
 
