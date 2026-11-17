@@ -116,6 +116,13 @@ export class SemextDraftamoDiagram extends SemElement {
       viewer = createViewer(host);
       viewer.setDocument(toViewerDocument(model, { title: this.#title() }), { tracedEdgeIds: new Set() });
       viewer.start();
+      // Re-check immediately before adoption: a teardown that fired during
+      // construction (re-render or disconnect) bumped the token — dispose the
+      // orphan instead of storing a viewer no later teardown will reach.
+      if (token !== this.#mountToken) {
+        viewer.dispose();
+        return;
+      }
       this.#viewer = viewer;
       this.#viewerHost = host;
       this.#mo?.takeRecords();
