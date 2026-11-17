@@ -25,11 +25,19 @@ spellings are present.
 - `kind`: `token` — default `uml-class`. The notation. Only the box-and-arrow form is
   rendered today; other kinds render the same way until their renderers land.
 - `label`: `string` — default `Diagram`. The accessible name prefix.
-- `viewer-src`: `string` — default: the release-published viewer bundle on the org CDN
-  (`https://cdn.derobot.is/draftamo/latest/draftamo-viewer.js`). When non-empty, the
+- `viewer-src`: `string` — default: the release-published viewer bundle on the org CDN,
+  VERSION-PINNED (`https://cdn.derobot.is/draftamo/v<release>/draftamo-viewer.js`,
+  immutable object; the constant bumps with each published release). When non-empty, the
   element lazily imports that module (`{ createViewer }`) after the 2D SVG renders and
   mounts the native `GraphDocument` 3D view in its place; a failed or blocked load
   warns once and the 2D SVG simply remains. `viewer-src=""` forces 2D-only.
+
+  Trust expectations for the default: (1) a consumer whose page sets a CSP must allow
+  `script-src https://cdn.derobot.is` — no first-party consumer defines a CSP today
+  (verified 2026-11-17); (2) the default URL is immutable per version — integrity-sensitive
+  deployments should keep the pinned default (or pin their own `viewer-src`), not track
+  `latest/`; (3) the publish of a new version dir is owner-gated, and the default constant
+  bumps only in the release that publishes it.
 - `id`, `tags` per the global attribute catalog — no bullet needed.
 
 ## Children

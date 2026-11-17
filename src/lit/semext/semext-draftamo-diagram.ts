@@ -6,11 +6,14 @@ import { importViewerModule, toViewerDocument, type ViewerInstance } from './dra
 
 /**
  * Where the 3D view comes from when `viewer-src` is unset: the release-published
- * viewer bundle on the org CDN (immutable per version dir; `latest/` re-publishes
- * per release with a short proxy TTL). Set `viewer-src=""` to pin the element to
- * the 2D SVG only, or any absolute URL to pin your own bundle version.
+ * viewer bundle on the org CDN. The default is VERSION-PINNED (immutable
+ * `max-age=31536000` object) and bumps with each published release — consumers
+ * get code integrity by default; set `viewer-src` to an absolute URL to track
+ * `latest/` (short TTL) or pin your own bundle. Set `viewer-src=""` to stay
+ * 2D-only. Bump this constant in the same release that publishes the new
+ * version dir.
  */
-export const DEFAULT_VIEWER_SRC = 'https://cdn.derobot.is/draftamo/latest/draftamo-viewer.js';
+export const DEFAULT_VIEWER_SRC = 'https://cdn.derobot.is/draftamo/v0.2.0/draftamo-viewer.js';
 
 /**
  * semext-draftamo-diagram — an INLINE Draftamo diagram: the diagram XML is

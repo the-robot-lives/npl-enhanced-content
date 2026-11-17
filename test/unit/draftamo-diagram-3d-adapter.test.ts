@@ -107,6 +107,7 @@ describe('draftamo-diagram-3d-adapter', () => {
     const el = await mount(HELLO);
     await new Promise((r) => setTimeout(r, 20));
     expect(importer).toHaveBeenCalledWith(DEFAULT_VIEWER_SRC);
+    expect(warn).toHaveBeenCalledTimes(1); // the warn-once fallback contract
     expect(el.querySelector('[data-sem-chrome] svg')).toBeTruthy();
     expect(el.querySelectorAll('[data-sem-chrome] rect')).toHaveLength(2);
     expect(el.querySelector('.semext-draftamo-diagram-viewer')).toBeNull();
