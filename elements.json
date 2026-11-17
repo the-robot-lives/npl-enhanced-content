@@ -84,6 +84,7 @@
     "spec/schema/agent-kit/chatroom.md",
     "spec/schema/agent-kit/custom-assert.md",
     "spec/schema/agent-kit/personas.md",
+    "spec/schema/agent-kit/ref.md",
     "spec/schema/agent-kit/reference-cards.md",
     "spec/schema/agent-kit/review.md",
     "spec/schema/agent-kit/script-cards.md",
@@ -92,7 +93,7 @@
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 113,
+  "tagCount": 114,
   "tags": [
     {
       "name": "agent-kit-acceptance-criteria",
@@ -1064,6 +1065,61 @@
       ],
       "example": "<agent-kit-project org=\"acme\" key=\"semtext\">\n  <agent-kit-name>SemText</agent-kit-name>\n  <agent-kit-description>\n    The XHTML-first rich-content spec and component kit.\n  </agent-kit-description>\n</agent-kit-project>",
       "optionsIn": "agent-kit-organization"
+    },
+    {
+      "name": "agent-kit-ref",
+      "family": "agent-kit",
+      "source": "spec/schema/agent-kit/ref.md",
+      "summary": "An inline reference to a document or artifact record by UUID, whose authored text is the chip label and the JS-off view.",
+      "description": "An inline reference to a document or artifact record by UUID, whose authored text is the chip label and the JS-off view. Prose is normative; the BDD source of truth for `test/unit/agent-kit-ref.test.ts`. A reference element, not an embed: it carries no record content and fetches nothing.",
+      "attributes": [
+        {
+          "name": "kind",
+          "required": true,
+          "type": "",
+          "allowedValues": [
+            "token",
+            "doc",
+            "artifact"
+          ],
+          "default": null,
+          "description": "`token` — required. One of `doc` or `artifact`."
+        },
+        {
+          "name": "id",
+          "required": true,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "required. The referenced record's UUID."
+        },
+        {
+          "name": "org",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the owning organization slug (informational)."
+        },
+        {
+          "name": "project",
+          "required": null,
+          "type": "string",
+          "allowedValues": [],
+          "default": null,
+          "description": "the project slug within the organization (informational)."
+        },
+        {
+          "name": "tags",
+          "required": null,
+          "type": "",
+          "allowedValues": [],
+          "default": null,
+          "description": "per the global attribute catalog (conventions.md §2)"
+        }
+      ],
+      "children": [],
+      "example": "<agent-kit-ref kind=\"doc\" id=\"0b5d6f0e-2c4a-4d57-9d2a-5a9f3c1e7b11\">Release runbook</agent-kit-ref>"
     },
     {
       "name": "agent-kit-review",

@@ -80,6 +80,8 @@ export { AkitOrganization } from './agent-kit-organization.js';
 import './agent-kit-organization.js';
 export { AkitProject } from './agent-kit-project.js';
 import './agent-kit-project.js';
+export { AkitRef } from './agent-kit-ref.js';
+import './agent-kit-ref.js';
 export { AkitReview } from './agent-kit-review.js';
 import './agent-kit-review.js';
 export { AkitCucumber } from './agent-kit-cucumber.js';

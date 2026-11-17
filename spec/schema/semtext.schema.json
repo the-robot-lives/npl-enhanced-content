@@ -1812,6 +1812,14 @@
         }
       ]
     },
+    "agent-kit-ref": {
+      "source": "spec/schema/agent-kit/ref.md",
+      "record": true,
+      "extends": "reference",
+      "attributes": {
+        "kind": { "type": "token", "values": ["doc", "artifact"], "required": true }
+      }
+    },
     "agent-kit-ticket-ref": {
       "source": "spec/schema/agent-kit/ticket-ref.md",
       "record": true,

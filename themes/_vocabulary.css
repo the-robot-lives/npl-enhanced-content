@@ -3455,6 +3455,21 @@ agent-kit-ticket-ref[data-sem-upgraded], .agent-kit-ticket-ref[data-sem-upgraded
   border-color: var(--sem-accent, #2563eb);
   outline: none;
 }
+/* agent-kit-ref: inline chip for a doc/artifact reference; link affordance is behavior,
+   styled only under the upgrade claim. JS-off it reads as the authored label. */
+agent-kit-ref, .agent-kit-ref { display: inline; }
+agent-kit-ref[data-sem-upgraded][role="link"], .agent-kit-ref[data-sem-upgraded][role="link"] {
+  cursor: pointer;
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--sem-border, #e2e8f0);
+  background: var(--sem-bg, #fafafa);
+  color: var(--sem-accent, #2563eb);
+  font-size: 0.9em;
+}
+agent-kit-ref[data-sem-upgraded][role="link"]:hover,
+agent-kit-ref[data-sem-upgraded][role="link"]:focus-visible { border-color: var(--sem-accent, #2563eb); outline: none; }
 /* ── end agent-kit tickets ── */
 
 /* ── agent-kit personas ───────────────────────────────────────────

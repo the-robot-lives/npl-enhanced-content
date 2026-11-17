@@ -2,6 +2,8 @@
 
 ## 2026-11-17
 
+- **feat(agent-kit): `agent-kit-ref` — inline doc/artifact reference (THEROB-116).** `<agent-kit-ref kind="doc|artifact" id="<uuid>">Title</agent-kit-ref>`: authored text is the chip label and JS-off view; upgraded it is `role="link"`, focusable, and emits `agent-kit:ref-follow` {kind, id} on click/Enter/Space; invalid kind or UUID stays inert with one warning; fetches and navigates nothing (the host decides). New `spec/schema/agent-kit/ref.md`, schema entry, `elements.json`, vocabulary CSS, demo line, `test/unit/agent-kit-ref.test.ts`. Named `agent-kit-*` rather than `sem-ref` because it is bound to tobor records (precedent: `agent-kit-ticket-ref`).
+
 - **fix(semext): `semext-draftamo-diagram` children are `<semext-draftamo-node>` / `<semext-draftamo-edge>` (THEROB-116).** Bare `<node>` is already a defined part of `sem-site-tree`/`sem-file-tree`, so inline diagrams drew orphan-part validator warnings; the diagram now declares its own namespaced parts in `semtext.schema.json` (`partOf`), and the vocabulary CSS, schema doc, demo and tests follow.
 
 - **feat(semext): `semext-draftamo-diagram` — inline Draftamo diagram (THEROB-116).** The diagram XML is the authored children (`<node id label?>text</node>`, `<edge from to label?>`); no share link, no iframe, no fetch. Enhanced: SVG box-and-arrow layout by rank in a `data-sem-chrome` container (`role=img`, name `Diagram (uml-class): Hello → World`), authored children hidden but kept for extraction. JS-off: children read `Hello → World`. New `spec/schema/semext/draftamo-diagram.md`, `semtext.schema.json` entry, `elements.json` regenerated, vocabulary CSS, `web/demo/semext.html` section, `test/unit/semext-draftamo-diagram.test.ts`.
