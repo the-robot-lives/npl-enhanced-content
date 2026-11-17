@@ -1,6 +1,6 @@
 /**
  * draftamo-diagram-model — the pure parse + layout behind `semext-draftamo-diagram`.
- * No Lit, no rendering: authored `<node>` / `<edge>` children in, a ranked layout out.
+ * No Lit, no rendering: authored `<semext-draftamo-node>` / `<semext-draftamo-edge>` children in, a ranked layout out.
  */
 export interface DiagramNode { id: string; label: string }
 export interface DiagramEdge { from: string; to: string; label: string }
@@ -8,18 +8,18 @@ export interface DiagramModel { nodes: DiagramNode[]; edges: DiagramEdge[] }
 export interface Box { x: number; y: number; w: number; h: number }
 export interface DiagramLayout { pos: Map<string, Box>; width: number; height: number }
 
-/** Read authored `<node id label?>text</node>` and `<edge from to label?>` children. */
+/** Read authored `<semext-draftamo-node id label?>text</…>` and `<semext-draftamo-edge from to label?>` children. */
 export function parseDiagram(host: Element): DiagramModel {
   const nodes: DiagramNode[] = [];
   const edges: DiagramEdge[] = [];
   for (const c of Array.from(host.children)) {
     if (c.hasAttribute('data-sem-chrome')) continue;
     const tag = c.tagName.toLowerCase();
-    if (tag === 'node') {
+    if (tag === 'semext-draftamo-node') {
       const id = c.getAttribute('id') ?? `n${nodes.length}`;
       const label = c.getAttribute('label') ?? (c.textContent ?? '').trim();
       nodes.push({ id, label: label || id });
-    } else if (tag === 'edge') {
+    } else if (tag === 'semext-draftamo-edge') {
       edges.push({ from: c.getAttribute('from') ?? '', to: c.getAttribute('to') ?? '', label: c.getAttribute('label') ?? '' });
     }
   }

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Unit spec — semext-draftamo-diagram (src/lit/semext/), contract: spec/schema/semext/draftamo-diagram.md
 //
-// Feature: an inline Draftamo diagram from authored <node>/<edge> children
+// Feature: an inline Draftamo diagram from authored <semext-draftamo-node>/<semext-draftamo-edge> children
 //   Scenario: the tag registers through defineSemext
 //   Scenario: parseDiagram reads node labels from the attribute or the text, and drops edges to unknown nodes
 //   Scenario: layout ranks left to right and survives a cycle
@@ -13,7 +13,7 @@ import { SemextDraftamoDiagram } from '../../src/lit/semext/semext-draftamo-diag
 import { describe as describeModel, layout, parseDiagram } from '../../src/lit/semext/draftamo-diagram-model.js';
 import '../../src/lit/semext/index.js';
 
-const HELLO = '<node id="a">Hello</node><edge from="a" to="b"></edge><node id="b">World</node>';
+const HELLO = '<semext-draftamo-node id="a">Hello</semext-draftamo-node><semext-draftamo-edge from="a" to="b"></semext-draftamo-edge><semext-draftamo-node id="b">World</semext-draftamo-node>';
 
 async function mount(inner: string): Promise<SemextDraftamoDiagram> {
   const el = document.createElement('semext-draftamo-diagram') as SemextDraftamoDiagram;
@@ -30,7 +30,7 @@ describe('semext-draftamo-diagram', () => {
 
   it('parseDiagram: label attr beats text, text beats id, unknown-edge dropped', () => {
     const host = document.createElement('div');
-    host.innerHTML = '<node id="a" label="Alpha">ignored</node><node id="b">Beta</node><node id="c"></node><edge from="a" to="b"></edge><edge from="a" to="zzz"></edge>';
+    host.innerHTML = '<semext-draftamo-node id="a" label="Alpha">ignored</semext-draftamo-node><semext-draftamo-node id="b">Beta</semext-draftamo-node><semext-draftamo-node id="c"></semext-draftamo-node><semext-draftamo-edge from="a" to="b"></semext-draftamo-edge><semext-draftamo-edge from="a" to="zzz"></semext-draftamo-edge>';
     const m = parseDiagram(host);
     expect(m.nodes.map((n) => n.label)).toEqual(['Alpha', 'Beta', 'c']);
     expect(m.edges).toHaveLength(1);
@@ -50,13 +50,13 @@ describe('semext-draftamo-diagram', () => {
     expect(chrome.querySelectorAll('rect')).toHaveLength(2);
     expect(chrome.querySelectorAll('line')).toHaveLength(1);
     expect(chrome.querySelector('svg')!.getAttribute('aria-label')).toBe('Diagram (uml-class): Hello → World');
-    expect(el.querySelectorAll(':scope > node')).toHaveLength(2);
+    expect(el.querySelectorAll(':scope > semext-draftamo-node')).toHaveLength(2);
     expect(el.textContent).toContain('Hello');
   });
 
   it('re-renders when an authored node is added', async () => {
     const el = await mount(HELLO);
-    const n = document.createElement('node');
+    const n = document.createElement('semext-draftamo-node');
     n.setAttribute('id', 'c');
     n.textContent = 'Again';
     el.insertBefore(n, el.querySelector('[data-sem-chrome]'));

@@ -8,11 +8,13 @@ import { describe, layout, parseDiagram, type DiagramModel } from './draftamo-di
  * the authored children of the element (no share link, no iframe, no fetch).
  *
  *   <semext-draftamo-diagram kind="uml-class" label="Hello">
- *     <node id="a">Hello</node><edge from="a" to="b"></edge><node id="b">World</node>
+ *     <semext-draftamo-node id="a">Hello</semext-draftamo-node><semext-draftamo-edge from="a" to="b"></semext-draftamo-edge>
+ *     <semext-draftamo-node id="b">World</semext-draftamo-node>
  *   </semext-draftamo-diagram>
  *
- * Children: `<node id label?>text</node>` (label = attribute, else text) and
- * `<edge from to label?>`. Enhanced, an SVG renders left to right by rank
+ * Children: `<semext-draftamo-node id label?>text</…>` (label = attribute, else text) and
+ * `<semext-draftamo-edge from to label?>`. (Bare `<node>` is taken: it is a part of
+ * sem-site-tree / sem-file-tree.) Enhanced, an SVG renders left to right by rank
  * inside a `data-sem-chrome` container and the authored children are hidden
  * (still in the DOM, so extraction reads them). JS-off, the children read as
  * plain text; the vocabulary rules add the arrow so it reads "Hello → World".

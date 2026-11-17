@@ -1377,6 +1377,26 @@
       "attributes": {
         "kind": { "type": "token" },
         "label": { "type": "text" }
+      },
+      "children": ["semext-draftamo-node", "semext-draftamo-edge"]
+    },
+    "semext-draftamo-node": {
+      "source": "spec/schema/semext/draftamo-diagram.md",
+      "record": false,
+      "partOf": ["semext-draftamo-diagram"],
+      "attributes": {
+        "id": { "type": "token" },
+        "label": { "type": "text" }
+      }
+    },
+    "semext-draftamo-edge": {
+      "source": "spec/schema/semext/draftamo-diagram.md",
+      "record": false,
+      "partOf": ["semext-draftamo-diagram"],
+      "attributes": {
+        "from": { "type": "token", "required": true },
+        "to": { "type": "token", "required": true },
+        "label": { "type": "text" }
       }
     },
     "semext-media-prompt": {

@@ -12,7 +12,9 @@ Contract per conventions.md and the namespace recipe in
 
 ```html
 <semext-draftamo-diagram kind="uml-class" label="Hello world">
-  <node id="a">Hello</node><edge from="a" to="b"></edge><node id="b">World</node>
+  <semext-draftamo-node id="a">Hello</semext-draftamo-node>
+  <semext-draftamo-edge from="a" to="b"></semext-draftamo-edge>
+  <semext-draftamo-node id="b">World</semext-draftamo-node>
 </semext-draftamo-diagram>
 ```
 
@@ -27,11 +29,13 @@ spellings are present.
 
 ## Children
 
-- `<node id label?>text</node>`: one box. The label is the `label`
+- `<semext-draftamo-node id label?>text</…>`: one box. The label is the `label`
   attribute, else the trimmed text, else the `id`. Ids are unique within the
   element.
-- `<edge from to label?>`: one arrow from node `from` to node `to`. An edge
+- `<semext-draftamo-edge from to label?>`: one arrow from node `from` to node `to`. An edge
   naming an unknown id is ignored.
+
+Bare `<node>` and `<edge>` are not used: `node` is already a defined part of `sem-site-tree` and `sem-file-tree`, so the diagram carries its own namespaced parts.
 
 ## Cached content
 

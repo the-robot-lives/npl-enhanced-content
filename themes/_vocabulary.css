@@ -1665,12 +1665,12 @@ semext-styleguide-themes, .semext-styleguide-themes { display: block; }
 .sem-cached-embed-chrome[data-sem-chrome-source="error"] {
   color: var(--sem-muted); font-style: italic; }
 
-/* draftamo-diagram — inline diagram: SVG chrome when upgraded, authored node/edge text JS-off */
+/* draftamo-diagram — inline diagram: SVG chrome when upgraded, authored semext-draftamo-node/edge text JS-off */
 semext-draftamo-diagram[data-sem-upgraded] > :where(:not([data-sem-chrome])) { display: none; }
-semext-draftamo-diagram:not([data-sem-upgraded]) > node,
-semext-draftamo-diagram:not([data-sem-upgraded]) > edge { display: inline; }
-semext-draftamo-diagram:not([data-sem-upgraded]) > node::before { content: attr(label); }
-semext-draftamo-diagram:not([data-sem-upgraded]) > edge::after { content: " \2192\00a0"; }
+semext-draftamo-diagram:not([data-sem-upgraded]) > semext-draftamo-node,
+semext-draftamo-diagram:not([data-sem-upgraded]) > semext-draftamo-edge { display: inline; }
+semext-draftamo-diagram:not([data-sem-upgraded]) > semext-draftamo-node::before { content: attr(label); }
+semext-draftamo-diagram:not([data-sem-upgraded]) > semext-draftamo-edge::after { content: " \2192\00a0"; }
 .semext-draftamo-diagram-chrome svg { max-width: 100%; height: auto; font: .875rem system-ui, sans-serif; }
 .semext-draftamo-diagram-box { fill: var(--sem-bg, Canvas); stroke: var(--sem-border, CanvasText); stroke-width: 1.5; }
 .semext-draftamo-diagram-text { fill: var(--sem-fg, CanvasText); }

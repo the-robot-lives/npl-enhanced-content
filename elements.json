@@ -5311,7 +5311,7 @@
         }
       ],
       "children": [],
-      "example": "<semext-draftamo-diagram kind=\"uml-class\" label=\"Hello world\">\n  <node id=\"a\">Hello</node><edge from=\"a\" to=\"b\"></edge><node id=\"b\">World</node>\n</semext-draftamo-diagram>"
+      "example": "<semext-draftamo-diagram kind=\"uml-class\" label=\"Hello world\">\n  <semext-draftamo-node id=\"a\">Hello</semext-draftamo-node>\n  <semext-draftamo-edge from=\"a\" to=\"b\"></semext-draftamo-edge>\n  <semext-draftamo-node id=\"b\">World</semext-draftamo-node>\n</semext-draftamo-diagram>"
     },
     {
       "name": "semext-media-prompt",
