@@ -54,8 +54,14 @@ import type { CanvasRenderer } from './render/canvas.js';
 import type { CellMetrics, ScreenRenderer } from './render/types.js';
 import { renderTabStrip, renderWindowTitlebar, tabDomId } from '../shared/window-chrome.js';
 import '../shared/sem-scroll.js'; // side-effect: register <sem-scroll> (§10)
+import { clampDpr, fitCounts, measureCellMetrics, type MeasuringContext } from './render/metrics.js';
 import type { KeyEvent } from './screen/types.js';
 import type { AppSpawnAction } from './terminal-core.js';
+
+/** THEROB-187: §8.3 default 14px cell box — the no-2d-context fallback
+ * measureCellMetrics itself uses (advance → fontSize × 0.6, 1.27 leading). */
+const DEFAULT_CELL_WIDTH = 14 * 0.6;
+const DEFAULT_CELL_HEIGHT = Math.round(14 * 1.27);
 
 /**
  * sem-terminal — the reusable terminal core: input, history, transcript,
@@ -183,6 +189,12 @@ export class SemTerminal extends SemElement {
   #mirrorOnly: DOMMirror | null = null;
   /** True when the mirror is the visible view (§8.5 promotion). */
   #domView = false;
+  /**
+   * THEROB-187: bounded re-check budget when `.sem-term-surface` is not
+   * mounted yet. Each `#ensureRenderer` bail with a surface still pending
+   * spends one tick; never a poll loop.
+   */
+  #ensureRetries = 0;
   /** Theme ANSI-16 RGB cache — invalidated whenever metrics change. */
   #ansiCache: Array<Rgb | null> = [];
 
@@ -887,11 +899,22 @@ export class SemTerminal extends SemElement {
    * canvas paint path (§8) — the r2-canvas integration
    * ---------------------------------------------------------------- */
 
-  /** Attach the renderer once the surface exists; idempotent on reconnect. */
+  /** Attach the renderer once the surface appears; idempotent on reconnect. */
   #ensureRenderer(): void {
     if (this.#renderer !== null || this.#domView) return;
     const surface = this.querySelector('.sem-term-surface');
-    if (!(surface instanceof HTMLElement)) return;
+    if (!(surface instanceof HTMLElement)) {
+      // THEROB-187: a surface that mounts after first paint used to leave
+      // the seed (80×24) as the final geometry — the bail was silent and
+      // nothing ever re-checked. Re-check through the Lit lifecycle
+      // (updateComplete ticks), bounded by #ensureRetries: no poll loop.
+      if (this.#ensureRetries < 3) {
+        this.#ensureRetries += 1;
+        void this.updateComplete.then(() => this.#ensureRenderer());
+      }
+      return;
+    }
+    this.#ensureRetries = 0;
     const result = createCanvasRenderer({
       onUnavailable: () => {
         // §8.5: the mirror IS the a11y tree; promote it to the view. The
@@ -935,7 +958,13 @@ export class SemTerminal extends SemElement {
     // required flip — core-screen deviation 2): hidden input (IME/paste),
     // mouse/selection, wheel, and the context menu all ride the surface.
     this.#ensureInputAttached(surface);
-    this.#onMetrics(renderer.metrics());
+    const metrics = renderer.metrics();
+    this.#onMetrics(metrics);
+    // THEROB-187: a renderer that could not measure (no 2d context — the
+    // mirror is the view) reports degenerate metrics; #onMetrics returns
+    // early and the 80×24 seed survives first paint. Refit from the
+    // surface box instead (same clamped resize path).
+    if (!(metrics.cols > 0) || !(metrics.rows > 0)) this.#refitToSurface();
   }
 
   /** §8.5a: the shell (when present) learns the canvas proved available. */
@@ -973,6 +1002,50 @@ export class SemTerminal extends SemElement {
     // The mirror-only fallback paints the same surface — the input rides it
     // there too (wheel, selection, context menu have no canvas to lean on).
     this.#ensureInputAttached(surface);
+    // THEROB-187: the mirror-only path had no metrics source (DOMMirror does
+    // not measure), so the 80×24 seed survived first paint here too. Measure
+    // the surface once at mount; later size changes are out of scope for the
+    // standalone mirror.
+    this.#refitToSurface();
+  }
+
+  /**
+   * THEROB-187: measure `.sem-term-surface` and refit the screen through
+   * `#onMetrics` — the same clamped resize the canvas path uses. Used by
+   * the mirror-only path, which has no renderer metrics callback; a zero
+   * box (surface not laid out) leaves the geometry untouched.
+   */
+  #refitToSurface(): void {
+    const surface = this.querySelector('.sem-term-surface');
+    if (!(surface instanceof HTMLElement)) return;
+    const width = surface.clientWidth;
+    const height = surface.clientHeight;
+    if (!(width > 0) || !(height > 0)) return;
+    const cell = this.#probeCellBox();
+    const { cols, rows } = fitCounts(width, height, cell.cellWidth, cell.cellHeight);
+    const view = this.ownerDocument?.defaultView;
+    this.#onMetrics({
+      cols,
+      rows,
+      cellWidth: cell.cellWidth,
+      cellHeight: cell.cellHeight,
+      dpr: clampDpr(view?.devicePixelRatio ?? 1),
+    });
+  }
+
+  /**
+   * THEROB-187: cell box for the mirror-only refit. A probe canvas measures
+   * when the document can (forced-colors keeps 2d contexts); without one
+   * (no-2d-context refusal), fall back to the §8.3 default 14px box.
+   */
+  #probeCellBox(): { cellWidth: number; cellHeight: number } {
+    const probe = this.ownerDocument?.createElement?.('canvas');
+    const ctx = probe?.getContext?.('2d') as MeasuringContext | null;
+    if (ctx !== null && ctx !== undefined) {
+      const raw = measureCellMetrics(ctx);
+      return { cellWidth: raw.cellWidth, cellHeight: raw.cellHeight };
+    }
+    return { cellWidth: DEFAULT_CELL_WIDTH, cellHeight: DEFAULT_CELL_HEIGHT };
   }
 
   /**
