@@ -315,6 +315,23 @@
         "audience": {}
       }
     },
+    "sem-badge": {
+      "source": "spec/schema/sem-badge.md",
+      "record": false,
+      "attributes": {
+        "variant": {
+          "type": "token",
+          "values": [
+            "success",
+            "warning",
+            "danger",
+            "info",
+            "neutral"
+          ],
+          "default": "neutral"
+        }
+      }
+    },
     "sem-note": {
       "source": "spec/schema/sem-note.md",
       "record": true,

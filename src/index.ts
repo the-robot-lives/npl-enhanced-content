@@ -57,6 +57,8 @@ export {
 /* Elements — importing registers the custom element */
 export { SemNote } from './lit/sem-note.js';
 import './lit/sem-note.js';
+export { SemBadge } from './lit/sem-badge.js';
+import './lit/sem-badge.js';
 export { SemFacts } from './lit/sem-facts.js';
 import './lit/sem-facts.js';
 /* sem-question + sem-option — the quiz block (shipped 0.9.1, SEMTEX-009) */

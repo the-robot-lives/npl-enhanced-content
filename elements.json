@@ -4,6 +4,7 @@
   "generatedFrom": [
     "spec/schema/sem-api-call.md",
     "spec/schema/sem-audiences.md",
+    "spec/schema/sem-badge.md",
     "spec/schema/sem-browser.md",
     "spec/schema/sem-changelogs.md",
     "spec/schema/sem-chronology.md",
@@ -93,7 +94,7 @@
     "spec/schema/agent-kit/ticket-ref.md",
     "spec/schema/agent-kit/tickets.md"
   ],
-  "tagCount": 114,
+  "tagCount": 115,
   "tags": [
     {
       "name": "agent-kit-acceptance-criteria",
@@ -2733,6 +2734,16 @@
       ],
       "children": [],
       "example": "<sem-audiences>\n  <sem-profile id=\"reader\" label=\"Reader\"></sem-profile>\n  <sem-profile id=\"operator\" label=\"Operator\" implies=\"reader\"></sem-profile>\n</sem-audiences>"
+    },
+    {
+      "name": "sem-badge",
+      "family": "sem",
+      "source": "spec/schema/sem-badge.md",
+      "summary": "A small inline status chip: a glyph plus the authored text, never colour alone.",
+      "description": "A small inline status chip: a glyph plus the authored text, never colour alone. `variant` is `success` | `warning` | `danger` | `info` | `neutral` (default `neutral`); an unknown value renders as `neutral`. Light DOM, the text is the content. Presentation is vocabulary CSS only, so JS-off reads the same: `✓ success: train 6 live`. Not a record (status chrome, not a claim); the text is extracted as ordinary prose.",
+      "attributes": [],
+      "children": [],
+      "example": "<sem-badge variant=\"success\">train 6 live</sem-badge>\n<sem-badge variant=\"warning\">train 7 blocked</sem-badge>"
     },
     {
       "name": "sem-browser",
@@ -5725,6 +5736,12 @@
     }
   ],
   "gaps": [
+    {
+      "tag": "sem-badge",
+      "missing": [
+        "attributes"
+      ]
+    },
     {
       "tag": "sem-component",
       "missing": [

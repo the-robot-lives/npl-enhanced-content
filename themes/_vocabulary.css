@@ -4338,3 +4338,22 @@ sem-tui sem-tui { margin: .75rem 0; }
   .sem-media-prompt-generate { transition: none; }
 }
 /* ── end sem-media-prompt ── */
+
+/* ── sem-badge — inline status chip: glyph + text, never colour alone ── */
+sem-badge, .sem-badge {
+  --sem-badge-c: var(--sem-muted);
+  display: inline-flex; align-items: baseline; gap: .3em;
+  padding: .05em .6em; border: 1px solid var(--sem-badge-c); border-radius: 999px;
+  background: color-mix(in srgb, var(--sem-badge-c) 12%, var(--sem-bg));
+  color: var(--sem-fg); font-size: .85em; line-height: 1.5; white-space: nowrap;
+}
+sem-badge::before, .sem-badge::before { content: "•"; content: "•" / "neutral: "; color: var(--sem-badge-c); font-weight: 700; }
+:is(sem-badge, .sem-badge)[variant="success"] { --sem-badge-c: var(--sem-note-tip); }
+:is(sem-badge, .sem-badge)[variant="success"]::before { content: "✓"; content: "✓" / "success: "; }
+:is(sem-badge, .sem-badge)[variant="warning"] { --sem-badge-c: var(--sem-note-warning); }
+:is(sem-badge, .sem-badge)[variant="warning"]::before { content: "⚠"; content: "⚠" / "warning: "; }
+:is(sem-badge, .sem-badge)[variant="danger"] { --sem-badge-c: var(--sem-note-danger); }
+:is(sem-badge, .sem-badge)[variant="danger"]::before { content: "✕"; content: "✕" / "danger: "; }
+:is(sem-badge, .sem-badge)[variant="info"] { --sem-badge-c: var(--sem-note-info); }
+:is(sem-badge, .sem-badge)[variant="info"]::before { content: "ℹ"; content: "ℹ" / "info: "; }
+/* ── end sem-badge ── */

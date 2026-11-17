@@ -2,6 +2,7 @@
 
 ## 2026-11-17
 
+- **feat(core): `sem-badge` — inline status chip (THEROB-188).** `<sem-badge variant="success|warning|danger|info|neutral">text</sem-badge>`: glyph + text, never colour alone; vocabulary CSS only so JS-off reads the same, unknown variant → `neutral`. Spec `spec/schema/sem-badge.md`, schema entry, element, `test/unit/sem-badge.test.ts`.
 - **feat(agent-kit): `agent-kit-ref` — inline doc/artifact reference (THEROB-116).** `<agent-kit-ref kind="doc|artifact" id="<uuid>">Title</agent-kit-ref>`: authored text is the chip label and JS-off view; upgraded it is `role="link"`, focusable, and emits `agent-kit:ref-follow` {kind, id} on click/Enter/Space; invalid kind or UUID stays inert with one warning; fetches and navigates nothing (the host decides). New `spec/schema/agent-kit/ref.md`, schema entry, `elements.json`, vocabulary CSS, demo line, `test/unit/agent-kit-ref.test.ts`. Named `agent-kit-*` rather than `sem-ref` because it is bound to tobor records (precedent: `agent-kit-ticket-ref`).
 
 - **fix(semext): `semext-draftamo-diagram` children are `<semext-draftamo-node>` / `<semext-draftamo-edge>` (THEROB-116).** Bare `<node>` is already a defined part of `sem-site-tree`/`sem-file-tree`, so inline diagrams drew orphan-part validator warnings; the diagram now declares its own namespaced parts in `semtext.schema.json` (`partOf`), and the vocabulary CSS, schema doc, demo and tests follow.
