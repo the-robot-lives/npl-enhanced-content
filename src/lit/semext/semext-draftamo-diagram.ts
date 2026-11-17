@@ -2,6 +2,7 @@ import { html, render, svg, type TemplateResult } from 'lit';
 import { SemElement } from '../base.js';
 import { defineSemext, semextParam } from './shared.js';
 import { describe, layout, parseDiagram, type DiagramModel } from './draftamo-diagram-model.js';
+import { importViewerModule, toViewerDocument, type ViewerInstance } from './draftamo-diagram-3d-adapter.js';
 
 /**
  * semext-draftamo-diagram — an INLINE Draftamo diagram: the diagram XML is
@@ -31,6 +32,9 @@ export class SemextDraftamoDiagram extends SemElement {
 
   #chrome: HTMLElement | null = null;
   #mo: MutationObserver | null = null;
+  #viewer: ViewerInstance | null = null;
+  #viewerHost: HTMLElement | null = null;
+  #mountToken = 0;
 
   constructor() {
     super();
@@ -51,6 +55,7 @@ export class SemextDraftamoDiagram extends SemElement {
   override disconnectedCallback(): void {
     this.#mo?.disconnect();
     this.#mo = null;
+    this.#teardownViewer();
     super.disconnectedCallback();
   }
 
@@ -74,8 +79,57 @@ export class SemextDraftamoDiagram extends SemElement {
       this.append(chrome);
     }
     this.#mo?.takeRecords();
-    render(this.#svg(model), this.#chrome);
+    const src = (semextParam(this, 'viewer-src') ?? '').trim();
+    if (!src) {
+      // Default path: exactly the 2D SVG behavior.
+      this.#teardownViewer();
+      render(this.#svg(model), this.#chrome);
+    } else {
+      // 2D first (the fallback stays warm), then lazily mount the 3D viewer;
+      // on success it replaces the SVG, on failure the SVG simply remains.
+      render(this.#svg(model), this.#chrome);
+      this.#mountViewer(src, model);
+    }
     this.#mo?.takeRecords();
+  }
+
+  /** Lazily load `viewer-src` ({ createViewer }) and mount the 3D document. */
+  async #mountViewer(src: string, model: DiagramModel): Promise<void> {
+    const token = ++this.#mountToken;
+    try {
+      const { createViewer } = await importViewerModule(src);
+      if (token !== this.#mountToken || !this.#chrome || !this.isConnected) return;
+      this.#teardownViewer();
+      const host = document.createElement('div');
+      host.className = 'semext-draftamo-diagram-viewer';
+      this.#viewerHost = host;
+      const viewer = createViewer(host);
+      this.#viewer = viewer;
+      viewer.setDocument(toViewerDocument(model, { title: this.#title() }), { tracedEdgeIds: new Set() });
+      viewer.start();
+      // Atomically swap the 3D view in for the 2D SVG — never half-mounted:
+      // construction + setDocument + start have all succeeded by now.
+      this.#chrome.replaceChildren(host);
+      this.#mo?.takeRecords();
+    } catch (err) {
+      if (token !== this.#mountToken) return;
+      console.warn('semext-draftamo-diagram: 3D viewer failed to load; falling back to 2D SVG.', err);
+      this.#teardownViewer();
+      this.#mo?.takeRecords();
+    }
+  }
+
+  #teardownViewer(): void {
+    this.#mountToken++;
+    this.#viewer?.stopLoop();
+    this.#viewer?.dispose();
+    this.#viewer = null;
+    this.#viewerHost = null;
+  }
+
+  #title(): string {
+    const kind = (semextParam(this, 'kind') ?? this.kind ?? 'uml-class').trim() || 'uml-class';
+    return `${(semextParam(this, 'label') ?? this.label ?? 'Diagram').trim() || 'Diagram'} (${kind})`;
   }
 
   #svg(model: DiagramModel): TemplateResult {
