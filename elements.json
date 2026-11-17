@@ -5283,7 +5283,7 @@
           "type": "",
           "allowedValues": [],
           "default": "uml-class",
-          "description": "`uml-class` — The notation. Only the box-and-arrow form is rendered today; other kinds render the same way until their renderers land."
+          "description": "`token` — The notation. Only the box-and-arrow form is rendered today; other kinds render the same way until their renderers land."
         },
         {
           "name": "label",

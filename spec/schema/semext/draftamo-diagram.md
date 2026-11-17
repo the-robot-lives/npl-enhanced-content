@@ -22,7 +22,7 @@ Class-form alias (conventions Appendix A, semext namespace):
 `.semext-draftamo-diagram[data-kind]`; `data-<name>` wins when both
 spellings are present.
 
-- `kind`: `uml-class` — default `uml-class`. The notation. Only the box-and-arrow form is
+- `kind`: `token` — default `uml-class`. The notation. Only the box-and-arrow form is
   rendered today; other kinds render the same way until their renderers land.
 - `label`: `string` — default `Diagram`. The accessible name prefix.
 - `id`, `tags` per the global attribute catalog — no bullet needed.
