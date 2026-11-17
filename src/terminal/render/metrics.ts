@@ -60,6 +60,16 @@ export function clampDpr(dpr: number): number {
 }
 
 /**
+ * THEROB-187: the §8.3 default 14px cell box — the fallback
+ * `measureCellMetrics` itself applies when no advance is measurable
+ * (advance → fontSize × 0.6, 1.27 leading). Single source: consumers
+ * (sem-terminal's mirror-only refit, tests) import these instead of
+ * re-deriving the formula.
+ */
+export const DEFAULT_CELL_WIDTH = 14 * 0.6;
+export const DEFAULT_CELL_HEIGHT = Math.round(14 * 1.27);
+
+/**
  * Fit counts for a host box: how many cols/rows the box fits at the given
  * cell size (at least one). Clamping to §4.6's [20,500]×[4,200] is the
  * screen's call on resize; this only reports geometry.

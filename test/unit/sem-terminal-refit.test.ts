@@ -11,7 +11,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '../../src/terminal/sem-terminal.js';
 import { SemTerminal } from '../../src/terminal/sem-terminal.js';
-import { fitCounts, measureCellMetrics } from '../../src/terminal/render/metrics.js';
+import {
+  DEFAULT_CELL_HEIGHT,
+  DEFAULT_CELL_WIDTH,
+  fitCounts,
+  measureCellMetrics,
+} from '../../src/terminal/render/metrics.js';
 import type { MeasuringContext } from '../../src/terminal/render/metrics.js';
 
 /**
@@ -28,14 +33,25 @@ function stubSurfaceBox(width: number, height: number): void {
   }
 }
 
-/** Expected refit outcome for a 800×400 surface under the fallback cell box. */
+/** Mutable-box variant: the stubbed geometry can change mid-test (the
+ * zero-box → layout-arrives scenario). */
+function stubSurfaceBoxHolder(box: { w: number; h: number }): void {
+  for (const prop of ['clientWidth', 'clientHeight'] as const) {
+    vi.spyOn(HTMLElement.prototype, prop, 'get').mockImplementation(function (this: HTMLElement) {
+      return this.classList?.contains('sem-term-surface') ? (prop === 'clientWidth' ? box.w : box.h) : 0;
+    });
+  }
+}
+
+/** Expected refit outcome for a 800×400 surface under the default cell box
+ * (single source: the metrics.ts constants — no formula duplication). */
 const expectedFit = (): { cols: number; rows: number } => {
   const probe = document.createElement('canvas');
   const ctx = probe.getContext('2d') as MeasuringContext | null;
   const cell =
     ctx !== null
       ? measureCellMetrics(ctx)
-      : { cellWidth: 14 * 0.6, cellHeight: Math.round(14 * 1.27) };
+      : { cellWidth: DEFAULT_CELL_WIDTH, cellHeight: DEFAULT_CELL_HEIGHT };
   return fitCounts(800, 400, cell.cellWidth, cell.cellHeight);
 };
 
@@ -126,5 +142,75 @@ describe('THEROB-187 width refit', () => {
     // No box stubs: happy-dom reports clientWidth 0 — refit must leave the
     // seed alone rather than fit a 0px pane (which would clamp to COLS_MIN).
     expect(el.screen.cols).toBe(80);
+  });
+
+  it('review r1 f1: a disconnect before the deferred tick lands never attaches a renderer', async () => {
+    const el = document.createElement('sem-terminal') as SemTerminal;
+    const realQuery = el.querySelector.bind(el);
+    let surfaceLookups = 0;
+    vi.spyOn(el, 'querySelector').mockImplementation(((selector: string) => {
+      if (selector === '.sem-term-surface') {
+        surfaceLookups += 1;
+        if (surfaceLookups <= 2) return null; // defer past the first paint
+      }
+      return realQuery(selector);
+    }) as typeof el.querySelector);
+    document.body.appendChild(el);
+    el.remove(); // disconnect before any scheduled tick can run
+    await settle(el);
+    // The isConnected guard dropped every pending tick: no detached
+    // attach, so the paint attribute was never written.
+    expect(el.getAttribute('data-paint')).toBeNull();
+  });
+
+  it('review r1 f2: a degenerate 2d context never leaks NaN into geometry', async () => {
+    // The first getContext call is the renderer's own 2d probe — keep it
+    // null (mirror promotion); the NEXT one is #probeCellBox's measure,
+    // which sees the degenerate context.
+    let getContextCalls = 0;
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation((() => {
+      getContextCalls += 1;
+      if (getContextCalls === 1) return null;
+      return {
+        font: '',
+        measureText: () => ({ width: Number.NaN, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0 }),
+      } as unknown as CanvasRenderingContext2D;
+    }) as typeof HTMLCanvasElement.prototype.getContext);
+    stubSurfaceBox(800, 400);
+    const el = await attach();
+    expect(Number.isFinite(el.screen.cols)).toBe(true);
+    expect(Number.isFinite(el.screen.rows)).toBe(true);
+    expect(el.screen.cols).not.toBe(80);
+    expect(el.screen.cols).toBe(expectedFit().cols);
+  });
+
+  it('review r1 f3: a zero-box surface at mount refits once layout arrives', async () => {
+    const box = { w: 0, h: 0 };
+    stubSurfaceBoxHolder(box);
+    const el = await attach(); // mount refit sees 0×0 → bounded re-check armed
+    box.w = 800; // layout "arrives"
+    box.h = 400;
+    el.requestUpdate();
+    await vi.waitFor(() => {
+      expect(el.screen.cols).toBe(expectedFit().cols);
+    });
+  });
+
+  it('review r1 f4: a fresh attach re-arms the exhausted re-check window', async () => {
+    const el = document.createElement('sem-terminal') as SemTerminal;
+    const realQuery = el.querySelector.bind(el);
+    vi.spyOn(el, 'querySelector').mockImplementation(((selector: string) =>
+      selector === '.sem-term-surface' ? null : realQuery(selector)) as typeof el.querySelector);
+    document.body.appendChild(el);
+    await settle(el);
+    // Window exhausted while the surface never appeared — the seed stands.
+    expect(el.screen.cols).toBe(80);
+    // Fresh attach: budget re-armed, real surface + geometry restored.
+    vi.restoreAllMocks();
+    stubSurfaceBox(800, 400);
+    el.remove();
+    document.body.appendChild(el);
+    await settle(el);
+    expect(el.screen.cols).toBe(expectedFit().cols);
   });
 });
