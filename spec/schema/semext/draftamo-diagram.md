@@ -37,7 +37,9 @@ spellings are present.
   (verified 2026-11-17); (2) the default URL is immutable per version — integrity-sensitive
   deployments should keep the pinned default (or pin their own `viewer-src`), not track
   `latest/`; (3) the publish of a new version dir is owner-gated, and the default constant
-  bumps only in the release that publishes it.
+  bumps only in the release that publishes it. Accepted residual: dynamic `import()` cannot
+  carry an SRI attribute (platform limitation), so integrity rests on the immutable
+  version object + the org-controlled, owner-gated bucket — not on a content hash.
 - `id`, `tags` per the global attribute catalog — no bullet needed.
 
 ## Children
