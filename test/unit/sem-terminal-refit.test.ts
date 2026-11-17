@@ -118,8 +118,12 @@ describe('THEROB-187 width refit', () => {
     }) as typeof el.querySelector);
     document.body.appendChild(el);
     await settle(el);
-    expect(el.screen.cols).not.toBe(80);
-    expect(el.screen.cols).toBe(expectedFit().cols);
+    // The re-check is rAF-anchored (an idle element must not burn the
+    // window on microtasks) — waitFor bridges the frame gap.
+    await vi.waitFor(() => {
+      expect(el.screen.cols).not.toBe(80);
+      expect(el.screen.cols).toBe(expectedFit().cols);
+    });
   });
 
   it('deferred mount with a surface that never appears gives up bounded (no poll loop)', async () => {
@@ -187,10 +191,16 @@ describe('THEROB-187 width refit', () => {
   it('review r1 f3: a zero-box surface at mount refits once layout arrives', async () => {
     const box = { w: 0, h: 0 };
     stubSurfaceBoxHolder(box);
-    const el = await attach(); // mount refit sees 0×0 → bounded re-check armed
-    box.w = 800; // layout "arrives"
+    const el = document.createElement('sem-terminal') as SemTerminal;
+    document.body.appendChild(el);
+    await el.updateComplete; // mount + zero-box refit: one bounded tick armed
+    // Set "layout" in this microtask continuation — rAF ticks are
+    // macrotasks, so every armed tick now lands on the wide box instead of
+    // burning the window while the box was still zero.
+    box.w = 800;
     box.h = 400;
     el.requestUpdate();
+    await settle(el);
     await vi.waitFor(() => {
       expect(el.screen.cols).toBe(expectedFit().cols);
     });

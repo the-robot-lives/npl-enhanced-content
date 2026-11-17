@@ -35,15 +35,27 @@ export interface RawMetrics {
   fontCss: string;
 }
 
+/**
+ * THEROB-187: §8.3 defaults — the single formula source for the fallback
+ * cell box. DEFAULT_CELL_WIDTH/HEIGHT are that box instantiated at the
+ * default font size; `measureCellMetrics` derives its per-size fallbacks
+ * from the same ratios, so the numbers cannot drift apart (review r2).
+ */
+const DEFAULT_FONT_SIZE = 14;
+const DEFAULT_LINE_HEIGHT = 1.27;
+const DEFAULT_ADVANCE_RATIO = 0.6;
+export const DEFAULT_CELL_WIDTH = DEFAULT_FONT_SIZE * DEFAULT_ADVANCE_RATIO;
+export const DEFAULT_CELL_HEIGHT = Math.round(DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT);
+
 /** Measure the monospace cell box. Pure given a measuring context. */
 export function measureCellMetrics(ctx: MeasuringContext, options: MeasureOptions = {}): RawMetrics {
-  const fontSize = options.fontSize ?? 14;
-  const lineHeight = options.lineHeight ?? 1.27;
+  const fontSize = options.fontSize ?? DEFAULT_FONT_SIZE;
+  const lineHeight = options.lineHeight ?? DEFAULT_LINE_HEIGHT;
   const fontCss = `${fontSize}px ${options.fontFamily ?? SHELL_FONT_STACK}`;
   ctx.font = fontCss;
   const advance = ctx.measureText('W').width;
   const wide = ctx.measureText('Ｗ').width; // Ｗ FULLWIDTH LATIN CAPITAL LETTER W
-  const cellWidth = advance > 0 ? advance : fontSize * 0.6;
+  const cellWidth = advance > 0 ? advance : (DEFAULT_CELL_WIDTH / DEFAULT_FONT_SIZE) * fontSize;
   return {
     cellWidth,
     cellHeight: Math.round(fontSize * lineHeight),
@@ -58,16 +70,6 @@ export function clampDpr(dpr: number): number {
   if (Number.isNaN(dpr)) return 1;
   return Math.min(3, Math.max(1, dpr));
 }
-
-/**
- * THEROB-187: the §8.3 default 14px cell box — the fallback
- * `measureCellMetrics` itself applies when no advance is measurable
- * (advance → fontSize × 0.6, 1.27 leading). Single source: consumers
- * (sem-terminal's mirror-only refit, tests) import these instead of
- * re-deriving the formula.
- */
-export const DEFAULT_CELL_WIDTH = 14 * 0.6;
-export const DEFAULT_CELL_HEIGHT = Math.round(14 * 1.27);
 
 /**
  * Fit counts for a host box: how many cols/rows the box fits at the given

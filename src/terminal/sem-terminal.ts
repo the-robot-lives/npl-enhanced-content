@@ -914,14 +914,17 @@ export class SemTerminal extends SemElement {
    * ---------------------------------------------------------------- */
 
   /**
-   * THEROB-187 (review r1): layout does not advance with render cycles —
-   * updateComplete collapses to back-to-back microtasks when the element
-   * is idle, so the zero-box re-check anchors on requestAnimationFrame
-   * (one tick per frame, a real layout signal), same bounded window,
-   * isConnected guard, rejections warn. Falls back to updateComplete
-   * where rAF is unavailable (old engines).
+   * THEROB-187 (review r2): the one bounded re-check primitive, shared by
+   * the deferred-mount (null surface) and zero-geometry (no layout) paths.
+   * Anchored on requestAnimationFrame — an idle element resolves
+   * updateComplete in back-to-back microtasks, which would burn the whole
+   * window without a render or a layout pass ever landing, and a surface
+   * that mounts later would be missed. rAF is one tick per frame; the
+   * fallback keeps updateComplete only where rAF is unavailable (old
+   * engines). Each spend schedules exactly one tick, dropped when the
+   * element has disconnected, rejections surfaced as a warning.
    */
-  #retryAfterLayout(action: () => void): void {
+  #boundedRecheck(action: () => void): void {
     if (this.#retryBudget <= 0) return;
     this.#retryBudget -= 1;
     const run = (): void => {
@@ -943,26 +946,6 @@ export class SemTerminal extends SemElement {
     });
   }
 
-  /**
-   * THEROB-187 (review r1): one bounded re-check window shared by the
-   * deferred-mount path (updateComplete anchor — surfaces mount via
-   * render) and the zero-geometry path (rAF anchor — layout advances per
-   * frame, not per render). Each spend schedules exactly one tick; ticks
-   * are dropped when disconnected; rejections surface as a warning.
-   */
-  #retryAfterRender(action: () => void): void {
-    if (this.#retryBudget <= 0) return;
-    this.#retryBudget -= 1;
-    void this.updateComplete
-      .then(() => {
-        if (!this.isConnected) return; // disconnected — drop the tick
-        action();
-      })
-      .catch((error: unknown) => {
-        console.warn('sem-terminal: deferred surface re-check failed', error);
-      });
-  }
-
   /** Attach the renderer once the surface appears; idempotent on reconnect. */
   #ensureRenderer(): void {
     if (this.#renderer !== null || this.#domView) return;
@@ -970,9 +953,10 @@ export class SemTerminal extends SemElement {
     if (!(surface instanceof HTMLElement)) {
       // THEROB-187: a surface that mounts after first paint used to leave
       // the seed (80×24) as the final geometry — the bail was silent and
-      // nothing ever re-checked. Re-check through the Lit lifecycle via
-      // #retryAfterRender: bounded, isConnected-guarded, rejections warn.
-      this.#retryAfterRender(() => this.#ensureRenderer());
+      // nothing ever re-checked. #boundedRecheck: rAF-anchored (an idle
+      // element must not burn the window on microtasks), bounded,
+      // isConnected-guarded, rejections warn.
+      this.#boundedRecheck(() => this.#ensureRenderer());
       return;
     }
     this.#retryBudget = SURFACE_RETRY_BUDGET;
@@ -1086,7 +1070,7 @@ export class SemTerminal extends SemElement {
       // (hidden tab, late CSS) — a zero box used to give up silently and
       // the 80×24 seed survived. Same bounded re-check window as the
       // deferred-mount path, so the refit lands when layout arrives.
-      this.#retryAfterLayout(() => this.#refitToSurface());
+      this.#boundedRecheck(() => this.#refitToSurface());
       return;
     }
     const cell = this.#probeCellBox();
