@@ -87,6 +87,10 @@ export class SemextDraftamoDiagram extends SemElement {
     } else {
       // 2D first (the fallback stays warm), then lazily mount the 3D viewer;
       // on success it replaces the SVG, on failure the SVG simply remains.
+      // Teardown BEFORE the re-render: a mounted viewer's host is about to be
+      // wiped by the lit render — stop its loop first or it keeps rAF-ing
+      // against a dead host.
+      this.#teardownViewer();
       render(this.#svg(model), this.#chrome);
       this.#mountViewer(src, model);
     }
@@ -96,25 +100,30 @@ export class SemextDraftamoDiagram extends SemElement {
   /** Lazily load `viewer-src` ({ createViewer }) and mount the 3D document. */
   async #mountViewer(src: string, model: DiagramModel): Promise<void> {
     const token = ++this.#mountToken;
+    let viewer: ViewerInstance | null = null;
     try {
       const { createViewer } = await importViewerModule(src);
       if (token !== this.#mountToken || !this.#chrome || !this.isConnected) return;
-      this.#teardownViewer();
       const host = document.createElement('div');
       host.className = 'semext-draftamo-diagram-viewer';
-      this.#viewerHost = host;
-      const viewer = createViewer(host);
-      this.#viewer = viewer;
+      // Attach the host BEFORE construction: the viewer measures the host box,
+      // and a detached host means a zero-size canvas. The fallback stays
+      // intact until construction + setDocument + start have all succeeded —
+      // and any failure below restores it — so the view is never half-mounted
+      // and no teardown happens between the token capture and construction
+      // (a teardown here would bump the token and silence the failure warn).
+      this.#chrome.replaceChildren(host);
+      viewer = createViewer(host);
       viewer.setDocument(toViewerDocument(model, { title: this.#title() }), { tracedEdgeIds: new Set() });
       viewer.start();
-      // Atomically swap the 3D view in for the 2D SVG — never half-mounted:
-      // construction + setDocument + start have all succeeded by now.
-      this.#chrome.replaceChildren(host);
+      this.#viewer = viewer;
+      this.#viewerHost = host;
       this.#mo?.takeRecords();
     } catch (err) {
+      viewer?.dispose();
       if (token !== this.#mountToken) return;
       console.warn('semext-draftamo-diagram: 3D viewer failed to load; falling back to 2D SVG.', err);
-      this.#teardownViewer();
+      if (this.#chrome && this.isConnected) render(this.#svg(model), this.#chrome);
       this.#mo?.takeRecords();
     }
   }
