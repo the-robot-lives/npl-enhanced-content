@@ -15,7 +15,7 @@ import { parseDiagram } from '../../src/lit/semext/draftamo-diagram-model.js';
 import { setViewerImporterForTests, toViewerDocument, type ViewerInstance } from '../../src/lit/semext/draftamo-diagram-3d-adapter.js';
 import '../../src/lit/semext/index.js';
 
-const HELLO = '<node id="a">Hello</node><edge from="a" to="b" label="uses"></edge><node id="b">World</node>';
+const HELLO = '<semext-draftamo-node id="a">Hello</semext-draftamo-node><semext-draftamo-edge from="a" to="b" label="uses"></semext-draftamo-edge><semext-draftamo-node id="b">World</semext-draftamo-node>';
 
 function modelOf(inner: string) {
   const host = document.createElement('div');
