@@ -21,6 +21,7 @@
 //   Scenario: authored children win over a stale payload; the element re-syncs the payload
 //   Scenario: invalid payload → empty model + warn once (re-render never re-warns)
 //   Scenario: authored diagram syncs the data child as LAST child with the v1 JSON
+//   Scenario: duplicate carriers collapse to one — the last child, carrying the fresh payload
 //   Scenario: serialize strips chrome, keeps authored children + the payload
 //   Scenario: extraction mints ONE diagram record (graph + counts + text); children mint nothing; JS on/off identical
 //   Scenario: sanitize keeps the data payload child
@@ -300,13 +301,26 @@ describe('semext-draftamo-diagram', () => {
     const data = el.querySelector(':scope > semext-draftamo-data')!;
     expect(data.getAttribute('data-sem-chrome')).toBeNull();
     expect(el.lastElementChild).toBe(data);
+    expect(data.hasAttribute('hidden')).toBe(true);
+    // No `label` attribute → the payload omits the optional label key.
     expect(JSON.parse(data.textContent!)).toEqual({
       v: 1,
       kind: 'uml-class',
-      label: 'Diagram',
       nodes: [{ id: 'a', label: 'Hello' }, { id: 'b', label: 'World' }],
       edges: [{ from: 'a', to: 'b', label: '' }],
     });
+    el.remove();
+  });
+
+  it('duplicate carriers collapse to one — the last child, carrying the fresh payload', async () => {
+    const stale = '{"v":1,"kind":"stale","nodes":[],"edges":[]}';
+    const el = await mount('<semext-draftamo-data>' + stale + '</semext-draftamo-data><semext-draftamo-data>' + stale + '</semext-draftamo-data>' + HELLO);
+    const carriers = el.querySelectorAll(':scope > semext-draftamo-data');
+    expect(carriers).toHaveLength(1);
+    expect(el.lastElementChild).toBe(carriers[0]);
+    const payload = JSON.parse(carriers[0].textContent!);
+    expect(payload.kind).toBe('uml-class');
+    expect(payload.nodes).toEqual([{ id: 'a', label: 'Hello' }, { id: 'b', label: 'World' }]);
     el.remove();
   });
 
@@ -315,7 +329,9 @@ describe('semext-draftamo-diagram', () => {
     const out = serialize(el);
     expect(out).not.toContain('data-sem-chrome');
     expect(out).toContain('<semext-draftamo-node');
-    expect(out).toContain('<semext-draftamo-data>');
+    // serialize keeps ALL attributes, so the runtime-created carrier exports
+    // with the hidden attribute intact.
+    expect(out).toContain('<semext-draftamo-data hidden="">');
     // Re-parse the export: parseDiagram reads DIRECT children, so parse the
     // diagram element itself, not the wrapper host.
     const host = document.createElement('div');
@@ -357,7 +373,6 @@ describe('semext-draftamo-diagram', () => {
     const payload = {
       v: 1,
       kind: 'uml-class',
-      label: 'Diagram',
       nodes: [{ id: 'a', label: 'Hello' }, { id: 'b', label: 'World' }],
       edges: [{ from: 'a', to: 'b', label: '' }],
     };
@@ -380,6 +395,9 @@ describe('semext-draftamo-diagram', () => {
     expect(tags).toContain('semext-draftamo-diagram');
     expect(tags).toContain('semext-draftamo-node');
     expect(tags).toContain('semext-draftamo-data');
+    // sanitize drops the `hidden` attribute (not on ALLOWED_ATTRS) — the
+    // element survives; hiding falls back to the vocabulary CSS rule.
+    expect(res.droppedAttrs).toBeGreaterThanOrEqual(1);
     expect(res.droppedTags).toBe(0);
   });
 });

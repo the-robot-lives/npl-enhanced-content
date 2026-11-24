@@ -150,11 +150,24 @@ export class SemextDraftamoDiagram extends SemElement {
   /** Write/update the `<semext-draftamo-data>` v1 payload from the parsed model. */
   #syncData(model: DiagramModel): void {
     const kind = (semextParam(this, 'kind') ?? this.kind ?? 'uml-class').trim() || 'uml-class';
-    const label = (semextParam(this, 'label') ?? this.label ?? 'Diagram').trim() || 'Diagram';
+    // Label is authored-only in the payload: written when a label attribute
+    // exists, omitted otherwise — matching the extraction record. The
+    // 'Diagram' default stays chrome-only (accessible name / title).
+    const label = (semextParam(this, 'label') ?? '').trim() || undefined;
     const json = JSON.stringify(graphToJson(model, { kind, label }));
-    let data = this.querySelector(':scope > semext-draftamo-data');
+    // Exactly one carrier, and it is the LAST child: parseDiagram reads the
+    // last-wins payload, so an earlier duplicate would go stale while the
+    // fresh one gets read. Collapse duplicates to the last, create if none.
+    const carriers = Array.from(this.querySelectorAll(':scope > semext-draftamo-data'));
+    for (const stale of carriers.slice(0, -1)) stale.remove();
+    let data = carriers.at(-1);
     if (!data) {
       data = document.createElement('semext-draftamo-data');
+      data.setAttribute('hidden', '');
+      this.append(data);
+    } else if (data !== this.lastElementChild) {
+      // The chrome div (appended in #paint) may sit after it — move the
+      // carrier so it is always the LAST child, the one parseDiagram reads.
       this.append(data);
     }
     // Compare-before-write: identical payloads cause no churn (and no
