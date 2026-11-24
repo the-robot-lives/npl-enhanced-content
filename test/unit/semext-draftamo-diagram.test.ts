@@ -25,6 +25,7 @@
 //   Scenario: serialize strips chrome, keeps authored children + the payload
 //   Scenario: extraction mints ONE diagram record (graph + counts + text); children mint nothing; JS on/off identical
 //   Scenario: sanitize keeps the data payload child
+//   Scenario: in-session authored deletion drops the runtime payload (no resurrection); an invalid payload mints no record
 
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { SemextDraftamoDiagram } from '../../src/lit/semext/semext-draftamo-diagram.js';
@@ -399,5 +400,28 @@ describe('semext-draftamo-diagram', () => {
     // element survives; hiding falls back to the vocabulary CSS rule.
     expect(res.droppedAttrs).toBeGreaterThanOrEqual(1);
     expect(res.droppedTags).toBe(0);
+  });
+
+  it('in-session authored deletion drops the runtime payload (no resurrection)', async () => {
+    const el = await mount(HELLO);
+    expect(el.querySelector('[data-sem-chrome]')).not.toBeNull();
+    expect(el.querySelector(':scope > semext-draftamo-data')).not.toBeNull();
+    // Authored content deleted in-session: the payload (the derived copy) goes
+    // with its source — the diagram empties and does NOT resurrect. (Remove the
+    // children individually — `innerHTML = ''` would eject Lit's part markers.)
+    el.querySelectorAll(':scope > semext-draftamo-node, :scope > semext-draftamo-edge')
+      .forEach((n) => n.remove());
+    await new Promise((r) => setTimeout(r, 20));
+    await el.updateComplete;
+    expect(el.querySelector('[data-sem-chrome]')).toBeNull();
+    expect(el.querySelector(':scope > semext-draftamo-data')).toBeNull();
+    el.remove();
+  });
+
+  it('extraction: an invalid payload with no authored children mints NO record', () => {
+    const raw = document.createElement('div');
+    raw.innerHTML = '<semext-draftamo-diagram><semext-draftamo-data>not-json</semext-draftamo-data></semext-draftamo-diagram>';
+    const recs = extractRecords(raw);
+    expect(recs.filter((r) => r.type === 'semext-draftamo-diagram')).toHaveLength(0);
   });
 });

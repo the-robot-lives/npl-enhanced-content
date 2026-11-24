@@ -762,8 +762,11 @@ function buildApiCall(el: Element): Payload {
  * authored children win), so the record is identical with JS on/off — the
  * runtime chrome div mints nothing.
  */
-function buildDraftamoDiagram(el: Element): Payload {
+function buildDraftamoDiagram(el: Element): Payload | null {
   const model = parseDiagram(el);
+  // Empty model (invalid payload, no authored children) mints nothing — spec:
+  // an invalid payload is ignored.
+  if (model.nodes.length === 0 && model.edges.length === 0) return null;
   return {
     fields: {
       graph: graphToJson(model, { kind: param(el, 'kind') ?? undefined, label: param(el, 'label') ?? undefined }),
@@ -782,7 +785,7 @@ function buildPlain(el: Element): Payload {
   return { fields: {}, text: prose(el) };
 }
 
-function payloadFor(type: string, el: Element): Payload {
+function payloadFor(type: string, el: Element): Payload | null {
   switch (type) {
     case 'sem-agent':
       return buildAgent(el);
@@ -890,6 +893,7 @@ export function extractRecordPairs(root: Document | Element): RecordPair[] {
 
     if (type !== null) {
       const payload = payloadFor(type, el);
+      if (payload !== null) {
       const record: SemRecord = {
         type: type,
         id: authoredId(el),
@@ -903,6 +907,7 @@ export function extractRecordPairs(root: Document | Element): RecordPair[] {
       };
       pairs.push({ el: el, record: record });
       index = record.sourceOrder;
+      }
     }
 
     const kids = el.children;

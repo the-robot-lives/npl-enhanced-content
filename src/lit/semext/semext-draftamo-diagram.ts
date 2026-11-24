@@ -12,7 +12,9 @@
  *   the draftamo collector in src/extract/records.ts.
  * Invariants: the 2D SVG is always the fallback and never removed on a 3D failure; chrome-internal
  *   writes stay invisible to the observer; the payload child is NOT chrome — it must survive
- *   serialization and sanitize (element carrier, not script); camera/input helpers feature-detect.
+ *   serialization and sanitize (element carrier, not script); camera/input helpers feature-detect;
+ *   once-authored hydration rule — the payload hydrates fresh parses only; in-session authored
+ *   deletion removes the payload instead of resurrecting from it.
  * Refreshed: 2026-11-24
  */
 
@@ -71,6 +73,7 @@ export class SemextDraftamoDiagram extends SemElement {
   #viewerHost: HTMLElement | null = null;
   #mountToken = 0;
   #dataWarned = false;
+  #everAuthored = false;
 
   constructor() {
     super();
@@ -102,9 +105,11 @@ export class SemextDraftamoDiagram extends SemElement {
 
   #paint(): void {
     const authored = this.querySelector(':scope > semext-draftamo-node, :scope > semext-draftamo-edge') !== null;
-    // parseDiagram hydrates from an authored <semext-draftamo-data> payload
-    // when no node/edge children exist (THEROB-170); authored children win.
-    const model = parseDiagram(this);
+    if (authored) this.#everAuthored = true;
+    // Hydrate only while this instance has never rendered authored children —
+    // a fresh parse of a payload-only document hydrates, but deleting authored
+    // children in-session must not resurrect from the runtime payload.
+    const model = parseDiagram(this, { hydrate: !this.#everAuthored });
     if (model.nodes.length === 0) {
       if (!authored && !this.#dataWarned) {
         const data = this.querySelector(':scope > semext-draftamo-data');
@@ -112,6 +117,13 @@ export class SemextDraftamoDiagram extends SemElement {
           this.#dataWarned = true;
           console.warn('semext-draftamo-diagram: <semext-draftamo-data> is not a valid v1 graph payload; ignoring it.');
         }
+      }
+      if (this.#everAuthored && !authored) {
+        // Authored content deleted in-session: the runtime payload is the
+        // derived copy, so it goes with its source — no resurrection, and
+        // the next serialize no longer carries the diagram.
+        for (const d of this.querySelectorAll(':scope > semext-draftamo-data')) d.remove();
+        this.#mo?.takeRecords();
       }
       this.#chrome?.remove();
       this.#chrome = null;

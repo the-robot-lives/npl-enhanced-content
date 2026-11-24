@@ -57,7 +57,7 @@ Bare `<node>` and `<edge>` are not used: `node` is already a defined part of `se
 The element syncs a hidden `<semext-draftamo-data>` payload child — the native, versioned graph JSON (`v: 1`, `kind`, optional `label`, `nodes`, `edges`) — so the diagram is portable without a runtime or a fetch.
 
 - **Emit (JS on, authored children present):** after each re-render the element writes the parsed model as the LAST child of the host (outside the `data-sem-chrome` serialize+sanitize guarantee, so an exported document keeps the payload).
-- **Hydrate (no authored node/edge children):** `parseDiagram` reads the payload and rebuilds the model; authored children always win when present. A payload that is not valid v1 (`v`, `kind`, `nodes`, `edges` shapes) is ignored — the element warns once and renders nothing.
+- **Hydrate (no authored node/edge children):** `parseDiagram` reads the payload and rebuilds the model; authored children always win when present. A payload that is not valid v1 (`v`, `kind`, `nodes`, `edges` shapes) is ignored — the element warns once and renders nothing. Hydration applies to fresh parses of payload-only documents; once the element has rendered authored children, deleting them in-session removes the runtime payload rather than resurrecting the diagram from it. Extraction mints no record when the parsed model is empty — an invalid payload is ignored.
 - **Extraction:** the diagram mints ONE `semext-draftamo-diagram` record whose `graph` field carries the same v1 JSON, `nodes`/`edges` the counts, and `text` the `Hello → World` summary. The node/edge/data children mint nothing, so the record is identical with JS on or off.
 - **JS-off:** the payload child is `display: none` (vocabulary CSS) — carried data, never display content.
 

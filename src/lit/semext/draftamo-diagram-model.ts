@@ -27,8 +27,11 @@ export interface DiagramJson {
 /** Read authored `<semext-draftamo-node id label?>text</…>` and `<semext-draftamo-edge from to label?>` children.
  *  When the authored set is empty, hydrate from an authored `<semext-draftamo-data>` v1 payload
  *  (the JS-written export copy — THEROB-170); authored children always win when present, and an
- *  invalid payload simply leaves the empty model (the element warns once). */
-export function parseDiagram(host: Element): DiagramModel {
+ *  invalid payload simply leaves the empty model (the element warns once).
+ *  Hydration defaults ON (fresh parses of payload-only documents — serialize/
+ *  sanitize round-trips — hydrate); callers pass `{ hydrate: false }` to refuse
+ *  payload hydration (the element-side once-authored rule, THEROB-170 round 2). */
+export function parseDiagram(host: Element, opts: { hydrate?: boolean } = {}): DiagramModel {
   const nodes: DiagramNode[] = [];
   const edges: DiagramEdge[] = [];
   let data: string | null = null;
@@ -46,7 +49,7 @@ export function parseDiagram(host: Element): DiagramModel {
     }
   }
   const ids = new Set(nodes.map((n) => n.id));
-  if (nodes.length === 0 && edges.length === 0 && data !== null) {
+  if (opts.hydrate !== false && nodes.length === 0 && edges.length === 0 && data !== null) {
     const hydrated = graphFromJson(data);
     if (hydrated) return hydrated;
   }
