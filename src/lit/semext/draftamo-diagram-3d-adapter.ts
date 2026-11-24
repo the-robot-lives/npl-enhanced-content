@@ -87,12 +87,45 @@ export function toViewerDocument(model: DiagramModel, o: { id?: string; title?: 
  * indirection so unit tests can stand in a fake `{ createViewer }` module
  * without a real ESM import of a runtime-supplied URL.
  */
+export type CameraPreset = 'overview' | 'isometric' | 'top' | 'front' | 'focus';
+
+/** Camera-motion option: `prefers-reduced-motion` forces `animate: false`. */
+export interface CameraMotion {
+  animate?: boolean;
+}
+
 export type ViewerModule = { createViewer: (host: HTMLElement, opts?: unknown) => ViewerInstance };
 export interface ViewerInstance {
   setDocument(doc: ViewerDocument, opts?: { tracedEdgeIds?: Set<string> | null }): void;
   start(): void;
   stopLoop(): void;
   dispose(): void;
+  /**
+   * Camera/input surface (S4, THEROB-169). ALL OPTIONAL: `viewer-src` is
+   * version-pinned, so the mounted bundle may predate a given member — the
+   * element feature-detects (`typeof viewer.x === 'function'`) and simply
+   * hides the controls the instance does not offer. Never assume presence.
+   * Names mirror the real bundle API (draftamo-render create-viewer.ts).
+   */
+  /** Restore world-up (the toolbar's reset pairs this with `frameTo(null)`). */
+  resetCameraPose?(): void;
+  /** Compute + tween the framed pose for a node — or the whole model (`null`). */
+  frameTo?(nodeId: string | null | undefined, opts?: CameraMotion): boolean;
+  setCameraMode?(mode: 'orbit' | 'fly'): void;
+  /** Fly-mode wheel dolly (guarded inside the bundle: no-op outside fly). */
+  wheelFly?(deltaY: number): void;
+  /**
+   * Forward-looking: named presets are NOT exported by the v0.2.0 bundle
+   * (they live in trd-3d's buildTrd3dScene) — the preset menu renders only
+   * once a bundle ships this.
+   */
+  setCameraPose?(preset: CameraPreset, opts?: CameraMotion): void;
+  /**
+   * Keyboard feed: the bundle attaches no keyboard listeners — the host
+   * adds pressed `KeyboardEvent.code`s here (removes on keyup) so
+   * fly/orbit key motion works. Absent on older bundles.
+   */
+  keys?: Set<string>;
 }
 export type ViewerImporter = (src: string) => Promise<ViewerModule>;
 
