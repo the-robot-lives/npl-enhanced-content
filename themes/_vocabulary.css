@@ -1671,6 +1671,8 @@ semext-draftamo-diagram:not([data-sem-upgraded]) > semext-draftamo-node,
 semext-draftamo-diagram:not([data-sem-upgraded]) > semext-draftamo-edge { display: inline; }
 semext-draftamo-diagram:not([data-sem-upgraded]) > semext-draftamo-node::before { content: attr(label); }
 semext-draftamo-diagram:not([data-sem-upgraded]) > semext-draftamo-edge::after { content: " \2192\00a0"; }
+/* THEROB-170 semext-draftamo-data payload child: carried data, never display content — hidden JS-off and upgraded alike (upgraded, the generic rule above already covers it). */
+semext-draftamo-diagram > semext-draftamo-data { display: none; }
 .semext-draftamo-diagram-chrome svg { max-width: 100%; height: auto; font: .875rem system-ui, sans-serif; }
 .semext-draftamo-diagram-box { fill: var(--sem-bg, Canvas); stroke: var(--sem-border, CanvasText); stroke-width: 1.5; }
 .semext-draftamo-diagram-text { fill: var(--sem-fg, CanvasText); }

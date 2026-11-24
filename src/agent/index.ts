@@ -757,7 +757,14 @@ export function serialize(el: Element): string {
 function serializeNode(n: Node): string {
   if (n.nodeType === 3) return escText(n.nodeValue || '');
   if (n.nodeType === 8) return '<!--' + (n.nodeValue || '') + '-->';
-  if (n.nodeType === 1) return serialize(n as Element);
+  if (n.nodeType === 1) {
+    // Runtime chrome (`data-sem-chrome`) is generated presentation, not
+    // authored semantics — it never exports. Authored children and state
+    // carriers like `<semext-draftamo-data>` (no chrome attribute) survive.
+    const el = n as Element;
+    if (el.hasAttribute('data-sem-chrome')) return '';
+    return serialize(el);
+  }
   return '';
 }
 
