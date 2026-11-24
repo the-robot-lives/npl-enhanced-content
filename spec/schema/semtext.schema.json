@@ -1395,7 +1395,7 @@
         "kind": { "type": "token" },
         "label": { "type": "text" }
       },
-      "children": ["semext-draftamo-node", "semext-draftamo-edge"]
+      "children": ["semext-draftamo-node", "semext-draftamo-edge", "semext-draftamo-data"]
     },
     "semext-draftamo-node": {
       "source": "spec/schema/semext/draftamo-diagram.md",
@@ -1415,6 +1415,11 @@
         "to": { "type": "token", "required": true },
         "label": { "type": "text" }
       }
+    },
+    "semext-draftamo-data": {
+      "source": "spec/schema/semext/draftamo-diagram.md",
+      "record": false,
+      "partOf": ["semext-draftamo-diagram"]
     },
     "semext-media-prompt": {
       "description": "An authored .media.prompt YAML record with an output cache region the refresh CLI fills; the component never fetches or generates — it reports the region state (filled asset list or not-generated placeholder chrome).",

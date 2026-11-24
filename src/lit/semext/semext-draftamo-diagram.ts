@@ -1,21 +1,27 @@
 /**
  * semext-draftamo-diagram — inline Draftamo diagram element (2D SVG + lazy 3D viewer).
  *
- * Purpose: render authored nodes/edges as an accessible 2D SVG, then upgrade in place to the
- *   version-pinned 3D viewer bundle (`viewer-src`); any viewer failure leaves the SVG standing.
- * Owns: parse/lifecycle (chrome, MutationObserver, mount-token race guard), teardown, the
+ * Purpose: render authored nodes/edges (or a hydrated `<semext-draftamo-data>` v1 payload, THEROB-170)
+ *   as an accessible 2D SVG, then upgrade in place to the version-pinned 3D viewer bundle (`viewer-src`);
+ *   any viewer failure leaves the SVG standing.
+ * Owns: parse/lifecycle (chrome, MutationObserver, mount-token race guard), teardown, the native v1
+ *   payload child (`semext-draftamo-data` — emit when authored, hydrate when sole source), the
  *   `viewer.keys`/`wheelFly` input feed (typing-target-guarded), the shared accessible name.
- * Works with: draftamo-diagram-model (parse/layout/describe), draftamo-diagram-3d-adapter
- *   (import seam + GraphDocument mapping), draftamo-diagram-camera-ui (toolbar factory).
+ * Works with: draftamo-diagram-model (parse/layout/describe + the v1 graph JSON), draftamo-diagram-3d-adapter
+ *   (import seam + GraphDocument mapping), draftamo-diagram-camera-ui (toolbar factory),
+ *   the draftamo collector in src/extract/records.ts.
  * Invariants: the 2D SVG is always the fallback and never removed on a 3D failure; chrome-internal
- *   writes stay invisible to the observer; camera/input helpers feature-detect — never assume bundle members.
+ *   writes stay invisible to the observer; the payload child is NOT chrome — it must survive
+ *   serialization and sanitize (element carrier, not script); camera/input helpers feature-detect;
+ *   once-authored hydration rule — the payload hydrates fresh parses only; in-session authored
+ *   deletion removes the payload instead of resurrecting from it.
  * Refreshed: 2026-11-24
  */
 
 import { html, render, svg, type TemplateResult } from 'lit';
 import { SemElement } from '../base.js';
 import { defineSemext, semextParam } from './shared.js';
-import { describe, layout, parseDiagram, type DiagramModel } from './draftamo-diagram-model.js';
+import { describe, layout, parseDiagram, graphToJson, graphFromJson, type DiagramModel } from './draftamo-diagram-model.js';
 import { importViewerModule, toViewerDocument, type ViewerInstance } from './draftamo-diagram-3d-adapter.js';
 import { buildCameraToolbar } from './draftamo-diagram-camera-ui.js';
 
@@ -40,8 +46,10 @@ export const DEFAULT_VIEWER_SRC = 'https://cdn.derobot.is/draftamo/v0.2.0/drafta
  *   </semext-draftamo-diagram>
  *
  * Children: `<semext-draftamo-node id label?>text</…>` (label = attribute, else text) and
- * `<semext-draftamo-edge from to label?>`. (Bare `<node>` is taken: it is a part of
- * sem-site-tree / sem-file-tree.) Enhanced, an SVG renders left to right by rank
+ * `<semext-draftamo-edge from to label?>` — plus the hidden `<semext-draftamo-data>` v1 JSON
+ * payload child the element syncs (THEROB-170): last child, NOT chrome, so it survives
+ * serialize/sanitize; it hydrates the diagram when authored children are absent. (Bare `<node>`
+ * is taken: it is a part of sem-site-tree / sem-file-tree.) Enhanced, an SVG renders left to right by rank
  * inside a `data-sem-chrome` container and the authored children are hidden
  * (still in the DOM, so extraction reads them). JS-off, the children read as
  * plain text; the vocabulary rules add the arrow so it reads "Hello → World".
@@ -64,6 +72,8 @@ export class SemextDraftamoDiagram extends SemElement {
   #viewer: ViewerInstance | null = null;
   #viewerHost: HTMLElement | null = null;
   #mountToken = 0;
+  #dataWarned = false;
+  #everAuthored = false;
 
   constructor() {
     super();
@@ -94,8 +104,27 @@ export class SemextDraftamoDiagram extends SemElement {
   }
 
   #paint(): void {
-    const model = parseDiagram(this);
+    const authored = this.querySelector(':scope > semext-draftamo-node, :scope > semext-draftamo-edge') !== null;
+    if (authored) this.#everAuthored = true;
+    // Hydrate only while this instance has never rendered authored children —
+    // a fresh parse of a payload-only document hydrates, but deleting authored
+    // children in-session must not resurrect from the runtime payload.
+    const model = parseDiagram(this, { hydrate: !this.#everAuthored });
     if (model.nodes.length === 0) {
+      if (!authored && !this.#dataWarned) {
+        const data = this.querySelector(':scope > semext-draftamo-data');
+        if (data && graphFromJson(data.textContent ?? '') === null) {
+          this.#dataWarned = true;
+          console.warn('semext-draftamo-diagram: <semext-draftamo-data> is not a valid v1 graph payload; ignoring it.');
+        }
+      }
+      if (this.#everAuthored && !authored) {
+        // Authored content deleted in-session: the runtime payload is the
+        // derived copy, so it goes with its source — no resurrection, and
+        // the next serialize no longer carries the diagram.
+        for (const d of this.querySelectorAll(':scope > semext-draftamo-data')) d.remove();
+        this.#mo?.takeRecords();
+      }
       this.#chrome?.remove();
       this.#chrome = null;
       return;
@@ -123,7 +152,39 @@ export class SemextDraftamoDiagram extends SemElement {
       render(this.#svg(model), this.#chrome);
       this.#mountViewer(src, model);
     }
+    // THEROB-170: an authored diagram re-emits its native v1 payload as the
+    // last child (outside the chrome, so serialization keeps it). Hydrated
+    // diagrams leave the payload untouched — it is the source of truth.
+    if (authored) this.#syncData(model);
     this.#mo?.takeRecords();
+  }
+
+  /** Write/update the `<semext-draftamo-data>` v1 payload from the parsed model. */
+  #syncData(model: DiagramModel): void {
+    const kind = (semextParam(this, 'kind') ?? this.kind ?? 'uml-class').trim() || 'uml-class';
+    // Label is authored-only in the payload: written when a label attribute
+    // exists, omitted otherwise — matching the extraction record. The
+    // 'Diagram' default stays chrome-only (accessible name / title).
+    const label = (semextParam(this, 'label') ?? '').trim() || undefined;
+    const json = JSON.stringify(graphToJson(model, { kind, label }));
+    // Exactly one carrier, and it is the LAST child: parseDiagram reads the
+    // last-wins payload, so an earlier duplicate would go stale while the
+    // fresh one gets read. Collapse duplicates to the last, create if none.
+    const carriers = Array.from(this.querySelectorAll(':scope > semext-draftamo-data'));
+    for (const stale of carriers.slice(0, -1)) stale.remove();
+    let data = carriers.at(-1);
+    if (!data) {
+      data = document.createElement('semext-draftamo-data');
+      data.setAttribute('hidden', '');
+      this.append(data);
+    } else if (data !== this.lastElementChild) {
+      // The chrome div (appended in #paint) may sit after it — move the
+      // carrier so it is always the LAST child, the one parseDiagram reads.
+      this.append(data);
+    }
+    // Compare-before-write: identical payloads cause no churn (and no
+    // characterData mutation for the observer to see at all).
+    if (data.textContent !== json) data.textContent = json;
   }
 
   /** Lazily load `viewer-src` ({ createViewer }) and mount the 3D document. */
